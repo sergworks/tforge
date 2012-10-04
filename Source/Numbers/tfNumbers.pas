@@ -112,7 +112,7 @@ type
     class function FromCardinal(var A: PBigNumber; Value: Cardinal): HResult; static;
     class function FromInteger(var A: PBigNumber; Value: Integer): HResult; static;
 
-    class function ToCardinal(var A: PBigNumber; var Value: Cardinal): HResult; static;
+    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
 
     class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
     class function DivModLimbU(A: PBigNumber; Limb: TLimb;
@@ -1174,7 +1174,7 @@ begin
         else Tmp.FUsed:= UsedA;
     end
     else begin                               // A.FSign < 0
-      if A.FUsed = 1 then begin
+      if UsedA = 1 then begin
         if A.FLimbs[0] <= Limb then begin
           Tmp.FLimbs[0]:= Limb - A.FLimbs[0];
         end
@@ -1188,7 +1188,7 @@ begin
         if Tmp.FLimbs[UsedA - 1] = 0
           then Tmp.FUsed:= UsedA - 1
           else Tmp.FUsed:= UsedA;
-          Tmp.FSign:= -1;
+        Tmp.FSign:= -1;
       end;
     end;
     if (R <> A) and (R <> nil) then Release(R);
@@ -1563,7 +1563,7 @@ var
 
 begin
 {$IF IntSize = 0}
-  Result:= E_NOTIMPLEMENTED;  // Not Implemented
+  Result:= TFL_E_NOTIMPL;
 {$ELSE}
   Result:= AllocNumber(Tmp, IntSize);
   if Result <> S_OK then Exit;
@@ -1582,9 +1582,32 @@ begin
 {$IFEND}
 end;
 
-class function TBigNumber.ToCardinal(var A: PBigNumber; var Value: Cardinal): HResult;
+class function TBigNumber.ToCardinal(A: PBigNumber; var Value: Cardinal): HResult;
+const
+  CardSize = SizeOf(Cardinal) div SizeOf(TLimb);
+
+var
+  Tmp: PBigNumber;
+
 begin
+{$IF CardSize = 0}
   Result:= TFL_E_NOTIMPL;
+{$ELSIF CardSize = 1}
+  if (A.FUsed = 1) and (A.FSign >= 0) then begin
+    Value:= A.FLimbs[0];
+    Result:= TFL_S_OK;
+  end
+  else
+    Result:= TFL_E_INVALIDARG;
+{$ELSE}
+  if (A.FUsed <= CardSize) and (A.FSign >= 0) then begin
+    Value:= 0;
+    Move(A.FLimbs, Value, A.FUsed * SizeOf(TLimb));
+    Result:= TFL_S_OK;
+  end
+  else
+    Result:= TFL_E_INVALIDARG;
+{$IFEND}
 end;
 
 class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
