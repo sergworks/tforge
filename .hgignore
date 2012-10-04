@@ -1,0 +1,20 @@
+syntax: glob
+# This line is a comment, and will be skipped.
+# Empty lines are skipped too.
+
+# Backup files left behind by the editor.
+*.~*~
+*.dcu
+*.exe
+*.local
+*.identcache
+*.2007
+*.aqt
+dunit.ini
+*.tvsconfig
+*.log
+*.compiled
+*.obj
+*.o
+*.ppu
+*.bak
