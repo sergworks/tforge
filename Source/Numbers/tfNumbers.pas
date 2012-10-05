@@ -790,6 +790,7 @@ begin
         if A.FSign xor B.FSign < 0
           then Q:= @BigNumMinusOne
           else Q:= @BigNumOne;
+        Result:= TFL_S_OK;
         Exit;
       end
       else if Diff < 0 then Cond:= True;
@@ -862,7 +863,7 @@ begin
 
     R:= Remainder;
 
-    Result:= S_OK;
+//    Result:= S_OK;
     Exit;
   end;
 
@@ -987,7 +988,7 @@ begin
         then Release(R);
       R:= A;
     end;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end;
 
@@ -1329,7 +1330,7 @@ end;
 
 function TBigNumber.SelfSubLimb(Value: TLimb): HResult;
 var
-  Used: Integer;
+  Used: Cardinal;
 
 begin
   Used:= FUsed;
@@ -1585,9 +1586,6 @@ end;
 class function TBigNumber.ToCardinal(A: PBigNumber; var Value: Cardinal): HResult;
 const
   CardSize = SizeOf(Cardinal) div SizeOf(TLimb);
-
-var
-  Tmp: PBigNumber;
 
 begin
 {$IF CardSize = 0}

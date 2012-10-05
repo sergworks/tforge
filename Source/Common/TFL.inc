@@ -38,11 +38,20 @@
 // Enable intel 32-bit CPU assembler optimization
 {.$DEFINE TFL_ASM86}
 
-// == Big number math specific ==
-// -- Limb size - define one only --
-{.$DEFINE TFL_LIMB32}
-{.$DEFINE TFL_LIMB16}
-{$DEFINE TFL_LIMB8}
+{$IFDEF BUILDLIMB32}
+  {$DEFINE TFL_LIMB32}
+{$ELSE}
+  {$IFDEF BUILDLIMB16}
+    {$DEFINE TFL_LIMB16}
+  {$ELSE}
+    {$IFDEF BUILDLIMB8}
+      {$DEFINE TFL_LIMB8}
+    {$ELSE}
+      {$DEFINE TFL_LIMB32}
+    {$ENDIF}
+  {$ENDIF}
+{$ENDIF}
+
 // -----------------------------------------------------
 
 {$IFDEF TFL_LIMB32}
