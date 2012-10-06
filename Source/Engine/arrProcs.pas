@@ -1,14 +1,16 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
 { *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
+{ * ------------------------------------------------------- * }
+{ *   # engine unit                                         * }
 { *********************************************************** }
 
 unit arrProcs;
 
-{$I ..\Common\TFL.inc}
+{$I TFL.inc}
 
 {$IFDEF TFL_LIMB32_ASM86}
-  {.$DEFINE LOCAL_LIMB32_ASM86}
+  {.$DEFINE LIMB32_ASM86}
 {$ENDIF}
 
 interface
@@ -83,7 +85,7 @@ end;
       1: (Value: UInt64);
   end; }
 
-{$IFDEF LOCAL_LIMB32_ASM86}
+{$IFDEF LIMB32_ASM86}
 function arrAdd(A, B, Res: PLongWord; LA, LB: LongWord): Boolean;
 asm
         PUSH  ESI
@@ -172,7 +174,7 @@ end;
     if function returns True the A senior limb is set: A[LA] = 1
     (A = B) coincidence is allowed
 }
-{$IFDEF LOCAL_LIMB32_ASM86}
+{$IFDEF LIMB32_ASM86}
 function arrSelfAdd(A, B: PLongWord; LA, LB: LongInt): Boolean;
 asm
         PUSH  ESI
@@ -292,7 +294,7 @@ end;
     function returns True if carry is propagated out of A[L-1];
     if function returns True the A senior limb is set: A[L] = 1
 }
-{$IFDEF LOCAL_LIMB32_ASM86}
+{$IFDEF LIMB32_ASM86}
 function arrSelfAddLimb(A: PLongWord; Limb: LongWord; L: LongInt): Boolean;
 asm
         ADD   [EAX],EDX
@@ -348,7 +350,7 @@ end;
     if function returns True the Res is invalid
     any (A = B = Res) coincidence is allowed
 }
-{$IFDEF LOCAL_LIMB32_ASM86}
+{$IFDEF LIMB32_ASM86}
 function arrSub(A, B, Res: PLongWord; LA, LB: LongInt): Boolean;
 asm
         PUSH  ESI

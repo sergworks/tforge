@@ -2,7 +2,7 @@
 { *                     TForge Library                      * }
 { *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
 { * ------------------------------------------------------- * }
-{ *   # server unit                                         * }
+{ *   # engine unit                                         * }
 { *   # exports: TBigNumber                                 * }
 { *********************************************************** }
 
@@ -72,8 +72,8 @@ type
     class function Power(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
 
-    class function AsWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
-    class function AsWideStringU(A: PBigNumber; var S: WideString): HResult; stdcall; static;
+    class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
+    class function ToWideStringU(A: PBigNumber; var S: WideString): HResult; stdcall; static;
 
     class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
     class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
@@ -113,6 +113,7 @@ type
     class function FromInteger(var A: PBigNumber; Value: Integer): HResult; static;
 
     class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
+    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
     class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
     class function DivModLimbU(A: PBigNumber; Limb: TLimb;
@@ -158,8 +159,8 @@ const
    @TBigNumber.DivModNumbersU,
    @TBigNumber.Power,
    @TBigNumber.PowerMod,
-   @TBigNumber.AsWideString,
-   @TBigNumber.AsWideStringU,
+   @TBigNumber.ToWideString,
+   @TBigNumber.ToWideStringU,
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
    @TBigNumber.AddIntLimb,
@@ -1258,7 +1259,7 @@ end;
 function TBigNumber.SelfAddLimb(Value: TLimb): HResult;
 var
   Used: Cardinal;
-  Minus: Boolean;
+//  Minus: Boolean;
 
 begin
   Used:= FUsed;
@@ -1608,6 +1609,56 @@ begin
 {$IFEND}
 end;
 
+class function TBigNumber.ToInteger(A: PBigNumber; var Value: Integer): HResult;
+const
+  IntSize = SizeOf(Integer) div SizeOf(TLimb);
+
+{$IF IntSize > 1}
+var
+  Tmp: Integer;
+{$IFEND}
+
+begin
+{$IF IntSize <= 0}
+  Result:= TFL_E_NOTIMPL;
+{$ELSIF IntSize = 1}
+  if (A.FUsed = 1) then begin
+    if FSign >= 0 then begin
+      if (A.FLimbs[0] <= Cardinal(MaxInt)) then begin
+        Value:= A.FLimbs[0];
+        Result:= TFL_S_OK;
+      end
+      else
+        Result:= TFL_E_INVALIDARG;
+    end
+    else begin
+      if (A.FLimbs[0] <= Cardinal(MaxInt)) then begin
+        Value:= - Integer(A.FLimbs[0]);
+        Result:= TFL_S_OK;
+      end
+      else if (A.FLimbs[0] = Cardinal(MinInt)) then begin
+        Cardinal(Value):= A.FLimbs[0];
+        Result:= TFL_S_OK;
+      else
+        Result:= TFL_E_INVALIDARG;
+    end
+  end
+  else
+    Result:= TFL_E_INVALIDARG;
+{$ELSEIF IntSize > 1}
+  if (A.FUsed <= IntSize) then begin
+    Tmp:= 0;
+    Move(A.FLimbs, Tmp, A.FUsed * SizeOf(TLimb));
+    if (A.FSign >= 0)
+      then Value:= Tmp
+      else Value:= -Tmp;
+    Result:= TFL_S_OK;
+  end
+  else
+    Result:= TFL_E_INVALIDARG;
+{$IFEND}
+end;
+
 class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
 begin
   Result:= ToStringU(A, S);
@@ -1669,7 +1720,7 @@ begin
 
 end;
 
-class function TBigNumber.AsWideString(A: PBigNumber; var S: WideString): HResult;
+class function TBigNumber.ToWideString(A: PBigNumber; var S: WideString): HResult;
 var
   Tmp: string;
 
@@ -1679,7 +1730,7 @@ begin
     S:= WideString(Tmp);
 end;
 
-class function TBigNumber.AsWideStringU(A: PBigNumber; var S: WideString): HResult;
+class function TBigNumber.ToWideStringU(A: PBigNumber; var S: WideString): HResult;
 var
   Tmp: string;
 
