@@ -73,7 +73,7 @@ type
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
 
     class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
-    class function ToWideStringU(A: PBigNumber; var S: WideString): HResult; stdcall; static;
+//    class function ToWideStringU(A: PBigNumber; var S: WideString): HResult; stdcall; static;
 
     class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
     class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
@@ -104,7 +104,7 @@ type
                                 ASign: Integer = 0): HResult; static;
 
     class function ToString(A: PBigNumber; var S: string): HResult; static;
-    class function ToStringU(A: PBigNumber; var S: string): HResult; static;
+//    class function ToStringU(A: PBigNumber; var S: string): HResult; static;
     class function FromPCharU(var A: PBigNumber; const S: PChar; L: Integer): HResult; static;
     class function FromString(var A: PBigNumber; const S: string): HResult; static;
     class function FromStringU(var A: PBigNumber; const S: string): HResult; static;
@@ -126,7 +126,7 @@ type
     function IsZero: Boolean; inline;
 
     function AsString: string;
-    function AsStringU: string;
+//    function AsStringU: string;
 
     function SelfCopy(Inst: PBigNumber): HResult;
     function SelfAddLimb(Value: TLimb): HResult;
@@ -144,7 +144,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..23] of Pointer = (
+  BigNumVTable: array[0..22] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -160,7 +160,7 @@ const
    @TBigNumber.Power,
    @TBigNumber.PowerMod,
    @TBigNumber.ToWideString,
-   @TBigNumber.ToWideStringU,
+//   @TBigNumber.ToWideStringU,
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
    @TBigNumber.AddIntLimb,
@@ -238,13 +238,13 @@ begin
   Result:= '';
   ToString(@Self, Result);
 end;
-
+{
 function TBigNumber.AsStringU: string;
 begin
   Result:= '';
   ToStringU(@Self, Result);
 end;
-
+}
 class function TBigNumber.AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
 var
   UsedA, UsedB: Cardinal;
@@ -1658,16 +1658,16 @@ begin
     Result:= TFL_E_INVALIDARG;
 {$IFEND}
 end;
-
+{
 class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
 begin
   Result:= ToStringU(A, S);
   if (Result = S_OK) and (A.FSign < 0) then
     S:= '-' + S;
 end;
-
+}
 { Unsigned TNumber --> string conversions }
-class function TBigNumber.ToStringU(A: PBigNumber; var S: string): HResult;
+class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
 var
   Tmp: PBigNumber;
   Used: Cardinal;
@@ -1712,10 +1712,20 @@ begin
 
   Release(Tmp);
 
-  SetLength(S, I);
+  if A.FSign < 0 then begin
+    Inc(I);
+    SetLength(S, I);
+    S[1]:= '-';
+    J:= 2;
+  end
+  else begin
+    SetLength(S, I);
+    J:= 1;
+  end;
 
-  for J:= 1 to I do begin
+  while J <= I do begin
     S[J]:= Chr(Ord('0') + Digits[I - J]);
+    Inc(J);
   end;
 
 end;
@@ -1729,7 +1739,7 @@ begin
   if Result = S_OK then
     S:= WideString(Tmp);
 end;
-
+{
 class function TBigNumber.ToWideStringU(A: PBigNumber; var S: WideString): HResult;
 var
   Tmp: string;
@@ -1739,7 +1749,7 @@ begin
   if Result = S_OK then
     S:= WideString(Tmp);
 end;
-
+}
 const
   BigNumPrefixSize = SizeOf(TBigNumber) - SizeOf(TBigNumber.TLimbArray);
 

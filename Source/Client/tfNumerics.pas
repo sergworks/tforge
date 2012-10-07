@@ -102,12 +102,12 @@ var
   S: WideString;
 
 begin
-  HResCheck(FNumber.ToWideStringU(S),
+  HResCheck(FNumber.ToWideString(S),
     'BigCardinal -> string conversion error');
   Result:= S;
 {$ELSE}
 begin
-  HResCheck(TBigNumber.ToStringU(PBigNumber(FNumber), Result),
+  HResCheck(TBigNumber.ToString(PBigNumber(FNumber), Result),
     'BigCardinal -> string conversion error');
 {$ENDIF}
 end;

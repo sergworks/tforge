@@ -47,8 +47,8 @@ type
     function Power(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
-    function AsWideString(var S: WideString): HRESULT; stdcall;
-    function AsWideStringU(var S: WideString): HRESULT; stdcall;
+    function ToWideString(var S: WideString): HRESULT; stdcall;
+//    function AsWideStringU(var S: WideString): HRESULT; stdcall;
 
     function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
     function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
