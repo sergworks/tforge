@@ -57,6 +57,9 @@ type
 
     class function GetSign(Inst: PBigNumber): Integer; stdcall; static;
 
+    class function CompareNumbers(A, B: PBigNumber): Integer; stdcall; static;
+    class function CompareNumbersU(A, B: PBigNumber): Integer; stdcall; static;
+
     class function AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
     class function AddNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
 
@@ -238,6 +241,30 @@ begin
   Result:= '';
   ToString(@Self, Result);
 end;
+
+class function TBigNumber.CompareNumbers(A, B: PBigNumber): Integer;
+begin
+  if A.FSign xor B.FSign < 0
+    then begin
+      if (A.FSign >= 0)
+        then Result:= 1
+        else Result:= -1;
+    end
+    else begin
+      Result:= A.FUsed - B.FUsed;
+      if Result = 0 then
+        Result:= arrCmp(@A.FLimbs, @B.FLimbs, A.FUsed);
+      if (A.FSign < 0) then Result:= - Result;
+    end;
+end;
+
+class function TBigNumber.CompareNumbersU(A, B: PBigNumber): Integer;
+begin
+  Result:= A.FUsed - B.FUsed;
+  if Result = 0 then
+    Result:= arrCmp(@A.FLimbs, @B.FLimbs, A.FUsed);
+end;
+
 {
 function TBigNumber.AsStringU: string;
 begin
@@ -1108,7 +1135,8 @@ begin
         end;
       end
       else begin { UsedA > 1 }
-        if arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
+        arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
           then Tmp.FUsed:= UsedA - 1
           else Tmp.FUsed:= UsedA;
         Tmp.FSign:= A.FSign;
@@ -1151,7 +1179,8 @@ begin
   else begin
     Result:= AllocNumber(Tmp, UsedA);
     if Result = TFL_S_OK then begin
-      if arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
+      arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA);
+      if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
     end;

@@ -22,7 +22,6 @@ type
 
 var
   WideStringToBigNumber: TWideStringToBigNumber;
-  WideStringToBigNumberU: TWideStringToBigNumber;
   CardinalToBigNumber: TCardinalToBigNumber;
   IntegerToBigNumber: TIntegerToBigNumber;
 
@@ -33,7 +32,7 @@ implementation
 uses Windows;
 
 const
-  LibName = 'TForge.dll';
+  LibName = 'tforge.dll';
 
 var
   LibHandle: THandle = 0;
@@ -48,7 +47,6 @@ begin
   LibHandle:= LoadLibrary(LibName);
   if LibHandle <> 0 then begin
     @WideStringToBigNumber:= GetProcAddress(LibHandle, 'WideStringToBigNumber');
-    @WideStringToBigNumberU:= GetProcAddress(LibHandle, 'WideStringToBigNumberU');
     @CardinalToBigNumber:= GetProcAddress(LibHandle, 'CardinalToBigNumber');
     @IntegerToBigNumber:= GetProcAddress(LibHandle, 'IntegerToBigNumber');
     Result:= True;

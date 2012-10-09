@@ -22,15 +22,23 @@ type
   public
     function AsString: string;
     function TryFromString(const S: string): Boolean;
+    procedure Free;
 
-    class operator Implicit(const Value: BigCardinal): IBigNumber; inline;
-    class operator Explicit(const Value: IBigNumber): BigCardinal; inline;
+//    class operator Implicit(const Value: BigCardinal): IBigNumber; inline;
+//    class operator Implicit(const Value: IBigNumber): BigCardinal; inline;
 
     class operator Explicit(const Value: BigCardinal): Cardinal;
     class operator Explicit(const Value: BigCardinal): Integer;
     class operator Implicit(const Value: Cardinal): BigCardinal;
     class operator Explicit(const Value: Integer): BigCardinal;
     class operator Explicit(const Value: string): BigCardinal;
+
+    class operator Equal(const A, B: BigCardinal): Boolean;
+    class operator NotEqual(const A, B: BigCardinal): Boolean;
+    class operator GreaterThan(const A, B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A, B: BigCardinal): Boolean;
+    class operator LessThan(const A, B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A, B: BigCardinal): Boolean;
 
     class operator Add(const A, B: BigCardinal): BigCardinal;
     class operator Subtract(const A, B: BigCardinal): BigCardinal;
@@ -45,15 +53,26 @@ type
   public
     function AsString: string;
     function TryFromString(const S: string): Boolean;
+    procedure Free;
 
-    class operator Implicit(const Value: BigInteger): IBigNumber; inline;
-    class operator Explicit(const Value: IBigNumber): BigInteger; inline;
+//    class operator Implicit(const Value: BigInteger): IBigNumber; inline;
+//    class operator Implicit(const Value: IBigNumber): BigInteger; inline;
+
+    class operator Implicit(const Value: BigCardinal): BigInteger; inline;
+    class operator Explicit(const Value: BigInteger): BigCardinal; inline;
 
     class operator Explicit(const Value: BigInteger): Cardinal;
     class operator Explicit(const Value: BigInteger): Integer;
     class operator Implicit(const Value: Cardinal): BigInteger;
     class operator Implicit(const Value: Integer): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
+
+    class operator Equal(const A, B: BigInteger): Boolean;
+    class operator NotEqual(const A, B: BigInteger): Boolean;
+    class operator GreaterThan(const A, B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A, B: BigInteger): Boolean;
+    class operator LessThan(const A, B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A, B: BigInteger): Boolean;
 
     class operator Add(const A, B: BigInteger): BigInteger;
     class operator Subtract(const A, B: BigInteger): BigInteger;
@@ -126,6 +145,66 @@ begin
 {$ENDIF}
 end;
 
+class operator BigCardinal.Equal(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:  HResCheck( ,
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) = 0;
+{$ENDIF}
+end;
+
+class operator BigCardinal.NotEqual(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) <> 0;
+{$ENDIF}
+end;
+
+class operator BigCardinal.GreaterThan(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) > 0;
+{$ENDIF}
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) > 0;
+{$ENDIF}
+end;
+
+class operator BigCardinal.LessThan(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) < 0;
+{$ENDIF}
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) < 0;
+{$ENDIF}
+end;
+
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
 {$IFDEF TFL_DLL}
 var
@@ -139,6 +218,11 @@ begin
   HResCheck(TBigNumber.FromStringU(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
     'string -> BigCardinal conversion error');
+end;
+
+procedure BigCardinal.Free;
+begin
+  FNumber:= nil;
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Cardinal;
@@ -161,19 +245,6 @@ begin
     'BigCardinal -> Integer conversion error');
 end;
 
-class operator BigCardinal.Explicit(const Value: IBigNumber): BigCardinal;
-begin
-  if (Value = nil) or
-{$IFDEF TFL_DLL}
-                   (Value.GetSign >= 0)
-{$ELSE}
-                   (PBigNumber(Value).FSign >= 0)
-{$ENDIF}
-    then Result.FNumber:= Value
-    else BigNumberError(TFL_E_INVALIDARG,
-      'Nil or Negative to BigCardinal error');
-end;
-
 class operator BigCardinal.Explicit(const Value: Integer): BigCardinal;
 begin
   if Value < 0 then
@@ -189,10 +260,25 @@ begin
   end;
 end;
 
+(*
 class operator BigCardinal.Implicit(const Value: BigCardinal): IBigNumber;
 begin
   Result:= Value.FNumber;
 end;
+
+class operator BigCardinal.Implicit(const Value: IBigNumber): BigCardinal;
+begin
+  if (Value = nil) or
+{$IFDEF TFL_DLL}
+                   (Value.GetSign >= 0)
+{$ELSE}
+                   (PBigNumber(Value).FSign >= 0)
+{$ENDIF}
+    then Result.FNumber:= Value
+    else BigNumberError(TFL_E_INVALIDARG,
+      'Negative to BigCardinal error');
+end;
+*)
 
 class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
 begin
@@ -275,6 +361,82 @@ begin
     'BigInteger -> Integer conversion error');
 end;
 
+class operator BigInteger.Equal(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:  HResCheck( ,
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) = 0;
+{$ENDIF}
+end;
+
+class operator BigInteger.Implicit(const Value: BigCardinal): BigInteger;
+begin
+  Result.FNumber:= Value.FNumber;
+end;
+
+class operator BigInteger.Explicit(const Value: BigInteger): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  if (PBigNumber(Value.FNumber).FSign < 0) then
+    BigNumberError(TFL_E_INVALIDARG, 'Negative value');
+  Result.FNumber:= Value.FNumber;
+{$ENDIF}
+end;
+
+class operator BigInteger.NotEqual(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) <> 0;
+{$ENDIF}
+end;
+
+class operator BigInteger.GreaterThan(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) > 0;
+{$ENDIF}
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) >= 0;
+{$ENDIF}
+end;
+
+class operator BigInteger.LessThan(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) < 0;
+{$ENDIF}
+end;
+
+class operator BigInteger.LessThanOrEqual(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber)) <= 0;
+{$ENDIF}
+end;
+
 class operator BigInteger.Explicit(const Value: string): BigInteger;
 {$IFDEF TFL_DLL}
 var
@@ -290,6 +452,11 @@ begin
     'string -> BigInteger conversion error');
 end;
 
+procedure BigInteger.Free;
+begin
+  FNumber:= nil;
+end;
+
 function BigInteger.TryFromString(const S: string): Boolean;
 {$IFDEF TFL_DLL}
 var
@@ -303,17 +470,17 @@ begin
   Result:= TBigNumber.FromString(PBigNumber(FNumber), S) = TFL_S_OK;
 {$ENDIF}
 end;
-
+(*
 class operator BigInteger.Implicit(const Value: BigInteger): IBigNumber;
 begin
   Result:= Value.FNumber;
 end;
 
-class operator BigInteger.Explicit(const Value: IBigNumber): BigInteger;
+class operator BigInteger.Implicit(const Value: IBigNumber): BigInteger;
 begin
   Result.FNumber:= Value;
 end;
-
+*)
 class operator BigInteger.Implicit(const Value: Cardinal): BigInteger;
 begin
 {$IFDEF TFL_DLL}
