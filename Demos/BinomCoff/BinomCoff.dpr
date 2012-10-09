@@ -47,8 +47,8 @@ begin
     M:= StrToInt(ParamStr(2));
     A:= BinomialCoff(N, M);
     Writeln('C(', N, ', ', M, ') = ', A.AsString);
-    A:= BigCardinal(nil);   // A is global var and should be freed explicitely
-                            //   to prevent memory leak on shutdown
+    A.Free;   // A is global var and should be freed explicitely
+              //   to prevent memory leak on shutdown
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

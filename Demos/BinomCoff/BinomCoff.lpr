@@ -10,11 +10,6 @@ program BinomCoff;
 
 uses
   SysUtils, tfNumerics;
-{  in '..\..\Source\Common\tfNumerics.pas',
-  tfTypes in '..\..\Source\Common\tfTypes.pas',
-  tfNumbers in '..\..\Source\Numbers\tfNumbers.pas',
-  tfLimbs in '..\..\Source\Numbers\tfLimbs.pas',
-  arrProcs in '..\..\Source\Numbers\arrProcs.pas'; }
 
 function BinomialCoff(N, K: Cardinal): BigCardinal;
 var
@@ -40,7 +35,6 @@ var
   A: BigCardinal;
 
 begin
-//  ReportMemoryLeaksOnShutdown:= True;
   try
     if ParamCount <> 2 then begin
       Writeln('Usage example: BinomCoff 120 42');
@@ -49,8 +43,7 @@ begin
     end;
     A:= BinomialCoff(StrToInt(ParamStr(1)), StrToInt(ParamStr(2)));
     Writeln(A.AsString);
-    A:= BigCardinal(nil);   // A is global var and should be freed explicitely
-                            //   to prevent memory leak on shutdown
+    A.Free;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

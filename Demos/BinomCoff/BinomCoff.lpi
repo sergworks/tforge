@@ -34,12 +34,16 @@
         <CommandLineParams Value="120 42"/>
       </local>
     </RunParams>
-    <Units Count="1">
+    <Units Count="2">
       <Unit0>
         <Filename Value="BinomCoff.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="BinomCoff"/>
       </Unit0>
+      <Unit1>
+        <Filename Value="..\..\Source\Include\TFL.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit1>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -49,7 +53,8 @@
       <Filename Value="BinomCoff"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir)"/>
+      <IncludeFiles Value="$(ProjOutDir);..\..\Source\Include"/>
+      <OtherUnitFiles Value="..\..\Source\Include;..\..\Source\Common;..\..\Source\Client;..\..\Source\Engine"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Other>
