@@ -1449,7 +1449,8 @@ begin
   else begin { UsedA > 1 }
     Result:= AllocNumber(Tmp, UsedA);
     if Result = S_OK then begin
-      if arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
+      arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA);
+      if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
       if (R <> A) and (R <> nil) then Release(R);
