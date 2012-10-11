@@ -76,7 +76,6 @@ type
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
 
     class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
-//    class function ToWideStringU(A: PBigNumber; var S: WideString): HResult; stdcall; static;
 
     class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
     class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
@@ -107,7 +106,6 @@ type
                                 ASign: Integer = 0): HResult; static;
 
     class function ToString(A: PBigNumber; var S: string): HResult; static;
-//    class function ToStringU(A: PBigNumber; var S: string): HResult; static;
     class function FromPCharU(var A: PBigNumber; const S: PChar; L: Integer): HResult; static;
     class function FromString(var A: PBigNumber; const S: string): HResult; static;
     class function FromStringU(var A: PBigNumber; const S: string): HResult; static;
@@ -129,7 +127,6 @@ type
     function IsZero: Boolean; inline;
 
     function AsString: string;
-//    function AsStringU: string;
 
     function SelfCopy(Inst: PBigNumber): HResult;
     function SelfAddLimb(Value: TLimb): HResult;
@@ -163,7 +160,6 @@ const
    @TBigNumber.Power,
    @TBigNumber.PowerMod,
    @TBigNumber.ToWideString,
-//   @TBigNumber.ToWideStringU,
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
    @TBigNumber.AddIntLimb,
@@ -265,13 +261,6 @@ begin
     Result:= arrCmp(@A.FLimbs, @B.FLimbs, A.FUsed);
 end;
 
-{
-function TBigNumber.AsStringU: string;
-begin
-  Result:= '';
-  ToStringU(@Self, Result);
-end;
-}
 class function TBigNumber.AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
 var
   UsedA, UsedB: Cardinal;
@@ -1414,18 +1403,21 @@ begin
     end
     else begin
       if (UsedA > 1) then begin                   // A.FSign >= 0
-        if arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
+        arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
           then Tmp.FUsed:= UsedA - 1
           else Tmp.FUsed:= UsedA;
       end
-      else if (A.FLimbs[0] >= Limb) then begin    // A.FSign >= 0, A.FUsed = 1
-        Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
-      end
       else begin
-        Tmp.FLimbs[0]:= Limb - A.FLimbs[0];
-        Tmp.FSign:= -1;
+        if (A.FLimbs[0] >= Limb) then begin    // A.FSign >= 0, A.FUsed = 1
+           Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
+        end
+        else begin
+          Tmp.FLimbs[0]:= Limb - A.FLimbs[0];
+          Tmp.FSign:= -1;
+        end;
+        Tmp.FUsed:= 1;
       end;
-      Tmp.FUsed:= 1;
     end;
     if (R <> A) and (R <> nil) then Release(R);
     R:= Tmp;
@@ -1687,15 +1679,8 @@ begin
     Result:= TFL_E_INVALIDARG;
 {$IFEND}
 end;
-{
-class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
-begin
-  Result:= ToStringU(A, S);
-  if (Result = S_OK) and (A.FSign < 0) then
-    S:= '-' + S;
-end;
-}
-{ Unsigned TNumber --> string conversions }
+
+{ TNumber --> string conversions }
 class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
 var
   Tmp: PBigNumber;
@@ -1768,17 +1753,7 @@ begin
   if Result = S_OK then
     S:= WideString(Tmp);
 end;
-{
-class function TBigNumber.ToWideStringU(A: PBigNumber; var S: WideString): HResult;
-var
-  Tmp: string;
 
-begin
-  Result:= ToStringU(A, Tmp);
-  if Result = S_OK then
-    S:= WideString(Tmp);
-end;
-}
 const
   BigNumPrefixSize = SizeOf(TBigNumber) - SizeOf(TBigNumber.TLimbArray);
 
