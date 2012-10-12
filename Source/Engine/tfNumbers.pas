@@ -1517,7 +1517,7 @@ begin
   AbsLimb:= Abs(Limb);
   if Limb < 0 then begin
     Result:= AllocNumber(Tmp, UsedA + 1);
-    if Result = S_OK then begin
+    if Result = TFL_S_OK then begin
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
         else Tmp.FUsed:= UsedA;
@@ -1526,7 +1526,7 @@ begin
   else if (UsedA = 1) then begin
     if A.FLimbs[0] >= AbsLimb then begin
       Result:= AllocNumber(Tmp, 1);
-      if Result = S_OK then begin
+      if Result = TFL_S_OK then begin
         Tmp.FUsed:= 1;
         Tmp.FLimbs[0]:= A.FLimbs[0] - AbsLimb;
         if (R <> A) and (R <> nil) then Release(R);
@@ -1539,13 +1539,16 @@ begin
   end
   else begin { UsedA > 1 }
     Result:= AllocNumber(Tmp, UsedA);
-    if Result = S_OK then begin
-      if arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
+    if Result = TFL_S_OK then begin
+      arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA);
+      if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
-      if (R <> A) and (R <> nil) then Release(R);
-      R:= Tmp;
     end;
+  end;
+  if Result = TFL_S_OK then begin
+    if (R <> A) and (R <> nil) then Release(R);
+    R:= Tmp;
   end;
 end;
 
