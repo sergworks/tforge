@@ -1173,6 +1173,8 @@ begin
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
     end;
+  end;
+  if Result = TFL_S_OK then begin
     if (R <> A) and (R <> nil) then Release(R);
     R:= Tmp;
   end;
