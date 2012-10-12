@@ -1491,7 +1491,8 @@ begin
         end;
       end
       else begin { UsedA > 1 }
-        if arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
+        arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
           then Tmp.FUsed:= UsedA - 1
           else Tmp.FUsed:= UsedA;
         Tmp.FSign:= A.FSign;

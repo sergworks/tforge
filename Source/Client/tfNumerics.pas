@@ -10,6 +10,10 @@ unit tfNumerics;
 
 {$I TFL.inc}
 
+{$IFDEF TFL_LIMB32}
+  {$DEFINE LIMB32}
+{$ENDIF}
+
 interface
 
 uses SysUtils, tfTypes,
@@ -23,9 +27,6 @@ type
     function AsString: string;
     function TryFromString(const S: string): Boolean;
     procedure Free;
-
-//    class operator Implicit(const Value: BigCardinal): IBigNumber; inline;
-//    class operator Implicit(const Value: IBigNumber): BigCardinal; inline;
 
     class operator Explicit(const Value: BigCardinal): Cardinal;
     class operator Explicit(const Value: BigCardinal): Integer;
@@ -45,6 +46,13 @@ type
     class operator Multiply(const A, B: BigCardinal): BigCardinal;
     class operator IntDivide(const A, B: BigCardinal): BigCardinal;
     class operator Modulus(const A, B: BigCardinal): BigCardinal;
+
+{$IFDEF LIMB32}
+    class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
+    class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
+    class operator Add(const A: BigCardinal; const B: Integer): BigCardinal;
+    class operator Add(const A: Integer; const B: BigCardinal): BigCardinal;
+{$ENDIF}
   end;
 
   BigInteger = record
@@ -54,9 +62,6 @@ type
     function AsString: string;
     function TryFromString(const S: string): Boolean;
     procedure Free;
-
-//    class operator Implicit(const Value: BigInteger): IBigNumber; inline;
-//    class operator Implicit(const Value: IBigNumber): BigInteger; inline;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
@@ -322,6 +327,30 @@ begin
   HResCheck(A.FNumber.DivModNumberU(B.FNumber, Quotient, Result.FNumber),
             'BigCardinal.Modulus');
 end;
+
+{$IFDEF LIMB32}
+
+class operator BigCardinal.Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.AddLimbU(B, Result.FNumber), 'BigCardinal.AddLimb');
+end;
+
+class operator BigCardinal.Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
+begin
+  HResCheck(B.FNumber.AddLimbU(A, Result.FNumber), 'BigCardinal.AddLimb');
+end;
+
+class operator BigCardinal.Add(const A: BigCardinal; const B: Integer): BigCardinal;
+begin
+  HResCheck(A.FNumber.AddIntLimbU(B, Result.FNumber), 'BigCardinal.AddIntLimb');
+end;
+
+class operator BigCardinal.Add(const A: Integer; const B: BigCardinal): BigCardinal;
+begin
+  HResCheck(B.FNumber.AddIntLimbU(A, Result.FNumber), 'BigCardinal.AddIntLimb');
+end;
+
+{$ENDIF}
 
 { BigInteger }
 
