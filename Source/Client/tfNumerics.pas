@@ -50,8 +50,6 @@ type
 {$IFDEF LIMB32}
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
-    class operator Add(const A: BigCardinal; const B: Integer): BigCardinal;
-    class operator Add(const A: Integer; const B: BigCardinal): BigCardinal;
 {$ENDIF}
   end;
 
@@ -84,6 +82,13 @@ type
     class operator Multiply(const A, B: BigInteger): BigInteger;
     class operator IntDivide(const A, B: BigInteger): BigInteger;
     class operator Modulus(const A, B: BigInteger): BigInteger;
+
+{$IFDEF LIMB32}
+    class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Add(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Add(const A: Integer; const B: BigInteger): BigInteger;
+{$ENDIF}
   end;
 
 type
@@ -265,26 +270,6 @@ begin
   end;
 end;
 
-(*
-class operator BigCardinal.Implicit(const Value: BigCardinal): IBigNumber;
-begin
-  Result:= Value.FNumber;
-end;
-
-class operator BigCardinal.Implicit(const Value: IBigNumber): BigCardinal;
-begin
-  if (Value = nil) or
-{$IFDEF TFL_DLL}
-                   (Value.GetSign >= 0)
-{$ELSE}
-                   (PBigNumber(Value).FSign >= 0)
-{$ENDIF}
-    then Result.FNumber:= Value
-    else BigNumberError(TFL_E_INVALIDARG,
-      'Negative to BigCardinal error');
-end;
-*)
-
 class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
@@ -338,16 +323,6 @@ end;
 class operator BigCardinal.Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
 begin
   HResCheck(B.FNumber.AddLimbU(A, Result.FNumber), 'BigCardinal.AddLimb');
-end;
-
-class operator BigCardinal.Add(const A: BigCardinal; const B: Integer): BigCardinal;
-begin
-  HResCheck(A.FNumber.AddIntLimbU(B, Result.FNumber), 'BigCardinal.AddIntLimb');
-end;
-
-class operator BigCardinal.Add(const A: Integer; const B: BigCardinal): BigCardinal;
-begin
-  HResCheck(B.FNumber.AddIntLimbU(A, Result.FNumber), 'BigCardinal.AddIntLimb');
 end;
 
 {$ENDIF}
@@ -499,17 +474,7 @@ begin
   Result:= TBigNumber.FromString(PBigNumber(FNumber), S) = TFL_S_OK;
 {$ENDIF}
 end;
-(*
-class operator BigInteger.Implicit(const Value: BigInteger): IBigNumber;
-begin
-  Result:= Value.FNumber;
-end;
 
-class operator BigInteger.Implicit(const Value: IBigNumber): BigInteger;
-begin
-  Result.FNumber:= Value;
-end;
-*)
 class operator BigInteger.Implicit(const Value: Cardinal): BigInteger;
 begin
 {$IFDEF TFL_DLL}
@@ -562,6 +527,30 @@ begin
   HResCheck(A.FNumber.DivModNumber(B.FNumber, Quotient, Result.FNumber),
             'BigCardinal.Modulus');
 end;
+
+{$IFDEF LIMB32}
+
+class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+  HResCheck(A.FNumber.AddLimb(B, Result.FNumber), 'BigCardinal.AddLimb');
+end;
+
+class operator BigInteger.Add(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.AddLimb(A, Result.FNumber), 'BigInteger.AddLimb');
+end;
+
+class operator BigInteger.Add(const A: BigInteger; const B: Integer): BigInteger;
+begin
+  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber), 'BigInteger.AddIntLimb');
+end;
+
+class operator BigInteger.Add(const A: Integer; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber), 'BigInteger.AddIntLimb');
+end;
+
+{$ENDIF}
 
 {$IFDEF TFL_DLL}
 initialization

@@ -41,6 +41,8 @@ function arrSelfSubLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
 procedure arrMul(A, B, Res: PLimb; LA, LB: Cardinal);
 
+function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
+
 function arrSelfMulLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
 { Division primitives }
@@ -77,13 +79,6 @@ begin
   Result:= P^;
 end;
 {$ENDIF}
-
-{type
-  UInt64Rec = record
-    case Byte of
-      0: (Lo, Hi: LongWord);
-      1: (Value: UInt64);
-  end; }
 
 {$IFDEF LIMB32_ASM86}
 function arrAdd(A, B, Res: PLongWord; LA, LB: LongWord): Boolean;
@@ -584,6 +579,27 @@ begin
     Inc(Res);
     Dec(LB);
   end;
+end;
+
+function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
+var
+  Tmp: TLimbVector;
+  Carry: Cardinal;
+
+begin
+  Carry:= 0;
+  while L > 0 do begin
+    Tmp.Lo:= A^;
+    Tmp.Hi:= 0;
+    Tmp.Value:= Tmp.Value * Limb + Carry;
+    Res^:= Tmp.Lo;
+    Inc(A);
+    Inc(Res);
+    Carry:= Tmp.Hi;
+    Dec(L);
+  end;
+  Res^:= Carry;
+  Result:= Carry <> 0;
 end;
 
 // A:= A * Limb;

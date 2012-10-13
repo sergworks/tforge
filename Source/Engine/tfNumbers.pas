@@ -117,6 +117,8 @@ type
     class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
     class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
+    class function MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
+
     class function DivModLimbU(A: PBigNumber; Limb: TLimb;
                                var Q: PBigNumber; var R: TLimb): HResult; stdcall; static;
 
@@ -144,11 +146,13 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..22] of Pointer = (
+  BigNumVTable: array[0..24] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
+
    @TBigNumber.GetSign,
+
    @TBigNumber.AddNumbers,
    @TBigNumber.AddNumbersU,
    @TBigNumber.SubNumbers,
@@ -157,17 +161,24 @@ const
    @TBigNumber.MulNumbersU,
    @TBigNumber.DivModNumbers,
    @TBigNumber.DivModNumbersU,
+
    @TBigNumber.Power,
    @TBigNumber.PowerMod,
+
    @TBigNumber.ToWideString,
+
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
    @TBigNumber.AddIntLimb,
    @TBigNumber.AddIntLimbU,
+
    @TBigNumber.SubLimb,
    @TBigNumber.SubLimbU,
    @TBigNumber.SubIntLimb,
-   @TBigNumber.SubIntLimbU
+   @TBigNumber.SubIntLimbU,
+
+   @TBigNumber.MulLimb,
+   @TBigNumber.MulLimbU
    );
 
 const
@@ -2036,23 +2047,52 @@ begin
   if (Limb = 0) then begin
     if (R <> nil) and (R <> A) then Release(R);
     R:= @BigNumZero;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end;
                                 // general case Limb <> 0
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
 
-  Move(A.FLimbs, Tmp.FLimbs, UsedA * SizeOf(TLimb));
+//  Move(A.FLimbs, Tmp.FLimbs, UsedA * SizeOf(TLimb));
+//  if arrSelfMulLimb(@Tmp.FLimbs, Limb, UsedA)
+  if arrMulLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
+    then Tmp.FUsed:= UsedA + 1
+    else Tmp.FUsed:= UsedA;
 
-  if arrSelfMulLimb(@Tmp.FLimbs, Limb, UsedA)
+  Tmp.FSign:= A.FSign;
+
+  if (R <> nil) and (R <> A) then Release(R);
+  R:= Tmp;
+  Result:= TFL_S_OK;
+end;
+
+class function TBigNumber.MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+                                // special case Limb = 0
+  if (Limb = 0) then begin
+    if (R <> nil) and (R <> A) then Release(R);
+    R:= @BigNumZero;
+    Result:= TFL_S_OK;
+    Exit;
+  end;
+                                // general case Limb <> 0
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result <> TFL_S_OK then Exit;
+
+  if arrMulLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
     then Tmp.FUsed:= UsedA + 1
     else Tmp.FUsed:= UsedA;
 
   if (R <> nil) and (R <> A) then Release(R);
-  Tmp:= R;
-  Result:= S_OK;
+  R:= Tmp;
+  Result:= TFL_S_OK;
 end;
 
 class procedure TBigNumber.Normalize(Inst: PBigNumber);
