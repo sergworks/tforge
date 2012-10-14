@@ -73,6 +73,7 @@ type
     class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
 
     class function Power(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
+    class function PowerU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
 
     class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
@@ -294,7 +295,7 @@ begin
       else
         Tmp.FUsed:= UsedA;
     Tmp.FSign:= A.FSign;
-    if (R <> nil) and (R <> A) then Release(R);
+    if (R <> nil) {and (R <> A)} then Release(R);
     R:= Tmp;
   end
 
@@ -664,24 +665,20 @@ var
   Tmp: PBigNumber;
 
 begin
-  Tmp:= nil;
-  Result:= S_FALSE;
-  try
-    if A.IsZero or B.IsZero then begin
-      if (R <> A) and (R <> B) and (R <> nil)
-        then Release(R);
-      R:= @BigNumZero;
-      Result:= S_OK;
-      Exit;
-    end;
+  if A.IsZero or B.IsZero then begin
+    if (R <> nil) then Release(R);
+    R:= @BigNumZero;
+    Result:= TFL_S_OK;
+  end
+  else begin
+    Tmp:= nil;
 
     UsedA:= A^.FUsed;
     UsedB:= B^.FUsed;
-
     Used:= UsedA + UsedB;
 
     Result:= AllocNumber(Tmp, Used);
-    if Result <> S_OK then Exit;
+    if Result <> TFL_S_OK then Exit;
 
     if UsedA >= UsedB
       then
@@ -692,12 +689,8 @@ begin
     Tmp.FSign:= A.FSign xor B.FSign;
     Tmp.FUsed:= Used;
     Normalize(Tmp);
-    if (R <> A) and (R <> B) and (R <> nil)
-      then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
-    Result:= S_OK;
-  finally
-    if (Result <> S_OK) and (Tmp <> nil) then Release(Tmp);
   end;
 end;
 
@@ -707,24 +700,20 @@ var
   Tmp: PBigNumber;
 
 begin
-  Tmp:= nil;
-  Result:= S_FALSE;
-  try
-    if A.IsZero or B.IsZero then begin
-      if (R <> A) and (R <> B) and (R <> nil)
-        then Release(R);
-      R:= @BigNumZero;
-      Result:= S_OK;
-      Exit;
-    end;
+  if A.IsZero or B.IsZero then begin
+    if (R <> nil) then Release(R);
+    R:= @BigNumZero;
+    Result:= TFL_S_OK;
+  end
+  else begin
+    Tmp:= nil;
 
     UsedA:= A^.FUsed;
     UsedB:= B^.FUsed;
-
     Used:= UsedA + UsedB;
 
     Result:= AllocNumber(Tmp, Used);
-    if Result <> S_OK then Exit;
+    if Result <> TFL_S_OK then Exit;
 
     if UsedA >= UsedB
       then
@@ -732,15 +721,10 @@ begin
       else
         arrMul(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
 
-//    Tmp.FSign:= A.FSign xor B.FSign;
     Tmp.FUsed:= Used;
     Normalize(Tmp);
-    if (R <> A) and (R <> B) and (R <> nil)
-      then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
-    Result:= S_OK;
-  finally
-    if (Result <> S_OK) and (Tmp <> nil) then Release(Tmp);
   end;
 end;
 
@@ -2153,6 +2137,44 @@ begin
     APower:= APower shr 1;
   end;
   if Result = S_OK then begin
+    if (R <> A) and (R <> nil)
+      then Release(R);
+    R:= TmpR;
+  end
+  else
+    Release(TmpR);
+  if Tmp <> A then
+    Release(Tmp);
+end;
+
+class function TBigNumber.PowerU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+var
+  Tmp, TmpR: PBigNumber;
+
+begin
+  if APower = 0 then begin
+    if R <> nil then Release(R);
+    if A.IsZero then R:= @BigNumZero
+    else R:= @BigNumOne;
+    Result:= S_OK;
+    Exit;
+  end;
+
+  TmpR:= @BigNumOne;
+  Tmp:= A;
+
+  Result:= TFL_S_OK;
+  while APower > 0 do begin
+    if Odd(APower) then begin
+      Result:= MulNumbersU(Tmp, TmpR, TmpR);
+      if Result <> TFL_S_OK then Break;
+      if APower = 1 then Break;
+    end;
+    Result:= MulNumbersU(Tmp, Tmp, Tmp);
+    if Result <> TFL_S_OK then Break;
+    APower:= APower shr 1;
+  end;
+  if Result = TFL_S_OK then begin
     if (R <> A) and (R <> nil)
       then Release(R);
     R:= TmpR;

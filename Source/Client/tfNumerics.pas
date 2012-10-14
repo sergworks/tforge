@@ -28,6 +28,8 @@ type
     function TryFromString(const S: string): Boolean;
     procedure Free;
 
+    class function Power(const Base: BigCardinal; const Value: Cardinal): BigCardinal; static;
+
     class operator Explicit(const Value: BigCardinal): Cardinal;
     class operator Explicit(const Value: BigCardinal): Integer;
     class operator Implicit(const Value: Cardinal): BigCardinal;
@@ -172,6 +174,16 @@ begin
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) <> 0;
+{$ENDIF}
+end;
+
+class function BigCardinal.Power(const Base: BigCardinal; const Value: Cardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+// TODO:
+{$ELSE}
+  HResCheck(TBigNumber.PowerU(PBigNumber(Base.FNumber), Value,
+                       PBigNumber(Result.FNumber)), 'BigCardinal.Power');
 {$ENDIF}
 end;
 
