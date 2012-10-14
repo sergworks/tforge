@@ -33,7 +33,7 @@ begin
       else PiDigits:= PiDigits - Term;
     Den:= Den * 25;
     Inc(N);
-  until N = 3;
+  until N = 0;
   M:= N;
   Num:= 4 * Factor;
   Den:= 239;
