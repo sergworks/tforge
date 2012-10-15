@@ -21,7 +21,7 @@ var
 
 begin
   PiDigits:= 0;
-  Factor:= BigCardinal.Power(10, 1000);    // = 10^10000;
+  Factor:= BigCardinal.Power(10, 10000);    // = 10^10000;
   Num:= 16 * Factor;
   Den:= 5;
   N:= 1;
@@ -63,9 +63,9 @@ begin
     PiDigits.Free;
     Writeln;
     Writeln('Elapsed ms: ', StopWatch.ElapsedMilliseconds);
-    Readln;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
   end;
+  Readln;
 end.

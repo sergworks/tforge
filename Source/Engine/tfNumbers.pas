@@ -147,7 +147,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..24] of Pointer = (
+  BigNumVTable: array[0..25] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -164,6 +164,7 @@ const
    @TBigNumber.DivModNumbersU,
 
    @TBigNumber.Power,
+   @TBigNumber.PowerU,
    @TBigNumber.PowerMod,
 
    @TBigNumber.ToWideString,
@@ -306,7 +307,7 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= S_OK;
+      Result:= TFL_S_OK;
       Exit;
     end;
 
@@ -316,7 +317,7 @@ begin
         R:= B;
         AddRef(R);
       end;
-      Result:= S_OK;
+      Result:= TFL_S_OK;
       Exit;
     end;
 
@@ -325,7 +326,7 @@ begin
 
       if UsedA >= UsedB then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> S_OK then Exit;
+        if Result <> TFL_S_OK then Exit;
         if arrAdd(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB)
           then
             Tmp.FUsed:= UsedA + 1
@@ -335,7 +336,7 @@ begin
       end
       else begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> S_OK then Exit;
+        if Result <> TFL_S_OK then Exit;
         if arrAdd(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA)
           then
             Tmp.FUsed:= UsedB + 1
@@ -999,22 +1000,24 @@ begin
       if (R <> nil) {and (R <> B)}
         then Release(R);
       R:= A;
+      AddRef(R);
     end;
     Result:= TFL_S_OK;
     Exit;
   end;
 
-  Result:= AllocNumber(Quotient, UsedA - UsedB + 1);
-  if Result <> TFL_S_OK then Exit;
-
-  Result:= AllocNumber(Remainder, UsedB);
-  if Result <> TFL_S_OK then begin
-    Release(Quotient);
-    Exit;
-  end;
-
 // divisor (B) has only 1 limb
   if (UsedB = 1) then begin
+
+    Result:= AllocNumber(Quotient, UsedA);
+    if Result <> TFL_S_OK then Exit;
+
+    Result:= AllocNumber(Remainder, 1);
+    if Result <> TFL_S_OK then begin
+      Release(Quotient);
+      Exit;
+    end;
+
     if (UsedA = 1) then begin
       Quotient.FLimbs[0]:= A.FLimbs[0] div B.FLimbs[0];
       Remainder.FLimbs[0]:= A.FLimbs[0] mod B.FLimbs[0];
@@ -1042,6 +1045,15 @@ begin
   end;
 
 // Now the real thing - big number division of length (used) > 1
+
+  Result:= AllocNumber(Quotient, UsedA - UsedB + 1);
+  if Result <> TFL_S_OK then Exit;
+
+  Result:= AllocNumber(Remainder, UsedB);
+  if Result <> TFL_S_OK then begin
+    Release(Quotient);
+    Exit;
+  end;
 
 // create normalized divisor by shifting the divisor B left
   Limb:= B.FLimbs[UsedB - 1];
@@ -1224,7 +1236,7 @@ begin
         Tmp.FSign:= -1;
       end;
     end;
-    if (R <> A) and (R <> nil) then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end;
 end;
@@ -1243,7 +1255,7 @@ begin
       then Tmp.FUsed:= UsedA + 1
       else Tmp.FUsed:= UsedA;
 
-    if (R <> A) and (R <> nil) then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end;
 end;
@@ -1432,7 +1444,7 @@ begin
         Tmp.FUsed:= 1;
       end;
     end;
-    if {(R <> A) and} (R <> nil) then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end;
 end;
@@ -1466,7 +1478,7 @@ begin
       if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
-      if {(R <> A) and} (R <> nil) then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
     end;
   end;
@@ -2134,14 +2146,14 @@ begin
     if R <> nil then Release(R);
     if A.IsZero then R:= @BigNumZero
     else R:= @BigNumOne;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end;
 
   TmpR:= @BigNumOne;
   Tmp:= A;
 
-  Result:= S_OK;
+  Result:= TFL_S_OK;
   while APower > 0 do begin
     if Odd(APower) then begin
       Result:= MulNumbers(Tmp, TmpR, TmpR);
@@ -2149,11 +2161,11 @@ begin
       if APower = 1 then Break;
     end;
     Result:= MulNumbers(Tmp, Tmp, Tmp);
-    if Result <> S_OK then Break;
+    if Result <> TFL_S_OK then Break;
     APower:= APower shr 1;
   end;
-  if Result = S_OK then begin
-    if (R <> A) and (R <> nil)
+  if Result = TFL_S_OK then begin
+    if {(R <> A) and} (R <> nil)
       then Release(R);
     R:= TmpR;
   end
@@ -2172,12 +2184,13 @@ begin
     if R <> nil then Release(R);
     if A.IsZero then R:= @BigNumZero
     else R:= @BigNumOne;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end;
 
   TmpR:= @BigNumOne;
   Tmp:= A;
+  AddRef(Tmp);
 
   Result:= TFL_S_OK;
   while APower > 0 do begin
@@ -2191,14 +2204,13 @@ begin
     APower:= APower shr 1;
   end;
   if Result = TFL_S_OK then begin
-    if (R <> A) and (R <> nil)
+    if {(R <> A) and} (R <> nil)
       then Release(R);
     R:= TmpR;
   end
   else
     Release(TmpR);
-  if Tmp <> A then
-    Release(Tmp);
+  Release(Tmp);
 end;
 
 class function TBigNumber.PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult;

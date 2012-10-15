@@ -28,7 +28,7 @@ type
     function TryFromString(const S: string): Boolean;
     procedure Free;
 
-    class function Power(const Base: BigCardinal; const Value: Cardinal): BigCardinal; static;
+    class function Power(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
 
     class operator Explicit(const Value: BigCardinal): Cardinal;
     class operator Explicit(const Value: BigCardinal): Integer;
@@ -177,13 +177,14 @@ begin
 {$ENDIF}
 end;
 
-class function BigCardinal.Power(const Base: BigCardinal; const Value: Cardinal): BigCardinal;
+class function BigCardinal.Power(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
 // TODO:
 {$ELSE}
-  HResCheck(TBigNumber.PowerU(PBigNumber(Base.FNumber), Value,
-                       PBigNumber(Result.FNumber)), 'BigCardinal.Power');
+//  HResCheck(TBigNumber.PowerU(PBigNumber(Base.FNumber), Value,
+//                       PBigNumber(Result.FNumber)), 'BigCardinal.Power');
+  HResCheck(Base.FNumber.PowerU(Value, Result.FNumber), 'BigCardinal.Power');
 {$ENDIF}
 end;
 

@@ -45,6 +45,7 @@ type
     function DivModNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
     function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
     function Power(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
+    function PowerU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
     function ToWideString(var S: WideString): HRESULT; stdcall;
