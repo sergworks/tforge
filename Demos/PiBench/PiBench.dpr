@@ -21,7 +21,7 @@ var
 
 begin
   PiDigits:= 0;
-  Factor:= BigCardinal.Power(10, 100);    // = 10^10000;
+  Factor:= BigCardinal.Power(10, 1000);    // = 10^10000;
   Num:= 16 * Factor;
   Den:= 5;
   N:= 1;
