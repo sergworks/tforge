@@ -232,7 +232,7 @@ var
 begin
   Used:= B.FUsed;
   Result:= AllocNumber(Tmp, Used);
-  if Result = S_OK then begin
+  if Result = TFL_S_OK then begin
     Move(B.FUsed, Tmp.FUsed, FUsedSize + Used * SizeOf(TLimb));
     if ASign = 0 then
       Tmp.FSign:= B.FSign
@@ -296,7 +296,7 @@ begin
       else
         Tmp.FUsed:= UsedA;
     Tmp.FSign:= A.FSign;
-    if (R <> nil) {and (R <> A)} then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end
 
@@ -345,8 +345,7 @@ begin
         Tmp.FSign:= B.FSign;
       end;
 
-      if {(R <> A) and (R <> B) and} (R <> nil)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
 
     end
@@ -356,8 +355,7 @@ begin
       if (UsedA = UsedB) then begin
         Diff:= arrCmp(LimbsA, LimbsB, UsedA);
         if Diff = 0 then begin
-          if (R <> A) and (R <> B) and (R <> nil)
-            then Release(R);
+          if (R <> nil) then Release(R);
           R:= @BigNumZero;
           Result:= TFL_S_OK;
           Exit;
@@ -374,8 +372,7 @@ begin
         Tmp.FSign:= A.FSign;
         Normalize(Tmp);
 
-        if {(R <> A) and (R <> B) and} (R <> nil)
-          then Release(R);
+        if (R <> nil) then Release(R);
         R:= Tmp;
       end
       else begin
@@ -387,8 +384,7 @@ begin
         Tmp.FSign:= B.FSign;
         Normalize(Tmp);
 
-        if {(R <> A) and (R <> B) and} (R <> nil)
-          then Release(R);
+        if (R <> nil) then Release(R);
         R:= Tmp;
       end;
     end;
@@ -417,7 +413,7 @@ begin
       else
         Tmp.FUsed:= UsedA;
 
-    if (R <> nil) {and (R <> A)} then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end
 
@@ -429,7 +425,7 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= S_OK;
+      Result:= TFL_S_OK;
       Exit;
     end;
 
@@ -439,7 +435,7 @@ begin
         R:= B;
         AddRef(R);
       end;
-      Result:= S_OK;
+      Result:= TFL_S_OK;
       Exit;
     end;
 
@@ -452,8 +448,7 @@ begin
         else
           Tmp.FUsed:= UsedA;
 
-      if {(R <> A) and (R <> B) and} (R <> nil)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
 
     end
@@ -466,8 +461,7 @@ begin
         else
           Tmp.FUsed:= UsedB;
 
-      if {(R <> A) and (R <> B) and} (R <> nil)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
     end
   end;
@@ -488,9 +482,9 @@ begin
   LimbsB:= @B.FLimbs;
 
   if A = B then begin
-    if (R <> nil) and (R <> A) then Release(R);
+    if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end
 
@@ -501,21 +495,19 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= S_OK;
+      Result:= TFL_S_OK;
       Exit;
     end;
 
     if (UsedA = 1) and (LimbsA^ = 0) { A = 0, B <> 0 } then begin
 
       Result:= AllocNumber(Tmp, B.FUsed);
-      if Result <> S_OK then Exit;
-
-      Move(B.FUsed, Tmp.FUsed, FUsedSize + B.FUsed * SizeOf(TLimb));
-      Tmp.FSign:= not B.FSign;
-
-      if (R <> nil) and (R <> A) and (R <> B) then Release(R);
-      R:= Tmp;
-      Result:= S_OK;
+      if Result = TFL_S_OK then begin
+        Move(B.FUsed, Tmp.FUsed, FUsedSize + B.FUsed * SizeOf(TLimb));
+        Tmp.FSign:= not B.FSign;
+        if (R <> nil) then Release(R);
+        R:= Tmp;
+      end;
       Exit;
     end;
 
@@ -524,10 +516,9 @@ begin
       if (UsedA = UsedB) then begin
         Diff:= arrCmp(@A.FLimbs, @B.FLimbs, UsedA);
         if Diff = 0 then begin
-          if (R <> A) and (R <> B) and (R <> nil)
-            then Release(R);
+          if (R <> nil) then Release(R);
           R:= @BigNumZero;
-          Result:= S_OK;
+          Result:= TFL_S_OK;
           Exit;
         end;
       end
@@ -536,7 +527,7 @@ begin
 
       if Diff > 0 { Abs(A) > Abs(B) } then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> S_OK then Exit;
+        if Result <> TFL_S_OK then Exit;
         arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
         Tmp.FUsed:= UsedA;
         Tmp.FSign:= A.FSign;
@@ -544,7 +535,7 @@ begin
       end
       else { Abs(A) < Abs(B) } begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> S_OK then Exit;
+        if Result <> TFL_S_OK then Exit;
         arrSub(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA);
 
         Tmp.FUsed:= UsedB;
@@ -553,8 +544,7 @@ begin
 
       end;
 
-      if (R <> A) and (R <> B) and (R <> nil)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
 
     end {Sign(A) = Sign(B)}
@@ -563,7 +553,7 @@ begin
 
       if UsedA >= UsedB then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> S_OK then Exit;
+        if Result <> TFL_S_OK then Exit;
         if arrAdd(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB)
           then
             Tmp.FUsed:= UsedA + 1
@@ -572,7 +562,7 @@ begin
       end
       else begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> S_OK then Exit;
+        if Result <> TFL_S_OK then Exit;
         if arrAdd(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA)
           then
             Tmp.FUsed:= UsedB + 1
@@ -583,13 +573,12 @@ begin
 // знак разности равен знаку первого операнда
       Tmp.FSign:= A.FSign;
 
-      if (R <> A) and (R <> B) and (R <> nil)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
 
     end {Sign(A) <> Sign(B)};
   end { A <> B };
-  Result:= S_OK;
+  Result:= TFL_S_OK;
 end;
 
 class function TBigNumber.SubNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
@@ -606,9 +595,9 @@ begin
   LimbsB:= @B.FLimbs;
 
   if A = B then begin  { A - B = 0 }
-    if (R <> nil) {and (R <> A)} then Release(R);
+    if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end
 
@@ -619,7 +608,7 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= S_OK;
+      Result:= TFL_S_OK;
       Exit;
     end;
 
@@ -632,10 +621,9 @@ begin
     if (UsedA = UsedB) then begin
       Diff:= arrCmp(@A.FLimbs, @B.FLimbs, UsedA);
       if Diff = 0 then begin
-        if {(R <> A) and (R <> B) and} (R <> nil)
-          then Release(R);
+        if (R <> nil) then Release(R);
         R:= @BigNumZero;
-        Result:= S_OK;
+        Result:= TFL_S_OK;
         Exit;
       end;
     end
@@ -644,12 +632,11 @@ begin
 
     if Diff > 0 { A > B } then begin
       Result:= AllocNumber(Tmp, UsedA + 1);
-      if Result <> S_OK then Exit;
+      if Result <> TFL_S_OK then Exit;
       arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
       Tmp.FUsed:= UsedA;
       Normalize(Tmp);
-      if {(R <> A) and (R <> B) and} (R <> nil)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= Tmp;
     end
     else { A < B } begin
@@ -757,11 +744,11 @@ var
 begin
   Used:= A.FUsed;
   Result:= AllocNumber(Tmp, Used);
-  if Result = S_OK then begin
+  if Result = TFL_S_OK then begin
     R:= arrDivModLimb(@A.FLimbs, @Tmp.FLimbs, Used, Limb);
     if Tmp.FLimbs[Used - 1] = 0 then Dec(Used);
     Tmp.FUsed:= Used;
-    if (Q <> A) and (Q <> nil) then Release(Q);
+    if (Q <> nil) then Release(Q);
     Q:= Tmp;
   end;
 end;
@@ -795,11 +782,9 @@ begin
 
 // if Abs(dividend A) = Abs(divisor B) then Q:= +/-1, R:= 0;
       if Diff = 0 then begin
-        if (R <> nil) and (R <> A) and (R <> B) and (R <> Q)
-          then Release(R);
+        if (R <> nil) then Release(R);
         R:= @BigNumZero;
-        if (Q <> nil) and (Q <> A) and (Q <> B)
-          then Release(Q);
+        if (Q <> nil) then Release(Q);
         if A.FSign xor B.FSign < 0
           then Q:= @BigNumMinusOne
           else Q:= @BigNumOne;
@@ -812,25 +797,22 @@ begin
 
 // if dividend (A) < divisor (B) then Q:= 0, R:= A
   if Cond then begin
-//    Q.AssignLimb(0);
-    if (Q <> nil) and (Q <> A) and (Q <> B) and (Q <> R)
-      then Release(Q);
+    if (Q <> nil) then Release(Q);
     Q:= @BigNumZero;
-//  R.Assign(A);
     if (R <> A) then begin
-      if (R <> nil) and (R <> B)
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= A;
+      AddRef(R);
     end;
-    Result:= S_OK;
+    Result:= TFL_S_OK;
     Exit;
   end;
 
   Result:= AllocNumber(Quotient, UsedA - UsedB + 1);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
 
   Result:= AllocNumber(Remainder, UsedB);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
 
 // divisor (B) has only 1 limb
   if (UsedB = 1) then begin
@@ -866,14 +848,10 @@ begin
       else
         Remainder.FSign:= -1;
 
-    if (Q <> nil) and (Q <> A) and (Q <> B) and (Q <> R)
-      then Release(Q);
-
+    if (Q <> nil) then Release(Q);
     Q:= Quotient;
 
-    if (R <> nil) and (R <> A) and (R <> B)
-      then Release(R);
-
+    if (R <> nil) then Release(R);
     R:= Remainder;
 
 //    Result:= S_OK;
@@ -887,7 +865,7 @@ begin
   Shift:= TLimbInfo.BitSize - SeniorBit(Limb);
 
   Result:= AllocNumber(Divisor, UsedB);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
 
   Divisor.FUsed:= UsedB;
   arrShlShort(@B.FLimbs, @Divisor.FLimbs, UsedB, Shift);
@@ -895,7 +873,7 @@ begin
 // create normalized dividend (same shift as divisor)
 
   Result:= AllocNumber(Dividend, UsedA + 1);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
   UsedD:= arrShlShort(@A.FLimbs, @Dividend.FLimbs, UsedA, Shift);
 
 // normalized dividend is 1 limb longer than non-normalized one (A);
@@ -905,44 +883,35 @@ begin
   Dividend.FUsed:= UsedA + 1;
 
   UsedQ:= UsedA - UsedB + 1;
-//  Q.SetCapacity(UsedQ);
 
-// perform normalized division
+// perform normalized division and shift the remaider right
   arrNormDivMod(@Dividend.FLimbs, @Divisor.FLimbs, @Quotient.FLimbs,
                 UsedA + 1, UsedB);
-// and shift the remaider right
   arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
+
+  Release(Dividend);
+  Release(Divisor);
 
   Quotient.FUsed:= UsedQ;
   Remainder.FUsed:= UsedB;
 
   if A.FSign xor B.FSign >= 0
-    then
-      Quotient.FSign:= 0
-    else
-      Quotient.FSign:= -1;
+    then Quotient.FSign:= 0
+    else Quotient.FSign:= -1;
 
 // remainder has the same sign as dividend if nonzero
   if (A.FSign >= 0) or ((Remainder.FUsed = 0) and (Remainder.FLimbs[0] = 0))
-    then
-      Remainder.FSign:= 0
-    else
-      Remainder.FSign:= -1;
+    then Remainder.FSign:= 0
+    else Remainder.FSign:= -1;
 
   Normalize(Quotient);
   Normalize(Remainder);
 
-    if (Q <> nil) and (Q <> A) and (Q <> B) and (Q <> R)
-      then Release(Q);
+  if (Q <> nil) then Release(Q);
+  Q:= Quotient;
 
-    Q:= Quotient;
-
-    if (R <> nil) and (R <> A) and (R <> B)
-      then Release(R);
-
-    R:= Remainder;
-
-    Result:= S_OK;
+  if (R <> nil) then Release(R);
+  R:= Remainder;
 end;
 
 class function TBigNumber.DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
@@ -971,16 +940,11 @@ begin
     if not Cond and (UsedA = UsedB) then begin
       Diff:= arrCmp(@A.FLimbs, @B.FLimbs, UsedB);
 
-// if Abs(dividend A) = Abs(divisor B) then Q:= +/-1, R:= 0;
+// if Abs(dividend A) = Abs(divisor B) then Q:= 1, R:= 0;
       if Diff = 0 then begin
-        if (R <> nil) {and (R <> A) and (R <> B) and (R <> Q)}
-          then Release(R);
+        if (R <> nil) then Release(R);
         R:= @BigNumZero;
-        if (Q <> nil) {and (Q <> A) and (Q <> B)}
-          then Release(Q);
-//        if A.FSign xor B.FSign < 0
-//          then Q:= @BigNumMinusOne
-//          else
+        if (Q <> nil) then Release(Q);
         Q:= @BigNumOne;
         Result:= TFL_S_OK;
         Exit;
@@ -991,14 +955,10 @@ begin
 
 // if dividend (A) < divisor (B) then Q:= 0, R:= A
   if Cond then begin
-// Q:= 0
-    if (Q <> nil) {and (Q <> A) and (Q <> B) and (Q <> R)}
-      then Release(Q);
+    if (Q <> nil) then Release(Q);
     Q:= @BigNumZero;
-// R:= A
     if (R <> A) then begin
-      if (R <> nil) {and (R <> B)}
-        then Release(R);
+      if (R <> nil) then Release(R);
       R:= A;
       AddRef(R);
     end;
@@ -1030,17 +990,12 @@ begin
     Quotient.FUsed:= UsedA;
     Remainder.FUsed:= 1;
 
-    if (Q <> nil) {and (Q <> A) and (Q <> B) and (Q <> R) }
-      then Release(Q);
-
+    if (Q <> nil) then Release(Q);
     Q:= Quotient;
 
-    if (R <> nil) {and (R <> A) and (R <> B) }
-      then Release(R);
-
+    if (R <> nil) then Release(R);
     R:= Remainder;
 
-    Result:= TFL_S_OK;
     Exit;
   end;
 
@@ -1089,10 +1044,9 @@ begin
 
   UsedQ:= UsedA - UsedB + 1;
 
-// perform normalized division
+// perform normalized division and shift the remainder right
   arrNormDivMod(@Dividend.FLimbs, @Divisor.FLimbs, @Quotient.FLimbs,
                 UsedA + 1, UsedB);
-// and shift the remaider right
   arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
 
   Release(Dividend);
@@ -1104,15 +1058,11 @@ begin
   Normalize(Quotient);
   Normalize(Remainder);
 
-  if (Q <> nil) {and (Q <> A) and (Q <> B) and (Q <> R)}
-    then Release(Q);
+  if (Q <> nil) then Release(Q);
   Q:= Quotient;
 
-  if (R <> nil) {and (R <> A) and (R <> B)}
-    then Release(R);
+  if (R <> nil) then Release(R);
   R:= Remainder;
-
-//  Result:= S_OK;
 end;
 
 class function TBigNumber.AddIntLimb(A: PBigNumber; Limb: TIntLimb;
@@ -1126,7 +1076,7 @@ begin
   UsedA:= A.FUsed;
   AbsLimb:= Abs(Limb);
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = S_OK then begin
+  if Result = TFL_S_OK then begin
     if A.FSign xor Integer(Limb) >= 0 then begin
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1154,7 +1104,7 @@ begin
         Tmp.FSign:= A.FSign;
       end;
     end;
-    if (R <> A) and (R <> nil) then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end;
 end;
@@ -1198,7 +1148,7 @@ begin
     end;
   end;
   if Result = TFL_S_OK then begin
-    if (R <> A) and (R <> nil) then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end;
 end;
@@ -1418,8 +1368,8 @@ var
 
 begin
   UsedA:= A.FUsed;
-  Result:= AllocNumber(Tmp, UsedA);
-  if Result = S_OK then begin
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TFL_S_OK then begin
     if (A.FSign < 0) then begin
       if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1460,10 +1410,10 @@ begin
   if (UsedA = 1) then begin
     if A.FLimbs[0] >= Limb then begin
       Result:= AllocNumber(Tmp, 1);
-      if Result = S_OK then begin
+      if Result = TFL_S_OK then begin
         Tmp.FUsed:= 1;
         Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
-        if (R <> A) and (R <> nil) then Release(R);
+        if (R <> nil) then Release(R);
         R:= Tmp;
       end;
     end
@@ -1473,7 +1423,7 @@ begin
   end
   else begin { UsedA > 1 }
     Result:= AllocNumber(Tmp, UsedA);
-    if Result = S_OK then begin
+    if Result = TFL_S_OK then begin
       arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA);
       if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
@@ -1495,7 +1445,7 @@ begin
   UsedA:= A.FUsed;
   AbsLimb:= Abs(Limb);
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = S_OK then begin
+  if Result = TFL_S_OK then begin
     if A.FSign xor Integer(Limb) < 0 then begin
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1523,7 +1473,7 @@ begin
         Tmp.FSign:= A.FSign;
       end;
     end;
-    if (R <> A) and (R <> nil) then Release(R);
+    if (R <> nil) then Release(R);
     R:= Tmp;
   end;
 end;
@@ -1544,6 +1494,8 @@ begin
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
         else Tmp.FUsed:= UsedA;
+      if (R <> nil) then Release(R);
+      R:= Tmp;
     end;
   end
   else if (UsedA = 1) then begin
@@ -1552,7 +1504,7 @@ begin
       if Result = TFL_S_OK then begin
         Tmp.FUsed:= 1;
         Tmp.FLimbs[0]:= A.FLimbs[0] - AbsLimb;
-        if (R <> A) and (R <> nil) then Release(R);
+        if (R <> nil) then Release(R);
         R:= Tmp;
       end;
     end
@@ -1567,11 +1519,9 @@ begin
       if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
+      if (R <> nil) then Release(R);
+      R:= Tmp;
     end;
-  end;
-  if Result = TFL_S_OK then begin
-    if (R <> A) and (R <> nil) then Release(R);
-    R:= Tmp;
   end;
 end;
 
@@ -1588,7 +1538,7 @@ begin
   Result:= TFL_E_NOTIMPL;
 {$ELSE}
   Result:= AllocNumber(Tmp, CardSize);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
   {$IF CardSize = 1}
     Tmp.FLimbs[0]:= Value;
   {$ELSE}
@@ -2057,7 +2007,7 @@ var
 begin
                                 // special case Limb = 0
   if (Limb = 0) then begin
-    if (R <> nil) and (R <> A) then Release(R);
+    if (R <> nil) then Release(R);
     R:= @BigNumZero;
     Result:= TFL_S_OK;
     Exit;
@@ -2075,7 +2025,7 @@ begin
 
   Tmp.FSign:= A.FSign;
 
-  if (R <> nil) and (R <> A) then Release(R);
+  if (R <> nil) then Release(R);
   R:= Tmp;
   Result:= TFL_S_OK;
 end;
@@ -2088,7 +2038,7 @@ var
 begin
                                 // special case Limb = 0
   if (Limb = 0) then begin
-    if (R <> nil) and (R <> A) then Release(R);
+    if (R <> nil) then Release(R);
     R:= @BigNumZero;
     Result:= TFL_S_OK;
     Exit;
@@ -2102,7 +2052,7 @@ begin
     then Tmp.FUsed:= UsedA + 1
     else Tmp.FUsed:= UsedA;
 
-  if (R <> nil) and (R <> A) then Release(R);
+  if (R <> nil) then Release(R);
   R:= Tmp;
   Result:= TFL_S_OK;
 end;
@@ -2152,12 +2102,13 @@ begin
 
   TmpR:= @BigNumOne;
   Tmp:= A;
+  AddRef(Tmp);
 
   Result:= TFL_S_OK;
   while APower > 0 do begin
     if Odd(APower) then begin
       Result:= MulNumbers(Tmp, TmpR, TmpR);
-      if Result <> S_OK then Break;
+      if Result <> TFL_S_OK then Break;
       if APower = 1 then Break;
     end;
     Result:= MulNumbers(Tmp, Tmp, Tmp);
@@ -2165,14 +2116,12 @@ begin
     APower:= APower shr 1;
   end;
   if Result = TFL_S_OK then begin
-    if {(R <> A) and} (R <> nil)
-      then Release(R);
+    if (R <> nil) then Release(R);
     R:= TmpR;
   end
   else
     Release(TmpR);
-  if Tmp <> A then
-    Release(Tmp);
+  Release(Tmp);
 end;
 
 class function TBigNumber.PowerU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
@@ -2204,8 +2153,7 @@ begin
     APower:= APower shr 1;
   end;
   if Result = TFL_S_OK then begin
-    if {(R <> A) and} (R <> nil)
-      then Release(R);
+    if (R <> nil) then Release(R);
     R:= TmpR;
   end
   else

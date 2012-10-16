@@ -7,7 +7,7 @@ program PiBench;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, Diagnostics, tfNumerics, tfNumbers;
+  SysUtils, Diagnostics, tfNumerics;
 
 var
   StopWatch: TStopWatch;

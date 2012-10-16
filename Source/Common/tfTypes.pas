@@ -26,7 +26,7 @@ const
   TFL_E_NOINTERFACE = HRESULT($80004002);   // No such interface supported
   TFL_E_NOTIMPL     = HRESULT($80004001);   // Not implemented
   TFL_E_OUTOFMEMORY = HRESULT($8007000E);   // Failed to allocate necessary memory
-  TFL_E_UNEXPECTED	= HRESULT($8000FFFF);   // Unexpected failure
+  TFL_E_UNEXPECTED  = HRESULT($8000FFFF);   // Unexpected failure
                                             // = TFL specific codes =
   TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
   TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
@@ -49,7 +49,6 @@ type
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
     function ToWideString(var S: WideString): HRESULT; stdcall;
-//    function AsWideStringU(var S: WideString): HRESULT; stdcall;
 
     function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
     function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
