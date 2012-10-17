@@ -28,7 +28,7 @@ type
     function TryFromString(const S: string): Boolean;
     procedure Free;
 
-    class function Power(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
+    class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
 
     class operator Explicit(const Value: BigCardinal): Cardinal;
     class operator Explicit(const Value: BigCardinal): Integer;
@@ -177,7 +177,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigCardinal.Power(const Base: BigCardinal; Value: Cardinal): BigCardinal;
+class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
 // TODO:

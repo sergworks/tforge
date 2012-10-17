@@ -21,7 +21,7 @@ var
 
 begin
   PiDigits:= 0;
-  Factor:= BigCardinal.Power(10, 10000);    // = 10^10000;
+  Factor:= BigCardinal.Pow(10, 10000);    // = 10^10000;
   Num:= 16 * Factor;
   Den:= 5;
   N:= 1;
@@ -49,7 +49,7 @@ begin
   until N = 0;
   M:= (M + N) div 2;
 // M last digits may be wrong
-  PiDigits:= PiDigits div BigCardinal.Power(10, M);
+  PiDigits:= PiDigits div BigCardinal.Pow(10, M);
 end;
 
 begin

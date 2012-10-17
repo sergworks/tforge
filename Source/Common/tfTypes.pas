@@ -60,6 +60,11 @@ type
     function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
     function SubIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
 
+    function MulLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
+    function MulLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
+    function MulIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
+    function MulIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
+
   end;
 
 implementation
