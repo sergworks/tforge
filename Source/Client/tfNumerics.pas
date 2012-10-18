@@ -63,6 +63,8 @@ type
     function TryFromString(const S: string): Boolean;
     procedure Free;
 
+    class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
+
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
 
@@ -160,7 +162,7 @@ end;
 class operator BigCardinal.Equal(const A, B: BigCardinal): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:  HResCheck( ,
+  Result:= A.FNumber.CompareNumberU(B.FNumber) = 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) = 0;
@@ -170,7 +172,7 @@ end;
 class operator BigCardinal.NotEqual(const A, B: BigCardinal): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumberU(B.FNumber) <> 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) <> 0;
@@ -180,18 +182,17 @@ end;
 class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  HResCheck(Base.FNumber.PowU(Value, Result.FNumber), 'BigCardinal.Power');
 {$ELSE}
-//  HResCheck(TBigNumber.PowerU(PBigNumber(Base.FNumber), Value,
-//                       PBigNumber(Result.FNumber)), 'BigCardinal.Power');
-  HResCheck(Base.FNumber.PowerU(Value, Result.FNumber), 'BigCardinal.Power');
+  HResCheck(TBigNumber.PowU(PBigNumber(Base.FNumber), Value,
+                       PBigNumber(Result.FNumber)), 'BigCardinal.Power');
 {$ENDIF}
 end;
 
 class operator BigCardinal.GreaterThan(const A, B: BigCardinal): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumberU(B.FNumber) > 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) > 0;
@@ -201,17 +202,17 @@ end;
 class operator BigCardinal.GreaterThanOrEqual(const A, B: BigCardinal): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumberU(B.FNumber) >= 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber)) > 0;
+                      PBigNumber(B.FNumber)) >= 0;
 {$ENDIF}
 end;
 
 class operator BigCardinal.LessThan(const A, B: BigCardinal): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumberU(B.FNumber) < 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) < 0;
@@ -221,10 +222,10 @@ end;
 class operator BigCardinal.LessThanOrEqual(const A, B: BigCardinal): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumberU(B.FNumber) <= 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber)) < 0;
+                      PBigNumber(B.FNumber)) <= 0;
 {$ENDIF}
 end;
 
@@ -381,7 +382,7 @@ end;
 class operator BigInteger.Equal(const A, B: BigInteger): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:  HResCheck( ,
+  Result:= A.FNumber.CompareNumber(B.FNumber) = 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) = 0;
@@ -407,17 +408,28 @@ end;
 class operator BigInteger.NotEqual(const A, B: BigInteger): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumber(B.FNumber) <> 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) <> 0;
 {$ENDIF}
 end;
 
+class function BigInteger.Pow(const Base: BigInteger; Value: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Base.FNumber.Pow(Value, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.Pow(PBigNumber(Base.FNumber), Value,
+                       PBigNumber(Result.FNumber)),
+{$ENDIF}
+                       'BigInteger.Power');
+end;
+
 class operator BigInteger.GreaterThan(const A, B: BigInteger): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumber(B.FNumber) > 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) > 0;
@@ -427,7 +439,7 @@ end;
 class operator BigInteger.GreaterThanOrEqual(const A, B: BigInteger): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumber(B.FNumber) >= 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) >= 0;
@@ -437,7 +449,7 @@ end;
 class operator BigInteger.LessThan(const A, B: BigInteger): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumber(B.FNumber) < 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) < 0;
@@ -447,7 +459,7 @@ end;
 class operator BigInteger.LessThanOrEqual(const A, B: BigInteger): Boolean;
 begin
 {$IFDEF TFL_DLL}
-// TODO:
+  Result:= A.FNumber.CompareNumber(B.FNumber) <= 0;
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber)) <= 0;

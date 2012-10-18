@@ -35,6 +35,8 @@ const
 type
   IBigNumber = interface
     function GetSign: Integer; stdcall;
+    function CompareNumber(Num: IBigNumber): Integer; stdcall;
+    function CompareNumberU(Num: IBigNumber): Integer; stdcall;
 
     function AddNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
     function AddNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
@@ -44,8 +46,9 @@ type
     function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
     function DivModNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
     function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
-    function Power(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
-    function PowerU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
+
+    function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
+    function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
     function ToWideString(var S: WideString): HRESULT; stdcall;

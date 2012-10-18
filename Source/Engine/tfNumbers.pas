@@ -72,8 +72,8 @@ type
     class function DivModNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
     class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
 
-    class function Power(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
-    class function PowerU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
+    class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
+    class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
 
     class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
@@ -149,12 +149,14 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..27] of Pointer = (
+  BigNumVTable: array[0..29] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
 
    @TBigNumber.GetSign,
+   @TBigNumber.CompareNumbers,
+   @TBigNumber.CompareNumbersU,
 
    @TBigNumber.AddNumbers,
    @TBigNumber.AddNumbersU,
@@ -165,8 +167,8 @@ const
    @TBigNumber.DivModNumbers,
    @TBigNumber.DivModNumbersU,
 
-   @TBigNumber.Power,
-   @TBigNumber.PowerU,
+   @TBigNumber.Pow,
+   @TBigNumber.PowU,
    @TBigNumber.PowerMod,
 
    @TBigNumber.ToWideString,
@@ -2145,7 +2147,7 @@ end;
   }
 *)
 
-class function TBigNumber.Power(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
 var
   Tmp, TmpR: PBigNumber;
 
@@ -2182,7 +2184,7 @@ begin
   Release(Tmp);
 end;
 
-class function TBigNumber.PowerU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
 var
   Tmp, TmpR: PBigNumber;
 
