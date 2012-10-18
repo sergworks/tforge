@@ -56,7 +56,6 @@ type
     class function Release(Inst: PBigNumber): Integer; stdcall; static;
 
     class function GetSign(Inst: PBigNumber): Integer; stdcall; static;
-
     class function CompareNumbers(A, B: PBigNumber): Integer; stdcall; static;
     class function CompareNumbersU(A, B: PBigNumber): Integer; stdcall; static;
 
@@ -72,6 +71,7 @@ type
     class function DivModNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
     class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
 
+    class function AbsNumber(A: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
     class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
     class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
@@ -149,7 +149,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..29] of Pointer = (
+  BigNumVTable: array[0..30] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -167,6 +167,7 @@ const
    @TBigNumber.DivModNumbers,
    @TBigNumber.DivModNumbersU,
 
+   @TBigNumber.AbsNumber,
    @TBigNumber.Pow,
    @TBigNumber.PowU,
    @TBigNumber.PowerMod,
@@ -1069,6 +1070,29 @@ begin
 
   if (R <> nil) then Release(R);
   R:= Remainder;
+end;
+
+class function TBigNumber.AbsNumber(A: PBigNumber; var R: PBigNumber): HResult;
+var
+  Tmp: PBigNumber;
+
+begin
+  if A.FSign >= 0 then begin
+    if R <> A then begin
+      if R <> nil then Release(R);
+      R:= A;
+      AddRef(R);
+    end;
+    Result:= TFL_S_OK;
+  end
+  else begin
+    Result:= AllocNumber(Tmp, A.FUsed);
+    if Result = TFL_S_OK then begin
+      Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
+      if R <> nil then Release(R);
+      R:= Tmp;
+    end;
+  end;
 end;
 
 class function TBigNumber.AddIntLimb(A: PBigNumber; Limb: TIntLimb;

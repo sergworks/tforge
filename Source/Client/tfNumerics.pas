@@ -67,6 +67,7 @@ type
 
     property Sign: Integer read GetSign;
 
+    class function Abs(const A: BigInteger): BigInteger; static;
     class function Compare(const A, B: BigInteger): Integer; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
 
@@ -492,6 +493,11 @@ begin
   HResCheck(TBigNumber.FromInteger(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
             'TBigNumber.FromInteger');
+end;
+
+class function BigInteger.Abs(const A: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.AbsNumber(Result.FNumber), 'BigInteger.Abs');
 end;
 
 class operator BigInteger.Add(const A, B: BigInteger): BigInteger;
