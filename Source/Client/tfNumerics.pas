@@ -59,10 +59,13 @@ type
   BigInteger = record
   private
     FNumber: IBigNumber;
+    function GetSign: Integer;
   public
     function AsString: string;
     function TryFromString(const S: string): Boolean;
     procedure Free;
+
+    property Sign: Integer read GetSign;
 
     class function Compare(const A, B: BigInteger): Integer; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
@@ -348,6 +351,15 @@ begin
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function BigInteger.GetSign: Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.GetSign;
+{$ELSE}
+  Result:= TBigNumber.GetSign(PBigNumber(FNumber));
 {$ENDIF}
 end;
 
