@@ -71,6 +71,9 @@ type
     class function DivModNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
     class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
 
+    class function LeftShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult; stdcall; static;
+    class function RightShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult; stdcall; static;
+
     class function AbsNumber(A: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
     class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
     class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
@@ -1848,7 +1851,7 @@ begin
   Result:= TFL_E_NOTIMPL;
 {$ELSE}
   Result:= TBigNumber.AllocNumber(Tmp, DataSize);
-  if Result <> S_OK then Exit;
+  if Result <> TFL_S_OK then Exit;
   {$IF DataSize = 1}
     Tmp.FLimbs[0]:= Value;
   {$ELSE}
@@ -2025,6 +2028,74 @@ end;
 function TBigNumber.IsZero: Boolean;
 begin
   Result:= (FUsed = 1) and (FLimbs[0] = 0);
+end;
+
+class function TBigNumber.LeftShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+var
+  UsedA, UsedR: Cardinal;
+  Tmp: PBigNumber;
+  LimbShift, BitShift: Cardinal;
+
+begin
+  if Shift = 0 then begin
+    if R <> A then begin
+      if R <> nil then Release(R);
+      R:= A;
+      AddRef(R);
+    end;
+    Result:= TFL_S_OK;
+  end
+  else begin
+    UsedA:= A.FUsed;
+    UsedR:= UsedA + (Shift + TLimbInfo.BitSize - 1) div TLimbInfo.BitSize;
+    Result:= AllocNumber(Tmp, UsedR);
+    if Result = TFL_S_OK then begin
+      if Shift < TLimbInfo.BitSize then begin
+        Tmp.FUsed:= arrShlShort(@A.FLimbs, @Tmp.FLimbs, UsedA, Shift);
+      end
+      else begin
+        LimbShift:= Shift div TLimbInfo.BitSize;
+        BitShift:= Shift mod TLimbInfo.BitSize;
+        FillChar(Tmp.FLimbs, LimbShift * SizeOf(TLimb), 0);
+        Tmp.FUsed:= LimbShift +
+          arrShlShort(@A.FLimbs, @Tmp.FLimbs[LimbShift], UsedA, BitShift);
+      end;
+//      if (Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0) then
+      Tmp.FSign:= A.FSign;
+      if R <> nil then Release(R);
+      R:= Tmp;
+    end;
+  end;
+end;
+
+class function TBigNumber.RightShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+var
+  UsedA, UsedR: Cardinal;
+  Tmp: PBigNumber;
+  LimbShift, BitShift: Cardinal;
+
+begin
+  if Shift = 0 then begin
+    if R <> A then begin
+      if R <> nil then Release(R);
+      R:= A;
+      AddRef(R);
+    end;
+    Result:= TFL_S_OK;
+  end
+  else begin
+    UsedA:= A.FUsed;
+    if UsedA * TLimbInfo.BitSize <= Shift then begin
+      if R <> nil then Release(R);
+      R:= @BigNumZero;
+      Result:= TFL_S_OK;
+    end
+    else begin
+//TODO:
+    Result:= TFL_E_NOTIMPL;
+
+    end;
+  end;
 end;
 
 // R:= A * Limb
