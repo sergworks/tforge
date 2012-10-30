@@ -34,7 +34,13 @@ const
 
 type
   IBigNumber = interface
+
+    function GetIsEven: Boolean; stdcall;
+    function GetIsOne: Boolean; stdcall;
+    function GetIsPowerOfTwo: Boolean; stdcall;
+    function GetIsZero: Boolean; stdcall;
     function GetSign: Integer; stdcall;
+
     function CompareNumber(Num: IBigNumber): Integer; stdcall;
     function CompareNumberU(Num: IBigNumber): Integer; stdcall;
 
@@ -46,6 +52,12 @@ type
     function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
     function DivModNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
     function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
+
+    function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+    function OrNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+
+    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
+    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
 
     function AbsNumber(var Res: IBigNumber): HRESULT; stdcall;
     function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;

@@ -30,6 +30,8 @@ type
   TLimbInfo = record
   public const
     BitSize = 32;
+    BitShift = 5;
+    BitShiftMask = $1F;
     MaxLimb = $FFFFFFFF;
                                // max number of limbs in big number
     MaxCapacity = $01000000 div SizeOf(TLimb);
@@ -49,6 +51,8 @@ type
   TLimbInfo = record
   const
     BitSize = 16;
+    BitShift = 4;
+    BitShiftMask = $0F;
     MaxLimb = $FFFF;
     MaxCapacity = $01000000 div SizeOf(TLimb);
   end;
@@ -67,6 +71,8 @@ type
   TLimbInfo = record
   public const
     BitSize = 8;
+    BitShift = 3;
+    BitShiftMask = $07;
     MaxLimb = $FF;
     MaxCapacity = $01000000 div SizeOf(TLimb);
   end;

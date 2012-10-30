@@ -50,6 +50,12 @@ type
     class operator IntDivide(const A, B: BigCardinal): BigCardinal;
     class operator Modulus(const A, B: BigCardinal): BigCardinal;
 
+    class operator LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+    class operator RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+
+    class operator BitwiseAnd(const A, B: BigCardinal): BigCardinal;
+    class operator BitwiseOr(const A, B: BigCardinal): BigCardinal;
+
 {$IFDEF LIMB32}
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
@@ -92,6 +98,9 @@ type
     class operator Multiply(const A, B: BigInteger): BigInteger;
     class operator IntDivide(const A, B: BigInteger): BigInteger;
     class operator Modulus(const A, B: BigInteger): BigInteger;
+
+    class operator BitwiseAnd(const A, B: BigInteger): BigInteger;
+    class operator BitwiseOr(const A, B: BigInteger): BigInteger;
 
 {$IFDEF LIMB32}
     class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
@@ -205,6 +214,16 @@ begin
   Result:= Compare(A, B) >= 0;
 end;
 
+class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
+end;
+
+class operator BigCardinal.RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
+end;
+
 class operator BigCardinal.LessThan(const A, B: BigCardinal): Boolean;
 begin
   Result:= Compare(A, B) < 0;
@@ -280,6 +299,16 @@ begin
             'TBigNumber.FromCardinal');
 end;
 
+class operator BigCardinal.BitwiseAnd(const A, B: BigCardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber), 'BigCardinal.And');
+end;
+
+class operator BigCardinal.BitwiseOr(const A, B: BigCardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber), 'BigCardinal.Or');
+end;
+
 class operator BigCardinal.Add(const A, B: BigCardinal): BigCardinal;
 begin
   HResCheck(A.FNumber.AddNumberU(B.FNumber, Result.FNumber), 'BigCardinal.Add');
@@ -343,6 +372,16 @@ begin
   HResCheck(TBigNumber.ToString(PBigNumber(FNumber), Result),
     'BigInteger -> string conversion error');
 {$ENDIF}
+end;
+
+class operator BigInteger.BitwiseAnd(const A, B: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber), 'BigInteger.And');
+end;
+
+class operator BigInteger.BitwiseOr(const A, B: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber), 'BigInteger.Or');
 end;
 
 class function BigInteger.Compare(const A, B: BigInteger): Integer;

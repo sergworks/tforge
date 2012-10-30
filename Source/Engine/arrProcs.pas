@@ -18,31 +18,20 @@ interface
 uses tfLimbs;
 
 { Addition primitives }
-
 function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
-
 function arrSelfAdd(A, B: PLimb; LA, LB: Cardinal): Boolean;
-
 function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
-
 function arrSelfAddLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
 { Subtraction primitives }
-
 function arrSub(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
-
 function arrSelfSub(A, B: PLimb; LA, LB: Cardinal): Boolean;
-
 function arrSubLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
-
 function arrSelfSubLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
 { Multiplication primitives }
-
 procedure arrMul(A, B, Res: PLimb; LA, LB: Cardinal);
-
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
-
 function arrSelfMulLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
 { Division primitives }
@@ -67,6 +56,10 @@ function arrShrShort(A, Res: PLimb; LA, Shift: Cardinal): Cardinal;
 
 function arrShlOne(A, Res: PLimb; LA: Cardinal): Cardinal;
 function arrShrOne(A, Res: PLimb; LA: Cardinal): Cardinal;
+
+{ Bitwise boolean }
+procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
 
 implementation
 
@@ -579,6 +572,38 @@ begin
     Inc(Res);
     Dec(LB);
   end;
+end;
+
+{ Bitwise boolean }
+// LA >= LB
+procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
+begin
+  Assert(LA >= LB);
+  Dec(LA, LB);
+  while LB > 0 do begin
+    Res^:= A^ and B^;
+    Inc(A);
+    Inc(B);
+    Inc(Res);
+    Dec(LB);
+  end;
+  if (LA > 0) then
+    Move(A^, Res^, LA * SizeOf(TLimb));
+end;
+
+procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
+begin
+  Assert(LA >= LB);
+  Dec(LA, LB);
+  while LB > 0 do begin
+    Res^:= A^ or B^;
+    Inc(A);
+    Inc(B);
+    Inc(Res);
+    Dec(LB);
+  end;
+  if (LA > 0) then
+    Move(A^, Res^, LA * SizeOf(TLimb));
 end;
 
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
