@@ -108,7 +108,8 @@ type
 // -- end of IBigNumber implementation
 
     class function FromPByte(var A: PBigNumber; P: PByte; L: Cardinal): HResult; stdcall; static;
-    class function FromPChar(var A: PBigNumber; const S: PChar; L: Integer): HResult; stdcall; static;
+    class function FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult; stdcall; static;
+    class function FromPCharHex(var A: PBigNumber; S: PChar; L: Integer): HResult; stdcall; static;
 
     class function FromWideString(var A: PBigNumber; const S: WideString): HResult; stdcall; static;
     class function FromWideStringU(var A: PBigNumber; const S: WideString): HResult; stdcall; static;
@@ -1878,6 +1879,10 @@ begin
 end;
 
 class function TBigNumber.FromString(var A: PBigNumber; const S: string): HResult;
+begin
+  Result:= FromPChar(A, PChar(Pointer(S)), Length(S));
+end;
+{
 var
   L: Integer;
 
@@ -1893,7 +1898,7 @@ begin
     if Result = S_OK then A^.FSign:= 0;
   end;
 end;
-
+}
 class function TBigNumber.FromStringU(var A: PBigNumber; const S: string): HResult;
 begin
   Result:= FromPCharU(A, PChar(S), Length(S));
@@ -1943,7 +1948,7 @@ var
   SeniorByte: Byte;
   Tmp: PBigNumber;
   Used: Cardinal;
-  P1: PByte;
+  I: Integer;
 
 begin
   Assert(L > 0);
@@ -1975,47 +1980,24 @@ begin
 // -5 : -101  -> 111 010
 // -6 : -110  -> 111 001
 // -7 : -111  -> 111 000
-    if SeniorByte = $FF then begin
-      if L <= 1 then begin
-        if A <> nil then Release(A);
-        A:= @BigNumMinusOne;
-        Result:= TFL_S_OK;
-        Exit;
-      end;
-      Used:= (L + SizeOf(TLimb) - 2) div SizeOf(TLimb);
-      Result:= TBigNumber.AllocNumber(Tmp, Used);
-      if Result = TFL_S_OK then begin
-        Tmp.FLimbs[Used - 1]:= 0;
-        Tmp.FUsed:= Used;
-        P1:= @Tmp.FLimbs;
-        Dec(L);
-        Assert(L > 0);
-        repeat
-          P1^:= not P^;
-          Inc(P1);
-          Inc(P);
-          Dec(L);
-        until L = 0;
-        if A <> nil then Release(A);
-        A:= Tmp;
-      end;
+    if SeniorByte = $FF then Dec(L);
+    if L = 0 then begin
+      if A <> nil then Release(A);
+      A:= @BigNumMinusOne;
+      Result:= TFL_S_OK;
+      Exit;
     end
     else begin
       Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
       Result:= TBigNumber.AllocNumber(Tmp, Used);
       if Result = TFL_S_OK then begin
-        Tmp.FLimbs[Used - 1]:= 0;
+        Tmp.FLimbs[Used - 1]:= TLimbInfo.MaxLimb;
+        Move(P^, Tmp.FLimbs, L);
         Tmp.FUsed:= Used;
-        P1:= @Tmp.FLimbs;
-        Assert(L > 0);
-        Dec(L);
-        while L > 0 do begin
-          P1^:= not P^;
-          Inc(P1);
-          Inc(P);
-          Dec(L);
-        end;
-        P1^:= -P^;
+        Tmp.FSign:= -1;
+        for I:= 0 to Used - 1 do
+          Tmp.FLimbs[I]:= not Tmp.FLimbs[I];
+        arrSelfAddLimb(@Tmp^.FLimbs, 1, Used);
         if A <> nil then Release(A);
         A:= Tmp;
       end;
@@ -2085,7 +2067,7 @@ begin
 {$IFEND}
 end;
 
-class function TBigNumber.FromPChar(var A: PBigNumber; const S: PChar; L: Integer): HResult;
+class function TBigNumber.FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult;
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
    LIMB_SHIFT = 4;
@@ -2107,13 +2089,16 @@ var
   Tmp: PBigNumber;
 
 begin
+  if L <= 0 then begin
+    Result:= TFL_E_INVALIDARG;
+    Exit;
+  end;
+  if S[0] = '$' then begin
+    Result:= FromPCharHex(A, @S[1], L - 1);
+    Exit;
+  end;
   Tmp:= nil;
   try
-    if L <= 0 then begin
-      Result:= TFL_E_INVALIDARG;
-      Exit;
-    end;
-
     I:= 0;
                               // S is zero-based PChar
     IsMinus:= S[0] = '-';
@@ -2122,12 +2107,12 @@ begin
       Inc(I);
     end
     else begin
-      IsHex:= (S[0] = '$');
-      if IsHex then Inc(I)
-      else begin
+//      IsHex:= (S[0] = '$');
+//      if IsHex then Inc(I)
+//      else begin
         IsHex:= (L > 1) and (S[0] = '0') and (S[1] = 'x');
         if IsHex then Inc(I, 2);
-      end;
+//      end;
     end;
 
     if L <= I then begin
@@ -2144,12 +2129,13 @@ begin
 
       LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
       Result:= AllocNumber(Tmp, LimbsRequired);
-      if Result <> S_OK then Exit;
+      if Result <> TFL_S_OK then Exit;
 
       N:= 0;
-      if IsMinus
+{      if IsMinus
         then Limb:= TLimb(-1)
-        else Limb:= 0;
+        else}
+      Limb:= 0;
       repeat
                       // moving from end of string
         Ch:= S[L - N - 1];
@@ -2166,22 +2152,27 @@ begin
 
         Inc(N);
         if N and (2 * SizeOf(TLimb) - 1) = 0 then begin
-          if IsMinus then Limb:= not Limb;
+//          if IsMinus then Limb:= not Limb;
           Tmp^.FLimbs[N shr LIMB_SHIFT - 1]:= Limb;
-          if IsMinus
+{          if IsMinus
             then Limb:= TLimb(-1)
-            else Limb:= 0;
+            else;}
+          Limb:= 0;
         end;
       until I + N >= L;
 
       if N and (2 * SizeOf(TLimb) - 1) <> 0 then begin
-        if IsMinus then Limb:= not Limb;
+        if IsMinus then Limb:= (-1) shl ((N and (2 * SizeOf(TLimb) - 1)) * 4)
+          or Limb;
         Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
       end;
 
       N:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
-      if IsMinus then
+      if IsMinus then begin
+        for I:= 0 to N - 1 do
+          Tmp.FLimbs[I]:= not Tmp.FLimbs[I];
         arrSelfAddLimb(@Tmp^.FLimbs, 1, N);
+      end;
       Tmp^.FUsed:= N;
       Normalize(Tmp);
     end
@@ -2202,7 +2193,7 @@ begin
 {$IFEND}
 
       Result:= AllocNumber(Tmp, N);
-      if Result <> S_OK then Exit;
+      if Result <> TFL_S_OK then Exit;
 
       Tmp^.FUsed:= 1;
       Tmp^.FLimbs[0]:= 0;
@@ -2224,12 +2215,97 @@ begin
 
       until I >= L;
     end;
-    if IsMinus then Tmp.FSign:= -1;
+    if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
+      then Tmp.FSign:= -1;
     if A <> nil then Release(A);
     A:= Tmp;
-    Result:= S_OK;
   finally
-    if (Result <> S_OK) and (Tmp <> nil) then Release(Tmp);
+    if (Result <> TFL_S_OK) and (Tmp <> nil) then Release(Tmp);
+  end;
+end;
+
+class function TBigNumber.FromPCharHex(var A: PBigNumber; S: PChar; L: Integer): HResult;
+const
+{$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
+   LIMB_SHIFT = 4;
+{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
+   LIMB_SHIFT = 3;
+{$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
+   LIMB_SHIFT = 2;
+{$ELSE}                         // 2 hex digits per byte limb
+   LIMB_SHIFT = 1;
+{$IFEND}
+
+var
+  IsMinus: Boolean;
+  I, N: Integer;
+  Limb: TLimb;
+  Digit: Cardinal;
+  Ch: Char;
+  LimbsRequired: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  if L <= 0 then begin
+    Result:= TFL_E_INVALIDARG;
+    Exit;
+  end;
+  Tmp:= nil;
+  try
+    I:= 0;
+                              // S is zero-based PChar
+    IsMinus:= S[0] = '-';
+    if IsMinus then begin
+      Inc(I);
+      if L <= I then begin
+        Result:= TFL_E_INVALIDARG;
+        Exit;
+      end;
+    end;
+
+    N:= L - I;                // number of hex digits;
+                              //   1 limb holds 2 * SizeOf(TLimb) hex digits
+
+    LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
+    Result:= AllocNumber(Tmp, LimbsRequired);
+    if Result <> TFL_S_OK then Exit;
+
+    N:= 0;
+    Limb:= 0;
+
+    repeat
+                      // moving from end of string
+      Ch:= S[L - N - 1];
+      case Ch of
+          '0'..'9': Digit:= Ord(Ch) - Ord('0');
+          'A'..'F': Digit:= 10 + Ord(Ch) - Ord('A');
+          'a'..'f': Digit:= 10 + Ord(Ch) - Ord('a');
+      else
+          Result:= TFL_E_INVALIDARG;
+          Exit;
+      end;
+                        // shift digit to its position in a limb
+      Limb:= Limb + (Digit shl ((N and (2 * SizeOf(TLimb) - 1)) shl 2));
+
+      Inc(N);
+      if N and (2 * SizeOf(TLimb) - 1) = 0 then begin
+        Tmp^.FLimbs[N shr LIMB_SHIFT - 1]:= Limb;
+        Limb:= 0;
+      end;
+    until I + N >= L;
+
+    if N and (2 * SizeOf(TLimb) - 1) <> 0 then
+      Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
+
+    N:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
+    Tmp^.FUsed:= N;
+    Normalize(Tmp);
+    if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
+      then Tmp.FSign:= -1;
+    if A <> nil then Release(A);
+    A:= Tmp;
+  finally
+    if (Result <> TFL_S_OK) and (Tmp <> nil) then Release(Tmp);
   end;
 end;
 
