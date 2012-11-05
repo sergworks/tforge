@@ -25,6 +25,7 @@ type
     FNumber: IBigNumber;
   public
     function AsString: string;
+    function ToBytes: TBytes;
     function TryFromString(const S: string): Boolean;
     procedure Free;
 
@@ -35,6 +36,7 @@ type
     class operator Explicit(const Value: BigCardinal): Integer;
     class operator Implicit(const Value: Cardinal): BigCardinal;
     class operator Explicit(const Value: Integer): BigCardinal;
+    class operator Explicit(const Value: TBytes): BigCardinal;
     class operator Explicit(const Value: string): BigCardinal;
 
     class operator Equal(const A, B: BigCardinal): Boolean;
@@ -68,6 +70,7 @@ type
     function GetSign: Integer;
   public
     function AsString: string;
+    function ToBytes: TBytes;
     function TryFromString(const S: string): Boolean;
     procedure Free;
 
@@ -84,6 +87,7 @@ type
     class operator Explicit(const Value: BigInteger): Integer;
     class operator Implicit(const Value: Cardinal): BigInteger;
     class operator Implicit(const Value: Integer): BigInteger;
+    class operator Explicit(const Value: TBytes): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
 
     class operator Equal(const A, B: BigInteger): Boolean;
@@ -101,6 +105,7 @@ type
 
     class operator BitwiseAnd(const A, B: BigInteger): BigInteger;
     class operator BitwiseOr(const A, B: BigInteger): BigInteger;
+    class operator BitwiseXor(const A, B: BigInteger): BigInteger;
 
 {$IFDEF LIMB32}
     class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
@@ -167,6 +172,16 @@ begin
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function BigCardinal.ToBytes: TBytes;
+{$IFDEF TFL_DLL}
+// todo:
+{$ELSE}
+begin
+  HResCheck(TBigNumber.ToBytes(PBigNumber(FNumber), Result),
+    'BigCardinal -> TBytes conversion error');
 {$ENDIF}
 end;
 
@@ -249,6 +264,17 @@ begin
     'string -> BigCardinal conversion error');
 end;
 
+class operator BigCardinal.Explicit(const Value: TBytes): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+// todo:
+{$ELSE}
+  HResCheck(TBigNumber.FromPByte(PBigNumber(Result.FNumber),
+                                 Pointer(Value), Length(Value), False),
+{$ENDIF}
+    'TBytes -> BigCardinal conversion error');
+end;
+
 procedure BigCardinal.Free;
 begin
   FNumber:= nil;
@@ -301,12 +327,12 @@ end;
 
 class operator BigCardinal.BitwiseAnd(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber), 'BigCardinal.And');
+  HResCheck(A.FNumber.AndNumberU(B.FNumber, Result.FNumber), 'BigCardinal.And');
 end;
 
 class operator BigCardinal.BitwiseOr(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber), 'BigCardinal.Or');
+  HResCheck(A.FNumber.OrNumberU(B.FNumber, Result.FNumber), 'BigCardinal.Or');
 end;
 
 class operator BigCardinal.Add(const A, B: BigCardinal): BigCardinal;
@@ -376,12 +402,35 @@ end;
 
 class operator BigInteger.BitwiseAnd(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber), 'BigInteger.And');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.AndNumbers(PBigNumber(A.FNumber),
+                       PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+                       'BigInteger.And');
 end;
 
 class operator BigInteger.BitwiseOr(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber), 'BigInteger.Or');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.OrNumbers(PBigNumber(A.FNumber),
+                       PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+                       'BigInteger.Or');
+end;
+
+class operator BigInteger.BitwiseXor(const A, B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.XorNumber(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.XorNumbers(PBigNumber(A.FNumber),
+                       PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+                       'BigInteger.Xor');
 end;
 
 class function BigInteger.Compare(const A, B: BigInteger): Integer;
@@ -454,6 +503,17 @@ begin
     'string -> BigInteger conversion error');
 end;
 
+class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+// todo:
+{$ELSE}
+  HResCheck(TBigNumber.FromPByte(PBigNumber(Result.FNumber),
+                                 Pointer(Value), Length(Value), True),
+{$ENDIF}
+    'TBytes -> BigCardinal conversion error');
+end;
+
 class function BigInteger.Pow(const Base: BigInteger; Value: Cardinal): BigInteger;
 begin
 {$IFDEF TFL_DLL}
@@ -498,6 +558,16 @@ end;
 procedure BigInteger.Free;
 begin
   FNumber:= nil;
+end;
+
+function BigInteger.ToBytes: TBytes;
+begin
+{$IFDEF TFL_DLL}
+// todo:
+{$ELSE}
+  HResCheck(TBigNumber.ToBytes(PBigNumber(FNumber), Result),
+    'BigCardinal -> TBytes conversion error');
+{$ENDIF}
 end;
 
 function BigInteger.TryFromString(const S: string): Boolean;

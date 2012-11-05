@@ -59,7 +59,12 @@ function arrShrOne(A, Res: PLimb; LA: Cardinal): Cardinal;
 
 { Bitwise boolean }
 procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrAndTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+
 procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrOrTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrOrTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
 
 implementation
 
@@ -575,35 +580,246 @@ begin
 end;
 
 { Bitwise boolean }
-// LA >= LB
 procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  L: Cardinal;
+
 begin
-  Assert(LA >= LB);
-  Dec(LA, LB);
-  while LB > 0 do begin
-    Res^:= A^ and B^;
+  if (LA >= LB)
+    then L:= LB
+    else L:= LA;
+  Assert(L > 0);
+  repeat
+     Res^:= A^ and B^;
+     Inc(A);
+     Inc(B);
+     Inc(Res);
+     Dec(LB);
+  until L = 0;
+end;
+
+procedure arrAndTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  Carry: Boolean;
+  Tmp: TLimb;
+
+begin
+  if LA >= LB then begin
+    Assert(LB > 0);
+    Carry:= True;
+    repeat
+      Tmp:= not B^;
+      Inc(Tmp);
+      Carry:= Tmp = 0;
+      Res^:= A^ and Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0) or not Carry;
+    while (LB > 0) do begin
+      Res^:= A^ and not B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    end;
+  end
+  else begin
+    Assert(LA > 0);
+    Carry:= True;
+    repeat
+      Tmp:= not B^;
+      Inc(Tmp);
+      Carry:= Tmp = 0;
+      Res^:= A^ and Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0) or not Carry;
+    while (LA > 0) do begin
+      Res^:= A^ and not B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    end;
+  end;
+end;
+
+procedure arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  CarryA, CarryB, CarryR: Boolean;
+  TmpA, TmpB: TLimb;
+  SaveRes: PLimb;
+  L: Cardinal;
+
+begin
+  CarryA:= True;
+  CarryB:= True;
+  SaveRes:= Res;
+  if LA >= LB
+    then L:= LB
+    else L:= LA;
+  Assert(L > 0);
+  repeat
+    TmpA:= not A^;
+    if CarryA then begin
+      Inc(TmpA);
+      CarryA:= TmpA = 0;
+    end;
+    TmpB:= not B^;
+    if CarryB then begin
+      Inc(TmpB);
+      CarryB:= TmpB = 0;
+    end;
+    Res^:= TmpA and TmpB;
     Inc(A);
     Inc(B);
     Inc(Res);
-    Dec(LB);
+    Dec(L);
+  until (L = 0);
+  CarryR:= True;
+  repeat
+    SaveRes^:= not SaveRes^ + 1;
+    CarryR:= (SaveRes^ = 0);
+    Inc(SaveRes);
+  until (SaveRes = Res) or not CarryR;
+  while (SaveRes <> Res) do begin
+    SaveRes^:= not SaveRes^;
+    Inc(SaveRes);
   end;
-  if (LA > 0) then
-    Move(A^, Res^, LA * SizeOf(TLimb));
 end;
 
 procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  LMin, L: Cardinal;
+
 begin
-  Assert(LA >= LB);
-  Dec(LA, LB);
-  while LB > 0 do begin
+  if (LA >= LB) then begin
+    LMin:= LB;
+    L:= LA - LB;
+  end
+  else begin
+    LMin:= LA;
+    L:= LB - LA;
+  end;
+  Assert(LMin > 0);
+  repeat
     Res^:= A^ or B^;
     Inc(A);
     Inc(B);
     Inc(Res);
-    Dec(LB);
+    Dec(LMin);
+  until (LMin > 0);
+  if (L > 0) then
+    Move(A^, Res^, L * SizeOf(TLimb));
+end;
+
+procedure arrOrTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  Carry: Boolean;
+  Tmp: TLimb;
+
+begin
+  if LA >= LB then begin
+    Assert(LB > 0);
+    Dec(LA, LB);
+    Carry:= True;
+    repeat
+      Tmp:= not B^;
+      Inc(Tmp);
+      Carry:= Tmp = 0;
+      Res^:= A^ or Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0) or not Carry;
+    while (LB > 0) do begin
+      Res^:= A^ and not B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    end;
+    if (LA > 0) then
+      Move(A^, Res^, LA * SizeOf(TLimb));
+  end
+  else begin
+    Assert(LA > 0);
+    Dec(LB, LA);
+    Carry:= True;
+    repeat
+      Tmp:= not B^;
+      Inc(Tmp);
+      Carry:= Tmp = 0;
+      Res^:= A^ and Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0) or not Carry;
+    while (LA > 0) do begin
+      Res^:= A^ and not B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    end;
+    if (LB > 0) then
+      Move(B^, Res^, LB * SizeOf(TLimb));
   end;
-  if (LA > 0) then
-    Move(A^, Res^, LA * SizeOf(TLimb));
+end;
+
+procedure arrOrTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  CarryA, CarryB, CarryR: Boolean;
+  TmpA, TmpB: TLimb;
+  SaveRes: PLimb;
+  LMin, L: Cardinal;
+
+begin
+  CarryA:= True;
+  CarryB:= True;
+  SaveRes:= Res;
+  if (LA >= LB) then begin
+    LMin:= LB;
+    L:= LA - LB;
+  end
+  else begin
+    LMin:= LA;
+    L:= LB - LA;
+  end;
+  Assert(LMin > 0);
+  repeat
+    TmpA:= not A^;
+    if CarryA then begin
+      Inc(TmpA);
+      CarryA:= TmpA = 0;
+    end;
+    TmpB:= not B^;
+    if CarryB then begin
+      Inc(TmpB);
+      CarryB:= TmpB = 0;
+    end;
+    Res^:= TmpA or TmpB;
+    Inc(A);
+    Inc(B);
+    Inc(Res);
+    Dec(L);
+  until (L = 0);
+  CarryR:= True;
+  repeat
+    SaveRes^:= not SaveRes^ + 1;
+    CarryR:= (SaveRes^ = 0);
+    Inc(SaveRes);
+  until (SaveRes = Res) or not CarryR;
+  while (SaveRes <> Res) do begin
+    SaveRes^:= not SaveRes^;
+    Inc(SaveRes);
+  end;
 end;
 
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;

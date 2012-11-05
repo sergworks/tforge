@@ -54,7 +54,10 @@ type
     function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
 
     function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
     function OrNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+    function XorNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
 
     function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
     function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
