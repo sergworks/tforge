@@ -2689,27 +2689,49 @@ var
 begin
   UsedA:= A.FUsed;
   UsedB:= B.FUsed;
-  if UsedA >= UsedB
-    then UsedR:= UsedB
-    else UsedR:= UsedA;
-  Result:= AllocNumber(Tmp, UsedR);
-  if Result = TFL_S_OK then begin
-    if A.FSign >= 0 then begin
-      if B.FSign >= 0 then begin
+  if A.FSign >= 0 then begin
+    if B.FSign >= 0 then begin
+      if UsedA >= UsedB
+        then UsedR:= UsedB
+        else UsedR:= UsedA;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then
         arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
-      end
-      else begin
-        arrAndTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
-      end;
     end
     else begin
-      if B.FSign >= 0 then begin
+      UsedR:= UsedA;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then
+        arrAndTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+    end
+  end
+  else begin
+    if B.FSign >= 0 then begin
+      UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then
         arrAndTwoCompl(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
+    end
+    else begin
+      if UsedA >= UsedB then begin
+        UsedR:= UsedA;
+        Result:= AllocNumber(Tmp, UsedR);
+        if Result = TFL_S_OK then begin
+          arrAndTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+          Tmp.FSign:= -1;
+        end;
       end
       else begin
-        arrAndTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+        UsedR:= UsedB;
+        Result:= AllocNumber(Tmp, UsedR);
+        if Result = TFL_S_OK then begin
+          arrAndTwoCompl2(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
+          Tmp.FSign:= -1;
+        end;
       end;
     end;
+  end;
+  if Result = TFL_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
     if R <> nil then Release(R);

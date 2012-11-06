@@ -594,7 +594,7 @@ begin
      Inc(A);
      Inc(B);
      Inc(Res);
-     Dec(LB);
+     Dec(L);
   until L = 0;
 end;
 
@@ -606,6 +606,7 @@ var
 begin
   if LA >= LB then begin
     Assert(LB > 0);
+    Dec(LA, LB);
     Carry:= True;
     repeat
       Tmp:= not B^;
@@ -623,6 +624,21 @@ begin
       Inc(B);
       Inc(Res);
       Dec(LB);
+    end;
+    while (LA > 0) and Carry do begin
+      Tmp:= A^ and TLimbInfo.MaxLimb;
+      Inc(Tmp);
+      Carry:= Tmp = 0;
+      Res^:= Tmp;
+      Inc(A);
+      Inc(Res);
+      Dec(LA);
+    end;
+    while (LA > 0) do begin
+      Res^:= A^ and TLimbInfo.MaxLimb;
+      Inc(A);
+      Inc(Res);
+      Dec(LA);
     end;
   end
   else begin
@@ -653,33 +669,53 @@ var
   CarryA, CarryB, CarryR: Boolean;
   TmpA, TmpB: TLimb;
   SaveRes: PLimb;
-  L: Cardinal;
+//  L: Cardinal;
 
 begin
+  Assert(LA >= LB);
   CarryA:= True;
   CarryB:= True;
   SaveRes:= Res;
-  if LA >= LB
-    then L:= LB
-    else L:= LA;
-  Assert(L > 0);
-  repeat
-    TmpA:= not A^;
-    if CarryA then begin
-      Inc(TmpA);
-      CarryA:= TmpA = 0;
+  if LA >= LB then begin
+//    then L:= LB
+//    else L:= LA;
+    Assert(LB > 0);
+    Dec(LA, LB);
+    repeat
+      TmpA:= not A^;
+      if CarryA then begin
+        Inc(TmpA);
+        CarryA:= TmpA = 0;
+      end;
+      TmpB:= not B^;
+      if CarryB then begin
+        Inc(TmpB);
+        CarryB:= TmpB = 0;
+      end;
+      Res^:= TmpA and TmpB;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0);
+    while (LA > 0) do begin
+      TmpA:= not A^;
+      if CarryA then begin
+        Inc(TmpA);
+        CarryA:= TmpA = 0;
+      end;
+      TmpB:= TLimbInfo.MaxLimb;
+//      if CarryB then begin
+//        Inc(TmpB);
+//        CarryB:= TmpB = 0;
+//      end;
+      Res^:= TmpA and TmpB;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
     end;
-    TmpB:= not B^;
-    if CarryB then begin
-      Inc(TmpB);
-      CarryB:= TmpB = 0;
-    end;
-    Res^:= TmpA and TmpB;
-    Inc(A);
-    Inc(B);
-    Inc(Res);
-    Dec(L);
-  until (L = 0);
+  end;
   CarryR:= True;
   repeat
     SaveRes^:= not SaveRes^ + 1;
