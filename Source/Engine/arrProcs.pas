@@ -60,7 +60,7 @@ function arrShrOne(A, Res: PLimb; LA: Cardinal): Cardinal;
 { Bitwise boolean }
 procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
 procedure arrAndTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
-procedure arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+function arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 
 procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
 procedure arrOrTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
@@ -664,68 +664,67 @@ begin
   end;
 end;
 
-procedure arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+// A < 0, B < 0
+function arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 var
   CarryA, CarryB, CarryR: Boolean;
   TmpA, TmpB: TLimb;
   SaveRes: PLimb;
-//  L: Cardinal;
 
 begin
   Assert(LA >= LB);
+  Assert(LB > 0);
   CarryA:= True;
   CarryB:= True;
   SaveRes:= Res;
-  if LA >= LB then begin
-//    then L:= LB
-//    else L:= LA;
-    Assert(LB > 0);
-    Dec(LA, LB);
-    repeat
-      TmpA:= not A^;
-      if CarryA then begin
-        Inc(TmpA);
-        CarryA:= TmpA = 0;
-      end;
-      TmpB:= not B^;
-      if CarryB then begin
-        Inc(TmpB);
-        CarryB:= TmpB = 0;
-      end;
-      Res^:= TmpA and TmpB;
-      Inc(A);
-      Inc(B);
-      Inc(Res);
-      Dec(LB);
-    until (LB = 0);
-    while (LA > 0) do begin
-      TmpA:= not A^;
-      if CarryA then begin
-        Inc(TmpA);
-        CarryA:= TmpA = 0;
-      end;
-      TmpB:= TLimbInfo.MaxLimb;
-//      if CarryB then begin
-//        Inc(TmpB);
-//        CarryB:= TmpB = 0;
-//      end;
-      Res^:= TmpA and TmpB;
-      Inc(A);
-      Inc(B);
-      Inc(Res);
-      Dec(LA);
+  Dec(LA, LB);
+  repeat
+    TmpA:= not A^;
+    if CarryA then begin
+      Inc(TmpA);
+      CarryA:= TmpA = 0;
     end;
+    TmpB:= not B^;
+    if CarryB then begin
+      Inc(TmpB);
+      CarryB:= TmpB = 0;
+    end;
+    Res^:= TmpA and TmpB;
+    Inc(A);
+    Inc(B);
+    Inc(Res);
+    Dec(LB);
+  until (LB = 0);
+
+  while (LA > 0) do begin
+    TmpA:= not A^;
+    if CarryA then begin
+      Inc(TmpA);
+      CarryA:= TmpA = 0;
+    end;
+                            // should be B = -0 to produce CarryB here
+    Assert(CarryB = False);
+    TmpB:= TLimbInfo.MaxLimb;
+    Res^:= TmpA and TmpB;
+    Inc(A);
+    Inc(B);
+    Inc(Res);
+    Dec(LA);
   end;
   CarryR:= True;
+  Result:= True;
   repeat
     SaveRes^:= not SaveRes^ + 1;
     CarryR:= (SaveRes^ = 0);
+    Result:= Result and (SaveRes^ = 0);
     Inc(SaveRes);
   until (SaveRes = Res) or not CarryR;
   while (SaveRes <> Res) do begin
     SaveRes^:= not SaveRes^;
+    Result:= Result and (SaveRes^ = 0);
     Inc(SaveRes);
   end;
+  Res^:= Ord(Result);
 end;
 
 procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);

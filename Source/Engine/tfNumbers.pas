@@ -2714,21 +2714,18 @@ begin
     end
     else begin
       if UsedA >= UsedB then begin
-        UsedR:= UsedA;
+        UsedR:= UsedA + 1;
         Result:= AllocNumber(Tmp, UsedR);
-        if Result = TFL_S_OK then begin
+        if Result = TFL_S_OK then
           arrAndTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
-          Tmp.FSign:= -1;
-        end;
       end
       else begin
-        UsedR:= UsedB;
+        UsedR:= UsedB + 1;
         Result:= AllocNumber(Tmp, UsedR);
-        if Result = TFL_S_OK then begin
+        if Result = TFL_S_OK then
           arrAndTwoCompl2(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
-          Tmp.FSign:= -1;
-        end;
       end;
+      Tmp.FSign:= -1;
     end;
   end;
   if Result = TFL_S_OK then begin
