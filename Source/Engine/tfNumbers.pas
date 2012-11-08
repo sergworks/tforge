@@ -89,6 +89,8 @@ type
 
     class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult; stdcall; static;
     class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
+    class function ToWideHexString(A: PBigNumber; var S: WideString;
+                   TwoCompl: Boolean): HResult; stdcall; static;
 
     class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
     class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
@@ -128,6 +130,8 @@ type
     class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
     class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
     class function ToString(A: PBigNumber; var S: string): HResult; static;
+    class function ToHexString(A: PBigNumber; var S: string;
+                   TwoCompl: Boolean): HResult; static;
     class function ToBytes(A: PBigNumber; var Bytes: TBytes): HResult; static;
 
     class procedure Normalize(Inst: PBigNumber); static;
@@ -153,6 +157,7 @@ type
     function IsZero: Boolean; inline;
 
     function AsString: string;
+    function AsHexString(TwoCompl: Boolean = False): string;
 
     function SelfCopy(Inst: PBigNumber): HResult;
     function SelfAddLimb(Value: TLimb): HResult;
@@ -170,7 +175,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..41] of Pointer = (
+  BigNumVTable: array[0..42] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -208,6 +213,7 @@ const
    @TBigNumber.PowerMod,
 
    @TBigNumber.ToWideString,
+   @TBigNumber.ToWideHexString,
 
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
@@ -291,6 +297,12 @@ function TBigNumber.AsString: string;
 begin
   Result:= '';
   ToString(@Self, Result);
+end;
+
+function TBigNumber.AsHexString(TwoCompl: Boolean): string;
+begin
+  Result:= '';
+  ToHexString(@Self, Result, TwoCompl);
 end;
 
 class function TBigNumber.CompareNumbers(A, B: PBigNumber): Integer;
@@ -1804,6 +1816,88 @@ end;
 
 
 { TNumber --> string conversions }
+
+class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
+                                      TwoCompl: Boolean): HResult;
+var
+  BytesUsed: Cardinal;
+{$IF SizeOf(TLimb) <> 1}
+  Limb: TLimb;
+{$IFEND}
+  NeedExtraByte: Boolean;
+  L: Cardinal;
+  P: PByte;
+  P1: PChar;
+  I: Cardinal;
+  Tmp: string;
+  B: Byte;
+  Carry: Boolean;
+
+begin
+{$IF SizeOf(TLimb) = 1}
+  BytesUsed:= A.FUsed;
+{$ELSE}
+  BytesUsed:= (A.FUsed - 1) * SizeOf(TLimb);
+  Limb:= A.FLimbs[A.FUsed - 1];
+  repeat
+    Inc(BytesUsed);
+    Limb:= Limb shr 8;
+  until Limb = 0;
+{$IFEND}
+
+  P:= @A.FLimbs;
+  if A.FSign >= 0 then begin
+    NeedExtraByte:= TwoCompl and (P[BytesUsed - 1] >= $80);
+    L:= (BytesUsed + Ord(NeedExtraByte)) * 2;
+    SetLength(S, L);
+    P1:= @S[L - 1];
+    for I:= 1 to BytesUsed do begin
+      Tmp:= IntToHex(P^, 2);
+      Move(Pointer(Tmp)^, P1^, 2 * SizeOf(Char));
+      Inc(P);
+      Dec(P1, 2);
+    end;
+    if NeedExtraByte then begin
+      Tmp:= '00';
+      Move(Pointer(Tmp)^, P1^, 2 * SizeOf(Char));
+    end;
+  end
+  else if not TwoCompl then begin
+    L:= BytesUsed * 2 + 1;
+    SetLength(S, L);
+    S[1]:= '-';
+    P1:= @S[L - 1];
+    for I:= 1 to BytesUsed do begin
+      Tmp:= IntToHex(P^, 2);
+      Move(Pointer(Tmp)^, P1^, 2 * SizeOf(Char));
+      Inc(P);
+      Dec(P1, 2);
+    end;
+  end
+  else begin
+    NeedExtraByte:= P[BytesUsed - 1] < $80;
+    L:= (BytesUsed + Ord(NeedExtraByte)) * 2;
+    SetLength(S, L);
+    P1:= @S[L - 1];
+    Carry:= True;
+    for I:= 1 to BytesUsed do begin
+      B:= not P^;
+      if Carry then begin
+        Inc(B);
+        Carry:= B = 0;
+      end;
+      Tmp:= IntToHex(B, 2);
+      Move(Pointer(Tmp)^, P1^, 2 * SizeOf(Char));
+      Inc(P);
+      Dec(P1, 2);
+    end;
+    if NeedExtraByte then begin
+      Tmp:= 'FF';
+      Move(Pointer(Tmp)^, P1^, 2 * SizeOf(Char));
+    end;
+  end;
+end;
+
 class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
 var
   Tmp: PBigNumber;
@@ -1867,13 +1961,24 @@ begin
 
 end;
 
+class function TBigNumber.ToWideHexString(A: PBigNumber; var S: WideString;
+                          TwoCompl: Boolean): HResult;
+var
+  Tmp: string;
+
+begin
+  Result:= ToHexString(A, Tmp, TwoCompl);
+  if Result = TFL_S_OK then
+    S:= WideString(Tmp);
+end;
+
 class function TBigNumber.ToWideString(A: PBigNumber; var S: WideString): HResult;
 var
   Tmp: string;
 
 begin
   Result:= ToString(A, Tmp);
-  if Result = S_OK then
+  if Result = TFL_S_OK then
     S:= WideString(Tmp);
 end;
 
@@ -2714,16 +2819,20 @@ begin
     end
     else begin
       if UsedA >= UsedB then begin
-        UsedR:= UsedA + 1;
-        Result:= AllocNumber(Tmp, UsedR);
-        if Result = TFL_S_OK then
-          arrAndTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+        UsedR:= UsedA;
+        Result:= AllocNumber(Tmp, UsedR + 1);
+        if Result = TFL_S_OK then begin
+          if arrAndTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB)
+            then Inc(UsedR);
+        end;
       end
       else begin
-        UsedR:= UsedB + 1;
-        Result:= AllocNumber(Tmp, UsedR);
-        if Result = TFL_S_OK then
-          arrAndTwoCompl2(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
+        UsedR:= UsedB;
+        Result:= AllocNumber(Tmp, UsedR + 1);
+        if Result = TFL_S_OK then begin
+          if arrAndTwoCompl2(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA)
+            then Inc(UsedR);
+        end;
       end;
       Tmp.FSign:= -1;
     end;

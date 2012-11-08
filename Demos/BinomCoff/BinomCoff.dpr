@@ -46,7 +46,7 @@ begin
     N:= StrToInt(ParamStr(1));
     M:= StrToInt(ParamStr(2));
     A:= BinomialCoff(N, M);
-    Writeln('C(', N, ', ', M, ') = ', A.AsString);
+    Writeln('C(', N, ', ', M, ') = ', A.ToString);
     A.Free;   // A is global var and should be freed explicitely
               //   to prevent memory leak on shutdown
   except

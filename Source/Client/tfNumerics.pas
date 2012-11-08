@@ -24,7 +24,8 @@ type
   private
     FNumber: IBigNumber;
   public
-    function AsString: string;
+    function ToString: string;
+    function ToHexString(TwoCompl: Boolean): string;
     function ToBytes: TBytes;
     function TryFromString(const S: string): Boolean;
     procedure Free;
@@ -69,7 +70,8 @@ type
     FNumber: IBigNumber;
     function GetSign: Integer;
   public
-    function AsString: string;
+    function ToString: string;
+    function ToHexString(TwoCompl: Boolean): string;
     function ToBytes: TBytes;
     function TryFromString(const S: string): Boolean;
     procedure Free;
@@ -149,7 +151,7 @@ end;
 
 { BigCardinal }
 
-function BigCardinal.AsString: string;
+function BigCardinal.ToString: string;
 {$IFDEF TFL_DLL}
 var
   S: WideString;
@@ -182,6 +184,22 @@ function BigCardinal.ToBytes: TBytes;
 begin
   HResCheck(TBigNumber.ToBytes(PBigNumber(FNumber), Result),
     'BigCardinal -> TBytes conversion error');
+{$ENDIF}
+end;
+
+function BigCardinal.ToHexString(TwoCompl: Boolean): string;
+{$IFDEF TFL_DLL}
+var
+  S: WideString;
+
+begin
+  HResCheck(FNumber.ToWideHexString(S, TwoCompl),
+    'BigCardinal -> hex string conversion error');
+  Result:= S;
+{$ELSE}
+begin
+  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, TwoCompl),
+    'BigCardinal -> hex string conversion error');
 {$ENDIF}
 end;
 
@@ -384,7 +402,7 @@ end;
 
 { BigInteger }
 
-function BigInteger.AsString: string;
+function BigInteger.ToString: string;
 {$IFDEF TFL_DLL}
 var
   S: WideString;
@@ -567,6 +585,22 @@ begin
 {$ELSE}
   HResCheck(TBigNumber.ToBytes(PBigNumber(FNumber), Result),
     'BigCardinal -> TBytes conversion error');
+{$ENDIF}
+end;
+
+function BigInteger.ToHexString(TwoCompl: Boolean): string;
+{$IFDEF TFL_DLL}
+var
+  S: WideString;
+
+begin
+  HResCheck(FNumber.ToWideHexString(S, TwoCompl),
+    'BigCardinal -> hex string conversion error');
+  Result:= S;
+{$ELSE}
+begin
+  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, TwoCompl),
+    'BigCardinal -> hex string conversion error');
 {$ENDIF}
 end;
 

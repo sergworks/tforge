@@ -59,7 +59,7 @@ begin
     StopWatch:= TStopWatch.StartNew;
     BenchMark;
     StopWatch.Stop;
-    Writeln(PiDigits.AsString);
+    Writeln(PiDigits.ToString);
     PiDigits.Free;
     Writeln;
     Writeln('Elapsed ms: ', StopWatch.ElapsedMilliseconds);

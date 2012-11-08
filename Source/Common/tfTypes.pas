@@ -68,6 +68,7 @@ type
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
     function ToWideString(var S: WideString): HRESULT; stdcall;
+    function ToWideHexString(var S: WideString; TwoCompl: Boolean): HRESULT; stdcall;
 
     function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
     function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;

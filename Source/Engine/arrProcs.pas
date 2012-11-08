@@ -607,7 +607,7 @@ begin
   if LA >= LB then begin
     Assert(LB > 0);
     Dec(LA, LB);
-    Carry:= True;
+//    Carry:= True;
     repeat
       Tmp:= not B^;
       Inc(Tmp);
@@ -643,7 +643,7 @@ begin
   end
   else begin
     Assert(LA > 0);
-    Carry:= True;
+//    Carry:= True;
     repeat
       Tmp:= not B^;
       Inc(Tmp);
@@ -707,11 +707,10 @@ begin
     TmpB:= TLimbInfo.MaxLimb;
     Res^:= TmpA and TmpB;
     Inc(A);
-    Inc(B);
     Inc(Res);
     Dec(LA);
   end;
-  CarryR:= True;
+//  CarryR:= True;
   Result:= True;
   repeat
     SaveRes^:= not SaveRes^ + 1;
@@ -761,7 +760,7 @@ begin
   if LA >= LB then begin
     Assert(LB > 0);
     Dec(LA, LB);
-    Carry:= True;
+//    Carry:= True;
     repeat
       Tmp:= not B^;
       Inc(Tmp);
@@ -785,7 +784,7 @@ begin
   else begin
     Assert(LA > 0);
     Dec(LB, LA);
-    Carry:= True;
+//    Carry:= True;
     repeat
       Tmp:= not B^;
       Inc(Tmp);
@@ -845,7 +844,7 @@ begin
     Inc(Res);
     Dec(L);
   until (L = 0);
-  CarryR:= True;
+//  CarryR:= True;
   repeat
     SaveRes^:= not SaveRes^ + 1;
     CarryR:= (SaveRes^ = 0);
