@@ -1109,7 +1109,8 @@ var
   QGuess, RGuess: TLimbVector;
 //  QLen: LongWord;
   LoopCount, Count: Integer;
-  Tmp32, Carry: Cardinal;
+//  Tmp32, Carry: Cardinal;
+  TmpLimb, Carry: Cardinal;
   CarryIn, CarryOut: Boolean;
 
 begin
@@ -1135,6 +1136,8 @@ begin
   repeat
     Dec(PDnd);    // PDnd points to (current) senior dividend/remainder limb
     Dec(PDsr);    // PDns points to senior divisor limb
+    Assert(PDnd^ <= PDsr^);
+
     Dec(Quotient);
 
 // Делим число, составленное из двух старших цифр делимого на старшую цифру
@@ -1205,17 +1208,18 @@ begin
     repeat
       Tmp.Value:= PDsr^ * QGuess.Value + Carry;
       Carry:= Tmp.Hi;
-      Tmp32:= PDnd^ - Tmp.Lo;
-      if (Tmp32 > PDnd^) then Inc(Carry);
-      PDnd^:= Tmp32;
+      TmpLimb:= PDnd^ - Tmp.Lo;
+      if (TmpLimb > PDnd^) then Inc(Carry);
+      PDnd^:= TmpLimb;
       Inc(PDnd);
       Inc(PDsr);
       Dec(Count);
     until Count = 0;
 
 //todo:
-    Tmp32:= PDnd^ - Carry;
-    if (Tmp32 > PDnd^) then begin
+
+    TmpLimb:= PDnd^ - Carry;
+    if (TmpLimb > PDnd^) then begin
 // если мы попали сюда значит QGuess = Q + 1;
 // прибавляем делитель
       Count:= DsrLen;
@@ -1229,15 +1233,15 @@ begin
       CarryIn:= False;
 
       repeat
-        Tmp32:= PDnd^ + PDsr^;
-        CarryOut:= Tmp32 < PDnd^;
+        TmpLimb:= PDnd^ + PDsr^;
+        CarryOut:= TmpLimb < PDnd^;
         Inc(PDsr);
         if CarryIn then begin
-          Inc(Tmp32);
-          CarryOut:= CarryOut or (Tmp32 = 0);
+          Inc(TmpLimb);
+          CarryOut:= CarryOut or (TmpLimb = 0);
         end;
         CarryIn:= CarryOut;
-        PDnd^:= Tmp32;
+        PDnd^:= TmpLimb;
         Inc(PDnd);
         Dec(Count);
       until Count = 0;

@@ -941,13 +941,14 @@ begin
 // perform normalized division and shift the remaider right
   arrNormDivMod(@Dividend.FLimbs, @Divisor.FLimbs, @Quotient.FLimbs,
                 UsedA + 1, UsedB);
-  arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
+  Remainder.FUsed:=
+    arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
 
   Release(Dividend);
   Release(Divisor);
 
   Quotient.FUsed:= UsedQ;
-  Remainder.FUsed:= UsedB;
+//  Remainder.FUsed:= UsedB;
 
   if A.FSign xor B.FSign >= 0
     then Quotient.FSign:= 0
@@ -1101,13 +1102,14 @@ begin
 // perform normalized division and shift the remainder right
   arrNormDivMod(@Dividend.FLimbs, @Divisor.FLimbs, @Quotient.FLimbs,
                 UsedA + 1, UsedB);
-  arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
+  Remainder.FUsed:=
+    arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
 
   Release(Dividend);
   Release(Divisor);
 
   Quotient.FUsed:= UsedQ;
-  Remainder.FUsed:= UsedB;
+//  Remainder.FUsed:= UsedB;
 
   Normalize(Quotient);
   Normalize(Remainder);
