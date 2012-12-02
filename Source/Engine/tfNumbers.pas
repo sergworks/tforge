@@ -170,6 +170,11 @@ type
     function SelfDivModLimbU(Value: TLimb; var Remainder: TLimb): HResult;
   end;
 
+{$IFDEF DEBUG}
+  TLimbs = array[0..7] of TLimb;
+  PLimbs = ^TLimbs;
+{$ENDIF}
+
 implementation
 
 uses arrProcs;

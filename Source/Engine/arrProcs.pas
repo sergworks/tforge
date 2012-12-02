@@ -1107,18 +1107,13 @@ var
   Tmp: TLimbVector;
   PDnd, PDsr: PLimb;
   QGuess, RGuess: TLimbVector;
-//  QLen: LongWord;
   LoopCount, Count: Integer;
-//  Tmp32, Carry: Cardinal;
-  TmpLimb, Carry: Cardinal;
+  TmpLimb, Carry: TLimb;
   CarryIn, CarryOut: Boolean;
 
 begin
   Assert(DndLen > DsrLen);
   Assert(DsrLen >= 2);
-//  QLen:= DndLen - DsrLen + 1;
-
-//  Inc(Quotient, QLen);
 
   LoopCount:= DndLen - DsrLen;
   Inc(Quotient, LoopCount);
@@ -1174,12 +1169,12 @@ begin
       if (QGuess.Hi = 0) then begin
 //   yмножаем вторую по старшинству цифру делителя на QGuess
 {$IFDEF TFL_POINTERMATH}
-        Tmp.Value:= UInt64((PDsr - 1)^) * QGuess.Value;
+        Tmp.Value:= (PDsr - 1)^ * QGuess.Value;
         if (Tmp.Hi < RGuess.Lo) then Break;
         if (Tmp.Hi = RGuess.Lo) and
            (Tmp.Lo <= (PDnd - 2)^) then Break;
 {$ELSE}
-        Tmp.Value:= UInt64(GetLimb(PDsr, -1)) * QGuess.Value;
+        Tmp.Value:= GetLimb(PDsr, -1) * QGuess.Value;
         if (Tmp.Hi < RGuess.Lo) then Break;
         if (Tmp.Hi = RGuess.Lo) and
            (Tmp.Lo <= GetLimb(PDnd, -2)) then Break;
@@ -1216,8 +1211,6 @@ begin
       Dec(Count);
     until Count = 0;
 
-//todo:
-
     TmpLimb:= PDnd^ - Carry;
     if (TmpLimb > PDnd^) then begin
 // если мы попали сюда значит QGuess = Q + 1;
@@ -1251,8 +1244,10 @@ begin
       Dec(QGuess.Lo);
     end;
 
+// Возможно этот лимб больше не нужен и обнулять его необязательно
+    PDnd^:= 0;
+
     Quotient^:= QGuess.Lo;
-//    Dec(Quotient);
     Dec(LoopCount);
   until LoopCount = 0;
 

@@ -38,16 +38,12 @@
 // Enable intel 32-bit CPU assembler optimization
 {.$DEFINE TFL_ASM86}
 
-{$IFDEF BUILDLIMB32}
-  {$DEFINE TFL_LIMB32}
-{$ELSE}
-  {$IFDEF BUILDLIMB16}
-    {$DEFINE TFL_LIMB16}
-  {$ELSE}
-    {$IFDEF BUILDLIMB8}
-      {$DEFINE TFL_LIMB8}
-    {$ELSE}
-      {$DEFINE TFL_LIMB32}
+{$IFNDEF TFL_LIMB8}
+  {$IFNDEF TFL_LIMB16}
+    {$IFNDEF TFL_LIMB32}
+      {$IFNDEF TFL_LIMB64}
+        {$DEFINE TFL_LIMB32}
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}
