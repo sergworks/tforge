@@ -4,6 +4,12 @@
 { * ------------------------------------------------------- * }
 { *   # engine unit                                         * }
 { *********************************************************** }
+{ *   De Morgan's laws:                                     * }
+{ *   # not(A and B) = (not A) or (not B)                   * }
+{ *   # not(A or B) = (not A) and (not B)                   * }
+{ *   also used:                                            * }
+{ *   # -A = (not A) + 1 = not(A - 1)                       * }
+{ *********************************************************** }
 
 unit arrProcs;
 
@@ -727,133 +733,146 @@ begin
 end;
 
 procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
-var
-  LMin, L: Cardinal;
-
 begin
   if (LA >= LB) then begin
-    LMin:= LB;
-    L:= LA - LB;
+    LA:= LA - LB;
+    repeat
+      Res^:= A^ or B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0);
+    if (LA > 0) then
+      Move(A^, Res^, LA * SizeOf(TLimb));
   end
   else begin
-    LMin:= LA;
-    L:= LB - LA;
+    LB:= LB - LA;
+    repeat
+      Res^:= A^ or B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0);
+    Move(B^, Res^, LB * SizeOf(TLimb));
   end;
-  Assert(LMin > 0);
-  repeat
-    Res^:= A^ or B^;
-    Inc(A);
-    Inc(B);
-    Inc(Res);
-    Dec(LMin);
-  until (LMin > 0);
-  if (L > 0) then
-    Move(A^, Res^, L * SizeOf(TLimb));
 end;
 
+// Res = -(A or (-B)) = -(A or not(B-1)) = not(A or not(B-1)) + 1 =
+//     = (not(A) and (B-1)) + 1
+// B[0..LB-1] <> 0 because is abs of negative value
+// Res[0..LB-1]
 procedure arrOrTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
 var
-  Carry: Boolean;
+  Borrow, Carry: Boolean;
   Tmp: TLimb;
 
 begin
   if LA >= LB then begin
     Assert(LB > 0);
     Dec(LA, LB);
-//    Carry:= True;
+    Borrow:= True;
+    Carry:= True;
     repeat
-      Tmp:= not B^;
-      Inc(Tmp);
-      Carry:= Tmp = 0;
-      Res^:= A^ or Tmp;
+      Tmp:= B^;
+      if Borrow then begin
+        Borrow:= Tmp = 0;
+        Dec(Tmp);
+      end;
+      Tmp:= not (A^) and Tmp;
+      if Carry then begin
+        Inc(Tmp);
+        Carry:= Tmp = 0;
+      end;
+      Res^:= Tmp;
       Inc(A);
       Inc(B);
       Inc(Res);
       Dec(LB);
-    until (LB = 0) or not Carry;
-    while (LB > 0) do begin
-      Res^:= A^ and not B^;
-      Inc(A);
-      Inc(B);
-      Inc(Res);
-      Dec(LB);
-    end;
-    if (LA > 0) then
-      Move(A^, Res^, LA * SizeOf(TLimb));
+    until (LB = 0);
   end
   else begin
     Assert(LA > 0);
     Dec(LB, LA);
-//    Carry:= True;
+    Borrow:= True;
+    Carry:= True;
+
     repeat
-      Tmp:= not B^;
-      Inc(Tmp);
-      Carry:= Tmp = 0;
-      Res^:= A^ and Tmp;
+      Tmp:= B^;
+      if Borrow then begin
+        Borrow:= Tmp = 0;
+        Dec(Tmp);
+      end;
+      Tmp:= not (A^) and Tmp;
+      if Carry then begin
+        Inc(Tmp);
+        Carry:= Tmp = 0;
+      end;
+      Res^:= Tmp;
       Inc(A);
       Inc(B);
       Inc(Res);
       Dec(LA);
-    until (LA = 0) or not Carry;
-    while (LA > 0) do begin
-      Res^:= A^ and not B^;
-      Inc(A);
+    until (LA = 0);
+
+    repeat
+      Tmp:= B^;
+      if Borrow then begin
+        Borrow:= Tmp = 0;
+        Dec(Tmp);
+      end;
+      if Carry then begin
+        Inc(Tmp);
+        Carry:= Tmp = 0;
+      end;
+      Res^:= Tmp;
       Inc(B);
       Inc(Res);
-      Dec(LA);
-    end;
-    if (LB > 0) then
-      Move(B^, Res^, LB * SizeOf(TLimb));
+      Dec(LB);
+    until (LB = 0);
   end;
 end;
 
+// Res = -((-A) or (-B)) = -(not(A-1) or not(B-1)) =
+//     = not(not(A-1) or not(B-1)) + 1 =
+//     = (A-1) and (B-1) + 1
 procedure arrOrTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
 var
-  CarryA, CarryB, CarryR: Boolean;
-  TmpA, TmpB: TLimb;
-  SaveRes: PLimb;
-  LMin, L: Cardinal;
+  BorrowA, BorrowB, CarryR: Boolean;
+  TmpA, TmpB, TmpR: TLimb;
+  L: Cardinal;
 
 begin
-  CarryA:= True;
-  CarryB:= True;
-  SaveRes:= Res;
-  if (LA >= LB) then begin
-    LMin:= LB;
-    L:= LA - LB;
-  end
-  else begin
-    LMin:= LA;
-    L:= LB - LA;
-  end;
-  Assert(LMin > 0);
+  BorrowA:= True;
+  BorrowB:= True;
+  CarryR:= True;
+  if (LA >= LB)
+    then L:= LB
+    else L:= LA;
+  Assert(L > 0);
   repeat
-    TmpA:= not A^;
-    if CarryA then begin
-      Inc(TmpA);
-      CarryA:= TmpA = 0;
+    TmpA:= A^;
+    if BorrowA then begin
+      BorrowA:= TmpA = 0;
+      Dec(TmpA);
     end;
-    TmpB:= not B^;
-    if CarryB then begin
-      Inc(TmpB);
-      CarryB:= TmpB = 0;
+    TmpB:= B^;
+    if BorrowB then begin
+      BorrowB:= TmpB = 0;
+      Dec(TmpB);
     end;
-    Res^:= TmpA or TmpB;
+    TmpR:= TmpA and TmpB;
+    if CarryR then begin
+      Inc(TmpR);
+      CarryR:= TmpR = 0;
+    end;
+    Res^:= TmpR;
     Inc(A);
     Inc(B);
     Inc(Res);
     Dec(L);
   until (L = 0);
-//  CarryR:= True;
-  repeat
-    SaveRes^:= not SaveRes^ + 1;
-    CarryR:= (SaveRes^ = 0);
-    Inc(SaveRes);
-  until (SaveRes = Res) or not CarryR;
-  while (SaveRes <> Res) do begin
-    SaveRes^:= not SaveRes^;
-    Inc(SaveRes);
-  end;
 end;
 
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;

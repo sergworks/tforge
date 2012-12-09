@@ -2655,8 +2655,14 @@ begin
         Tmp.FUsed:=
           arrShlShort(@A.FLimbs[LimbShift], @Tmp.FLimbs, UsedR, BitShift);
         if Tmp.FUsed = 0 then Tmp.FUsed:= 1;
-        if (Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0) then
-          Tmp.FSign:= A.FSign;
+
+//        if (Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0) then
+//          Tmp.FSign:= A.FSign;
+
+        Tmp.FSign:= A.FSign;
+        if (Tmp.FSign < 0) and (Tmp.FUsed = 1) and (Tmp.FLimbs[0] = 0) then
+          Tmp.FLimbs[0]:= 1;
+
         if R <> nil then Release(R);
         R:= Tmp;
       end;
@@ -2884,8 +2890,63 @@ end;
 
 class function TBigNumber.OrNumbers(A, B: PBigNumber;
   var R: PBigNumber): HResult;
+var
+  UsedA, UsedB, UsedR: Cardinal;
+  Tmp: PBigNumber;
+
 begin
-// todo:
+  UsedA:= A.FUsed;
+  UsedB:= B.FUsed;
+
+  if A.FSign >= 0 then begin
+    if B.FSign >= 0 then begin
+                                      // A >= 0, B >= 0
+      if UsedA >= UsedB
+        then UsedR:= UsedA
+        else UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrOr(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+      end;
+    end
+    else begin
+                                      // A >= 0, B < 0
+      UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrOrTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+        Tmp.FSign:= -1;
+      end;
+    end
+  end
+  else begin
+    if B.FSign >= 0 then begin
+                                      // A < 0, B >= 0
+      UsedR:= UsedA;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrOrTwoCompl(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
+        Tmp.FSign:= -1;
+      end;
+    end
+    else begin
+                                      // A < 0, B < 0
+      if UsedA >= UsedB
+        then UsedR:= UsedB
+        else UsedR:= UsedA;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrOrTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+        Tmp.FSign:= -1;
+      end
+    end;
+  end;
+  if Result = TFL_S_OK then begin
+    Tmp.FUsed:= UsedR;
+    Normalize(Tmp);
+    if R <> nil then Release(R);
+    R:= Tmp;
+  end;
 end;
 
 class function TBigNumber.OrNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
