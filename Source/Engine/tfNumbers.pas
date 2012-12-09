@@ -2808,7 +2808,7 @@ begin
         else UsedR:= UsedA;
       Result:= AllocNumber(Tmp, UsedR);
       if Result = TFL_S_OK then
-        arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+        arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedR);
     end
     else begin
       UsedR:= UsedA;
@@ -2854,31 +2854,22 @@ end;
 
 class function TBigNumber.AndNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
 var
-  UsedA, UsedB: Cardinal;
+  UsedA, UsedB, UsedR: Cardinal;
   Tmp: PBigNumber;
 
 begin
   UsedA:= A.FUsed;
   UsedB:= B.FUsed;
-  if UsedA >= UsedB then begin
-    Result:= AllocNumber(Tmp, UsedB);
-    if Result = TFL_S_OK then begin
-      arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
-      Tmp.FUsed:= UsedA;
-      Normalize(Tmp);
-      if R <> nil then Release(R);
-      R:= Tmp;
-    end;
-  end
-  else begin
-    Result:= AllocNumber(Tmp, UsedA);
-    if Result = TFL_S_OK then begin
-      arrAnd(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
-      Tmp.FUsed:= UsedB;
-      Normalize(Tmp);
-      if R <> nil then Release(R);
-      R:= Tmp;
-    end;
+  if UsedA >= UsedB
+    then UsedR:= UsedB
+    else UsedR:= UsedA;
+  Result:= AllocNumber(Tmp, UsedR);
+  if Result = TFL_S_OK then begin
+    arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedR);
+    Tmp.FUsed:= UsedR;
+    Normalize(Tmp);
+    if R <> nil then Release(R);
+    R:= Tmp;
   end;
 end;
 

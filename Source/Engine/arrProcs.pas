@@ -66,7 +66,7 @@ function arrShlOne(A, Res: PLimb; LA: Cardinal): Cardinal;
 function arrShrOne(A, Res: PLimb; LA: Cardinal): Cardinal;
 
 { Bitwise boolean }
-procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrAnd(A, B, Res: PLimb; L: Cardinal);
 procedure arrAndTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
 function arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 
@@ -592,14 +592,9 @@ begin
 end;
 
 { Bitwise boolean }
-procedure arrAnd(A, B, Res: PLimb; LA, LB: Cardinal);
-var
-  L: Cardinal;
 
+procedure arrAnd(A, B, Res: PLimb; L: Cardinal);
 begin
-  if (LA >= LB)
-    then L:= LB
-    else L:= LA;
   Assert(L > 0);
   repeat
      Res^:= A^ and B^;
