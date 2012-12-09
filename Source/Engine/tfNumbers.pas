@@ -1989,12 +1989,6 @@ begin
     S:= WideString(Tmp);
 end;
 
-class function TBigNumber.XorNumbers(A, B: PBigNumber;
-  var R: PBigNumber): HResult;
-begin
-// todo:
-end;
-
 const
   BigNumPrefixSize = SizeOf(TBigNumber) - SizeOf(TBigNumber.TLimbArray);
 
@@ -2974,6 +2968,69 @@ begin
       if R <> nil then Release(R);
       R:= Tmp;
     end;
+  end;
+end;
+
+class function TBigNumber.XorNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+var
+  UsedA, UsedB, UsedR: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  UsedA:= A.FUsed;
+  UsedB:= B.FUsed;
+
+  if A.FSign >= 0 then begin
+    if B.FSign >= 0 then begin
+                                      // A >= 0, B >= 0
+      if UsedA >= UsedB
+        then UsedR:= UsedA
+        else UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrXor(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+      end;
+    end
+    else begin
+                                      // A >= 0, B < 0
+      if UsedA >= UsedB
+        then UsedR:= UsedA
+        else UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrXorTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+        Tmp.FSign:= -1;
+      end;
+    end
+  end
+  else begin
+    if B.FSign >= 0 then begin
+                                      // A < 0, B >= 0
+      if UsedA >= UsedB
+        then UsedR:= UsedA
+        else UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrXorTwoCompl(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
+        Tmp.FSign:= -1;
+      end;
+    end
+    else begin
+                                      // A < 0, B < 0
+      if UsedA >= UsedB
+        then UsedR:= UsedA
+        else UsedR:= UsedB;
+      Result:= AllocNumber(Tmp, UsedR);
+      if Result = TFL_S_OK then begin
+        arrXorTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
+      end
+    end;
+  end;
+  if Result = TFL_S_OK then begin
+    Tmp.FUsed:= UsedR;
+    Normalize(Tmp);
+    if R <> nil then Release(R);
+    R:= Tmp;
   end;
 end;
 

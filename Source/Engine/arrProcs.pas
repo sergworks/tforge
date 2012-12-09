@@ -9,6 +9,8 @@
 { *   # not(A or B) = (not A) and (not B)                   * }
 { *   also used:                                            * }
 { *   # -A = (not A) + 1 = not(A - 1)                       * }
+{ *   # not(A xor B) = (not A) xor B = A xor (not B)        * }
+{ *   # (not A) xor (not B) = A xor B                       * }
 { *********************************************************** }
 
 unit arrProcs;
@@ -71,6 +73,10 @@ function arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 procedure arrOr(A, B, Res: PLimb; LA, LB: Cardinal);
 procedure arrOrTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
 procedure arrOrTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+
+procedure arrXor(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrXorTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+procedure arrXorTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
 
 implementation
 
@@ -873,6 +879,174 @@ begin
     Inc(Res);
     Dec(L);
   until (L = 0);
+end;
+
+procedure arrXor(A, B, Res: PLimb; LA, LB: Cardinal);
+begin
+  if (LA >= LB) then begin
+    LA:= LA - LB;
+    repeat
+      Res^:= A^ xor B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0);
+    if (LA > 0) then
+      Move(A^, Res^, LA * SizeOf(TLimb));
+  end
+  else begin
+    LB:= LB - LA;
+    repeat
+      Res^:= A^ xor B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0);
+    Move(B^, Res^, LB * SizeOf(TLimb));
+  end;
+end;
+
+// Res = -(A xor (-B)) = -(A xor not(B-1)) = not(A xor not(B-1)) + 1 =
+//     = (A xor (B-1)) + 1
+// B[0..LB-1] <> 0 because is abs of negative value
+procedure arrXorTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  Borrow, Carry: Boolean;
+  Tmp: TLimb;
+
+begin
+  if LA >= LB then begin
+    Assert(LB > 0);
+    Dec(LA, LB);
+    Borrow:= True;
+    Carry:= True;
+    repeat
+      Tmp:= B^;
+      if Borrow then begin
+        Borrow:= Tmp = 0;
+        Dec(Tmp);
+      end;
+      Tmp:= A^ xor Tmp;
+      if Carry then begin
+        Inc(Tmp);
+        Carry:= Tmp = 0;
+      end;
+      Res^:= Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0);
+    Assert(not Borrow);
+    while Carry and (LA > 0) do begin
+      Tmp:= A^ + 1;
+      Carry:= Tmp = 0;
+      Res^:= Tmp;
+      Inc(A);
+      Inc(Res);
+      Dec(LA);
+    end;
+    if (LA > 0) then
+      Move(A^, Res^, LA * SizeOf(TLimb));
+  end
+  else begin
+    Assert(LA > 0);
+    Dec(LB, LA);
+    Borrow:= True;
+    Carry:= True;
+    repeat
+      Tmp:= B^;
+      if Borrow then begin
+        Borrow:= Tmp = 0;
+        Dec(Tmp);
+      end;
+      Tmp:= A^ xor Tmp;
+      if Carry then begin
+        Inc(Tmp);
+        Carry:= Tmp = 0;
+      end;
+      Res^:= Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0);
+
+    repeat
+      Tmp:= B^;
+      if Borrow then begin
+        Borrow:= Tmp = 0;
+        Dec(Tmp);
+      end;
+      if Carry then begin
+        Inc(Tmp);
+        Carry:= Tmp = 0;
+      end;
+      Res^:= Tmp;
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0);
+  end;
+end;
+
+// Res = (-A) xor (-B) = not(A-1) xor not(B-1) =
+//     = (A-1) xor (B-1)
+procedure arrXorTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  BorrowA, BorrowB: Boolean;
+  TmpA, TmpB: TLimb;
+
+begin
+  Assert(LA > 0);
+  Assert(LB > 0);
+  BorrowA:= True;
+  BorrowB:= True;
+  if (LA >= LB) then begin
+    Dec(LA, LB);
+    repeat
+      TmpA:= A^;
+      if BorrowA then begin
+        BorrowA:= TmpA = 0;
+        Dec(TmpA);
+      end;
+      TmpB:= B^;
+      if BorrowB then begin
+        BorrowB:= TmpB = 0;
+        Dec(TmpB);
+      end;
+      Res^:= TmpA xor TmpB;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    until (LB = 0);
+    if (LA > 0) then
+      Move(A^, Res^, LA * SizeOf(TLimb));
+  end
+  else begin
+    Dec(LB, LA);
+    repeat
+      TmpA:= A^;
+      if BorrowA then begin
+        BorrowA:= TmpA = 0;
+        Dec(TmpA);
+      end;
+      TmpB:= B^;
+      if BorrowB then begin
+        BorrowB:= TmpB = 0;
+        Dec(TmpB);
+      end;
+      Res^:= TmpA xor TmpB;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0);
+    Move(B^, Res^, LB * SizeOf(TLimb));
+  end;
 end;
 
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
