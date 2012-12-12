@@ -35,55 +35,60 @@ const
 type
   IBigNumber = interface
 
-    function GetIsEven: Boolean; stdcall;
-    function GetIsOne: Boolean; stdcall;
-    function GetIsPowerOfTwo: Boolean; stdcall;
-    function GetIsZero: Boolean; stdcall;
-    function GetSign: Integer; stdcall;
+    function GetIsEven: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIsOne: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIsPowerOfTwo: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIsZero: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetSign: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function CompareNumber(Num: IBigNumber): Integer; stdcall;
-    function CompareNumberU(Num: IBigNumber): Integer; stdcall;
+    function CompareNumber(Num: IBigNumber): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareNumberU(Num: IBigNumber): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AddNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function AddNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function SubNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function SubNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function MulNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function DivModNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
-    function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
+    function AddNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivModNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function OrNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function XorNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+    function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function OrNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function XorNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
-    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
+    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AbsNumber(var Res: IBigNumber): HRESULT; stdcall;
-    function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
-    function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
-    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
+    function AbsNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToWideString(var S: WideString): HRESULT; stdcall;
-    function ToWideHexString(var S: WideString; TwoCompl: Boolean): HRESULT; stdcall;
+    function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToWideHexString(var S: WideString; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function AddIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function AddIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
+    function CompareToLimb(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToLimbU(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToIntLimb(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToIntLimbU(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function SubLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function SubLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function SubIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
+    function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function MulLimb(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function MulLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function MulIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
-    function MulIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT; stdcall;
+    function SubLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function MulLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   end;
 

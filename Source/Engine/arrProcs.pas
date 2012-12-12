@@ -597,14 +597,70 @@ procedure arrAnd(A, B, Res: PLimb; L: Cardinal);
 begin
   Assert(L > 0);
   repeat
-     Res^:= A^ and B^;
-     Inc(A);
-     Inc(B);
-     Inc(Res);
-     Dec(L);
+    Res^:= A^ and B^;
+    Inc(A);
+    Inc(B);
+    Inc(Res);
+    Dec(L);
   until L = 0;
 end;
 
+// Res = A and (-B)) = A and not(B-1)
+// B[0..LB-1] <> 0 because is abs of negative value
+// Res[0..LA-1]
+procedure arrAndTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
+var
+  Borrow: Boolean;
+  Tmp: TLimb;
+
+begin
+  Assert(LA > 0);
+  Assert(LB > 0);
+  if LA >= LB then begin
+    Dec(LA, LB);
+    repeat
+      Tmp:= B^;
+      Borrow:= Tmp = 0;
+      Dec(Tmp);
+      Res^:= A^ and not Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+//    until (LB = 0) or not Borrow;
+    until not Borrow;
+    while (LB > 0) do begin
+      Res^:= A^ and not B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LB);
+    end;
+    if (LA > 0) then
+      Move(A^, Res^, LA * SizeOf(TLimb));
+  end
+  else begin    { LA < LB }
+    repeat
+      Tmp:= B^;
+      Borrow:= Tmp = 0;
+      Dec(Tmp);
+      Res^:= A^ and not Tmp;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    until (LA = 0) or not Borrow;
+    while (LA > 0) do begin
+      Res^:= A^ and not B^;
+      Inc(A);
+      Inc(B);
+      Inc(Res);
+      Dec(LA);
+    end;
+  end;
+end;
+
+(*
 procedure arrAndTwoCompl(A, B, Res: PLimb; LA, LB: Cardinal);
 var
   Carry: Boolean;
@@ -670,8 +726,12 @@ begin
     end;
   end;
 end;
+*)
 
 // A < 0, B < 0
+// Res = -((-A) and (-B)) = -(not(A - 1) and not(B - 1)) =
+//     = not(not(A - 1) and not(B - 1)) + 1 =
+//     = ((A - 1) or (B - 1)) + 1
 function arrAndTwoCompl2(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 var
   CarryA, CarryB, CarryR: Boolean;

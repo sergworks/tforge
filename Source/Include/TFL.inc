@@ -29,15 +29,6 @@
   {$ENDIF}
 {$ENDIF}
 
-// Enable to build dll
-{.$DEFINE TFL_DLL}
-
-// Enable logging
-{$DEFINE TFL_LOG}
-
-// Enable intel 32-bit CPU assembler optimization
-{.$DEFINE TFL_ASM86}
-
 {$IFNDEF TFL_LIMB8}
   {$IFNDEF TFL_LIMB16}
     {$IFNDEF TFL_LIMB32}
@@ -47,6 +38,21 @@
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}
+
+// Enable to build dll
+{.$DEFINE TFL_DLL}
+
+{$IFNDEF TFL_STDCALL}
+  {$IFDEF TFL_DLL}
+    {$DEFINE TFL_STDCALL}
+  {$ENDIF}
+{$ENDIF}
+
+// Enable logging
+{$DEFINE TFL_LOG}
+
+// Enable intel 32-bit CPU assembler optimization
+{.$DEFINE TFL_ASM86}
 
 // -----------------------------------------------------
 

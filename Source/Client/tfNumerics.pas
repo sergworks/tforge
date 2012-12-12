@@ -31,6 +31,8 @@ type
     procedure Free;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
+    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+
     class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
 
     class operator Explicit(const Value: BigCardinal): Cardinal;
@@ -60,6 +62,35 @@ type
     class operator BitwiseOr(const A, B: BigCardinal): BigCardinal;
 
 {$IFDEF LIMB32}
+    function CompareTo(const B: Cardinal): Integer; overload; inline;
+    function CompareTo(const B: Integer): Integer; overload; inline;
+    function CompareToCard(const B: Cardinal): Integer;
+    function CompareToInt(const B: Integer): Integer;
+    class operator Equal(const A: BigCardinal; const B: Cardinal): Boolean;
+    class operator Equal(const A: Cardinal; const B: BigCardinal): Boolean;
+    class operator Equal(const A: BigCardinal; const B: Integer): Boolean;
+    class operator Equal(const A: Integer; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: Cardinal): Boolean;
+    class operator NotEqual(const A: Cardinal; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: Integer): Boolean;
+    class operator NotEqual(const A: Integer; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: Cardinal): Boolean;
+    class operator GreaterThan(const A: Cardinal; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: Integer): Boolean;
+    class operator GreaterThan(const A: Integer; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Integer): Boolean;
+    class operator GreaterThanOrEqual(const A: Integer; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: Cardinal): Boolean;
+    class operator LessThan(const A: Cardinal; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: Integer): Boolean;
+    class operator LessThan(const A: Integer; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean;
+    class operator LessThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: Integer): Boolean;
+    class operator LessThanOrEqual(const A: Integer; const B: BigCardinal): Boolean;
+
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
 {$ENDIF}
@@ -175,6 +206,11 @@ begin
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
                       PBigNumber(B.FNumber));
 {$ENDIF}
+end;
+
+function BigCardinal.CompareTo(const B: BigCardinal): Integer;
+begin
+  Result:= Compare(Self, B);
 end;
 
 function BigCardinal.ToBytes: TBytes;
@@ -387,6 +423,153 @@ begin
 end;
 
 {$IFDEF LIMB32}
+function BigCardinal.CompareTo(const B: Cardinal): Integer;
+begin
+  Result:= CompareToCard(B);
+end;
+
+function BigCardinal.CompareTo(const B: Integer): Integer;
+begin
+  Result:= CompareToInt(B);
+end;
+
+function BigCardinal.CompareToCard(const B: Cardinal): Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.CompareToLimbU(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToLimbU(PBigNumber(FNumber), B);
+{$ENDIF}
+end;
+
+function BigCardinal.CompareToInt(const B: Integer): Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.CompareToIntLimbU(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToIntLimbU(PBigNumber(FNumber), B);
+{$ENDIF}
+end;
+
+class operator BigCardinal.Equal(const A: BigCardinal; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) = 0;
+end;
+
+class operator BigCardinal.Equal(const A: Cardinal; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToCard(A) = 0;
+end;
+
+class operator BigCardinal.Equal(const A: BigCardinal; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) = 0;
+end;
+
+class operator BigCardinal.Equal(const A: Integer; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt(A) = 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: BigCardinal; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) <> 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: Cardinal; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToCard(A) <> 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: BigCardinal; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) <> 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: Integer; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt(A) <> 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) > 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: Cardinal; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToCard(A) < 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) > 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: Integer; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt(A) < 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) >= 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToCard(A) <= 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) >= 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: Integer; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt(A) <= 0;
+end;
+
+class operator BigCardinal.LessThan(const A: BigCardinal; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) < 0;
+end;
+
+class operator BigCardinal.LessThan(const A: Cardinal; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToCard(A) > 0;
+end;
+
+class operator BigCardinal.LessThan(const A: BigCardinal; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) < 0;
+end;
+
+class operator BigCardinal.LessThan(const A: Integer; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt(A) > 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) <= 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToCard(A) >= 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) <= 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: Integer; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt(A) >= 0;
+end;
 
 class operator BigCardinal.Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
 begin
@@ -397,7 +580,6 @@ class operator BigCardinal.Add(const A: Cardinal; const B: BigCardinal): BigCard
 begin
   HResCheck(B.FNumber.AddLimbU(A, Result.FNumber), 'BigCardinal.AddLimb');
 end;
-
 {$ENDIF}
 
 { BigInteger }

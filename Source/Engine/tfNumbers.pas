@@ -55,57 +55,106 @@ type
     class function Addref(Inst: PBigNumber): Integer; stdcall; static;
     class function Release(Inst: PBigNumber): Integer; stdcall; static;
 
-    class function GetIsEven(Inst: PBigNumber): Boolean; stdcall; static;
-    class function GetIsOne(Inst: PBigNumber): Boolean; stdcall; static;
-    class function GetIsPowerOfTwo(Inst: PBigNumber): Boolean; stdcall; static;
-    class function GetIsZero(Inst: PBigNumber): Boolean; stdcall; static;
-    class function GetSign(Inst: PBigNumber): Integer; stdcall; static;
+    class function GetIsEven(Inst: PBigNumber): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetIsOne(Inst: PBigNumber): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetIsPowerOfTwo(Inst: PBigNumber): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetIsZero(Inst: PBigNumber): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetSign(Inst: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function CompareNumbers(A, B: PBigNumber): Integer; stdcall; static;
-    class function CompareNumbersU(A, B: PBigNumber): Integer; stdcall; static;
+    class function CompareNumbers(A, B: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareNumbersU(A, B: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function AddNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function SubNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function SubNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function MulNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function MulNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function DivModNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
-    class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult; stdcall; static;
+    class function AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function AddNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function MulNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function MulNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DivModNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AndNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function AndNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function OrNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function OrNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function XorNumbers(A, B: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
+    class function AndNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function AndNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function OrNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function OrNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function XorNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function LeftShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult; stdcall; static;
-    class function RightShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult; stdcall; static;
+    class function LeftShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function RightShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AbsNumber(A: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
-    class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
-    class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult; stdcall; static;
-    class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult; stdcall; static;
+    class function AbsNumber(A: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult; stdcall; static;
-    class function ToWideString(A: PBigNumber; var S: WideString): HResult; stdcall; static;
-    class function ToWideHexString(A: PBigNumber; var S: WideString;
-                   TwoCompl: Boolean): HResult; stdcall; static;
+    class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ToWideString(A: PBigNumber; var S: WideString): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ToWideHexString(A: PBigNumber; var S: WideString; TwoCompl: Boolean): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function AddIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function AddIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult; stdcall; static;
+    class function CompareToLimb(A: PBigNumber; Limb: TLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareToLimbU(A: PBigNumber; Limb: TLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareToIntLimb(A: PBigNumber; Limb: TIntLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareToIntLimbU(A: PBigNumber; Limb: TIntLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult; stdcall; static;
+    class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function AddIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function AddIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult; stdcall; static;
-    class function MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult; stdcall; static;
+    class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
 // -- end of IBigNumber implementation
 
@@ -180,7 +229,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..42] of Pointer = (
+  BigNumVTable: array[0..46] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -219,6 +268,11 @@ const
 
    @TBigNumber.ToWideString,
    @TBigNumber.ToWideHexString,
+
+   @TBigNumber.CompareToLimb,
+   @TBigNumber.CompareToLimbU,
+   @TBigNumber.CompareToIntLimb,
+   @TBigNumber.CompareToIntLimbU,
 
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
@@ -331,6 +385,57 @@ begin
   Result:= A.FUsed - B.FUsed;
   if Result = 0 then
     Result:= arrCmp(@A.FLimbs, @B.FLimbs, A.FUsed);
+end;
+
+class function TBigNumber.CompareToIntLimb(A: PBigNumber; Limb: TIntLimb): Integer;
+begin
+  Result:= A.FUsed - 1;
+  if Result = 0 then begin
+    if (A.FSign >= 0) then begin
+      if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
+      else if A.FLimbs[0] = TLimb(Limb) then Result:= 0
+      else Result:= -1;
+    end
+    else begin
+      Limb:= -Limb;
+      if (Limb <= 0) or (A.FLimbs[0] < TLimb(Limb)) then Result:= 1
+      else if A.FLimbs[0] = TLimb(Limb) then Result:= 0
+      else Result:= -1;
+    end;
+  end
+  else if (A.FSign >= 0) then Result:= 1
+  else Result:= -1;
+end;
+
+class function TBigNumber.CompareToIntLimbU(A: PBigNumber; Limb: TIntLimb): Integer;
+begin
+  Result:= A.FUsed - 1;
+  if Result = 0 then begin
+    if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
+    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= 0
+    else Result:= -1;
+  end;
+end;
+
+class function TBigNumber.CompareToLimb(A: PBigNumber; Limb: TLimb): Integer;
+begin
+  Result:= A.FUsed - 1;
+  if Result = 0 then begin
+    if (A.FLimbs[0] > Limb) then Result:= 1
+    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= 0
+    else Result:= -1;
+  end;
+  if (A.FSign < 0) then Result:= - Result;
+end;
+
+class function TBigNumber.CompareToLimbU(A: PBigNumber; Limb: TLimb): Integer;
+begin
+  Result:= A.FUsed - 1;
+  if Result = 0 then begin
+    if (A.FLimbs[0] > Limb) then Result:= 1
+    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= 0
+    else Result:= -1;
+  end;
 end;
 
 class function TBigNumber.AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
