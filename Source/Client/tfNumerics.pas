@@ -27,7 +27,7 @@ type
     function ToString: string;
     function ToHexString(TwoCompl: Boolean): string;
     function ToBytes: TBytes;
-    function TryFromString(const S: string): Boolean;
+    function TryParse(const S: string): Boolean;
     procedure Free;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
@@ -104,13 +104,14 @@ type
     function ToString: string;
     function ToHexString(TwoCompl: Boolean): string;
     function ToBytes: TBytes;
-    function TryFromString(const S: string): Boolean;
+    function TryParse(const S: string): Boolean;
     procedure Free;
 
     property Sign: Integer read GetSign;
 
-    class function Abs(const A: BigInteger): BigInteger; static;
     class function Compare(const A, B: BigInteger): Integer; static;
+
+    class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
@@ -239,7 +240,7 @@ begin
 {$ENDIF}
 end;
 
-function BigCardinal.TryFromString(const S: string): Boolean;
+function BigCardinal.TryParse(const S: string): Boolean;
 {$IFDEF TFL_DLL}
 var
   WS: WideString;
@@ -283,16 +284,6 @@ begin
   Result:= Compare(A, B) >= 0;
 end;
 
-class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
-begin
-  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
-end;
-
-class operator BigCardinal.RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
-begin
-  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
-end;
-
 class operator BigCardinal.LessThan(const A, B: BigCardinal): Boolean;
 begin
   Result:= Compare(A, B) < 0;
@@ -301,6 +292,16 @@ end;
 class operator BigCardinal.LessThanOrEqual(const A, B: BigCardinal): Boolean;
 begin
   Result:= Compare(A, B) <= 0;
+end;
+
+class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
+end;
+
+class operator BigCardinal.RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+begin
+  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
 end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
@@ -786,7 +787,7 @@ begin
 {$ENDIF}
 end;
 
-function BigInteger.TryFromString(const S: string): Boolean;
+function BigInteger.TryParse(const S: string): Boolean;
 {$IFDEF TFL_DLL}
 var
   WS: WideString;

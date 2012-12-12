@@ -393,14 +393,12 @@ begin
   if Result = 0 then begin
     if (A.FSign >= 0) then begin
       if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
-      else if A.FLimbs[0] = TLimb(Limb) then Result:= 0
-      else Result:= -1;
+      else if A.FLimbs[0] < TLimb(Limb) then Result:= -1;
     end
     else begin
       Limb:= -Limb;
-      if (Limb <= 0) or (A.FLimbs[0] < TLimb(Limb)) then Result:= 1
-      else if A.FLimbs[0] = TLimb(Limb) then Result:= 0
-      else Result:= -1;
+      if (Limb <= 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= -1
+      else if A.FLimbs[0] < TLimb(Limb) then Result:= 1;
     end;
   end
   else if (A.FSign >= 0) then Result:= 1
@@ -412,8 +410,7 @@ begin
   Result:= A.FUsed - 1;
   if Result = 0 then begin
     if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
-    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= 0
-    else Result:= -1;
+    else if (A.FLimbs[0] < TLimb(Limb)) then Result:= -1;
   end;
 end;
 
@@ -422,8 +419,7 @@ begin
   Result:= A.FUsed - 1;
   if Result = 0 then begin
     if (A.FLimbs[0] > Limb) then Result:= 1
-    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= 0
-    else Result:= -1;
+    else if (A.FLimbs[0] < TLimb(Limb)) then Result:= -1;
   end;
   if (A.FSign < 0) then Result:= - Result;
 end;
@@ -433,8 +429,7 @@ begin
   Result:= A.FUsed - 1;
   if Result = 0 then begin
     if (A.FLimbs[0] > Limb) then Result:= 1
-    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= 0
-    else Result:= -1;
+    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= -1;
   end;
 end;
 
