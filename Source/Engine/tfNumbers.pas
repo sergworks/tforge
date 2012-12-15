@@ -83,9 +83,9 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function MulNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DivModNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+    class function DivRemNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+    class function DivRemNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function AndNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
@@ -249,8 +249,8 @@ const
    @TBigNumber.SubNumbersU,
    @TBigNumber.MulNumbers,
    @TBigNumber.MulNumbersU,
-   @TBigNumber.DivModNumbers,
-   @TBigNumber.DivModNumbersU,
+   @TBigNumber.DivRemNumbers,
+   @TBigNumber.DivRemNumbersU,
 
    @TBigNumber.AndNumbers,
    @TBigNumber.AndNumbersU,
@@ -912,7 +912,7 @@ begin
   end;
 end;
 
-class function TBigNumber.DivModNumbers(A, B: PBigNumber;
+class function TBigNumber.DivRemNumbers(A, B: PBigNumber;
                                         var Q, R: PBigNumber): HResult;
 var
   Cond: Boolean;
@@ -1074,7 +1074,7 @@ begin
   R:= Remainder;
 end;
 
-class function TBigNumber.DivModNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+class function TBigNumber.DivRemNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
 var
   Cond: Boolean;
   Diff: Integer;
@@ -3248,7 +3248,7 @@ begin
         Result:= MulNumbers(Tmp, TmpR, TmpR);
         if Result = S_OK then
                                               // TmpR:= TmpR mod Modulo
-          Result:= DivModNumbersU(TmpR, Modulo, Q, TmpR);
+          Result:= DivRemNumbersU(TmpR, Modulo, Q, TmpR);
         if Result <> S_OK then begin
           Release(Tmp);
           Release(TmpR);
@@ -3258,7 +3258,7 @@ begin
       end;
       Result:= MulNumbers(Tmp, Tmp, Tmp);
       if Result = S_OK then
-        Result:= DivModNumbersU(Tmp, Modulo, Q, Tmp);
+        Result:= DivRemNumbersU(Tmp, Modulo, Q, Tmp);
       if Result <> S_OK then begin
         Release(Tmp);
         Release(TmpR);
@@ -3272,7 +3272,7 @@ begin
     while I < TLimbInfo.BitSize do begin
       Result:= MulNumbers(Tmp, Tmp, Tmp);
       if Result = S_OK then
-        Result:= DivModNumbersU(Tmp, Modulo, Q, Tmp);
+        Result:= DivRemNumbersU(Tmp, Modulo, Q, Tmp);
       if Result <> S_OK then begin
         Release(Tmp);
         Release(TmpR);

@@ -50,8 +50,8 @@ type
     function SubNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function MulNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivModNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivModNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AndNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

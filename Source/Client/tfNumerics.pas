@@ -34,6 +34,8 @@ type
     function CompareTo(const B: BigCardinal): Integer; overload; inline;
 
     class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
+    class function DivRem(const Dividend, Divisor: BigCardinal;
+                          var Remainder: BigCardinal): BigCardinal; static;
 
     class operator Explicit(const Value: BigCardinal): Cardinal;
     class operator Explicit(const Value: BigCardinal): Integer;
@@ -113,6 +115,8 @@ type
 
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
+    class function DivRem(const Dividend, Divisor: BigCardinal;
+                          var Remainder: BigCardinal): BigCardinal; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
@@ -382,27 +386,57 @@ end;
 
 class operator BigCardinal.BitwiseAnd(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AndNumberU(B.FNumber, Result.FNumber), 'BigCardinal.And');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.AndNumberU(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.AndNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.And');
 end;
 
 class operator BigCardinal.BitwiseOr(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.OrNumberU(B.FNumber, Result.FNumber), 'BigCardinal.Or');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.OrNumberU(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.OrNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.Or');
 end;
 
 class operator BigCardinal.Add(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AddNumberU(B.FNumber, Result.FNumber), 'BigCardinal.Add');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.AddNumberU(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.AddNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.Add');
 end;
 
 class operator BigCardinal.Subtract(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.SubNumberU(B.FNumber, Result.FNumber), 'BigCardinal.Subtract');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SubNumberU(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SubNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.Subtract');
 end;
 
 class operator BigCardinal.Multiply(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.MulNumberU(B.FNumber, Result.FNumber), 'BigCardinal.Multiply');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.MulNumberU(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.Multiply');
 end;
 
 class operator BigCardinal.IntDivide(const A, B: BigCardinal): BigCardinal;
@@ -410,7 +444,13 @@ var
   Remainder: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivModNumberU(B.FNumber, Result.FNumber, Remainder),
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Result.FNumber, Remainder),
+{$ELSE}
+  HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Result.FNumber),
+            PBigNumber(Remainder)),
+{$ENDIF}
             'BigCardinal.IntDivide');
 end;
 
@@ -419,8 +459,28 @@ var
   Quotient: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivModNumberU(B.FNumber, Quotient, Result.FNumber),
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Quotient, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(A.FNumber),
+            PBigNumber(B.FNumber), PBigNumber(Quotient),
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
             'BigCardinal.Modulus');
+end;
+
+class function BigCardinal.DivRem(const Dividend, Divisor: BigCardinal;
+                                  var Remainder: BigCardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Dividend.FNumber.DivRemNumberU(Divisor.FNumber,
+            Result.FNumber, Remainder),
+{$ELSE}
+  HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(Dividend.FNumber),
+            PBigNumber(Divisor.FNumber), PBigNumber(Result.FNumber),
+            PBigNumber(Remainder.FNumber)),
+{$ENDIF}
+            'BigCardinal.DivRem');
 end;
 
 {$IFDEF LIMB32}
@@ -574,14 +634,27 @@ end;
 
 class operator BigCardinal.Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AddLimbU(B, Result.FNumber), 'BigCardinal.AddLimb');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.AddLimbU(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.AddLimbU(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.AddLimb');
 end;
 
 class operator BigCardinal.Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
 begin
-  HResCheck(B.FNumber.AddLimbU(A, Result.FNumber), 'BigCardinal.AddLimb');
-end;
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.AddLimbU(A, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.AddLimbU(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)),
 {$ENDIF}
+            'BigCardinal.AddLimb');
+end;
+
+{$ENDIF LIMB32}
 
 { BigInteger }
 
@@ -846,7 +919,7 @@ var
   Remainder: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivModNumber(B.FNumber, Result.FNumber, Remainder),
+  HResCheck(A.FNumber.DivRemNumber(B.FNumber, Result.FNumber, Remainder),
             'BigCardinal.IntDivide');
 end;
 
@@ -855,8 +928,22 @@ var
   Quotient: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivModNumber(B.FNumber, Quotient, Result.FNumber),
+  HResCheck(A.FNumber.DivRemNumber(B.FNumber, Quotient, Result.FNumber),
             'BigCardinal.Modulus');
+end;
+
+class function BigInteger.DivRem(const Dividend, Divisor: BigCardinal;
+               var Remainder: BigCardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Dividend.FNumber.DivRemNumber(Divisor.FNumber,
+            Result.FNumber, Remainder),
+{$ELSE}
+  HResCheck(TBigNumber.DivRemNumbers(PBigNumber(Dividend.FNumber),
+            PBigNumber(Divisor.FNumber), PBigNumber(Result.FNumber),
+            PBigNumber(Remainder.FNumber)),
+{$ENDIF}
+            'BigInteger.DivRem');
 end;
 
 {$IFDEF LIMB32}
