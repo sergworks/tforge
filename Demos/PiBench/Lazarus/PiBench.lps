@@ -9,23 +9,21 @@
         <Filename Value="PiBench.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="PiBench"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="1"/>
-        <CursorPos X="1" Y="1"/>
+        <TopLine Value="16"/>
+        <CursorPos X="1" Y="16"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="..\..\BinomCoff\Lazarus\BinomCoff.lpr"/>
         <UnitName Value="BinomCoff"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit1>
     </Units>
     <General>
@@ -33,4 +31,15 @@
     </General>
     <JumpHistory Count="0" HistoryIndex="-1"/>
   </ProjectSession>
+  <Debugging>
+    <BreakPoints Count="1">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="PiBench.lpr"/>
+        <Line Value="24"/>
+      </Item1>
+    </BreakPoints>
+  </Debugging>
 </CONFIG>

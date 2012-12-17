@@ -1791,7 +1791,7 @@ begin
   if BytesUsed = 0 then BytesUsed:= 1;
   NeedExtraByte:= PByte(@A.FLimbs)[BytesUsed - 1] >= $80;
   if (A.FSign >= 0) then begin
-    BytesReq:= BytesUsed + Ord(NeedExtraByte);
+    BytesReq:= BytesUsed + Cardinal(NeedExtraByte);
     if (P <> nil) and (L >= BytesReq) then begin
       Move(A.FLimbs, P^, BytesUsed);
       if NeedExtraByte then P[BytesUsed]:= 0;
@@ -1812,7 +1812,7 @@ begin
         end;
       end;
     end;
-    BytesReq:= BytesUsed + Ord(NeedExtraByte);
+    BytesReq:= BytesUsed + Cardinal(NeedExtraByte);
     if (P <> nil) and (L >= BytesReq) then begin
       P1:= @A.FLimbs;
       Carry:= True;
@@ -1957,7 +1957,7 @@ begin
   P:= @A.FLimbs;
   if A.FSign >= 0 then begin
     NeedExtraByte:= TwoCompl and (P[BytesUsed - 1] >= $80);
-    L:= (BytesUsed + Ord(NeedExtraByte)) * 2;
+    L:= (BytesUsed + Cardinal(NeedExtraByte)) * 2;
     SetLength(S, L);
     P1:= @S[L - 1];
     for I:= 1 to BytesUsed do begin
@@ -1985,7 +1985,7 @@ begin
   end
   else begin
     NeedExtraByte:= P[BytesUsed - 1] < $80;
-    L:= (BytesUsed + Ord(NeedExtraByte)) * 2;
+    L:= (BytesUsed + Cardinal(NeedExtraByte)) * 2;
     SetLength(S, L);
     P1:= @S[L - 1];
     Carry:= True;
@@ -2400,7 +2400,7 @@ begin
       until I + N >= L;
 
       if N and (2 * SizeOf(TLimb) - 1) <> 0 then begin
-        if IsMinus then Limb:= (-1) shl ((N and (2 * SizeOf(TLimb) - 1)) * 4)
+        if IsMinus then Limb:= TLimb((-1) shl ((N and (2 * SizeOf(TLimb) - 1)) * 4))
           or Limb;
         Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
       end;

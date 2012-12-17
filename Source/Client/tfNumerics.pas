@@ -31,70 +31,70 @@ type
     procedure Free;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
-    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+    function CompareTo(const B: BigCardinal): Integer; overload;
 
     class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
     class function DivRem(const Dividend, Divisor: BigCardinal;
                           var Remainder: BigCardinal): BigCardinal; static;
 
-    class operator Explicit(const Value: BigCardinal): Cardinal;
-    class operator Explicit(const Value: BigCardinal): Integer;
-    class operator Implicit(const Value: Cardinal): BigCardinal;
-    class operator Explicit(const Value: Integer): BigCardinal;
-    class operator Explicit(const Value: TBytes): BigCardinal;
-    class operator Explicit(const Value: string): BigCardinal;
+    class operator Explicit(const Value: BigCardinal): Cardinal; inline;
+    class operator Explicit(const Value: BigCardinal): Integer; inline;
+    class operator Implicit(const Value: Cardinal): BigCardinal; inline;
+    class operator Explicit(const Value: Integer): BigCardinal; inline;
+    class operator Explicit(const Value: TBytes): BigCardinal; inline;
+    class operator Explicit(const Value: string): BigCardinal; inline;
 
-    class operator Equal(const A, B: BigCardinal): Boolean;
-    class operator NotEqual(const A, B: BigCardinal): Boolean;
-    class operator GreaterThan(const A, B: BigCardinal): Boolean;
-    class operator GreaterThanOrEqual(const A, B: BigCardinal): Boolean;
-    class operator LessThan(const A, B: BigCardinal): Boolean;
-    class operator LessThanOrEqual(const A, B: BigCardinal): Boolean;
+    class operator Equal(const A, B: BigCardinal): Boolean; inline;
+    class operator NotEqual(const A, B: BigCardinal): Boolean; inline;
+    class operator GreaterThan(const A, B: BigCardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A, B: BigCardinal): Boolean; inline;
+    class operator LessThan(const A, B: BigCardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A, B: BigCardinal): Boolean; inline;
 
-    class operator Add(const A, B: BigCardinal): BigCardinal;
-    class operator Subtract(const A, B: BigCardinal): BigCardinal;
-    class operator Multiply(const A, B: BigCardinal): BigCardinal;
-    class operator IntDivide(const A, B: BigCardinal): BigCardinal;
-    class operator Modulus(const A, B: BigCardinal): BigCardinal;
+    class operator Add(const A, B: BigCardinal): BigCardinal; inline;
+    class operator Subtract(const A, B: BigCardinal): BigCardinal; inline;
+    class operator Multiply(const A, B: BigCardinal): BigCardinal; inline;
+    class operator IntDivide(const A, B: BigCardinal): BigCardinal; inline;
+    class operator Modulus(const A, B: BigCardinal): BigCardinal; inline;
 
-    class operator LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
-    class operator RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
+    class operator LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal; inline;
+    class operator RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal; inline;
 
-    class operator BitwiseAnd(const A, B: BigCardinal): BigCardinal;
-    class operator BitwiseOr(const A, B: BigCardinal): BigCardinal;
+    class operator BitwiseAnd(const A, B: BigCardinal): BigCardinal; inline;
+    class operator BitwiseOr(const A, B: BigCardinal): BigCardinal; inline;
 
 {$IFDEF LIMB32}
     function CompareTo(const B: Cardinal): Integer; overload; inline;
     function CompareTo(const B: Integer): Integer; overload; inline;
     function CompareToCard(const B: Cardinal): Integer;
     function CompareToInt(const B: Integer): Integer;
-    class operator Equal(const A: BigCardinal; const B: Cardinal): Boolean;
-    class operator Equal(const A: Cardinal; const B: BigCardinal): Boolean;
-    class operator Equal(const A: BigCardinal; const B: Integer): Boolean;
-    class operator Equal(const A: Integer; const B: BigCardinal): Boolean;
-    class operator NotEqual(const A: BigCardinal; const B: Cardinal): Boolean;
-    class operator NotEqual(const A: Cardinal; const B: BigCardinal): Boolean;
-    class operator NotEqual(const A: BigCardinal; const B: Integer): Boolean;
-    class operator NotEqual(const A: Integer; const B: BigCardinal): Boolean;
-    class operator GreaterThan(const A: BigCardinal; const B: Cardinal): Boolean;
-    class operator GreaterThan(const A: Cardinal; const B: BigCardinal): Boolean;
-    class operator GreaterThan(const A: BigCardinal; const B: Integer): Boolean;
-    class operator GreaterThan(const A: Integer; const B: BigCardinal): Boolean;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean;
-    class operator GreaterThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Integer): Boolean;
-    class operator GreaterThanOrEqual(const A: Integer; const B: BigCardinal): Boolean;
-    class operator LessThan(const A: BigCardinal; const B: Cardinal): Boolean;
-    class operator LessThan(const A: Cardinal; const B: BigCardinal): Boolean;
-    class operator LessThan(const A: BigCardinal; const B: Integer): Boolean;
-    class operator LessThan(const A: Integer; const B: BigCardinal): Boolean;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean;
-    class operator LessThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: Integer): Boolean;
-    class operator LessThanOrEqual(const A: Integer; const B: BigCardinal): Boolean;
+    class operator Equal(const A: BigCardinal; const B: Cardinal): Boolean; inline;
+    class operator Equal(const A: Cardinal; const B: BigCardinal): Boolean; inline;
+    class operator Equal(const A: BigCardinal; const B: Integer): Boolean; inline;
+    class operator Equal(const A: Integer; const B: BigCardinal): Boolean; inline;
+    class operator NotEqual(const A: BigCardinal; const B: Cardinal): Boolean; inline;
+    class operator NotEqual(const A: Cardinal; const B: BigCardinal): Boolean; inline;
+    class operator NotEqual(const A: BigCardinal; const B: Integer): Boolean; inline;
+    class operator NotEqual(const A: Integer; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThan(const A: BigCardinal; const B: Cardinal): Boolean; inline;
+    class operator GreaterThan(const A: Cardinal; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThan(const A: BigCardinal; const B: Integer): Boolean; inline;
+    class operator GreaterThan(const A: Integer; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Integer): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: Integer; const B: BigCardinal): Boolean; inline;
+    class operator LessThan(const A: BigCardinal; const B: Cardinal): Boolean; inline;
+    class operator LessThan(const A: Cardinal; const B: BigCardinal): Boolean; inline;
+    class operator LessThan(const A: BigCardinal; const B: Integer): Boolean; inline;
+    class operator LessThan(const A: Integer; const B: BigCardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: Cardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: Integer): Boolean; inline;
+    class operator LessThanOrEqual(const A: Integer; const B: BigCardinal): Boolean; inline;
 
-    class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
-    class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
+    class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal; inline;
+    class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal; inline;
 {$ENDIF}
   end;
 
@@ -114,8 +114,8 @@ type
     class function Compare(const A, B: BigInteger): Integer; overload; static;
     class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
     class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
-    function CompareTo(const B: BigInteger): Integer; overload; inline;
-    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+    function CompareTo(const B: BigInteger): Integer; overload;
+    function CompareTo(const B: BigCardinal): Integer; overload;
 
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
@@ -125,33 +125,41 @@ type
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
 
-    class operator Explicit(const Value: BigInteger): Cardinal;
-    class operator Explicit(const Value: BigInteger): Integer;
-    class operator Implicit(const Value: Cardinal): BigInteger;
-    class operator Implicit(const Value: Integer): BigInteger;
-    class operator Explicit(const Value: TBytes): BigInteger;
-    class operator Explicit(const Value: string): BigInteger;
+    class operator Explicit(const Value: BigInteger): Cardinal; inline;
+    class operator Explicit(const Value: BigInteger): Integer; inline;
+    class operator Implicit(const Value: Cardinal): BigInteger; inline;
+    class operator Implicit(const Value: Integer): BigInteger; inline;
+    class operator Explicit(const Value: TBytes): BigInteger; inline;
+    class operator Explicit(const Value: string): BigInteger; inline;
 
-    class operator Equal(const A, B: BigInteger): Boolean;
-    class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean;
-    class operator Equal(const A: BigCardinal; const B: BigInteger): Boolean;
-    class operator NotEqual(const A, B: BigInteger): Boolean;
-    class operator NotEqual(const A: BigInteger; const B: BigCardinal): Boolean;
-    class operator NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
-    class operator GreaterThan(const A, B: BigInteger): Boolean;
-    class operator GreaterThanOrEqual(const A, B: BigInteger): Boolean;
-    class operator LessThan(const A, B: BigInteger): Boolean;
-    class operator LessThanOrEqual(const A, B: BigInteger): Boolean;
+    class operator Equal(const A, B: BigInteger): Boolean; inline;
+    class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+    class operator Equal(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+    class operator NotEqual(const A, B: BigInteger): Boolean; inline;
+    class operator NotEqual(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+    class operator NotEqual(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+    class operator GreaterThan(const A, B: BigInteger): Boolean; inline;
+    class operator GreaterThan(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThan(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+    class operator GreaterThanOrEqual(const A, B: BigInteger): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+    class operator LessThan(const A, B: BigInteger): Boolean; inline;
+    class operator LessThan(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+    class operator LessThan(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+    class operator LessThanOrEqual(const A, B: BigInteger): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean; inline;
 
-    class operator Add(const A, B: BigInteger): BigInteger;
-    class operator Subtract(const A, B: BigInteger): BigInteger;
-    class operator Multiply(const A, B: BigInteger): BigInteger;
-    class operator IntDivide(const A, B: BigInteger): BigInteger;
-    class operator Modulus(const A, B: BigInteger): BigInteger;
+    class operator Add(const A, B: BigInteger): BigInteger; inline;
+    class operator Subtract(const A, B: BigInteger): BigInteger; inline;
+    class operator Multiply(const A, B: BigInteger): BigInteger; inline;
+    class operator IntDivide(const A, B: BigInteger): BigInteger; inline;
+    class operator Modulus(const A, B: BigInteger): BigInteger; inline;
 
-    class operator BitwiseAnd(const A, B: BigInteger): BigInteger;
-    class operator BitwiseOr(const A, B: BigInteger): BigInteger;
-    class operator BitwiseXor(const A, B: BigInteger): BigInteger;
+    class operator BitwiseAnd(const A, B: BigInteger): BigInteger; inline;
+    class operator BitwiseOr(const A, B: BigInteger): BigInteger; inline;
+    class operator BitwiseXor(const A, B: BigInteger): BigInteger; inline;
 
 {$IFDEF LIMB32}
     function CompareTo(const B: Cardinal): Integer; overload; inline;
@@ -159,10 +167,35 @@ type
     function CompareToCard(const B: Cardinal): Integer;
     function CompareToInt(const B: Integer): Integer;
 
-    class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
-    class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
-    class operator Add(const A: BigInteger; const B: Integer): BigInteger;
-    class operator Add(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Equal(const A: BigInteger; const B: Cardinal): Boolean; inline;
+    class operator Equal(const A: Cardinal; const B: BigInteger): Boolean; inline;
+    class operator Equal(const A: BigInteger; const B: Integer): Boolean; inline;
+    class operator Equal(const A: Integer; const B: BigInteger): Boolean; inline;
+    class operator NotEqual(const A: BigInteger; const B: Cardinal): Boolean; inline;
+    class operator NotEqual(const A: Cardinal; const B: BigInteger): Boolean; inline;
+    class operator NotEqual(const A: BigInteger; const B: Integer): Boolean; inline;
+    class operator NotEqual(const A: Integer; const B: BigInteger): Boolean; inline;
+    class operator GreaterThan(const A: BigInteger; const B: Cardinal): Boolean; inline;
+    class operator GreaterThan(const A: Cardinal; const B: BigInteger): Boolean; inline;
+    class operator GreaterThan(const A: BigInteger; const B: Integer): Boolean; inline;
+    class operator GreaterThan(const A: Integer; const B: BigInteger): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: Cardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: Cardinal; const B: BigInteger): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: Integer): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: Integer; const B: BigInteger): Boolean; inline;
+    class operator LessThan(const A: BigInteger; const B: Cardinal): Boolean; inline;
+    class operator LessThan(const A: Cardinal; const B: BigInteger): Boolean; inline;
+    class operator LessThan(const A: BigInteger; const B: Integer): Boolean; inline;
+    class operator LessThan(const A: Integer; const B: BigInteger): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigInteger; const B: Cardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: Cardinal; const B: BigInteger): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigInteger; const B: Integer): Boolean; inline;
+    class operator LessThanOrEqual(const A: Integer; const B: BigInteger): Boolean; inline;
+
+    class operator Add(const A: BigInteger; const B: Cardinal): BigInteger; inline;
+    class operator Add(const A: Cardinal; const B: BigInteger): BigInteger; inline;
+    class operator Add(const A: BigInteger; const B: Integer): BigInteger; inline;
+    class operator Add(const A: Integer; const B: BigInteger): BigInteger; inline;
 {$ENDIF}
   end;
 
@@ -877,7 +910,27 @@ begin
   Result:= Compare(A, B) > 0;
 end;
 
+class operator BigInteger.GreaterThan(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+  Result:= Compare(A, B) > 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) > 0;
+end;
+
 class operator BigInteger.GreaterThanOrEqual(const A, B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) >= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+  Result:= Compare(A, B) >= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
   Result:= Compare(A, B) >= 0;
 end;
@@ -887,7 +940,27 @@ begin
   Result:= Compare(A, B) < 0;
 end;
 
+class operator BigInteger.LessThan(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+  Result:= Compare(A, B) < 0;
+end;
+
+class operator BigInteger.LessThan(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) < 0;
+end;
+
 class operator BigInteger.LessThanOrEqual(const A, B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) <= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+  Result:= Compare(A, B) <= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
   Result:= Compare(A, B) <= 0;
 end;
@@ -1039,6 +1112,126 @@ begin
 {$ENDIF}
 end;
 
+class operator BigInteger.Equal(const A: BigInteger; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) = 0;
+end;
+
+class operator BigInteger.Equal(const A: Cardinal; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToCard(A) = 0;
+end;
+
+class operator BigInteger.Equal(const A: BigInteger; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) = 0;
+end;
+
+class operator BigInteger.Equal(const A: Integer; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToInt(A) = 0;
+end;
+
+class operator BigInteger.NotEqual(const A: BigInteger; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: Cardinal; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToCard(A) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: BigInteger; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: Integer; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToInt(A) <> 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: BigInteger; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) > 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: Cardinal; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToCard(A) < 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: BigInteger; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) > 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: Integer; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToInt(A) < 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) >= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: Cardinal; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToCard(A) <= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) >= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: Integer; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToInt(A) <= 0;
+end;
+
+class operator BigInteger.LessThan(const A: BigInteger; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) < 0;
+end;
+
+class operator BigInteger.LessThan(const A: Cardinal; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToCard(A) > 0;
+end;
+
+class operator BigInteger.LessThan(const A: BigInteger; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) < 0;
+end;
+
+class operator BigInteger.LessThan(const A: Integer; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToInt(A) > 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: Cardinal): Boolean;
+begin
+  Result:= A.CompareToCard(B) <= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: Cardinal; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToCard(A) >= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: Integer): Boolean;
+begin
+  Result:= A.CompareToInt(B) <= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: Integer; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToInt(A) >= 0;
+end;
+
 
 class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
 begin
@@ -1066,4 +1259,5 @@ end;
 initialization
   LoadForge;
 {$ENDIF}
+
 end.
