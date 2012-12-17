@@ -42,7 +42,7 @@ begin
       Exit;
     end;
     A:= BinomialCoff(StrToInt(ParamStr(1)), StrToInt(ParamStr(2)));
-    Writeln(A.AsString);
+    Writeln(A.ToString);
     A.Free;
   except
     on E: Exception do

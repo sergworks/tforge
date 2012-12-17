@@ -18,3 +18,5 @@ dunit.ini
 *.o
 *.ppu
 *.bak
+*.err
+*.out

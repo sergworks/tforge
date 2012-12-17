@@ -111,7 +111,11 @@ type
 
     property Sign: Integer read GetSign;
 
-    class function Compare(const A, B: BigInteger): Integer; static;
+    class function Compare(const A, B: BigInteger): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
+    function CompareTo(const B: BigInteger): Integer; overload; inline;
+    function CompareTo(const B: BigCardinal): Integer; overload; inline;
 
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
@@ -129,7 +133,11 @@ type
     class operator Explicit(const Value: string): BigInteger;
 
     class operator Equal(const A, B: BigInteger): Boolean;
+    class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator Equal(const A: BigCardinal; const B: BigInteger): Boolean;
     class operator NotEqual(const A, B: BigInteger): Boolean;
+    class operator NotEqual(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
     class operator GreaterThan(const A, B: BigInteger): Boolean;
     class operator GreaterThanOrEqual(const A, B: BigInteger): Boolean;
     class operator LessThan(const A, B: BigInteger): Boolean;
@@ -146,6 +154,11 @@ type
     class operator BitwiseXor(const A, B: BigInteger): BigInteger;
 
 {$IFDEF LIMB32}
+    function CompareTo(const B: Cardinal): Integer; overload; inline;
+    function CompareTo(const B: Integer): Integer; overload; inline;
+    function CompareToCard(const B: Cardinal): Integer;
+    function CompareToInt(const B: Integer): Integer;
+
     class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
     class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
     class operator Add(const A: BigInteger; const B: Integer): BigInteger;
@@ -717,6 +730,36 @@ begin
 {$ENDIF}
 end;
 
+class function BigInteger.Compare(const A: BigInteger; const B: BigCardinal): Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+class function BigInteger.Compare(const A: BigCardinal; const B: BigInteger): Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function BigInteger.CompareTo(const B: BigCardinal): Integer;
+begin
+  Result:= Compare(Self, B);
+end;
+
+function BigInteger.CompareTo(const B: BigInteger): Integer;
+begin
+  Result:= Compare(Self, B);
+end;
+
 function BigInteger.GetSign: Integer;
 begin
 {$IFDEF TFL_DLL}
@@ -804,7 +847,27 @@ begin
   Result:= Compare(A, B) = 0;
 end;
 
+class operator BigInteger.Equal(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) = 0;
+end;
+
+class operator BigInteger.Equal(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+  Result:= Compare(A, B) = 0;
+end;
+
 class operator BigInteger.NotEqual(const A, B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= Compare(A, B) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
   Result:= Compare(A, B) <> 0;
 end;
@@ -947,6 +1010,35 @@ begin
 end;
 
 {$IFDEF LIMB32}
+
+function BigInteger.CompareTo(const B: Cardinal): Integer;
+begin
+  Result:= CompareToCard(B);
+end;
+
+function BigInteger.CompareTo(const B: Integer): Integer;
+begin
+  Result:= CompareToInt(B);
+end;
+
+function BigInteger.CompareToCard(const B: Cardinal): Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.CompareToLimb(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToLimb(PBigNumber(FNumber), B);
+{$ENDIF}
+end;
+
+function BigInteger.CompareToInt(const B: Integer): Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.CompareToIntLimb(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToIntLimb(PBigNumber(FNumber), B);
+{$ENDIF}
+end;
+
 
 class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
 begin

@@ -32,6 +32,11 @@ const
   TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
   TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
 
+{$IFDEF FPC}
+type
+  TBytes = array of Byte;
+{$ENDIF}
+
 type
   IBigNumber = interface
 

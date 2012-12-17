@@ -18,6 +18,8 @@ unit tfNumbers;
   {.$DEFINE LIMB32_ASM86}
 {$ENDIF}
 
+{$R-}   // range checking is not allowed
+
 interface
 
 uses SysUtils, tfTypes, tfLimbs

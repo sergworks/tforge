@@ -395,6 +395,8 @@ var
   Tmp: TLimb;
 
 begin
+  Assert(LA >= LB);
+  Assert(LB >= 1);
   Dec(LA, LB);
   BorrowIn:= False;
   while LB > 0 do begin
