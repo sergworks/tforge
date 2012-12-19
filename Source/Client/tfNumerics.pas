@@ -372,11 +372,11 @@ end;
 class operator BigCardinal.Explicit(const Value: TBytes): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
-// todo:
+  HResCheck(BigNumberFromPByte(Result.FNumber,
 {$ELSE}
-  HResCheck(TBigNumber.FromPByte(PBigNumber(Result.FNumber),
-                                 Pointer(Value), Length(Value), False),
+  HResCheck(BigNumberFromPByte(PBigNumber(Result.FNumber),
 {$ENDIF}
+            Pointer(Value), Length(Value), False),
     'TBytes -> BigCardinal conversion error');
 end;
 
@@ -412,20 +412,20 @@ begin
       'Integer -> BigCardinal conversion error')
   else begin
 {$IFDEF TFL_DLL}
-    HResCheck(CardinalToBigNumber(Result.FNumber, Cardinal(Value)),
+    HResCheck(BigNumberFromInteger(Result.FNumber, Cardinal(Value)),
 {$ELSE}
-    HResCheck(TBigNumber.FromCardinal(PBigNumber(Result.FNumber), Cardinal(Value)),
+    HResCheck(BigNumberFromInteger(PBigNumber(Result.FNumber), Cardinal(Value)),
 {$ENDIF}
-            'TBigNumber.FromCardinal');
+            'TBigNumber.FromInteger');
   end;
 end;
 
 class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(CardinalToBigNumber(Result.FNumber, Value),
+  HResCheck(BigNumberFromCardinal(Result.FNumber, Value),
 {$ELSE}
-  HResCheck(TBigNumber.FromCardinal(PBigNumber(Result.FNumber), Value),
+  HResCheck(BigNumberFromCardinal(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
             'TBigNumber.FromCardinal');
 end;
@@ -856,11 +856,11 @@ end;
 class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-// todo:
+  HResCheck(BigNumberFromPByte(Result.FNumber,
 {$ELSE}
-  HResCheck(TBigNumber.FromPByte(PBigNumber(Result.FNumber),
-                                 Pointer(Value), Length(Value), True),
+  HResCheck(BigNumberFromPByte(PBigNumber(Result.FNumber),
 {$ENDIF}
+            Pointer(Value), Length(Value), True),
     'TBytes -> BigCardinal conversion error');
 end;
 
@@ -1013,9 +1013,9 @@ end;
 class operator BigInteger.Implicit(const Value: Cardinal): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(CardinalToBigNumber(Result.FNumber, Value),
+  HResCheck(BigNumberFromCardinal(Result.FNumber, Value),
 {$ELSE}
-  HResCheck(TBigNumber.FromCardinal(PBigNumber(Result.FNumber), Value),
+  HResCheck(BigNumberFromCardinal(PBigNumber(Result.FNumber), Value),
             'TBigNumber.FromCardinal');
 {$ENDIF}
 end;
@@ -1023,9 +1023,9 @@ end;
 class operator BigInteger.Implicit(const Value: Integer): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(IntegerToBigNumber(Result.FNumber, Value),
+  HResCheck(BigNumberFromInteger(Result.FNumber, Value),
 {$ELSE}
-  HResCheck(TBigNumber.FromInteger(PBigNumber(Result.FNumber), Value),
+  HResCheck(BigNumberFromInteger(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
             'TBigNumber.FromInteger');
 end;

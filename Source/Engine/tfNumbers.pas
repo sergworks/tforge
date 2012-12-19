@@ -161,22 +161,14 @@ type
 // -- end of IBigNumber implementation
 
 // -- conversions from/to BigNumber
-    class function FromPByte(var A: PBigNumber; P: PByte; L: Cardinal;
-                             AllowNegative: Boolean): HResult; stdcall; static;
-    class function FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult; stdcall; static;
-    class function FromPCharHex(var A: PBigNumber; S: PChar; L: Integer): HResult; stdcall; static;
-
-    class function FromWideString(var A: PBigNumber; const S: WideString): HResult; stdcall; static;
-    class function FromWideStringU(var A: PBigNumber; const S: WideString): HResult; stdcall; static;
 
     class function FromBytes(var A: PBigNumber; const Bytes: TBytes): HResult; static;
+    class function FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult; static;
+    class function FromPCharHex(var A: PBigNumber; S: PChar; L: Integer): HResult; static;
 
     class function FromPCharU(var A: PBigNumber; const S: PChar; L: Integer): HResult; static;
     class function FromString(var A: PBigNumber; const S: string): HResult; static;
     class function FromStringU(var A: PBigNumber; const S: string): HResult; static;
-
-    class function FromCardinal(var A: PBigNumber; Value: Cardinal): HResult; static;
-    class function FromInteger(var A: PBigNumber; Value: Integer): HResult; static;
 
     class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
     class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
@@ -221,7 +213,22 @@ type
     function SelfDivModLimbU(Value: TLimb; var Remainder: TLimb): HResult;
   end;
 
+// -- conversions to BigNumber
+
+  function BigNumberFromCardinal(var A: PBigNumber; Value: Cardinal): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromInteger(var A: PBigNumber; Value: Integer): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromWideString(var A: PBigNumber; const S: WideString): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromWideStringU(var A: PBigNumber; const S: WideString): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromPByte(var A: PBigNumber;
+               P: PByte; L: Cardinal; AllowNegative: Boolean): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
 {$IFDEF DEBUG}
+type
   TLimbs = array[0..7] of TLimb;
   PLimbs = ^TLimbs;
 {$ENDIF}
@@ -2146,18 +2153,6 @@ begin
   Result:= FromPCharU(A, PChar(S), Length(S));
 end;
 
-class function TBigNumber.FromWideString(var A: PBigNumber;
-  const S: WideString): HResult;
-
-begin
-  Result:= FromString(A, string(S));
-end;
-
-class function TBigNumber.FromWideStringU(var A: PBigNumber; const S: WideString): HResult;
-begin
-  Result:= FromStringU(A, string(S));
-end;
-
 class function TBigNumber.GetIsEven(Inst: PBigNumber): Boolean;
 begin
   Result:= not Odd(Inst.FLimbs[0]);
@@ -2185,124 +2180,9 @@ begin
   else Result:= -1;
 end;
 
-class function TBigNumber.FromPByte(var A: PBigNumber;
-               P: PByte; L: Cardinal; AllowNegative: Boolean): HResult;
-var
-  SeniorByte: Byte;
-  Tmp: PBigNumber;
-  Used: Cardinal;
-  I: Integer;
-
-begin
-  Assert(L > 0);
-  SeniorByte:= P[L-1];
-  if SeniorByte and $80 = 0 then begin
-    if SeniorByte = 0 then Dec(L);
-    if L = 0 then begin
-      if A <> nil then Release(A);
-      A:= @BigNumZero;
-      Result:= TFL_S_OK;
-    end
-    else begin
-      Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
-      Result:= TBigNumber.AllocNumber(Tmp, Used);
-      if Result = TFL_S_OK then begin
-        Tmp.FLimbs[Used - 1]:= 0;
-        Move(P^, Tmp.FLimbs, L);
-        Tmp.FUsed:= Used;
-        if A <> nil then Release(A);
-        A:= Tmp;
-      end;
-    end;
-  end
-  else if AllowNegative then begin { out A < 0 }
-    if SeniorByte = $FF then Dec(L);
-    if L = 0 then begin
-      if A <> nil then Release(A);
-      A:= @BigNumMinusOne;
-      Result:= TFL_S_OK;
-      Exit;
-    end
-    else begin
-      Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
-      Result:= TBigNumber.AllocNumber(Tmp, Used);
-      if Result = TFL_S_OK then begin
-        Tmp.FLimbs[Used - 1]:= TLimbInfo.MaxLimb;
-        Move(P^, Tmp.FLimbs, L);
-        Tmp.FUsed:= Used;
-        Tmp.FSign:= -1;
-        for I:= 0 to Used - 1 do
-          Tmp.FLimbs[I]:= not Tmp.FLimbs[I];
-        arrSelfAddLimb(@Tmp^.FLimbs, 1, Used);
-        if A <> nil then Release(A);
-        A:= Tmp;
-      end;
-    end;
-  end
-  else
-    Result:= TFL_E_INVALIDARG;
-end;
-
 class function TBigNumber.FromBytes(var A: PBigNumber; const Bytes: TBytes): HResult;
 begin
-  Result:= FromPByte(A, PByte(Bytes), Length(Bytes), True);
-end;
-
-class function TBigNumber.FromCardinal(var A: PBigNumber;
-                                       Value: Cardinal): HResult;
-const
-  DataSize = SizeOf(Cardinal) div SizeOf(TLimb);
-
-var
-  Tmp: PBigNumber;
-
-begin
-{$IF DataSize = 0}
-  Result:= TFL_E_NOTIMPL;
-{$ELSE}
-  Result:= TBigNumber.AllocNumber(Tmp, DataSize);
-  if Result <> TFL_S_OK then Exit;
-  {$IF DataSize = 1}
-    Tmp.FLimbs[0]:= Value;
-  {$ELSE}
-    Move(Value, Tmp.FLimbs, SizeOf(Cardinal));
-    Tmp.FUsed:= DataSize;
-    TBigNumber.Normalize(Tmp);
-  {$IFEND}
-  if (A <> nil) then TBigNumber.Release(A);
-  A:= Tmp;
-{$IFEND}
-end;
-
-class function TBigNumber.FromInteger(var A: PBigNumber;
-                                      Value: Integer): HResult;
-const
-  DataSize = SizeOf(Integer) div SizeOf(TLimb);
-
-var
-  Tmp: PBigNumber;
-{$IF DataSize <> 1}
-  TmpValue: Integer;
-{$IFEND}
-
-begin
-{$IF DataSize = 0}
-  Result:= TFL_E_NOTIMPL;
-{$ELSE}
-  Result:= TBigNumber.AllocNumber(Tmp, DataSize);
-  if Result <> S_OK then Exit;
-  {$IF DataSize = 1}
-    Tmp.FLimbs[0]:= Abs(Value);
-  {$ELSE}
-    TmpValue:= Abs(Value);
-    Move(TmpValue, Tmp.FLimbs, SizeOf(Integer));
-    Tmp.FUsed:= DataSize;
-    TBigNumber.Normalize(Tmp);
-  {$IFEND}
-  if Value < 0 then Tmp.FSign:= -1;
-  if (A <> nil) then TBigNumber.Release(A);
-  A:= Tmp;
-{$IFEND}
+  Result:= BigNumberFromPByte(A, PByte(Bytes), Length(Bytes), True);
 end;
 
 class function TBigNumber.FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult;
@@ -3328,6 +3208,131 @@ begin
     Inst:= nil;
     Release(Tmp);
   end;
+end;
+
+// ------------------------------------------------------------- //
+
+function BigNumberFromCardinal(var A: PBigNumber; Value: Cardinal): HResult;
+const
+  DataSize = SizeOf(Cardinal) div SizeOf(TLimb);
+
+var
+  Tmp: PBigNumber;
+
+begin
+{$IF DataSize = 0}
+  Result:= TFL_E_NOTIMPL;
+{$ELSE}
+  Result:= TBigNumber.AllocNumber(Tmp, DataSize);
+  if Result <> TFL_S_OK then Exit;
+  {$IF DataSize = 1}
+    Tmp.FLimbs[0]:= Value;
+  {$ELSE}
+    Move(Value, Tmp.FLimbs, SizeOf(Cardinal));
+    Tmp.FUsed:= DataSize;
+    TBigNumber.Normalize(Tmp);
+  {$IFEND}
+  if (A <> nil) then TBigNumber.Release(A);
+  A:= Tmp;
+{$IFEND}
+end;
+
+function BigNumberFromInteger(var A: PBigNumber; Value: Integer): HResult;
+const
+  DataSize = SizeOf(Integer) div SizeOf(TLimb);
+
+var
+  Tmp: PBigNumber;
+{$IF DataSize <> 1}
+  TmpValue: Integer;
+{$IFEND}
+
+begin
+{$IF DataSize = 0}
+  Result:= TFL_E_NOTIMPL;
+{$ELSE}
+  Result:= TBigNumber.AllocNumber(Tmp, DataSize);
+  if Result <> S_OK then Exit;
+  {$IF DataSize = 1}
+    Tmp.FLimbs[0]:= Abs(Value);
+  {$ELSE}
+    TmpValue:= Abs(Value);
+    Move(TmpValue, Tmp.FLimbs, SizeOf(Integer));
+    Tmp.FUsed:= DataSize;
+    TBigNumber.Normalize(Tmp);
+  {$IFEND}
+  if Value < 0 then Tmp.FSign:= -1;
+  if (A <> nil) then TBigNumber.Release(A);
+  A:= Tmp;
+{$IFEND}
+end;
+
+function BigNumberFromPByte(var A: PBigNumber;
+               P: PByte; L: Cardinal; AllowNegative: Boolean): HResult;
+var
+  SeniorByte: Byte;
+  Tmp: PBigNumber;
+  Used: Cardinal;
+  I: Integer;
+
+begin
+  Assert(L > 0);
+  SeniorByte:= P[L-1];
+  if SeniorByte and $80 = 0 then begin
+    if SeniorByte = 0 then Dec(L);
+    if L = 0 then begin
+      if A <> nil then TBigNumber.Release(A);
+      A:= @BigNumZero;
+      Result:= TFL_S_OK;
+    end
+    else begin
+      Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
+      Result:= TBigNumber.AllocNumber(Tmp, Used);
+      if Result = TFL_S_OK then begin
+        Tmp.FLimbs[Used - 1]:= 0;
+        Move(P^, Tmp.FLimbs, L);
+        Tmp.FUsed:= Used;
+        if A <> nil then TBigNumber.Release(A);
+        A:= Tmp;
+      end;
+    end;
+  end
+  else if AllowNegative then begin { out A < 0 }
+    if SeniorByte = $FF then Dec(L);
+    if L = 0 then begin
+      if A <> nil then TBigNumber.Release(A);
+      A:= @BigNumMinusOne;
+      Result:= TFL_S_OK;
+      Exit;
+    end
+    else begin
+      Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
+      Result:= TBigNumber.AllocNumber(Tmp, Used);
+      if Result = TFL_S_OK then begin
+        Tmp.FLimbs[Used - 1]:= TLimbInfo.MaxLimb;
+        Move(P^, Tmp.FLimbs, L);
+        Tmp.FUsed:= Used;
+        Tmp.FSign:= -1;
+        for I:= 0 to Used - 1 do
+          Tmp.FLimbs[I]:= not Tmp.FLimbs[I];
+        arrSelfAddLimb(@Tmp^.FLimbs, 1, Used);
+        if A <> nil then TBigNumber.Release(A);
+        A:= Tmp;
+      end;
+    end;
+  end
+  else
+    Result:= TFL_E_INVALIDARG;
+end;
+
+function BigNumberFromWideString(var A: PBigNumber; const S: WideString): HResult;
+begin
+  Result:= TBigNumber.FromString(A, string(S));
+end;
+
+function BigNumberFromWideStringU(var A: PBigNumber; const S: WideString): HResult;
+begin
+  Result:= TBigNumber.FromStringU(A, string(S));
 end;
 
 end.

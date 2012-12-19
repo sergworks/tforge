@@ -31,6 +31,7 @@ const
   TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
   TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
   TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
+  TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading tforge dll
 
 {$IFDEF FPC}
 type

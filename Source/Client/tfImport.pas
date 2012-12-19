@@ -16,26 +16,44 @@ uses
   tfTypes;
 
 type
-  TWideStringToBigNumber = function(var A: IBigNumber; const S: WideString): HResult; stdcall;
-  TCardinalToBigNumber = function(var A: IBigNumber; Value: Cardinal): HResult; stdcall;
-  TIntegerToBigNumber = function(var A: IBigNumber; Value: Integer): HResult; stdcall;
+  TBigNumberFromCardinal = function(var A: IBigNumber; Value: Cardinal): HResult; stdcall;
+  TBigNumberFromInteger = function(var A: IBigNumber; Value: Integer): HResult; stdcall;
+  TBigNumberFromWideString = function(var A: IBigNumber; const S: WideString): HResult; stdcall;
+  TBigNumberFromPByte = function(var A: IBigNumber;
+                        P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
 
 var
-  WideStringToBigNumber: TWideStringToBigNumber;
-  CardinalToBigNumber: TCardinalToBigNumber;
-  IntegerToBigNumber: TIntegerToBigNumber;
-
-function LoadForge: Boolean;
+  BigNumberFromCardinal: TBigNumberFromCardinal;
+  BigNumberFromInteger: TBigNumberFromInteger;
+  BigNumberFromWideString: TBigNumberFromWideString;
+  BigNumberFromWideStringU: TBigNumberFromWideString;
+  BigNumberFromPByte: TBigNumberFromPByte;
 
 implementation
 
 uses Windows;
 
 const
-  LibName = 'tforge.dll';
+  LibName = 'tforge32.dll';
 
 var
   LibHandle: THandle = 0;
+
+function BigNumberFromCardinalStub(var A: IBigNumber; Value: Cardinal): HResult; stdcall;
+begin
+  Result:= TFL_E_LOADERROR;
+end;
+
+function BigNumberFromWideStringStub(var A: IBigNumber; const S: WideString): HResult; stdcall;
+begin
+  Result:= TFL_E_LOADERROR;
+end;
+
+function BigNumberFromPByteStub(var A: IBigNumber;
+                        P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
+begin
+  Result:= TFL_E_LOADERROR;
+end;
 
 function LoadForge: Boolean;
 begin
@@ -46,11 +64,27 @@ begin
   Result:= False;
   LibHandle:= LoadLibrary(LibName);
   if LibHandle <> 0 then begin
-    @WideStringToBigNumber:= GetProcAddress(LibHandle, 'WideStringToBigNumber');
-    @CardinalToBigNumber:= GetProcAddress(LibHandle, 'CardinalToBigNumber');
-    @IntegerToBigNumber:= GetProcAddress(LibHandle, 'IntegerToBigNumber');
-    Result:= True;
+    @BigNumberFromCardinal:= GetProcAddress(LibHandle, 'BigNumberFromCardinal');
+    @BigNumberFromInteger:= GetProcAddress(LibHandle, 'BigNumberFromInteger');
+    @BigNumberFromWideString:= GetProcAddress(LibHandle, 'BigNumberFromWideString');
+    @BigNumberFromWideStringU:= GetProcAddress(LibHandle, 'BigNumberFromWideStringU');
+    @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
+    Result:= (@BigNumberFromCardinal <> nil)
+             and (@BigNumberFromInteger <> nil)
+             and (@BigNumberFromWideString <> nil)
+             and (@BigNumberFromWideStringU <> nil)
+             and (@BigNumberFromPByte <> nil)
+  end;
+  if not Result then begin
+    @BigNumberFromCardinal:= @BigNumberFromCardinalStub;
+    @BigNumberFromInteger:= @BigNumberFromCardinalStub;
+    @BigNumberFromWideString:= @BigNumberFromWideStringStub;
+    @BigNumberFromWideStringU:= @BigNumberFromWideStringStub;
+    @BigNumberFromPByte= @BigNumberFromPByteStub;
   end;
 end;
+
+initialization
+  LoadForge;
 
 end.
