@@ -11,13 +11,16 @@ uses
 
 var
   StopWatch: TStopWatch;
-  PiDigits: BigCardinal;
+  ValidDigits: BigCardinal;
+  S: string;
 
 procedure BenchMark;
 var
   Factor, Num, Den: BigCardinal;
   Term: BigCardinal;
+  PiDigits: BigCardinal;
   N, M: Cardinal;
+  MaxError: Cardinal;
 
 begin
   PiDigits:= 0;
@@ -47,9 +50,16 @@ begin
     Den:= Den * 239 * 239;
     Inc(N);
   until N = 0;
-  M:= (M + N) div 2;
-// M last digits may be wrong
-  PiDigits:= PiDigits div BigCardinal.Pow(10, M);
+  MaxError:= (M + N) div 2 + 2;
+  Term:= 1;
+  repeat
+    Term:= Term * 10;
+  until Term > MaxError;
+  repeat
+    ValidDigits:= BigCardinal.DivRem(PiDigits, Term, Num);
+    if Num > MaxError then Break;
+    Term:= Term * 10;
+  until False;
 end;
 
 begin
@@ -59,10 +69,11 @@ begin
     StopWatch:= TStopWatch.StartNew;
     BenchMark;
     StopWatch.Stop;
-    Writeln(PiDigits.ToString);
-    PiDigits.Free;
+    S:= ValidDigits.ToString;
+    Writeln('Pi = ', S[1] + '.' + Copy(S, 2, Length(S) - 1));
+    ValidDigits.Free;
     Writeln;
-    Writeln('Elapsed ms: ', StopWatch.ElapsedMilliseconds);
+    Writeln('Time elapsed: ', StopWatch.ElapsedMilliseconds, ' ms.');
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
