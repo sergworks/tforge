@@ -18,15 +18,15 @@ uses
 type
   TBigNumberFromCardinal = function(var A: IBigNumber; Value: Cardinal): HResult; stdcall;
   TBigNumberFromInteger = function(var A: IBigNumber; Value: Integer): HResult; stdcall;
-  TBigNumberFromWideString = function(var A: IBigNumber; const S: WideString): HResult; stdcall;
+  TBigNumberFromPWideChar = function(var A: IBigNumber;
+    P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
   TBigNumberFromPByte = function(var A: IBigNumber;
-                        P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
+    P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
 
 var
   BigNumberFromCardinal: TBigNumberFromCardinal;
   BigNumberFromInteger: TBigNumberFromInteger;
-  BigNumberFromWideString: TBigNumberFromWideString;
-  BigNumberFromWideStringU: TBigNumberFromWideString;
+  BigNumberFromPWideChar: TBigNumberFromPWideChar;
   BigNumberFromPByte: TBigNumberFromPByte;
 
 implementation
@@ -44,13 +44,8 @@ begin
   Result:= TFL_E_LOADERROR;
 end;
 
-function BigNumberFromWideStringStub(var A: IBigNumber; const S: WideString): HResult; stdcall;
-begin
-  Result:= TFL_E_LOADERROR;
-end;
-
 function BigNumberFromPByteStub(var A: IBigNumber;
-                        P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
+           P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
 begin
   Result:= TFL_E_LOADERROR;
 end;
@@ -66,21 +61,18 @@ begin
   if LibHandle <> 0 then begin
     @BigNumberFromCardinal:= GetProcAddress(LibHandle, 'BigNumberFromCardinal');
     @BigNumberFromInteger:= GetProcAddress(LibHandle, 'BigNumberFromInteger');
-    @BigNumberFromWideString:= GetProcAddress(LibHandle, 'BigNumberFromWideString');
-    @BigNumberFromWideStringU:= GetProcAddress(LibHandle, 'BigNumberFromWideStringU');
+    @BigNumberFromPWideChar:= GetProcAddress(LibHandle, 'BigNumberFromPWideChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
     Result:= (@BigNumberFromCardinal <> nil)
              and (@BigNumberFromInteger <> nil)
-             and (@BigNumberFromWideString <> nil)
-             and (@BigNumberFromWideStringU <> nil)
+             and (@BigNumberFromPWideChar <> nil)
              and (@BigNumberFromPByte <> nil)
   end;
   if not Result then begin
     @BigNumberFromCardinal:= @BigNumberFromCardinalStub;
     @BigNumberFromInteger:= @BigNumberFromCardinalStub;
-    @BigNumberFromWideString:= @BigNumberFromWideStringStub;
-    @BigNumberFromWideStringU:= @BigNumberFromWideStringStub;
-    @BigNumberFromPByte= @BigNumberFromPByteStub;
+    @BigNumberFromPWideChar:= @BigNumberFromPByteStub;
+    @BigNumberFromPByte:= @BigNumberFromPByteStub;
   end;
 end;
 

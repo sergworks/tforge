@@ -163,12 +163,12 @@ type
 // -- conversions from/to BigNumber
 
     class function FromBytes(var A: PBigNumber; const Bytes: TBytes): HResult; static;
-    class function FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult; static;
-    class function FromPCharHex(var A: PBigNumber; S: PChar; L: Integer): HResult; static;
+    class function FromPCharHex(var A: PBigNumber; S: PChar; L: Integer;
+                     AllowNegative, TwoCompl: Boolean): HResult; static;
 
-    class function FromPCharU(var A: PBigNumber; const S: PChar; L: Integer): HResult; static;
+//    class function FromPCharU(var A: PBigNumber; const S: PChar; L: Integer): HResult; static;
     class function FromString(var A: PBigNumber; const S: string): HResult; static;
-    class function FromStringU(var A: PBigNumber; const S: string): HResult; static;
+//    class function FromStringU(var A: PBigNumber; const S: string): HResult; static;
 
     class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
     class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
@@ -219,12 +219,17 @@ type
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   function BigNumberFromInteger(var A: PBigNumber; Value: Integer): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+(*
   function BigNumberFromWideString(var A: PBigNumber; const S: WideString): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   function BigNumberFromWideStringU(var A: PBigNumber; const S: WideString): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+*)
   function BigNumberFromPByte(var A: PBigNumber;
                P: PByte; L: Cardinal; AllowNegative: Boolean): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromPWideChar(var A: PBigNumber;
+               P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 {$IFDEF DEBUG}
@@ -2129,7 +2134,7 @@ end;
 
 class function TBigNumber.FromString(var A: PBigNumber; const S: string): HResult;
 begin
-  Result:= FromPChar(A, PChar(Pointer(S)), Length(S));
+  Result:= BigNumberFromPWideChar(A, PChar(Pointer(S)), Length(S), True);
 end;
 {
 var
@@ -2148,11 +2153,12 @@ begin
   end;
 end;
 }
+{
 class function TBigNumber.FromStringU(var A: PBigNumber; const S: string): HResult;
 begin
   Result:= FromPCharU(A, PChar(S), Length(S));
 end;
-
+}
 class function TBigNumber.GetIsEven(Inst: PBigNumber): Boolean;
 begin
   Result:= not Odd(Inst.FLimbs[0]);
@@ -2166,6 +2172,7 @@ end;
 class function TBigNumber.GetIsPowerOfTwo(Inst: PBigNumber): Boolean;
 begin
 // TODO:
+//  Result:= TFL_E_NOTIMPL;
 end;
 
 class function TBigNumber.GetIsZero(Inst: PBigNumber): Boolean;
@@ -2185,164 +2192,8 @@ begin
   Result:= BigNumberFromPByte(A, PByte(Bytes), Length(Bytes), True);
 end;
 
-class function TBigNumber.FromPChar(var A: PBigNumber; S: PChar; L: Integer): HResult;
-const
-{$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
-   LIMB_SHIFT = 4;
-{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
-   LIMB_SHIFT = 3;
-{$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
-   LIMB_SHIFT = 2;
-{$ELSE}                         // 2 hex digits per byte limb
-   LIMB_SHIFT = 1;
-{$IFEND}
-
-var
-  IsHex, IsMinus: Boolean;
-  I, N: Integer;
-  Limb: TLimb;
-  Digit: Cardinal;
-  Ch: Char;
-  LimbsRequired: Cardinal;
-  Tmp: PBigNumber;
-
-begin
-  if L <= 0 then begin
-    Result:= TFL_E_INVALIDARG;
-    Exit;
-  end;
-  if S[0] = '$' then begin
-    Result:= FromPCharHex(A, @S[1], L - 1);
-    Exit;
-  end;
-  Tmp:= nil;
-  try
-    I:= 0;
-                              // S is zero-based PChar
-    IsMinus:= S[0] = '-';
-    if IsMinus then begin
-      IsHex:= False;
-      Inc(I);
-    end
-    else begin
-//      IsHex:= (S[0] = '$');
-//      if IsHex then Inc(I)
-//      else begin
-        IsHex:= (L > 1) and (S[0] = '0') and (S[1] = 'x');
-        if IsHex then Inc(I, 2);
-//      end;
-    end;
-
-    if L <= I then begin
-      Result:= TFL_E_INVALIDARG;
-      Exit;
-    end;
-
-    if IsHex then begin
-      IsMinus:= S[I] >= '8';
-
-
-      N:= L - I;              // number of hex digits;
-                              //   1 limb holds 2 * SizeOf(TLimb) hex digits
-
-      LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
-      Result:= AllocNumber(Tmp, LimbsRequired);
-      if Result <> TFL_S_OK then Exit;
-
-      N:= 0;
-{      if IsMinus
-        then Limb:= TLimb(-1)
-        else}
-      Limb:= 0;
-      repeat
-                      // moving from end of string
-        Ch:= S[L - N - 1];
-        case Ch of
-          '0'..'9': Digit:= Ord(Ch) - Ord('0');
-          'A'..'F': Digit:= 10 + Ord(Ch) - Ord('A');
-          'a'..'f': Digit:= 10 + Ord(Ch) - Ord('a');
-        else
-          Result:= TFL_E_INVALIDARG;
-          Exit;
-        end;
-                        // shift digit to its position in a limb
-        Limb:= Limb + (Digit shl ((N and (2 * SizeOf(TLimb) - 1)) shl 2));
-
-        Inc(N);
-        if N and (2 * SizeOf(TLimb) - 1) = 0 then begin
-//          if IsMinus then Limb:= not Limb;
-          Tmp^.FLimbs[N shr LIMB_SHIFT - 1]:= Limb;
-{          if IsMinus
-            then Limb:= TLimb(-1)
-            else;}
-          Limb:= 0;
-        end;
-      until I + N >= L;
-
-      if N and (2 * SizeOf(TLimb) - 1) <> 0 then begin
-        if IsMinus then Limb:= TLimb((-1) shl ((N and (2 * SizeOf(TLimb) - 1)) * 4))
-          or Limb;
-        Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
-      end;
-
-      N:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
-      if IsMinus then begin
-        for I:= 0 to N - 1 do
-          Tmp.FLimbs[I]:= not Tmp.FLimbs[I];
-        arrSelfAddLimb(@Tmp^.FLimbs, 1, N);
-      end;
-      Tmp^.FUsed:= N;
-      Normalize(Tmp);
-    end
-    else begin
-               // number of decimal digits
-      N:= (L - I);
-
-               // good rational approximations from above
-               //   to log2(10) / 8 are:
-               //     98981 / 238370;  267 / 643;  49 / 118;  5 / 12
-
-               // number of bytes to hold these digits
-      N:= (N * 267) div 643 + 1;
-
-               // number of limbs to hold these digits
-{$IF SizeOf(TLimb) > 1}
-      N:= (N + SizeOf(TLimb) - 1) shr (LIMB_SHIFT - 1);
-{$IFEND}
-
-      Result:= AllocNumber(Tmp, N);
-      if Result <> TFL_S_OK then Exit;
-
-      Tmp^.FUsed:= 1;
-      Tmp^.FLimbs[0]:= 0;
-      repeat
-        Ch:= S[I];
-        case Ch of
-          '0'..'9': Digit:= Ord(Ch) - Ord('0');
-        else
-          Result:= TFL_E_INVALIDARG;
-          Exit;
-        end;
-        Inc(I);
-
-// Tmp:= Tmp * 10 + Digit;
-        if arrSelfMulLimb(@Tmp^.FLimbs, 10, Tmp^.FUsed) then
-          Inc(Tmp^.FUsed);
-        if arrSelfAddLimb(@Tmp^.FLimbs, Digit, Tmp^.FUsed) then
-          Inc(Tmp^.FUsed);
-
-      until I >= L;
-    end;
-    if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
-      then Tmp.FSign:= -1;
-    if A <> nil then Release(A);
-    A:= Tmp;
-  finally
-    if (Result <> TFL_S_OK) and (Tmp <> nil) then Release(Tmp);
-  end;
-end;
-
-class function TBigNumber.FromPCharHex(var A: PBigNumber; S: PChar; L: Integer): HResult;
+class function TBigNumber.FromPCharHex(var A: PBigNumber; S: PChar; L: Integer;
+                 AllowNegative, TwoCompl: Boolean): HResult;
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
    LIMB_SHIFT = 4;
@@ -2358,6 +2209,7 @@ var
   IsMinus: Boolean;
   I, N: Integer;
   Limb: TLimb;
+  Carry: Boolean;
   Digit: Cardinal;
   Ch: Char;
   LimbsRequired: Cardinal;
@@ -2368,65 +2220,83 @@ begin
     Result:= TFL_E_INVALIDARG;
     Exit;
   end;
-  Tmp:= nil;
-  try
-    I:= 0;
-                              // S is zero-based PChar
+  I:= 0;
+                            // S is zero-based PChar
+  if TwoCompl then begin
+    IsMinus:= (S[0] >= '8');
+    TwoCompl:= TwoCompl and IsMinus;
+  end
+  else begin
     IsMinus:= S[0] = '-';
-    if IsMinus then begin
-      Inc(I);
-      if L <= I then begin
+    if IsMinus then Inc(I);
+  end;
+
+  if (L <= I) or (IsMinus and not AllowNegative) then begin
+    Result:= TFL_E_INVALIDARG;
+    Exit;
+  end;
+
+  N:= L - I;                // number of hex digits;
+                            //   1 limb holds 2 * SizeOf(TLimb) hex digits
+
+  LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
+  Result:= AllocNumber(Tmp, LimbsRequired);
+  if Result <> TFL_S_OK then Exit;
+
+  N:= 0;
+  Limb:= 0;
+  Carry:= True;
+
+  repeat
+                    // moving from end of string
+    Ch:= S[L - N - 1];
+    case Ch of
+        '0'..'9': Digit:= Ord(Ch) - Ord('0');
+        'A'..'F': Digit:= 10 + Ord(Ch) - Ord('A');
+        'a'..'f': Digit:= 10 + Ord(Ch) - Ord('a');
+    else
+        Release(Tmp);
         Result:= TFL_E_INVALIDARG;
         Exit;
-      end;
     end;
+                      // shift digit to its position in a limb
+    Limb:= Limb + (Digit shl ((N and (2 * SizeOf(TLimb) - 1)) shl 2));
 
-    N:= L - I;                // number of hex digits;
-                              //   1 limb holds 2 * SizeOf(TLimb) hex digits
+    Inc(N);
+    if N and (2 * SizeOf(TLimb) - 1) = 0 then begin
 
-    LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
-    Result:= AllocNumber(Tmp, LimbsRequired);
-    if Result <> TFL_S_OK then Exit;
-
-    N:= 0;
-    Limb:= 0;
-
-    repeat
-                      // moving from end of string
-      Ch:= S[L - N - 1];
-      case Ch of
-          '0'..'9': Digit:= Ord(Ch) - Ord('0');
-          'A'..'F': Digit:= 10 + Ord(Ch) - Ord('A');
-          'a'..'f': Digit:= 10 + Ord(Ch) - Ord('a');
-      else
-          Result:= TFL_E_INVALIDARG;
-          Exit;
+      if TwoCompl then begin
+        Limb:= not Limb;
+        if Carry then begin
+          Inc(Limb);
+          Carry:= Limb = 0;
+        end;
       end;
-                        // shift digit to its position in a limb
-      Limb:= Limb + (Digit shl ((N and (2 * SizeOf(TLimb) - 1)) shl 2));
 
-      Inc(N);
-      if N and (2 * SizeOf(TLimb) - 1) = 0 then begin
-        Tmp^.FLimbs[N shr LIMB_SHIFT - 1]:= Limb;
-        Limb:= 0;
-      end;
-    until I + N >= L;
+      Tmp^.FLimbs[N shr LIMB_SHIFT - 1]:= Limb;
+      Limb:= 0;
+    end;
+  until I + N >= L;
 
-    if N and (2 * SizeOf(TLimb) - 1) <> 0 then
-      Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
-
-    N:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
-    Tmp^.FUsed:= N;
-    Normalize(Tmp);
-    if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
-      then Tmp.FSign:= -1;
-    if A <> nil then Release(A);
-    A:= Tmp;
-  finally
-    if (Result <> TFL_S_OK) and (Tmp <> nil) then Release(Tmp);
+  if N and (2 * SizeOf(TLimb) - 1) <> 0 then begin
+    if TwoCompl then begin
+      Limb:= TLimb((-1) shl ((N and (2 * SizeOf(TLimb) - 1)) * 4)) or Limb;
+      Limb:= not Limb;
+      if Carry then Inc(Limb);
+    end;
+    Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
   end;
-end;
 
+  N:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
+  Tmp^.FUsed:= N;
+
+  Normalize(Tmp);
+  if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
+    then Tmp.FSign:= -1;
+  if A <> nil then Release(A);
+  A:= Tmp;
+end;
+(*
 class function TBigNumber.FromPCharU(var A: PBigNumber; const S: PChar; L: Integer): HResult;
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
@@ -2551,7 +2421,7 @@ begin
     if (Result <> S_OK) and (Tmp <> nil) then Release(Tmp);
   end;
 end;
-
+*)
 function TBigNumber.IsNegative: Boolean;
 begin
   Result:= FSign < 0;
@@ -3325,6 +3195,93 @@ begin
     Result:= TFL_E_INVALIDARG;
 end;
 
+function BigNumberFromPWideChar(var A: PBigNumber;
+               P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;
+const
+{$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
+   LIMB_SHIFT = 4;
+{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
+   LIMB_SHIFT = 3;
+{$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
+   LIMB_SHIFT = 2;
+{$ELSE}                         // 2 hex digits per byte limb
+   LIMB_SHIFT = 1;
+{$IFEND}
+
+var
+  IsMinus: Boolean;
+  I, N: Cardinal;
+//  Limb: TLimb;
+  Digit: Cardinal;
+  Ch: Char;
+//  LimbsRequired: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  if L <= 0 then begin
+    Result:= TFL_E_INVALIDARG;
+  end
+  else if P[0] = '$' then begin
+    Result:= TBigNumber.FromPCharHex(A, @P[1], L - 1, AllowNegative, False);
+  end
+  else if (L > 1) and (P[0] = '0') and (P[1] = 'x') then begin
+    Result:= TBigNumber.FromPCharHex(A, @P[2], L - 2, AllowNegative, True);
+  end
+  else begin
+    I:= 0;
+    IsMinus:= P[0] = '-';
+    if IsMinus then
+      Inc(I);
+
+    if L <= I then begin
+      Result:= TFL_E_INVALIDARG;
+      Exit;
+    end;
+               // number of decimal digits
+    N:= (L - I);
+
+               // good rational approximations from above
+               //   to log2(10) / 8 are:
+               //     98981 / 238370;  267 / 643;  49 / 118;  5 / 12
+
+               // number of bytes to hold these digits
+    N:= (N * 267) div 643 + 1;
+
+               // number of limbs to hold these digits
+{$IF SizeOf(TLimb) > 1}
+    N:= (N + SizeOf(TLimb) - 1) shr (LIMB_SHIFT - 1);
+{$IFEND}
+
+    Result:= TBigNumber.AllocNumber(Tmp, N);
+    if Result <> TFL_S_OK then Exit;
+// Tmp = 0 here
+    repeat
+      Ch:= P[I];
+      case Ch of
+        '0'..'9': begin
+          Digit:= Ord(Ch) - Ord('0');
+// Tmp:= Tmp * 10 + Digit;
+          if arrSelfMulLimb(@Tmp^.FLimbs, 10, Tmp^.FUsed) then
+            Inc(Tmp^.FUsed);
+          if arrSelfAddLimb(@Tmp^.FLimbs, Digit, Tmp^.FUsed) then
+            Inc(Tmp^.FUsed);
+        end;
+      else
+        TBigNumber.Release(Tmp);
+        Result:= TFL_E_INVALIDARG;
+        Exit;
+      end;
+      Inc(I);
+
+    until I >= L;
+    if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
+      then Tmp.FSign:= -1;
+    if A <> nil then TBigNumber.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+(*
 function BigNumberFromWideString(var A: PBigNumber; const S: WideString): HResult;
 begin
   Result:= TBigNumber.FromString(A, string(S));
@@ -3334,5 +3291,5 @@ function BigNumberFromWideStringU(var A: PBigNumber; const S: WideString): HResu
 begin
   Result:= TBigNumber.FromStringU(A, string(S));
 end;
-
+*)
 end.
