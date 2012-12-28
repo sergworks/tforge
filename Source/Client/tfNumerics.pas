@@ -25,7 +25,7 @@ type
     FNumber: IBigNumber;
   public
     function ToString: string;
-    function ToHexString(TwoCompl: Boolean): string;
+    function ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
     function ToBytes: TBytes;
     function TryParse(const S: string): Boolean;
     procedure Free;
@@ -104,7 +104,7 @@ type
     function GetSign: Integer;
   public
     function ToString: string;
-    function ToHexString(TwoCompl: Boolean): string;
+    function ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
     function ToBytes: TBytes;
     function TryParse(const S: string): Boolean;
     procedure Free;
@@ -284,18 +284,18 @@ begin
     'BigCardinal -> TBytes conversion error');
 end;
 
-function BigCardinal.ToHexString(TwoCompl: Boolean): string;
+function BigCardinal.ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
 {$IFDEF TFL_DLL}
 var
   S: WideString;
 
 begin
-  HResCheck(FNumber.ToWideHexString(S, TwoCompl),
+  HResCheck(FNumber.ToWideHexString(S, Digits, TwoCompl),
     'BigCardinal -> hex string conversion error');
   Result:= S;
 {$ELSE}
 begin
-  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, TwoCompl),
+  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits, TwoCompl),
     'BigCardinal -> hex string conversion error');
 {$ENDIF}
 end;
@@ -1003,18 +1003,18 @@ begin
     'BigInteger -> TBytes conversion error');
 end;
 
-function BigInteger.ToHexString(TwoCompl: Boolean): string;
+function BigInteger.ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
 {$IFDEF TFL_DLL}
 var
   S: WideString;
 
 begin
-  HResCheck(FNumber.ToWideHexString(S, TwoCompl),
+  HResCheck(FNumber.ToWideHexString(S, Digits, TwoCompl),
     'BigInteger -> hex string conversion error');
   Result:= S;
 {$ELSE}
 begin
-  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, TwoCompl),
+  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits, TwoCompl),
     'BigInteger -> hex string conversion error');
 {$ENDIF}
 end;

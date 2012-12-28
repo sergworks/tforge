@@ -34,7 +34,7 @@ contains
   tfTypes in '..\..\Source\Common\tfTypes.pas',
   arrProcs in '..\..\Source\Engine\arrProcs.pas',
   tfNumbers in '..\..\Source\Engine\tfNumbers.pas',
-  tfImport in '..\..\Source\Client\tfImport.pas',
+//  tfImport in '..\..\Source\Client\tfImport.pas',
   tfNumerics in '..\..\Source\Client\tfNumerics.pas';
 
 end.
