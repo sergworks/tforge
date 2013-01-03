@@ -101,9 +101,9 @@ type
     class function XorNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function LeftShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+    class function ShlNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function RightShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+    class function ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function AbsNumber(A: PBigNumber; var R: PBigNumber): HResult;
@@ -265,8 +265,8 @@ const
    @TBigNumber.OrNumbersU,
    @TBigNumber.XorNumbers,
 
-   @TBigNumber.LeftShift,
-   @TBigNumber.RightShift,
+   @TBigNumber.ShlNumber,
+   @TBigNumber.ShrNumber,
 
    @TBigNumber.AbsNumber,
    @TBigNumber.Pow,
@@ -2329,7 +2329,7 @@ begin
   Result:= (FUsed = 1) and (FLimbs[0] = 0);
 end;
 
-class function TBigNumber.LeftShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.ShlNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
 var
   UsedA, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -2367,7 +2367,7 @@ begin
   end;
 end;
 
-class function TBigNumber.RightShift(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
 var
   UsedA, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -2387,7 +2387,9 @@ begin
     LimbShift:= Shift shr TLimbInfo.BitShift;
     if LimbShift >= UsedA then begin
       if R <> nil then Release(R);
-      R:= @BigNumZero;
+      if A.FSign < 0
+        then R:= @BigNumMinusOne
+        else R:= @BigNumZero;
       Result:= TFL_S_OK;
     end
     else begin
@@ -2396,11 +2398,8 @@ begin
       if Result = TFL_S_OK then begin
         BitShift:= Shift and TLimbInfo.BitShiftMask;
         Tmp.FUsed:=
-          arrShlShort(@A.FLimbs[LimbShift], @Tmp.FLimbs, UsedR, BitShift);
+          arrShrShort(@A.FLimbs[LimbShift], @Tmp.FLimbs, UsedR, BitShift);
         if Tmp.FUsed = 0 then Tmp.FUsed:= 1;
-
-//        if (Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0) then
-//          Tmp.FSign:= A.FSign;
 
         Tmp.FSign:= A.FSign;
         if (Tmp.FSign < 0) and (Tmp.FUsed = 1) and (Tmp.FLimbs[0] = 0) then
