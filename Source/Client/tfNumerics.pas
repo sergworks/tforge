@@ -95,6 +95,9 @@ type
 
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
+    class operator Subtract(const A: BigCardinal; const B: Cardinal): BigCardinal;
+    class operator Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;
+    class operator Multiply(const A: Cardinal; const B: BigCardinal): BigCardinal;
 {$ENDIF}
   end;
 
@@ -156,6 +159,9 @@ type
     class operator Multiply(const A, B: BigInteger): BigInteger;
     class operator IntDivide(const A, B: BigInteger): BigInteger;
     class operator Modulus(const A, B: BigInteger): BigInteger;
+
+    class operator LeftShift(const A: BigInteger; Shift: Cardinal): BigInteger;
+    class operator RightShift(const A: BigInteger; Shift: Cardinal): BigInteger;
 
     class operator BitwiseAnd(const A, B: BigInteger): BigInteger;
     class operator BitwiseOr(const A, B: BigInteger): BigInteger;
@@ -357,12 +363,24 @@ end;
 
 class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.ShlNumber(PBigNumber(A.FNumber), Shift,
+                       PBigNumber(Result.FNumber)),
+{$ENDIF}
+   'BigCardinal.Shl');
 end;
 
 class operator BigCardinal.RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber), 'BigCardinal.Shr');
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.ShrNumber(PBigNumber(A.FNumber), Shift,
+                       PBigNumber(Result.FNumber)),
+{$ENDIF}
+   'BigCardinal.Shr');
 end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
@@ -698,7 +716,7 @@ begin
   HResCheck(TBigNumber.AddLimbU(PBigNumber(A.FNumber), B,
             PBigNumber(Result.FNumber)),
 {$ENDIF}
-            'BigCardinal.AddLimb');
+            'BigCardinal.AddLimbU');
 end;
 
 class operator BigCardinal.Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
@@ -709,7 +727,40 @@ begin
   HResCheck(TBigNumber.AddLimbU(PBigNumber(B.FNumber), A,
             PBigNumber(Result.FNumber)),
 {$ENDIF}
-            'BigCardinal.AddLimb');
+            'BigCardinal.AddLimbU');
+end;
+
+class operator BigCardinal.Subtract(const A: BigCardinal; const B: Cardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SubLimbU(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SubLimbU(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.SubLimbU');
+end;
+
+class operator BigCardinal.Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.MulLimbU(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulLimbU(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.MulLimbU');
+end;
+
+class operator BigCardinal.Multiply(const A: Cardinal; const B: BigCardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.MulLimbU(A, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulLimbU(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigCardinal.MulLimbU');
 end;
 
 {$ENDIF LIMB32}
@@ -955,6 +1006,28 @@ end;
 class operator BigInteger.LessThan(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
   Result:= Compare(A, B) < 0;
+end;
+
+class operator BigInteger.LeftShift(const A: BigInteger; Shift: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.ShlNumber(PBigNumber(A.FNumber), Shift,
+                       PBigNumber(Result.FNumber)),
+{$ENDIF}
+   'BigInteger.Shl');
+end;
+
+class operator BigInteger.RightShift(const A: BigInteger; Shift: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.ShrNumber(PBigNumber(A.FNumber), Shift,
+                       PBigNumber(Result.FNumber)),
+{$ENDIF}
+   'BigCardinal.Shr');
 end;
 
 class operator BigInteger.LessThan(const A: BigCardinal; const B: BigInteger): Boolean;

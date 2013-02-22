@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
 { * ------------------------------------------------------- * }
 { *   # engine unit                                         * }
 { *********************************************************** }
@@ -24,6 +24,9 @@ unit arrProcs;
 interface
 
 uses tfLimbs;
+
+{ Utilities}
+function arrGetLimbCount(A: PLimb; L: Cardinal): Cardinal;
 
 { Addition primitives }
 function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
@@ -59,11 +62,15 @@ function arrSelfDivModLimb(A: PLimb; L: Cardinal; D: TLimb): TLimb;
 
 function arrCmp(A, B: PLimb; L: Cardinal): Integer;
 
+function arrNormSqrtRem(A, Root, Rem: PLimb; LA: Cardinal): Cardinal;
+
+{ Bitwise shifts }
 function arrShlShort(A, Res: PLimb; LA, Shift: Cardinal): Cardinal;
 function arrShrShort(A, Res: PLimb; LA, Shift: Cardinal): Cardinal;
 
 function arrShlOne(A, Res: PLimb; LA: Cardinal): Cardinal;
 function arrShrOne(A, Res: PLimb; LA: Cardinal): Cardinal;
+function arrSelfShrOne(A: PLimb; LA: Cardinal): Cardinal;
 
 { Bitwise boolean }
 procedure arrAnd(A, B, Res: PLimb; L: Cardinal);
@@ -89,6 +96,17 @@ begin
   Result:= P^;
 end;
 {$ENDIF}
+
+function arrGetLimbCount(A: PLimb; L: Cardinal): Cardinal;
+begin
+  Assert(L > 0);
+  Inc(A, L - 1);
+  while (A^ = 0) and (L > 1) do begin
+    Dec(A);
+    Dec(L);
+  end;
+  Result:= L;
+end;
 
 {$IFDEF LIMB32_ASM86}
 function arrAdd(A, B, Res: PLongWord; LA, LB: LongWord): Boolean;
@@ -1182,6 +1200,229 @@ begin
 {$ENDIF}
 end;
 
+// returns:
+// - 0: error occured (EOutOfMemory raised)
+// > 0: Rem Length in limbs
+function arrNormSqrtRem(A, Root, Rem: PLimb; LA: Cardinal): Cardinal;
+const
+  SqrtTab1: array[0..255] of Byte = (
+    $00, $00, $00, $01, $01, $02, $02, $03,
+    $03, $04, $04, $05, $05, $06, $06, $07,
+    $07, $08, $08, $09, $09, $0A, $0A, $0B,
+    $0B, $0C, $0C, $0D, $0D, $0E, $0E, $0F,
+    $0F, $10, $10, $10, $11, $11, $12, $12,
+    $13, $13, $14, $14, $15, $15, $16, $16,
+    $16, $17, $17, $18, $18, $19, $19, $1A,
+    $1A, $1B, $1B, $1B, $1C, $1C, $1D, $1D,
+    $1E, $1E, $1F, $1F, $20, $20, $20, $21,
+    $21, $22, $22, $23, $23, $23, $24, $24,
+    $25, $25, $26, $26, $27, $27, $27, $28,
+    $28, $29, $29, $2A, $2A, $2A, $2B, $2B,
+    $2C, $2C, $2D, $2D, $2D, $2E, $2E, $2F,
+    $2F, $30, $30, $30, $31, $31, $32, $32,
+    $32, $33, $33, $34, $34, $35, $35, $35,
+    $36, $36, $37, $37, $37, $38, $38, $39,
+    $39, $39, $3A, $3A, $3B, $3B, $3B, $3C,
+    $3C, $3D, $3D, $3D, $3E, $3E, $3F, $3F,
+    $40, $40, $40, $41, $41, $41, $42, $42,
+    $43, $43, $43, $44, $44, $45, $45, $45,
+    $46, $46, $47, $47, $47, $48, $48, $49,
+    $49, $49, $4A, $4A, $4B, $4B, $4B, $4C,
+    $4C, $4C, $4D, $4D, $4E, $4E, $4E, $4F,
+    $4F, $50, $50, $50, $51, $51, $51, $52,
+    $52, $53, $53, $53, $54, $54, $54, $55,
+    $55, $56, $56, $56, $57, $57, $57, $58,
+    $58, $59, $59, $59, $5A, $5A, $5A, $5B,
+    $5B, $5B, $5C, $5C, $5D, $5D, $5D, $5E,
+    $5E, $5E, $5F, $5F, $60, $60, $60, $61,
+    $61, $61, $62, $62, $62, $63, $63, $63,
+    $64, $64, $65, $65, $65, $66, $66, $66,
+    $67, $67, $67, $68, $68, $68, $69, $69
+);
+
+  SqrtTab2: array[0..255] of Byte = (
+    $6A, $6A, $6B, $6C, $6C, $6D, $6E, $6E,
+    $6F, $70, $71, $71, $72, $73, $73, $74,
+    $75, $75, $76, $77, $77, $78, $79, $79,
+    $7A, $7B, $7B, $7C, $7D, $7D, $7E, $7F,
+    $80, $80, $81, $81, $82, $83, $83, $84,
+    $85, $85, $86, $87, $87, $88, $89, $89,
+    $8A, $8B, $8B, $8C, $8D, $8D, $8E, $8F,
+    $8F, $90, $90, $91, $92, $92, $93, $94,
+    $94, $95, $96, $96, $97, $97, $98, $99,
+    $99, $9A, $9B, $9B, $9C, $9C, $9D, $9E,
+    $9E, $9F, $A0, $A0, $A1, $A1, $A2, $A3,
+    $A3, $A4, $A4, $A5, $A6, $A6, $A7, $A7,
+    $A8, $A9, $A9, $AA, $AA, $AB, $AC, $AC,
+    $AD, $AD, $AE, $AF, $AF, $B0, $B0, $B1,
+    $B2, $B2, $B3, $B3, $B4, $B5, $B5, $B6,
+    $B6, $B7, $B7, $B8, $B9, $B9, $BA, $BA,
+    $BB, $BB, $BC, $BD, $BD, $BE, $BE, $BF,
+    $C0, $C0, $C1, $C1, $C2, $C2, $C3, $C3,
+    $C4, $C5, $C5, $C6, $C6, $C7, $C7, $C8,
+    $C9, $C9, $CA, $CA, $CB, $CB, $CC, $CC,
+    $CD, $CE, $CE, $CF, $CF, $D0, $D0, $D1,
+    $D1, $D2, $D3, $D3, $D4, $D4, $D5, $D5,
+    $D6, $D6, $D7, $D7, $D8, $D9, $D9, $DA,
+    $DA, $DB, $DB, $DC, $DC, $DD, $DD, $DE,
+    $DE, $DF, $E0, $E0, $E1, $E1, $E2, $E2,
+    $E3, $E3, $E4, $E4, $E5, $E5, $E6, $E6,
+    $E7, $E7, $E8, $E8, $E9, $EA, $EA, $EB,
+    $EB, $EC, $EC, $ED, $ED, $EE, $EE, $EF,
+    $EF, $F0, $F0, $F1, $F1, $F2, $F2, $F3,
+    $F3, $F4, $F4, $F5, $F5, $F6, $F6, $F7,
+    $F7, $F8, $F8, $F9, $F9, $FA, $FA, $FB,
+    $FB, $FC, $FC, $FD, $FD, $FE, $FE, $FF
+);
+
+var
+  HighLimb0: TLimb;
+  InitA, InitRoot: Cardinal;
+  IsNorm: Boolean;
+  NormalizedA: PLimb;
+  DivRem: PLimb;
+  X, Y, TmpXY: PLimb; //, NextX: PLimb;
+  L, SaveL: Cardinal;
+  Diff: Integer;
+  Buffer: PLimb;
+// Buffer structure:
+// - NormalizedA: LA Limbs;
+// - X: LA Limbs;
+// - Y: LA Limbs;
+begin
+{$IFNDEF TFL_DLL}
+                            // operand is at least 2 limbs long
+  Assert(LA >= 2);
+                            // operand consists of even number of limbs
+  Assert(not Odd(LA));
+                            // one or both of two most significant bits are set
+  Assert(A[LA-1] shr (TLimbInfo.BitSize - 2) <> 0);
+{$ENDIF}
+  try
+    GetMem(Buffer, LA * 3 * SizeOf(TLimb));
+    X:= Buffer + LA;
+    Y:= X + LA;
+
+    HighLimb0:= A[LA-1];
+    IsNorm:= HighLimb0 and (1 shl (TLimbInfo.BitSize - 1)) <> 0;
+
+                              // get initial 9 bit approximation from tables
+    InitA:= Cardinal(HighLimb0);
+{$IF SizeOf(TLimb) = 1}
+    InitA:= (InitA shl 8) or A[LA-2];
+{$IFEND}
+
+    if not IsNorm then begin
+// the most significant bit of A is unset, the second most significant is set.
+{$IF SizeOf(TLimb) = 1}
+      InitRoot:= SqrtTab1[(InitA shr 6) and $FF];
+{$ELSE}
+      InitRoot:= SqrtTab1[(InitA shr (TLimbInfo.BitSize - 10)) and $FF];
+{$IFEND}
+    end
+    else begin
+// the most significant bit of A is set.
+{$IF SizeOf(TLimb) = 1}
+      InitRoot:= SqrtTab2[(InitA shr 7) and $FF];
+{$ELSE}
+      InitRoot:= SqrtTab2[(InitA shr (TLimbInfo.BitSize - 9)) and $FF];
+{$IFEND}
+    end;
+
+{$IF SizeOf(TLimb) = 1}
+    InitRoot:= (InitRoot or $100) shr 1;
+{$ELSE}
+    InitRoot:= ((InitRoot or $100) shl (SizeOf(Word) * 8 - 9)) or $7F;
+{$IFEND}
+
+{$IF SizeOf(TLimb) = 4}
+    InitRoot:= ((InitRoot + (HighLimb0 div InitRoot)) shl 15) or $7FFF;
+{$IFEND}
+
+    if IsNorm then begin
+      NormalizedA:= A;
+    end
+    else begin
+      NormalizedA:= Buffer;
+      arrShlOne(A, NormalizedA, LA);
+    end;
+
+    Move(InitRoot, X^, SizeOf(TLimb));
+
+    L:= 1;
+    repeat
+      Move(NormalizedA^, DivRem^, L * (2 * SizeOf(TLimb)));
+      arrNormDivMod(DivRem, X, Y, L * 2, L);
+
+      if not IsNorm then
+  // Quotient length is L+1 here, most significant bit is ignored
+        arrShrOne(Y, Y, L);
+
+      if L * 2 = LA then begin
+  // fix most significant bit
+        Y[L - 1]:= Y[L - 1] or (1 shl (TLimbInfo.BitSize - 1));
+        Break;
+      end;
+
+      arrSelfAdd(X, Y, L, L);
+      arrSelfShrOne(X, L);
+
+  // fix most significant bit
+      X[L - 1]:= X[L - 1] or (1 shl (TLimbInfo.BitSize - 1));
+
+      SaveL:= L;
+      L:= 2 * L;
+      if L > (LA shr 1) then L:= LA shr 1;
+      Move(X^, X[L - SaveL], SaveL);
+      FillChar(X, (L - SaveL) * SizeOf(TLimb), $FF);
+
+    until False;
+
+    Diff:= arrCmp(X, Y, L);
+    if Diff <> 0 then begin
+
+// make sure X is approximation from above
+      if Diff < 0 then begin
+        TmpXY:= X;
+        X:= Y;
+        Y:= TmpXY;
+      end;
+
+      repeat
+
+        Move(NormalizedA^, DivRem^, L * (2 * SizeOf(TLimb)));
+        arrNormDivMod(DivRem, X, Y, L * 2, L);
+
+        if not IsNorm then
+          arrSelfShrOne(Y, L + 1);
+
+        arrSelfAdd(Y, X, L, L);
+        arrSelfShrOne(Y, L);
+
+// fix most significant bit
+        Y[L - 1]:= Y[L - 1] or (1 shl (TLimbInfo.BitSize - 1));
+
+      until arrCmp(X, Y, L) <= 0;
+    end;
+
+    Move(X^, Root^, L * SizeOf(TLimb));
+    if Rem <> nil then begin
+      if not IsNorm then
+        arrSelfShrOne(DivRem, L + 1);
+      Move(DivRem^, Rem^, L * SizeOf(TLimb));
+      Result:= arrGetLimbCount(DivRem, L);
+    end
+    else Result:= 1;
+
+  except
+    Result:= 0;
+  end;
+
+end;
+
+
+
+
 function arrShlShort(A, Res: PLimb; LA, Shift: Cardinal): Cardinal;
 var
   Tmp, Carry: TLimb;
@@ -1287,6 +1528,27 @@ begin
     Dec(Result);
   end;
 end;
+
+// LA >= 1
+function arrSelfShrOne(A: PLimb; LA: Cardinal): Cardinal;
+var
+  Res: PLimb;
+
+begin
+  Result:= LA;
+  Res:= A;
+  Inc(A);
+  Dec(LA);
+  while (LA > 0) do begin
+    Res^:= (Res^ shr 1) or (A^ shl (TLimbInfo.BitSize - 1));
+    Inc(A);
+    Inc(Res);
+    Dec(LA);
+  end;
+  Res^:= Res^ shr 1;
+  if Res^ = 0 then Dec(Result);
+end;
+
 
 // Q := A div D;
 // Result:= A mod D;

@@ -21,6 +21,7 @@ uses
 const
                                             // = common microsoft codes =
   TFL_S_OK          = HRESULT(0);           // Operation successful
+  TFL_S_FALSE       = HRESULT(1);           // Operation successful
   TFL_E_FAIL        = HRESULT($80004005);   // Unspecified failure
   TFL_E_INVALIDARG  = HRESULT($80070057);   // One or more arguments are not valid
   TFL_E_NOINTERFACE = HRESULT($80004002);   // No such interface supported

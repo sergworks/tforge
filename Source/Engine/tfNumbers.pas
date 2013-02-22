@@ -169,6 +169,9 @@ type
 
     class function FromString(var A: PBigNumber; const S: string): HResult; static;
 
+    class function ToLimb(A: PBigNumber; var Value: TLimb): HResult; static;
+    class function ToIntLimb(A: PBigNumber; var Value: TIntLimb): HResult; static;
+
     class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
     class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
     class function ToString(A: PBigNumber; var S: string): HResult; static;
@@ -1928,6 +1931,36 @@ begin
 {$IFEND}
 end;
 
+
+class function TBigNumber.ToIntLimb(A: PBigNumber; var Value: TIntLimb): HResult;
+const
+  MaxValue = TLimbInfo.MaxLimb shr 1 + 1;
+
+var
+  Tmp: TLimb;
+
+begin
+  Tmp:= A.FLimbs[0];
+  if (A.FUsed > 1) or (Tmp > TLimb(MaxValue)) or
+     ((Tmp = TLimb(MaxValue)) and (A.FSign >= 0))
+  then
+    Result:= TFL_E_INVALIDARG
+  else begin
+    if A.FSign >= 0 then Value:= TIntLimb(Tmp)
+    else Value:= -TIntLimb(Tmp);
+    Result:= TFL_S_OK;
+  end;
+end;
+
+class function TBigNumber.ToLimb(A: PBigNumber; var Value: TLimb): HResult;
+begin
+  if (A.FUsed > 1) or (A.FSign < 0) then
+    Result:= TFL_E_INVALIDARG
+  else begin
+    Value:= A.FLimbs[0];
+    Result:= TFL_S_OK;
+  end;
+end;
 
 { TNumber --> string conversions }
 
