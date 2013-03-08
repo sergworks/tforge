@@ -114,6 +114,9 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SqrtNumber(A: PBigNumber; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
 
     class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -2438,6 +2441,32 @@ begin
         if (Tmp.FSign < 0) and (Tmp.FUsed = 1) and (Tmp.FLimbs[0] = 0) then
           Tmp.FLimbs[0]:= 1;
 
+        if R <> nil then Release(R);
+        R:= Tmp;
+      end;
+    end;
+  end;
+end;
+
+class function TBigNumber.SqrtNumber(A: PBigNumber; var R: PBigNumber): HResult;
+var
+  Tmp: PBigNumber;
+  L: Cardinal;
+
+begin
+  if A.FSign < 0 then begin
+    Result:= TFL_E_INVALIDARG;
+  end
+  else begin
+    Result:= AllocNumber(Tmp, (A.FUsed + 1) shr 1);
+    if Result = TFL_S_OK then begin
+      L:= arrSqrt(@A.FLimbs, @Tmp.FLimbs, A.FUsed);
+      if L = 0 then begin
+        Release(Tmp);
+        Result:= TFL_E_OUTOFMEMORY;
+      end
+      else begin
+        Tmp.FUsed:= L;
         if R <> nil then Release(R);
         R:= Tmp;
       end;

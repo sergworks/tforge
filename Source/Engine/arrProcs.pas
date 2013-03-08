@@ -63,6 +63,7 @@ function arrSelfDivModLimb(A: PLimb; L: Cardinal; D: TLimb): TLimb;
 function arrCmp(A, B: PLimb; L: Cardinal): Integer;
 
 function arrNormSqrtRem(A, Root, Rem: PLimb; LA: Cardinal): Cardinal;
+function arrSqrt(A, Root: PLimb; LA: Cardinal): Cardinal;
 
 { Bitwise shifts }
 function arrShlShort(A, Res: PLimb; LA, Shift: Cardinal): Cardinal;
@@ -136,10 +137,10 @@ asm
         LOOP  @@Loop2
 @@Done:
         MOV   EAX,0
-        JNC   @@Exit
+        JNC   @@Skip
         INC   EAX
-        MOV   [EDI],1
-@@Exit:
+@@Skip:
+        MOV   [EDI],EAX
         POP   EDI
         POP   ESI
 end;
@@ -180,23 +181,11 @@ begin
     Inc(Res);
     Dec(LA);
   end;
-  if CarryIn then Res^:= 1;
-//  else Res^:= 0;
+  Res^:= Ord(CarryIn);
   Result:= CarryIn;
 end;
 {$ENDIF}
 
-{
-  .Description:
-    A:= A + B
-  .Asserts:
-    LA >= LB >= 1
-    A must have enough space for LA + 1 limbs
-  .Remarks:
-    function returns True if carry is propagated out of A[LA-1];
-    if function returns True the A senior limb is set: A[LA] = 1
-    (A = B) coincidence is allowed
-}
 {$IFDEF LIMB32_ASM86}
 function arrSelfAdd(A, B: PLongWord; LA, LB: LongInt): Boolean;
 asm
@@ -223,9 +212,10 @@ asm
         JNC   @@Exit
         LOOP  @@Loop2
 @@Done:
-        JNC   @@Exit
+        JNC   @@Skip
         INC   EAX
-        MOV   [EDI],1
+@@Skip:
+        MOV   [EDI+4*ECX],EAX
 @@Exit:
         POP   EDI
         POP   ESI
@@ -242,7 +232,6 @@ begin
   while LB > 0 do begin
     Tmp:= A^ + B^;
     CarryOut:= Tmp < A^;
-//    Inc(A);
     Inc(B);
     if CarryIn then begin
       Inc(Tmp);
@@ -260,7 +249,8 @@ begin
     Inc(A);
     Dec(LA);
   end;
-  if CarryIn then A^:= 1;
+  Inc(A, LA);
+  A^:= Ord(CarryIn);
   Result:= CarryIn;
 end;
 {$ENDIF}
@@ -1420,8 +1410,300 @@ begin
 
 end;
 
+// LA >= 1
+// Root should have (LA + 1) shr 1 limbs at least
+// returns:
+// - 0: error occured (EOutOfMemory raised)
+// > 0: Root Length in limbs
+function arrSqrt(A, Root: PLimb; LA: Cardinal): Cardinal;
+
+// the tables are used to obtain the initial root approximation
+//   the initial approximation can also (and faster) be obtained
+//   by using float SQRT function
+const
+  SqrtTabs: array[Boolean, Byte] of Byte = (
+   (
+    $00, $00, $00, $01, $01, $02, $02, $03,
+    $03, $04, $04, $05, $05, $06, $06, $07,
+    $07, $08, $08, $09, $09, $0A, $0A, $0B,
+    $0B, $0C, $0C, $0D, $0D, $0E, $0E, $0F,
+    $0F, $10, $10, $10, $11, $11, $12, $12,
+    $13, $13, $14, $14, $15, $15, $16, $16,
+    $16, $17, $17, $18, $18, $19, $19, $1A,
+    $1A, $1B, $1B, $1B, $1C, $1C, $1D, $1D,
+    $1E, $1E, $1F, $1F, $20, $20, $20, $21,
+    $21, $22, $22, $23, $23, $23, $24, $24,
+    $25, $25, $26, $26, $27, $27, $27, $28,
+    $28, $29, $29, $2A, $2A, $2A, $2B, $2B,
+    $2C, $2C, $2D, $2D, $2D, $2E, $2E, $2F,
+    $2F, $30, $30, $30, $31, $31, $32, $32,
+    $32, $33, $33, $34, $34, $35, $35, $35,
+    $36, $36, $37, $37, $37, $38, $38, $39,
+    $39, $39, $3A, $3A, $3B, $3B, $3B, $3C,
+    $3C, $3D, $3D, $3D, $3E, $3E, $3F, $3F,
+    $40, $40, $40, $41, $41, $41, $42, $42,
+    $43, $43, $43, $44, $44, $45, $45, $45,
+    $46, $46, $47, $47, $47, $48, $48, $49,
+    $49, $49, $4A, $4A, $4B, $4B, $4B, $4C,
+    $4C, $4C, $4D, $4D, $4E, $4E, $4E, $4F,
+    $4F, $50, $50, $50, $51, $51, $51, $52,
+    $52, $53, $53, $53, $54, $54, $54, $55,
+    $55, $56, $56, $56, $57, $57, $57, $58,
+    $58, $59, $59, $59, $5A, $5A, $5A, $5B,
+    $5B, $5B, $5C, $5C, $5D, $5D, $5D, $5E,
+    $5E, $5E, $5F, $5F, $60, $60, $60, $61,
+    $61, $61, $62, $62, $62, $63, $63, $63,
+    $64, $64, $65, $65, $65, $66, $66, $66,
+    $67, $67, $67, $68, $68, $68, $69, $69),
+   (
+    $6A, $6A, $6B, $6C, $6C, $6D, $6E, $6E,
+    $6F, $70, $71, $71, $72, $73, $73, $74,
+    $75, $75, $76, $77, $77, $78, $79, $79,
+    $7A, $7B, $7B, $7C, $7D, $7D, $7E, $7F,
+    $80, $80, $81, $81, $82, $83, $83, $84,
+    $85, $85, $86, $87, $87, $88, $89, $89,
+    $8A, $8B, $8B, $8C, $8D, $8D, $8E, $8F,
+    $8F, $90, $90, $91, $92, $92, $93, $94,
+    $94, $95, $96, $96, $97, $97, $98, $99,
+    $99, $9A, $9B, $9B, $9C, $9C, $9D, $9E,
+    $9E, $9F, $A0, $A0, $A1, $A1, $A2, $A3,
+    $A3, $A4, $A4, $A5, $A6, $A6, $A7, $A7,
+    $A8, $A9, $A9, $AA, $AA, $AB, $AC, $AC,
+    $AD, $AD, $AE, $AF, $AF, $B0, $B0, $B1,
+    $B2, $B2, $B3, $B3, $B4, $B5, $B5, $B6,
+    $B6, $B7, $B7, $B8, $B9, $B9, $BA, $BA,
+    $BB, $BB, $BC, $BD, $BD, $BE, $BE, $BF,
+    $C0, $C0, $C1, $C1, $C2, $C2, $C3, $C3,
+    $C4, $C5, $C5, $C6, $C6, $C7, $C7, $C8,
+    $C9, $C9, $CA, $CA, $CB, $CB, $CC, $CC,
+    $CD, $CE, $CE, $CF, $CF, $D0, $D0, $D1,
+    $D1, $D2, $D3, $D3, $D4, $D4, $D5, $D5,
+    $D6, $D6, $D7, $D7, $D8, $D9, $D9, $DA,
+    $DA, $DB, $DB, $DC, $DC, $DD, $DD, $DE,
+    $DE, $DF, $E0, $E0, $E1, $E1, $E2, $E2,
+    $E3, $E3, $E4, $E4, $E5, $E5, $E6, $E6,
+    $E7, $E7, $E8, $E8, $E9, $EA, $EA, $EB,
+    $EB, $EC, $EC, $ED, $ED, $EE, $EE, $EF,
+    $EF, $F0, $F0, $F1, $F1, $F2, $F2, $F3,
+    $F3, $F4, $F4, $F5, $F5, $F6, $F6, $F7,
+    $F7, $F8, $F8, $F9, $F9, $FA, $FA, $FB,
+    $FB, $FC, $FC, $FD, $FD, $FE, $FE, $FF)
+);
+
+var
+  Shift: Cardinal;
+  HighLimb0: TLimb;
+  InitA, InitX, InitY: Cardinal;
+//  IsNorm: Boolean;
+  NormalizedA: PLimb;
+  DivRem: PLimb;
+  X, Y, TmpXY: PLimb; //, NextX: PLimb;
+  LNorm, L1, L2: Cardinal;
+  Diff: Integer;
+  Buffer: PLimb;
+// Buffer structure:
+// - NormalizedA: LA + 1 Limbs;
+// - X: LA Limbs;
+// - Y: LA Limbs;
+// - DivRem: LA Limbs;
+begin
+
+  Assert(LA > 0);
+
+  if LA = 1 then begin
+// this may be incorrect if SizeOf(Limb) >= 8
+//   because Double mantisse < 64 bits
+    Root^:= TLimb(Trunc(Sqrt(A^)));
+    Result:= 1;
+    Exit;
+  end;
+
+  HighLimb0:= A[LA-1];
+
+  Shift:= SizeOf(TLimb) * 8;
+  while HighLimb0 <> 0 do begin
+    Dec(Shift);
+    HighLimb0:= HighLimb0 shr 1;
+  end;
+
+//  IsNorm:= not Odd(Shift);
+  Shift:= Shift and $FE;        // Shift should be even
+(*
+  if LA = 1 then begin
+{$IF SizeOf(TLimb) = 1}
+// get the result from the tables
+    Inc(Shift, 8);
+    InitA:= Cardinal(HighLimb0) shl Shift;
+    InitX:= SqrtTabs[IsNorm, (InitA shr 7) and $FF] or $100;
+{$ELSE}
+    InitA:= Cardinal(HighLimb0) shl Shift;
+    InitX:= SqrtTabs[IsNorm, (InitA shr (TLimbInfo.BitSize - 9)) and $FF];
+
+// InitX is approximation from above, so +1
+    InitX:= InitX or $100 + 1;
+
+    if not IsNorm
+      then InitA:= InitA shr 1;
+
+{$IF SizeOf(TLimb) = 4}
+    InitX:= InitX shl 8;
+{$IFEND}
+
+    repeat
+      InitY:= (InitX + InitA div InitX) shr 1;
+      if InitY >= InitX then Break;
+      InitX:= InitY;
+    until False;
+{$IFEND}
+    Root^:= TLimb(InitX shr (Shift shr 1));
+    Result:= 1;
+    Exit;
+  end;
+*)
+  Assert(LA > 1);
+
+  try
+    GetMem(Buffer, (LA + 1) * 4 * SizeOf(TLimb));
+
+    NormalizedA:= Buffer;
+    X:= Buffer + LA + 1;
+    Y:= X + LA;
+    DivRem:= Y + LA;
 
 
+    if Odd(LA) then begin
+      arrShlShort(A, @NormalizedA[1], LA, Shift);
+      NormalizedA[0]:= 0;
+      LNorm:= LA + 1;
+    end
+    else begin
+      arrShlShort(A, NormalizedA, LA, Shift);
+      LNorm:= LA;
+    end;
+
+    HighLimb0:= NormalizedA[LNorm-1];
+//    if not IsNorm then
+//      HighLimb0:= HighLimb0 shr 1;
+(*
+                              // get initial 9 bit approximation from tables
+    InitA:= Cardinal(HighLimb0);
+{$IF SizeOf(TLimb) = 1}
+    InitA:= InitA shl 8;
+    if LA > 1 then InitA:= InitA or NormalizedA[LA-2];
+{$IFEND}
+
+{$IF SizeOf(TLimb) = 1}
+    InitX:= SqrtTabs[IsNorm, (InitA shr 7) and $FF];
+    InitX:= (InitX or $100) shr 1;
+{$ELSE}
+    InitX:= SqrtTabs[IsNorm, (InitA shr (TLimbInfo.BitSize - 9)) and $FF];
+    InitX:= ((InitX or $100) shl (SizeOf(Word) * 8 - 9)) or $7F;
+{$IFEND}
+
+{$IF SizeOf(TLimb) = 4}
+    if IsNorm then
+      InitY:= HighLimb0 div InitX
+    else
+      InitY:= (HighLimb0 shr 1) div InitX;
+    InitX:= ((InitX + InitY) shl 15) or $7FFF;
+{$IFEND}
+*)
+
+// this may be incorrect if SizeOf(Limb) >= 8
+//   because Double mantisse < 64 bits
+
+//    InitX:= Trunc(Sqrt(HighLimb0 shl (Shift and $FE))) + 1;
+//    Move(InitX, X^, SizeOf(TLimb));
+
+    X^:= Trunc(Sqrt(HighLimb0));
+    X^:= (X^ shl (TLimbInfo.BitSize shr 1))
+         or (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize shr 1));
+
+// the first iteration gives lower half of X^
+
+    Move(NormalizedA[LNorm-2], DivRem^, 2 * SizeOf(TLimb));
+
+    arrDivModLimb(DivRem, Y, 2, X^);     // Y:= DivRem div X^
+
+
+
+    if LNorm = 2 then begin
+      if X^ <> Y^ then begin
+// todo:
+      end;
+      X^:= ((X^ + Y^) shr 1) or (1 shl (TLimbInfo.BitSize - 1));
+    end
+    else begin
+      X^:= ((X^ + Y^) shr 1) or (1 shl (TLimbInfo.BitSize - 1));
+      L1:= 1;
+      L2:= 2;
+      repeat
+        Move(NormalizedA[LA-L2], DivRem^, L2 * SizeOf(TLimb));
+
+        arrNormDivMod(DivRem, X, Y, L2, L1);
+
+        if L2 = LNorm then Break;
+
+        arrSelfAdd(X, Y, L1, L1);
+        arrSelfShrOne(X, L1 + 1);
+
+        L1:= L2;
+        L2:= L2 * 2;
+        if L2 > LNorm then begin
+          L2:= LNorm;
+          L1:= L2 shr 1;
+        end;
+
+        Move(X^, X[L2 - L1], L1 * SizeOf(TLimb));
+        FillChar(X^, (L2 - L1) * SizeOf(TLimb), $FF);
+
+      until False;
+
+      Diff:= arrCmp(X, Y, L1);
+      if Diff <> 0 then begin
+
+  // make sure X is approximation from above
+        if Diff < 0 then begin
+          TmpXY:= X;
+          X:= Y;
+          Y:= TmpXY;
+        end;
+
+        arrSelfAdd(Y, X, L1, L1);
+        arrSelfShrOne(Y, L1 + 1);
+
+        if arrCmp(X, Y, L1) > 0 then begin
+          repeat
+            Move(NormalizedA^, DivRem^, L2 * SizeOf(TLimb));
+
+            if (L1 = 1) then begin
+              arrDivModLimb(DivRem, Y, L2, X^);
+            end
+            else begin
+              arrNormDivMod(DivRem, X, Y, L2, L1);
+            end;
+
+  //          if not IsNorm then
+  //            arrSelfShrOne(Y, L1 + 1);
+
+            arrSelfAdd(Y, X, L1, L1);
+            arrSelfShrOne(Y, L1 + 1);
+
+            if arrCmp(X, Y, L1) <= 0 then Break;
+            TmpXY:= X;
+            X:= Y;
+            Y:= TmpXY;
+          until False;
+        end;
+      end;
+    end;
+    arrShrShort(X, Root, L1, Shift shr 1);
+    Result:= arrGetLimbCount(Root, L1);
+  except
+    Result:= 0;
+  end;
+
+end;
 
 function arrShlShort(A, Res: PLimb; LA, Shift: Cardinal): Cardinal;
 var
