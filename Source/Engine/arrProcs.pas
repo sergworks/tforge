@@ -1251,7 +1251,7 @@ var
   NormalizedA: PLimb;
   DivRem: PLimb;
   X, Y, TmpXY: PLimb;
-  LNorm, L1, L2, Count: Cardinal;
+  LNorm, L1, L2: Cardinal;
   Diff: Integer;
   P: PLimb;
   Buffer: PLimb;
@@ -1282,6 +1282,9 @@ begin
 
   Shift:= Shift and $FE;        // Shift should be even
 
+// A = $5.6BC75E2D.63100000 = 1.0000.0000.0000.0000.0000
+// Sqrt(A) = $2.540BE400 = 100.0000.0000
+
   Assert(LA > 1);
 
   try
@@ -1304,132 +1307,170 @@ begin
         LNorm:= LA;
       end;
 
-      if LA = 2 then begin
+// NormalizedA = $56BC75E2.D6310000.00000000.00000000
+//             = 625.0000.0000.0000.0000 * 2^64
+// Sqrt(NormalizedA) = 9502F900.00000000
+//                   = 25.0000.0000 * 2^32
+
+{
+      if LNorm = 2 then begin
   // todo: arrNormDivMod requires LNorm >= 3
   //       so LNorm = 2 case should be treated separately here
         Result:= 0;
         Exit;
       end;
-
+}
       P:= @NormalizedA[LNorm - 1];
-      Count:= 0;
+      L1:= 0;
       while P <> NormalizedA do begin
         if P^ = TLimbInfo.MaxLimb then begin
-          Inc(Count);
+          Inc(L1);
           Dec(P);
         end
         else Break;
       end;
-      if Count >= LNorm shr 1 then begin
-  // todo: we have got the Root;
-        Result:= 0;
-        Exit;
-      end;
-      if (Count > 0) then begin
-// obtain root approximation from above of length Count or Count + 1
-        Assert(Count < LNorm shr 1);
-        if P^ = TLimbInfo.MaxLimb - 1 then begin
-          L1:= 0;
-          repeat
-            Dec(P);
-            if P^ <> 0 then Break;
-            Inc(L1);
-          until P = NormalizedA;
-// todo:          if (L1 = Count) and (
-        end
-        else ;
-      end;
-
-
-      HighLimb0:= NormalizedA[LNorm-1];
-
-      X^:= Trunc(Sqrt(HighLimb0));
-      X^:= (X^ shl (TLimbInfo.BitSize shr 1))
-           or (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize shr 1));
-
-  // the first iteration gives lower half of X^
-
-      Move(NormalizedA[LNorm-2], DivRem^, 2 * SizeOf(TLimb));
-
-      arrDivModLimb(DivRem, Y, 2, X^);     // Y:= DivRem div X^
-
-      if LNorm = 2 then begin
-        if X^ <> Y^ then begin
-          if X^ < Y^ then begin
-            TmpXY:= X;
-            X:= Y;
-            Y:= TmpXY;
-          end;
-          repeat
-            X^:= ((X^ + Y^) shr 1) or (1 shl (TLimbInfo.BitSize - 1));
-            if X^ <= Y^ then Break;
-            arrDivModLimb(DivRem, Y, 2, X^);     // Y:= DivRem div X^
-          until False;
-  // todo: return the result
-        end;
+      if L1 >= LNorm shr 1 then begin
+        L1:= LNorm shr 1;
+// we got the result, nothing else needed
+        FillChar(X^, L1 * SizeOf(TLimb), $FF);
       end
       else begin
-        X^:= ((X^ + Y^) shr 1) or (1 shl (TLimbInfo.BitSize - 1));
-        L1:= 1;
-        L2:= 2;
-        repeat
-          Move(NormalizedA[LA-L2], DivRem^, L2 * SizeOf(TLimb));
+        if (L1 > 0) then begin
+          FillChar(X^, L1 * SizeOf(TLimb), $FF);
+          FillChar(Y^, L1 * SizeOf(TLimb), $FF);
+  {todo: P^ = TLimbInfo.MaxLimb - 1 case probably should be treated separately
 
-          arrNormDivMod(DivRem, X, Y, L2, L1);
-
-          if L2 = LNorm then Break;
-
-          arrSelfAdd(X, Y, L1, L1);
-          arrSelfShrOne(X, L1 + 1);
-
-          L1:= L2;
-          L2:= L2 * 2;
-          if L2 > LNorm then begin
-            L2:= LNorm;
-            L1:= L2 shr 1;
-          end;
-
-          Move(X^, X[L2 - L1], L1 * SizeOf(TLimb));
-          FillChar(X^, (L2 - L1) * SizeOf(TLimb), $FF);
-
-        until False;
-
-        Diff:= arrCmp(X, Y, L1);
-        if Diff <> 0 then begin
-
-    // make sure X is approximation from above
-          if Diff < 0 then begin
-            TmpXY:= X;
-            X:= Y;
-            Y:= TmpXY;
-          end;
-
-          arrSelfAdd(Y, X, L1, L1);
-          arrSelfShrOne(Y, L1 + 1);
-
-          if arrCmp(X, Y, L1) > 0 then begin
+  // obtain root approximation from above of length Count or Count + 1
+          Assert(Count < LNorm shr 1);
+          if P^ = TLimbInfo.MaxLimb - 1 then begin
+            L1:= 0;
             repeat
-              Move(NormalizedA^, DivRem^, L2 * SizeOf(TLimb));
+              Dec(P);
+              if P^ <> 0 then Break;
+              Inc(L1);
+            until P = NormalizedA;
+  // todo:          if (L1 = Count) and (
+          end
+          else ;
+  }
+        end
+        else begin
+          L1:= 1;
+          Y^:= (Trunc(Sqrt(NormalizedA[LNorm-1])) shl (TLimbInfo.BitSize shr 1))
+               or (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize shr 1));
+    // the first iteration gives lower half of X^
 
-              if (L1 = 1) then begin
-                arrDivModLimb(DivRem, Y, L2, X^);
-              end
-              else begin
-                arrNormDivMod(DivRem, X, Y, L2, L1);
-              end;
+          Move(NormalizedA[LNorm-2], DivRem^, 2 * SizeOf(TLimb));
+          arrDivModLimb(DivRem, X, 2, Y^);                // X:= DivRem div Y^
+        end;
 
-              arrSelfAdd(Y, X, L1, L1);
-              arrSelfShrOne(Y, L1 + 1);
+  {
+        HighLimb0:= NormalizedA[LNorm-1];
 
-              if arrCmp(X, Y, L1) <= 0 then Break;
+        X^:= Trunc(Sqrt(HighLimb0));
+        X^:= (X^ shl (TLimbInfo.BitSize shr 1))
+             or (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize shr 1));
+  }
+
+  // LNorm = 2 case should be treated separately
+  //   because arrNormDivMod requires LNorm >= 3
+        if LNorm = 2 then begin
+          if X^ <> Y^ then begin
+            if X^ < Y^ then begin
               TmpXY:= X;
               X:= Y;
               Y:= TmpXY;
+            end;
+            repeat
+              X^:= ((X^ + Y^) shr 1) or (1 shl (TLimbInfo.BitSize - 1));
+              if X^ <= Y^ then Break;
+              Move(NormalizedA[LNorm-2], DivRem^, 2 * SizeOf(TLimb));
+              arrDivModLimb(DivRem, Y, 2, X^);     // Y:= DivRem div X^
             until False;
+          end;
+        end
+        else begin
+// we have approx L1 valid root limbs, L1 * 2 < LNorm
+
+          Assert(L1 * 2 < LNorm);
+//          L2:= 2 * L1;
+          repeat
+
+            L2:= L1 * 2;
+            if L2 > LNorm shr 1 then begin
+              L2:= LNorm shr 1;
+            end;
+
+            Move(X^, X[L2 - L1], L1 * SizeOf(TLimb));
+            FillChar(X^, (L2 - L1) * SizeOf(TLimb), $FF);
+
+            L1:= L2;
+            L2:= L1 * 2;
+
+            Move(NormalizedA[LNorm - L2], DivRem^, L2 * SizeOf(TLimb));
+
+            arrNormDivMod(DivRem, X, Y, L2, L1);
+
+            if L2 = LNorm then Break;
+
+// carry is lost
+            arrSelfAdd(X, Y, L1, L1);
+            arrSelfShrOne(X, L1);
+// restore carry
+            X[L1-1]:= X[L1-1] or (1 shl (TLimbInfo.BitSize - 1));
+          until False;
+
+          Diff:= arrCmp(X, Y, L1);
+          if Diff <> 0 then begin
+
+      // make sure X is approximation from above
+            if Diff < 0 then begin
+              TmpXY:= X;
+              X:= Y;
+              Y:= TmpXY;
+            end;
+
+            arrSelfAdd(Y, X, L1, L1);
+            arrSelfShrOne(Y, L1);
+// restore carry
+            Y[L1-1]:= Y[L1-1] or (1 shl (TLimbInfo.BitSize - 1));
+
+            if arrCmp(X, Y, L1) > 0 then begin
+              repeat
+                Move(NormalizedA^, DivRem^, L2 * SizeOf(TLimb));
+{
+                if (L1 = 1) then begin
+                  arrDivModLimb(DivRem, Y, L2, X^);
+                end
+                else begin
+}
+                arrNormDivMod(DivRem, X, Y, L2, L1);
+//                end;
+
+                arrSelfAdd(Y, X, L1, L1);
+                arrSelfShrOne(Y, L1);
+// restore carry
+                Y[L1-1]:= Y[L1-1] or (1 shl (TLimbInfo.BitSize - 1));
+
+                if arrCmp(X, Y, L1) <= 0 then Break;
+                TmpXY:= X;
+                X:= Y;
+                Y:= TmpXY;
+              until False;
+            end;
           end;
         end;
       end;
-      arrShrShort(X, Root, L1, Shift shr 1);
+
+// X = 9502F900.00000000
+//   = 25.0000.0000 * 2^32
+
+      if Odd(LA) then Shift:= Shift + TLimbInfo.BitSize;
+
+      L1:= arrShrShort(X, Root, L1, Shift shr 1);
+
+// Root = 2.540BE400
+//      = 100.0000.0000
       Result:= arrGetLimbCount(Root, L1);
     finally
       FreeMem(Buffer);
