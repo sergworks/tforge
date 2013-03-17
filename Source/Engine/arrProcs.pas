@@ -41,6 +41,8 @@ function arrSub(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 function arrSelfSub(A, B: PLimb; LA, LB: Cardinal): Boolean;
 function arrSubLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
 function arrSelfSubLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
+function arrDec(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
+function arrSelfDec(A: PLimb; L: Cardinal): Boolean;
 
 { Multiplication primitives }
 procedure arrMul(A, B, Res: PLimb; LA, LB: Cardinal);
@@ -356,47 +358,55 @@ end;
 
 function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
 var
-  CarryIn: Boolean;
   Tmp: TLimb;
 
 begin
-  CarryIn:= True;
-  while (L > 0) and CarryIn do begin
+// todo: if A = Res then .. optimize
+  Tmp:= A^ + 1;
+  Res^:= Tmp;
+                          //  while we have carry from prev limb ..
+  while (Tmp = 0) do begin
+    Dec(L);
+    Inc(Res);
+    if (L = 0) then begin
+      Res^:= 1;
+      Result:= True;
+      Exit;
+    end;
+    Inc(A);
     Tmp:= A^ + 1;
-    CarryIn:= Tmp = 0;
-    Inc(A);
     Res^:= Tmp;
-    Inc(Res);
-    Dec(L);
   end;
-  while (L > 0) do begin
-    Res^:= A^;
+  repeat
     Inc(A);
     Inc(Res);
     Dec(L);
-  end;
-  Res^:= Ord(CarryIn);
-  Result:= CarryIn;
+    Res^:= A^;
+  until L = 0;
+  Res^:= 0;
+  Result:= True;
 end;
 
 function arrSelfInc(A: PLimb; L: Cardinal): Boolean;
 var
-  CarryIn: Boolean;
   Tmp: TLimb;
 
 begin
-  CarryIn:= True;
-  while (L > 0) and CarryIn do begin
-    Tmp:= A^ + 1;
-    CarryIn:= Tmp = 0;
-    A^:= Tmp;
-    Inc(A);
+  Tmp:= A^ + 1;
+  A^:= Tmp;
+                          //  while we have carry from prev limb ..
+  while (Tmp = 0) do begin
     Dec(L);
+    Inc(A);
+    if (L = 0) then begin
+      A^:= 1;
+      Result:= True;
+      Exit;
+    end;
+    Tmp:= A^ + 1;
+    A^:= Tmp;
   end;
-//  Inc(A, L);
-//  A^:= Ord(CarryIn);
-  if CarryIn then A^:= 1;
-  Result:= CarryIn;
+  Result:= False;
 end;
 
 {
@@ -603,6 +613,59 @@ begin
   end;
 
   Result:= BorrowIn;
+end;
+
+function arrDec(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
+var
+  Tmp: TLimb;
+  Borrow: Boolean;
+
+begin
+  Tmp:= A^;
+  Borrow:= Tmp = 0;
+  Res^:= Tmp - 1;
+  while Borrow do begin
+    Dec(L);
+    if (L = 0) then begin
+      Result:= True;
+      Exit;
+    end;
+    Inc(A);
+    Inc(Res);
+    Tmp:= A^;
+    Borrow:= Tmp = 0;
+    Res^:= Tmp - 1;
+  end;
+  repeat
+    Dec(L);
+    Inc(A);
+    Inc(Res);
+    Res^:= A^;
+  until (L = 0);
+  Result:= False;
+end;
+
+function arrSelfDec(A: PLimb; L: Cardinal): Boolean;
+var
+  Tmp: TLimb;
+  Borrow: Boolean;
+
+begin
+  Tmp:= A^;
+  Borrow:= Tmp = 0;
+  A^:= Tmp - 1;
+  while Borrow do begin
+    Dec(L);
+    if (L = 0) then begin
+      Result:= True;
+      Exit;
+    end;
+    Inc(A);
+    Tmp:= A^;
+    Borrow:= Tmp = 0;
+    A^:= Tmp - 1;
+  end;
+  Result:= False;
 end;
 
 {
