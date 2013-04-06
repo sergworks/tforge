@@ -141,8 +141,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function AddIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function AddIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function AddIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -150,8 +150,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -159,8 +159,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function DivRemLimbU(A: PBigNumber; Limb: TLimb;
                                var Q: PBigNumber; var R: TLimb): HResult;
@@ -249,7 +249,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..46] of Pointer = (
+  BigNumVTable: array[0..45] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -297,17 +297,20 @@ const
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
    @TBigNumber.AddIntLimb,
-   @TBigNumber.AddIntLimbU,
+//   @TBigNumber.AddIntLimbU,
 
    @TBigNumber.SubLimb,
    @TBigNumber.SubLimbU,
    @TBigNumber.SubIntLimb,
-   @TBigNumber.SubIntLimbU,
+//   @TBigNumber.SubIntLimbU,
 
    @TBigNumber.MulLimb,
    @TBigNumber.MulLimbU,
    @TBigNumber.MulIntLimb,
-   @TBigNumber.MulIntLimbU
+//   @TBigNumber.MulIntLimbU
+
+   @TBigNumber.DivRemLimbU,
+   @TBigNumber.DivRemIntLimb
    );
 
 const
@@ -1312,7 +1315,7 @@ begin
     R:= Tmp;
   end;
 end;
-
+{
 class function TBigNumber.AddIntLimbU(A: PBigNumber; Limb: TIntLimb;
                                       var R: PBigNumber): HResult;
 var
@@ -1356,7 +1359,7 @@ begin
     R:= Tmp;
   end;
 end;
-
+}
 class function TBigNumber.AddLimb(A: PBigNumber; Limb: TLimb;
                                   var R: PBigNumber): HResult;
 var
@@ -1681,7 +1684,7 @@ begin
     R:= Tmp;
   end;
 end;
-
+(*
 class function TBigNumber.SubIntLimbU(A: PBigNumber; Limb: TIntLimb;
                                       var R: PBigNumber): HResult;
 var
@@ -1728,7 +1731,7 @@ begin
     end;
   end;
 end;
-
+*)
 class function TBigNumber.AssignCardinal(var A: PBigNumber;
                const Value: Cardinal; ASign: Integer = 0): HResult;
 const
@@ -2511,7 +2514,7 @@ begin
     end;
   end;
 end;
-
+(*
 class function TBigNumber.MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
 var
   Tmp: PBigNumber;
@@ -2540,6 +2543,7 @@ begin
   else                          // Limb < 0
     Result:= TFL_E_INVALIDARG;
 end;
+*)
 
 class function TBigNumber.MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
 var
