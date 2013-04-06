@@ -162,6 +162,13 @@ type
     class function MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
+    class function DivRemLimbU(A: PBigNumber; Limb: TLimb;
+                               var Q: PBigNumber; var R: TLimb): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DivRemIntLimb(A: PBigNumber; Limb: TIntLimb;
+                                 var Q: PBigNumber; var R: TIntLimb): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
 // -- end of IBigNumber implementation
 
 // -- conversions from/to BigNumber
@@ -2586,6 +2593,77 @@ begin
       R:= Tmp;
     end;
   end;
+end;
+
+class function TBigNumber.DivRemLimbU(A: PBigNumber; Limb: TLimb;
+                                      var Q: PBigNumber; var R: TLimb): HResult;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+  if (Limb = 0) then begin
+    Result:= TFL_E_ZERODIVIDE;
+    Exit;
+  end;
+                          // Limb > 0
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA);
+  if Result <> TFL_S_OK then Exit;
+
+  if UsedA = 1 then begin
+    Tmp.FLimbs[0]:= A.FLimbs[0] div Limb;
+    R:= A.FLimbs[0] mod Limb;
+    Exit;
+  end;
+
+  R:= arrDivModLimb(@A.FLimbs, @Tmp.FLimbs, UsedA, Limb);
+  if (Tmp.FLimbs[UsedA - 1] = 0)
+    then Tmp.FUsed:= UsedA - 1
+    else Tmp.FUsed:= UsedA;
+
+  if (Q <> nil) then Release(Q);
+  Q:= Tmp;
+end;
+
+class function TBigNumber.DivRemIntLimb(A: PBigNumber; Limb: TIntLimb;
+                                       var Q: PBigNumber; var R: TIntLimb): HResult;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+  if (Limb = 0) then begin
+    Result:= TFL_E_ZERODIVIDE;
+    Exit;
+  end;
+                          // Limb > 0
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA);
+  if Result <> TFL_S_OK then Exit;
+
+  if UsedA = 1 then begin
+    Tmp.FLimbs[0]:= A.FLimbs[0] div Limb;
+    R:= A.FLimbs[0] mod Limb;
+    Exit;
+  end;
+
+  R:= arrDivModLimb(@A.FLimbs, @Tmp.FLimbs, UsedA, TLimb(Abs(Limb)));
+  if (Tmp.FLimbs[UsedA - 1] = 0)
+    then Tmp.FUsed:= UsedA - 1
+    else Tmp.FUsed:= UsedA;
+
+//  Abs(A) > Abs(Limb) > 0
+  if A.FSign xor Integer(Limb) >= 0
+// if dividend and divisor have the same sign
+    then Tmp.FSign:= 0
+    else Tmp.FSign:= -1;
+
+// remainder has the same sign as dividend if nonzero
+  if (R <> 0) and (A.FSign < 0) then R:= -R;
+
+  if (Q <> nil) then Release(Q);
+  Q:= Tmp;
 end;
 
 class procedure TBigNumber.Normalize(Inst: PBigNumber);
