@@ -2202,7 +2202,7 @@ end;
 
 class function TBigNumber.FromString(var A: PBigNumber; const S: string): HResult;
 begin
-  Result:= BigNumberFromPWideChar(A, PChar(Pointer(S)), Length(S), True);
+  Result:= BigNumberFromPWideChar(A, PWideChar(Pointer(S)), Length(S), True);
 end;
 
 class function TBigNumber.GetIsEven(Inst: PBigNumber): Boolean;

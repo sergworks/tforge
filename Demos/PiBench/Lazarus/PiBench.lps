@@ -9,73 +9,21 @@
         <Filename Value="PiBench.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="PiBench"/>
-        <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
         <TopLine Value="68"/>
         <CursorPos X="1" Y="87"/>
         <UsageCount Value="122"/>
-        <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="C:\Program Files (x86)\Embarcadero\RAD Studio\8.0\source\Samples\Delphi\Gauges.pas"/>
         <UnitName Value="Gauges"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="1" Y="1"/>
         <UsageCount Value="10"/>
-        <Loaded Value="True"/>
       </Unit1>
     </Units>
-    <General>
-      <ActiveWindowIndexAtStart Value="0"/>
-    </General>
-    <JumpHistory Count="11" HistoryIndex="10">
-      <Position1>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="16" Column="1" TopLine="16"/>
-      </Position1>
-      <Position2>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="24" Column="1" TopLine="16"/>
-      </Position2>
-      <Position3>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="25" Column="1" TopLine="16"/>
-      </Position3>
-      <Position4>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="26" Column="1" TopLine="16"/>
-      </Position4>
-      <Position5>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="28" Column="1" TopLine="16"/>
-      </Position5>
-      <Position6>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="29" Column="1" TopLine="16"/>
-      </Position6>
-      <Position7>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="31" Column="1" TopLine="16"/>
-      </Position7>
-      <Position8>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="33" Column="1" TopLine="17"/>
-      </Position8>
-      <Position9>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="18" Column="26" TopLine="10"/>
-      </Position9>
-      <Position10>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="26" Column="1" TopLine="10"/>
-      </Position10>
-      <Position11>
-        <Filename Value="PiBench.lpr"/>
-        <Caret Line="79" Column="1" TopLine="50"/>
-      </Position11>
-    </JumpHistory>
+    <JumpHistory Count="0" HistoryIndex="-1"/>
   </ProjectSession>
 </CONFIG>
