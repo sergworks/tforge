@@ -6,6 +6,7 @@ syntax: glob
 *.~*~
 *.dcu
 *.exe
+*.dll
 *.local
 *.identcache
 *.2007

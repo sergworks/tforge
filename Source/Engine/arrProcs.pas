@@ -637,10 +637,10 @@ begin
     Res^:= Tmp - 1;
   end;
   repeat
-    Dec(L);
     Inc(A);
     Inc(Res);
     Res^:= A^;
+    Dec(L);
   until (L = 0);
   Result:= False;
 end;

@@ -39,9 +39,6 @@
   {$ENDIF}
 {$ENDIF}
 
-// Enable to build dll
-{.$DEFINE TFL_DLL}
-
 {$IFNDEF TFL_STDCALL}
   {$IFDEF TFL_DLL}
     {$DEFINE TFL_STDCALL}
