@@ -148,6 +148,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
@@ -249,7 +251,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..45] of Pointer = (
+  BigNumVTable: array[0..48] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -286,8 +288,11 @@ const
    @TBigNumber.PowU,
    @TBigNumber.PowerMod,
 
+   @TBigNumber.ToCardinal,
+   @TBigNumber.ToInteger,
    @TBigNumber.ToWideString,
    @TBigNumber.ToWideHexString,
+   @TBigNumber.ToPByte,
 
    @TBigNumber.CompareToLimb,
    @TBigNumber.CompareToLimbU,
@@ -1606,6 +1611,7 @@ begin
   end;
 end;
 
+// R:= A - Limb
 class function TBigNumber.SubLimbU(A: PBigNumber; Limb: TLimb;
                                    var R: PBigNumber): HResult;
 var
@@ -1639,6 +1645,28 @@ begin
       R:= Tmp;
     end;
   end;
+end;
+
+// R:= Limb - A
+class function TBigNumber.SubLimbU2(A: PBigNumber; Limb: TLimb;
+                                    var R: PBigNumber): HResult;
+var
+  UsedA: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  UsedA:= A.FUsed;
+  if (UsedA = 1) and (A.FLimbs[0] <= Limb) then begin
+    Result:= AllocNumber(Tmp, 1);
+    if Result = TFL_S_OK then begin
+      Tmp.FUsed:= 1;
+      Tmp.FLimbs[0]:= Limb - A.FLimbs[0];
+      if (R <> nil) then Release(R);
+      R:= Tmp;
+    end;
+  end
+  else { A > Limb }
+    Result:= TFL_E_INVALIDSUB;
 end;
 
 class function TBigNumber.SubIntLimb(A: PBigNumber; Limb: TIntLimb;
@@ -3320,3 +3348,4 @@ begin
 end;
 
 end.
+

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
 { * ------------------------------------------------------- * }
 { *   # shared unit                                         * }
 { *********************************************************** }
@@ -74,8 +74,11 @@ type
     function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+    function ToCardinal(var Value: Cardinal): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToInteger(var Value: Integer): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToPByte(P: PByte; var L: Cardinal): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function CompareToLimb(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToLimbU(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
