@@ -96,6 +96,7 @@ type
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
     class operator Subtract(const A: BigCardinal; const B: Cardinal): BigCardinal;
+    class operator Subtract(const A: Cardinal; const B: BigCardinal): Cardinal;
     class operator Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Multiply(const A: Cardinal; const B: BigCardinal): BigCardinal;
 {$ENDIF}
@@ -743,6 +744,16 @@ begin
             PBigNumber(Result.FNumber)),
 {$ENDIF}
             'BigCardinal.SubLimbU');
+end;
+
+class operator BigCardinal.Subtract(const A: Cardinal; const B: BigCardinal): Cardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.SubLimbU2(A, Result),
+{$ELSE}
+  HResCheck(TBigNumber.SubLimbU2(PBigNumber(B.FNumber), A, Result),
+{$ENDIF}
+            'BigCardinal.SubLimbU2');
 end;
 
 class operator BigCardinal.Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;

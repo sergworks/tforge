@@ -148,7 +148,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+//    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: TLimb): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -251,7 +252,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..48] of Pointer = (
+  BigNumVTable: array[0..49] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -306,6 +307,7 @@ const
 
    @TBigNumber.SubLimb,
    @TBigNumber.SubLimbU,
+   @TBigNumber.SubLimbU2,
    @TBigNumber.SubIntLimb,
 //   @TBigNumber.SubIntLimbU,
 
@@ -1648,6 +1650,7 @@ begin
 end;
 
 // R:= Limb - A
+(*
 class function TBigNumber.SubLimbU2(A: PBigNumber; Limb: TLimb;
                                     var R: PBigNumber): HResult;
 var
@@ -1664,6 +1667,23 @@ begin
       if (R <> nil) then Release(R);
       R:= Tmp;
     end;
+  end
+  else { A > Limb }
+    Result:= TFL_E_INVALIDSUB;
+end;
+*)
+
+class function TBigNumber.SubLimbU2(A: PBigNumber; Limb: TLimb;
+                                    var R: TLimb): HResult;
+var
+  UsedA: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  UsedA:= A.FUsed;
+  if (UsedA = 1) and (A.FLimbs[0] <= Limb) then begin
+    R:= Limb - A.FLimbs[0];
+    Result:= TFL_S_OK;
   end
   else { A > Limb }
     Result:= TFL_E_INVALIDSUB;

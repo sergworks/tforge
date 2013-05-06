@@ -90,6 +90,8 @@ type
 
     function SubLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function SubLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
+//    function SubLimbU2(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
+    function SubLimbU2(Limb: LongWord; var Res: LongWord): HRESULT; stdcall;
     function SubIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
 
     function MulLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
@@ -176,6 +178,7 @@ type
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
     class operator Subtract(const A: BigCardinal; const B: Cardinal): BigCardinal;
+    class operator Subtract(const A: Cardinal; const B: BigCardinal): Cardinal;
     class operator Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Multiply(const A: Cardinal; const B: BigCardinal): BigCardinal;
   end;
@@ -688,6 +691,12 @@ class operator BigCardinal.Subtract(const A: BigCardinal; const B: Cardinal): Bi
 begin
   HResCheck(A.FNumber.SubLimbU(B, Result.FNumber),
             'BigCardinal.SubLimbU');
+end;
+
+class operator BigCardinal.Subtract(const A: Cardinal; const B: BigCardinal): Cardinal;
+begin
+  HResCheck(B.FNumber.SubLimbU2(A, Result),
+            'BigCardinal.SubLimbU2');
 end;
 
 class operator BigCardinal.Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;
