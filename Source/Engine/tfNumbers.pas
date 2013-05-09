@@ -168,8 +168,15 @@ type
     class function DivRemLimbU(A: PBigNumber; Limb: TLimb;
                                var Q: PBigNumber; var R: TLimb): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DivRemLimbU2(A: PBigNumber; Limb: TLimb;
+                               var Q: TLimb; var R: TLimb): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
     class function DivRemIntLimb(A: PBigNumber; Limb: TIntLimb;
                                  var Q: PBigNumber; var R: TIntLimb): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DivRemIntLimb2(A: PBigNumber; Limb: TIntLimb;
+                                  var Q: TIntLimb; var R: TIntLimb): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
 // -- end of IBigNumber implementation
@@ -252,7 +259,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..49] of Pointer = (
+  BigNumVTable: array[0..51] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -317,7 +324,9 @@ const
 //   @TBigNumber.MulIntLimbU
 
    @TBigNumber.DivRemLimbU,
-   @TBigNumber.DivRemIntLimb
+   @TBigNumber.DivRemLimbU2,
+   @TBigNumber.DivRemIntLimb,
+   @TBigNumber.DivRemIntLimb2
    );
 
 const
@@ -2678,6 +2687,27 @@ begin
   Q:= Tmp;
 end;
 
+// Q:= Limb div A; R:= Limb mod A;
+class function TBigNumber.DivRemLimbU2(A: PBigNumber; Limb: TLimb;
+                                      var Q: TLimb; var R: TLimb): HResult;
+begin
+  if (A.FUsed = 1) then begin
+    if (A.FLimbs[0] = 0) then begin
+      Result:= TFL_E_ZERODIVIDE;
+      Exit;
+    end
+    else begin
+      Q:= Limb div A.FLimbs[0];
+      R:= Limb mod A.FLimbs[0];
+    end
+  end
+  else begin
+    Q:= 0;
+    R:= Limb;
+  end;
+  Result:= TFL_S_OK;
+end;
+
 class function TBigNumber.DivRemIntLimb(A: PBigNumber; Limb: TIntLimb;
                                        var Q: PBigNumber; var R: TIntLimb): HResult;
 var
@@ -2716,6 +2746,41 @@ begin
 
   if (Q <> nil) then Release(Q);
   Q:= Tmp;
+end;
+
+// Q:= Limb div A, R:= Limb mod A
+class function TBigNumber.DivRemIntLimb2(A: PBigNumber; Limb: TIntLimb;
+                                        var Q: TIntLimb; var R: TIntLimb): HResult;
+var
+  Tmp: PBigNumber;
+
+begin
+  if (A.FUsed = 1) then begin
+    if (A.FLimbs[0] = 0) then begin
+      Result:= TFL_E_ZERODIVIDE;
+      Exit;
+    end
+    else begin
+      Q:= Abs(Limb) div A.FLimbs[0];
+      R:= Abs(Limb) mod A.FLimbs[0];
+
+// -5 div 2 = -2, -5 mod 2 = -1
+//  5 div -2 = -2, 5 mod -2 = 1
+// -5 div -2 = 2, -5 mod -2 = -1
+
+// remainder has the same sign as dividend
+      if Limb < 0 then
+        R:= -R;
+
+      if Limb xor A.FSign < 0 then
+        Q:= -Q;
+    end;
+  end
+  else begin
+    Q:= 0;
+    R:= Limb;
+  end;
+  Result:= TFL_S_OK;
 end;
 
 class procedure TBigNumber.Normalize(Inst: PBigNumber);

@@ -103,7 +103,9 @@ type
 //    function MulIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function DivRemLimbU(Limb: TLimb; var Q: IBigNumber; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemLimbU2(Limb: TLimb; var Q: TLimb; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DivRemIntLimb(Limb: TIntLimb; var Q: IBigNumber; var R: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemIntLimb2(Limb: TIntLimb; var Q: TIntLimb; var R: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 implementation
