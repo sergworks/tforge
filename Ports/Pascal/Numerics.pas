@@ -89,10 +89,12 @@ type
     function AddIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
 
     function SubLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
+    function SubLimb2(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function SubLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
 //    function SubLimbU2(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function SubLimbU2(Limb: LongWord; var Res: LongWord): HRESULT; stdcall;
     function SubIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
+    function SubIntLimb2(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
 
     function MulLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function MulLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
@@ -291,6 +293,10 @@ type
     class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
     class operator Add(const A: BigInteger; const B: Integer): BigInteger;
     class operator Add(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Subtract(const A: Integer; const B: BigInteger): BigInteger;
   end;
 
 type
@@ -1228,6 +1234,29 @@ begin
             'BigInteger.AddIntLimb');
 end;
 
+class operator BigInteger.Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+  HResCheck(A.FNumber.SubLimb(B, Result.FNumber),
+            'BigInteger.Subtract');
+end;
+
+class operator BigInteger.Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber),
+            'BigInteger.Subtract');
+end;
+
+class operator BigInteger.Subtract(const A: BigInteger; const B: Integer): BigInteger;
+begin
+  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber),
+            'BigInteger.Subtract');
+end;
+
+class operator BigInteger.Subtract(const A: Integer; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber),
+            'BigInteger.Subtract');
+end;
 // -------------------------------------------------------------- //
 
 const

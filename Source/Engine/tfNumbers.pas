@@ -146,12 +146,16 @@ type
 
     class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubLimb2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
     class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: TLimb): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SubIntLimb2(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -259,7 +263,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..51] of Pointer = (
+  BigNumVTable: array[0..53] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -313,9 +317,11 @@ const
 //   @TBigNumber.AddIntLimbU,
 
    @TBigNumber.SubLimb,
+   @TBigNumber.SubLimb2,
    @TBigNumber.SubLimbU,
    @TBigNumber.SubLimbU2,
    @TBigNumber.SubIntLimb,
+   @TBigNumber.SubIntLimb2,
 //   @TBigNumber.SubIntLimbU,
 
    @TBigNumber.MulLimb,
@@ -1622,6 +1628,46 @@ begin
   end;
 end;
 
+// R:= Limb - A
+class function TBigNumber.SubLimb2(A: PBigNumber; Limb: TLimb;
+                                  var R: PBigNumber): HResult;
+var
+  UsedA: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TFL_S_OK then begin
+    if (A.FSign < 0) then begin
+      if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
+        then Tmp.FUsed:= UsedA + 1
+        else Tmp.FUsed:= UsedA;
+    end
+    else begin
+      if (UsedA > 1) then begin                   // A.FSign >= 0
+        arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
+          then Tmp.FUsed:= UsedA - 1
+          else Tmp.FUsed:= UsedA;
+        Tmp.FSign:= -1;
+      end
+      else begin
+        if (A.FLimbs[0] > Limb) then begin    // A.FSign >= 0, A.FUsed = 1
+          Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
+          Tmp.FSign:= -1;
+        end
+        else begin
+          Tmp.FLimbs[0]:= Limb - A.FLimbs[0];
+        end;
+        Tmp.FUsed:= 1;
+      end;
+    end;
+    if (R <> nil) then Release(R);
+    R:= Tmp;
+  end;
+end;
+
 // R:= A - Limb
 class function TBigNumber.SubLimbU(A: PBigNumber; Limb: TLimb;
                                    var R: PBigNumber): HResult;
@@ -1741,6 +1787,53 @@ begin
     R:= Tmp;
   end;
 end;
+
+// R:= Limb - A
+class function TBigNumber.SubIntLimb2(A: PBigNumber; Limb: TIntLimb;
+                                      var R: PBigNumber): HResult;
+var
+  UsedA: Cardinal;
+  AbsLimb: TLimb;
+  Tmp: PBigNumber;
+
+begin
+  UsedA:= A.FUsed;
+  AbsLimb:= Abs(Limb);
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TFL_S_OK then begin
+    if A.FSign xor Integer(Limb) < 0 then begin
+// Abs(Tmp) = Abs(A) + Abs(Limb)
+      if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
+        then Tmp.FUsed:= UsedA + 1
+        else Tmp.FUsed:= UsedA;
+      if (Limb < 0) then Tmp.FSign:= -1;
+    end
+    else begin
+      if A.FUsed = 1 then begin
+// Assert(Tmp.FUsed = 1)
+        if A.FLimbs[0] < AbsLimb then begin
+          Tmp.FLimbs[0]:= AbsLimb - A.FLimbs[0];
+          Tmp.FSign:= A.FSign;
+        end
+        else begin
+          Tmp.FLimbs[0]:= A.FLimbs[0] - AbsLimb;
+          if (Tmp.FLimbs[0] <> 0)
+            then Tmp.FSign:= not A.FSign;
+        end;
+      end
+      else begin { UsedA > 1 }
+        arrSubLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
+          then Tmp.FUsed:= UsedA - 1
+          else Tmp.FUsed:= UsedA;
+        Tmp.FSign:= not A.FSign;
+      end;
+    end;
+    if (R <> nil) then Release(R);
+    R:= Tmp;
+  end;
+end;
+
 (*
 class function TBigNumber.SubIntLimbU(A: PBigNumber; Limb: TIntLimb;
                                       var R: PBigNumber): HResult;
@@ -2772,7 +2865,7 @@ begin
       if Limb < 0 then
         R:= -R;
 
-      if Limb xor A.FSign < 0 then
+      if Integer(Limb) xor A.FSign < 0 then
         Q:= -Q;
     end;
   end

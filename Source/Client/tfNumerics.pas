@@ -209,6 +209,10 @@ type
     class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
     class operator Add(const A: BigInteger; const B: Integer): BigInteger;
     class operator Add(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Subtract(const A: Integer; const B: BigInteger): BigInteger;
 {$ENDIF}
   end;
 
@@ -1479,7 +1483,7 @@ begin
   HResCheck(TBigNumber.AddLimb(PBigNumber(B.FNumber), A,
             PBigNumber(Result.FNumber)),
 {$ENDIF}
-            'BigCardinal.AddLimb');
+            'BigInteger.AddLimb');
 end;
 
 class operator BigInteger.Add(const A: BigInteger; const B: Integer): BigInteger;
@@ -1502,6 +1506,50 @@ begin
             PBigNumber(Result.FNumber)),
 {$ENDIF}
             'BigInteger.AddIntLimb');
+end;
+
+class operator BigInteger.Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SubLimb(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SubLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.Subtract');
+end;
+
+class operator BigInteger.Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SubLimb2(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.Subtract');
+end;
+
+class operator BigInteger.Subtract(const A: BigInteger; const B: Integer): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SubIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.Subtract');
+end;
+
+class operator BigInteger.Subtract(const A: Integer; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SubIntLimb2(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.Subtract');
 end;
 
 {$ENDIF}
