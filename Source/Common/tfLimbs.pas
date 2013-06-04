@@ -20,6 +20,8 @@ type
 {$IFDEF TFL_LIMB32}
   TLimb = LongWord;
   TIntLimb = LongInt;
+  TDblLimb = UInt64;
+  TDblIntLimb = Int64;
 
   TLimbVector = record
     case Byte of
@@ -33,6 +35,7 @@ type
     BitShift = 5;
     BitShiftMask = $1F;
     MaxLimb = $FFFFFFFF;
+    MaxIntLimb = $7FFFFFFF;
                                // max number of limbs in big number
     MaxCapacity = $01000000 div SizeOf(TLimb);
   end;
@@ -41,6 +44,8 @@ type
 {$IFDEF TFL_LIMB16}
   TLimb = Word;
   TIntLimb = SmallInt;
+  TDblLimb = LongWord;
+  TDblIntLimb = LongInt;
 
   TLimbVector = record
     case Byte of
@@ -54,6 +59,7 @@ type
     BitShift = 4;
     BitShiftMask = $0F;
     MaxLimb = $FFFF;
+    MaxIntLimb = $7FFF;
     MaxCapacity = $01000000 div SizeOf(TLimb);
   end;
 {$ENDIF}
@@ -61,6 +67,8 @@ type
 {$IFDEF TFL_LIMB8}
   TLimb = Byte;
   TIntLimb = ShortInt;
+  TDblLimb = Word;
+  TDblIntLimb = SmallInt;
 
   TLimbVector = record
     case Byte of
@@ -74,6 +82,7 @@ type
     BitShift = 3;
     BitShiftMask = $07;
     MaxLimb = $FF;
+    MaxIntLimb = $7F;
     MaxCapacity = $01000000 div SizeOf(TLimb);
   end;
 {$ENDIF}

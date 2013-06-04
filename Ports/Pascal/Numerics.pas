@@ -100,6 +100,8 @@ type
     function MulLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function MulIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
 
+    function DivRemLimb(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
+    function DivRemLimb2(Limb: LongWord; var Q: LongWord; var R: LongWord): HRESULT; stdcall;
     function DivRemLimbU(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
     function DivRemLimbU2(Limb: LongWord; var Q: LongWord; var R: LongWord): HRESULT; stdcall;
     function DivRemIntLimb(Limb: LongInt; var Q: IBigNumber; var R: LongInt): HRESULT; stdcall;
@@ -181,6 +183,8 @@ type
 
     class function DivRem(const Dividend: BigCardinal; Divisor: Cardinal;
                           var Remainder: Cardinal): BigCardinal; overload; static;
+    class function DivRem(const Dividend: Cardinal; Divisor: BigCardinal;
+                          var Remainder: Cardinal): Cardinal; overload; static;
 
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
@@ -297,6 +301,10 @@ type
     class operator Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
     class operator Subtract(const A: BigInteger; const B: Integer): BigInteger;
     class operator Subtract(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Multiply(const A: Integer; const B: BigInteger): BigInteger;
   end;
 
 type
@@ -732,6 +740,13 @@ class function BigCardinal.DivRem(const Dividend: BigCardinal;
 begin
   HResCheck(Dividend.FNumber.DivRemLimbU(Divisor, Result.FNumber, Remainder),
             'BigCardinal.DivRemLimbU');
+end;
+
+class function BigCardinal.DivRem(const Dividend: Cardinal;
+               Divisor: BigCardinal; var Remainder: Cardinal): Cardinal;
+begin
+  HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder),
+            'BigCardinal.DivRemLimbU2');
 end;
 
 class operator BigCardinal.IntDivide(const A: BigCardinal; const B: Cardinal): BigCardinal;
@@ -1257,6 +1272,32 @@ begin
   HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber),
             'BigInteger.Subtract');
 end;
+
+class operator BigInteger.Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+  HResCheck(A.FNumber.MulLimb(B, Result.FNumber),
+            'BigInteger.MulLimb');
+end;
+
+class operator BigInteger.Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.MulLimb(A, Result.FNumber),
+            'BigInteger.MulLimb');
+end;
+
+class operator BigInteger.Multiply(const A: BigInteger; const B: Integer): BigInteger;
+begin
+  HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber),
+            'BigInteger.MulIntLimb');
+end;
+
+class operator BigInteger.Multiply(const A: Integer; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber),
+            'BigInteger.MulIntLimb');
+end;
+
+
 // -------------------------------------------------------------- //
 
 const

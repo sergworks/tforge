@@ -16,7 +16,7 @@ unit tfNumerics;
 
 interface
 
-uses SysUtils, tfTypes,
+uses SysUtils, tfLimbs, tfTypes,
     {$IFDEF TFL_DLL} tfImport {$ELSE} tfNumbers {$ENDIF};
 
 type
@@ -37,10 +37,10 @@ type
     class function DivRem(const Dividend, Divisor: BigCardinal;
                           var Remainder: BigCardinal): BigCardinal; overload; static;
 
-    class operator Explicit(const Value: BigCardinal): Cardinal;
-    class operator Explicit(const Value: BigCardinal): Integer;
-    class operator Implicit(const Value: Cardinal): BigCardinal;
-    class operator Explicit(const Value: Integer): BigCardinal;
+    class operator Explicit(const Value: BigCardinal): TLimb;
+    class operator Explicit(const Value: BigCardinal): TIntLimb;
+    class operator Implicit(const Value: TLimb): BigCardinal;
+    class operator Explicit(const Value: TIntLimb): BigCardinal;
     class operator Explicit(const Value: TBytes): BigCardinal;
     class operator Explicit(const Value: string): BigCardinal;
 
@@ -95,6 +95,8 @@ type
 
     class function DivRem(const Dividend: BigCardinal; Divisor: Cardinal;
                           var Remainder: Cardinal): BigCardinal; overload; static;
+    class function DivRem(const Dividend: Cardinal; Divisor: BigCardinal;
+                          var Remainder: Cardinal): Cardinal; overload; static;
 
     class operator Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
     class operator Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
@@ -136,10 +138,10 @@ type
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
 
-    class operator Explicit(const Value: BigInteger): Cardinal;
-    class operator Explicit(const Value: BigInteger): Integer;
-    class operator Implicit(const Value: Cardinal): BigInteger;
-    class operator Implicit(const Value: Integer): BigInteger;
+    class operator Explicit(const Value: BigInteger): TLimb;
+    class operator Explicit(const Value: BigInteger): TIntLimb;
+    class operator Implicit(const Value: TLimb): BigInteger;
+    class operator Implicit(const Value: TIntLimb): BigInteger;
     class operator Explicit(const Value: TBytes): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
 
@@ -213,6 +215,15 @@ type
     class operator Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
     class operator Subtract(const A: BigInteger; const B: Integer): BigInteger;
     class operator Subtract(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Multiply(const A: Integer; const B: BigInteger): BigInteger;
+{    class operator IntDivide(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator IntDivide(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator IntDivide(const A: BigInteger; const B: Integer): BigInteger;
+    class operator IntDivide(const A: Integer; const B: BigInteger): Integer;
+}
 {$ENDIF}
   end;
 
@@ -431,7 +442,7 @@ begin
   FNumber:= nil;
 end;
 
-class operator BigCardinal.Explicit(const Value: BigCardinal): Cardinal;
+class operator BigCardinal.Explicit(const Value: BigCardinal): TLimb;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(Value.FNumber.ToCardinal(Result),
@@ -441,7 +452,7 @@ begin
     'BigCardinal -> Cardinal conversion error');
 end;
 
-class operator BigCardinal.Explicit(const Value: BigCardinal): Integer;
+class operator BigCardinal.Explicit(const Value: BigCardinal): TIntLimb;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(Value.FNumber.ToInteger(Result),
@@ -451,27 +462,27 @@ begin
     'BigCardinal -> Integer conversion error');
 end;
 
-class operator BigCardinal.Explicit(const Value: Integer): BigCardinal;
+class operator BigCardinal.Explicit(const Value: TIntLimb): BigCardinal;
 begin
   if Value < 0 then
     BigNumberError(TFL_E_INVALIDARG,
-      'Integer -> BigCardinal conversion error')
+      'IntLimb -> BigCardinal conversion error')
   else begin
 {$IFDEF TFL_DLL}
-    HResCheck(BigNumberFromInteger(Result.FNumber, Cardinal(Value)),
+    HResCheck(BigNumberFromIntLimb(Result.FNumber, Cardinal(Value)),
 {$ELSE}
-    HResCheck(BigNumberFromInteger(PBigNumber(Result.FNumber), Cardinal(Value)),
+    HResCheck(BigNumberFromIntLimb(PBigNumber(Result.FNumber), Cardinal(Value)),
 {$ENDIF}
             'TBigNumber.FromInteger');
   end;
 end;
 
-class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
+class operator BigCardinal.Implicit(const Value: TLimb): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(BigNumberFromCardinal(Result.FNumber, Value),
+  HResCheck(BigNumberFromLimb(Result.FNumber, Value),
 {$ELSE}
-  HResCheck(BigNumberFromCardinal(PBigNumber(Result.FNumber), Value),
+  HResCheck(BigNumberFromLimb(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
             'TBigNumber.FromCardinal');
 end;
@@ -801,6 +812,18 @@ begin
             'BigCardinal.DivRemLimbU');
 end;
 
+class function BigCardinal.DivRem(const Dividend: Cardinal;
+               Divisor: BigCardinal; var Remainder: Cardinal): Cardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder),
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimbU2(PBigNumber(Divisor.FNumber), Dividend,
+            Result, Remainder),
+{$ENDIF}
+            'BigCardinal.DivRemLimbU2');
+end;
+
 class operator BigCardinal.IntDivide(const A: BigCardinal; const B: Cardinal): BigCardinal;
 var
   Remainder: Cardinal;
@@ -959,22 +982,22 @@ begin
 {$ENDIF}
 end;
 
-class operator BigInteger.Explicit(const Value: BigInteger): Cardinal;
+class operator BigInteger.Explicit(const Value: BigInteger): TLimb;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(Value.FNumber.ToCardinal(Result),
+  HResCheck(Value.FNumber.ToLimb(Result),
 {$ELSE}
-  HResCheck(TBigNumber.ToCardinal(PBigNumber(Value.FNumber), Result),
+  HResCheck(TBigNumber.ToLimb(PBigNumber(Value.FNumber), Result),
 {$ENDIF}
     'BigInteger -> Cardinal conversion error');
 end;
 
-class operator BigInteger.Explicit(const Value: BigInteger): Integer;
+class operator BigInteger.Explicit(const Value: BigInteger): TIntLimb;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(Value.FNumber.ToInteger(Result),
+  HResCheck(Value.FNumber.ToIntLimb(Result),
 {$ELSE}
-  HResCheck(TBigNumber.ToInteger(PBigNumber(Value.FNumber), Result),
+  HResCheck(TBigNumber.ToIntLimb(PBigNumber(Value.FNumber), Result),
 {$ENDIF}
     'BigInteger -> Integer conversion error');
 end;
@@ -1206,24 +1229,24 @@ begin
 {$ENDIF}
 end;
 
-class operator BigInteger.Implicit(const Value: Cardinal): BigInteger;
+class operator BigInteger.Implicit(const Value: TLimb): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(BigNumberFromCardinal(Result.FNumber, Value),
+  HResCheck(BigNumberFromLimb(Result.FNumber, Value),
 {$ELSE}
-  HResCheck(BigNumberFromCardinal(PBigNumber(Result.FNumber), Value),
+  HResCheck(BigNumberFromLimb(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
-            'TBigNumber.FromCardinal');
+            'BigNumberFromLimb');
 end;
 
-class operator BigInteger.Implicit(const Value: Integer): BigInteger;
+class operator BigInteger.Implicit(const Value: TIntLimb): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(BigNumberFromInteger(Result.FNumber, Value),
+  HResCheck(BigNumberFromIntLimb(Result.FNumber, Value),
 {$ELSE}
-  HResCheck(BigNumberFromInteger(PBigNumber(Result.FNumber), Value),
+  HResCheck(BigNumberFromIntLimb(PBigNumber(Result.FNumber), Value),
 {$ENDIF}
-            'TBigNumber.FromInteger');
+            'BigNumberFromIntLimb');
 end;
 
 class function BigInteger.Abs(const A: BigInteger): BigInteger;
@@ -1297,6 +1320,50 @@ begin
             PBigNumber(Result.FNumber)),
 {$ENDIF}
             'BigInteger.Modulus');
+end;
+
+class operator BigInteger.Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.MulLimb(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.MulLimb');
+end;
+
+class operator BigInteger.Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.MulLimb(A, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulLimb(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.MulLimb');
+end;
+
+class operator BigInteger.Multiply(const A: BigInteger; const B: Integer): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.MulIntLimb');
+end;
+
+class operator BigInteger.Multiply(const A: Integer; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.MulIntLimb(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.MulIntLimb');
 end;
 
 class function BigInteger.DivRem(const Dividend, Divisor: BigCardinal;
