@@ -74,8 +74,10 @@ type
     function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToCardinal(var Value: Cardinal): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToInteger(var Value: Integer): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToLimb(var Value: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToIntLimb(var Value: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblLimb(var Value: TDblLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblIntLimb(var Value: TDblIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToPByte(P: PByte; var L: Cardinal): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

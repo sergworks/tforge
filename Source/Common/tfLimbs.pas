@@ -16,6 +16,9 @@ interface
 
 type
   PLimb = ^TLimb;
+  PIntLimb = ^TIntLimb;
+  PDblLimb = ^TDblLimb;
+  PDblIntLimb = ^TDblIntLimb;
 
 {$IFDEF TFL_LIMB32}
   TLimb = LongWord;
@@ -36,6 +39,8 @@ type
     BitShiftMask = $1F;
     MaxLimb = $FFFFFFFF;
     MaxIntLimb = $7FFFFFFF;
+    MaxDblLimb = UInt64($FFFFFFFFFFFFFFFF);
+    MaxDblIntLimb = Int64($7FFFFFFFFFFFFFFF);
                                // max number of limbs in big number
     MaxCapacity = $01000000 div SizeOf(TLimb);
   end;

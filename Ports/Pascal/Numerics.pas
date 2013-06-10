@@ -73,8 +73,10 @@ type
     function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
-    function ToCardinal(var Value: Cardinal): HRESULT; stdcall;
-    function ToInteger(var Value: Integer): HRESULT; stdcall;
+    function ToUInt32(var Value: Cardinal): HRESULT; stdcall;
+    function ToInt32(var Value: Integer): HRESULT; stdcall;
+    function ToUInt64(var Value: UInt64): HRESULT; stdcall;
+    function ToInt64(var Value: Int64): HRESULT; stdcall;
     function ToWideString(var S: WideString): HRESULT; stdcall;
     function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT; stdcall;
     function ToPByte(P: PByte; var L: Cardinal): HRESULT; stdcall;
@@ -126,10 +128,14 @@ type
     class function DivRem(const Dividend, Divisor: BigCardinal;
                           var Remainder: BigCardinal): BigCardinal; overload; static;
 
-    class operator Explicit(const Value: BigCardinal): Cardinal;
-    class operator Explicit(const Value: BigCardinal): Integer;
-    class operator Implicit(const Value: Cardinal): BigCardinal;
-    class operator Explicit(const Value: Integer): BigCardinal;
+    class operator Explicit(const Value: BigCardinal): UInt32;
+    class operator Explicit(const Value: BigCardinal): Int32;
+    class operator Explicit(const Value: BigCardinal): UInt64;
+    class operator Explicit(const Value: BigCardinal): Int64;
+    class operator Implicit(const Value: UInt32): BigCardinal;
+    class operator Implicit(const Value: UInt64): BigCardinal;
+    class operator Explicit(const Value: Int32): BigCardinal;
+    class operator Explicit(const Value: Int64): BigCardinal;
     class operator Explicit(const Value: TBytes): BigCardinal;
     class operator Explicit(const Value: string): BigCardinal;
 
@@ -225,10 +231,14 @@ type
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
 
-    class operator Explicit(const Value: BigInteger): Cardinal;
-    class operator Explicit(const Value: BigInteger): Integer;
-    class operator Implicit(const Value: Cardinal): BigInteger;
-    class operator Implicit(const Value: Integer): BigInteger;
+    class operator Explicit(const Value: BigInteger): UInt32;
+    class operator Explicit(const Value: BigInteger): UInt64;
+    class operator Explicit(const Value: BigInteger): Int32;
+    class operator Explicit(const Value: BigInteger): Int64;
+    class operator Implicit(const Value: UInt32): BigInteger;
+    class operator Implicit(const Value: UInt64): BigInteger;
+    class operator Implicit(const Value: Int32): BigInteger;
+    class operator Implicit(const Value: Int64): BigInteger;
     class operator Explicit(const Value: TBytes): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
 
@@ -321,16 +331,20 @@ procedure BigNumberError(ACode: HResult; const Msg: string);
 implementation
 
 type
-  TBigNumberFromCardinal = function(var A: IBigNumber; Value: Cardinal): HResult; stdcall;
-  TBigNumberFromInteger = function(var A: IBigNumber; Value: Integer): HResult; stdcall;
+  TBigNumberFromUInt32 = function(var A: IBigNumber; Value: UInt32): HResult; stdcall;
+  TBigNumberFromUInt64 = function(var A: IBigNumber; Value: UInt64): HResult; stdcall;
+  TBigNumberFromInt32 = function(var A: IBigNumber; Value: Int32): HResult; stdcall;
+  TBigNumberFromInt64 = function(var A: IBigNumber; Value: Int64): HResult; stdcall;
   TBigNumberFromPWideChar = function(var A: IBigNumber;
     P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
   TBigNumberFromPByte = function(var A: IBigNumber;
     P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
 
 var
-  BigNumberFromCardinal: TBigNumberFromCardinal;
-  BigNumberFromInteger: TBigNumberFromInteger;
+  BigNumberFromUInt32: TBigNumberFromUInt32;
+  BigNumberFromUInt64: TBigNumberFromUInt64;
+  BigNumberFromInt32: TBigNumberFromInt32;
+  BigNumberFromInt64: TBigNumberFromInt64;
   BigNumberFromPWideChar: TBigNumberFromPWideChar;
   BigNumberFromPByte: TBigNumberFromPByte;
 
@@ -426,20 +440,38 @@ end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Cardinal;
 begin
-  HResCheck(Value.FNumber.ToCardinal(Result),
+  HResCheck(Value.FNumber.ToUInt32(Result),
     'BigCardinal -> Cardinal conversion error');
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Integer;
 begin
-  HResCheck(Value.FNumber.ToInteger(Result),
+  HResCheck(Value.FNumber.ToInt32(Result),
     'BigCardinal -> Integer conversion error');
+end;
+
+class operator BigCardinal.Explicit(const Value: BigCardinal): UInt64;
+begin
+  HResCheck(Value.FNumber.ToUInt64(Result),
+    'BigCardinal -> UInt64 conversion error');
+end;
+
+class operator BigCardinal.Explicit(const Value: BigCardinal): Int64;
+begin
+  HResCheck(Value.FNumber.ToInt64(Result),
+    'BigCardinal -> Int64 conversion error');
 end;
 
 class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
 begin
-  HResCheck(BigNumberFromCardinal(Result.FNumber, Value),
-            'TBigNumber.FromCardinal');
+  HResCheck(BigNumberFromUInt32(Result.FNumber, Value),
+            'BigNumberFromLimb');
+end;
+
+class operator BigCardinal.Implicit(const Value: UInt64): BigCardinal;
+begin
+  HResCheck(BigNumberFromUInt64(Result.FNumber, Value),
+            'BigNumberFromDblLimb');
 end;
 
 class operator BigCardinal.Explicit(const Value: Integer): BigCardinal;
@@ -448,8 +480,19 @@ begin
     BigNumberError(TFL_E_INVALIDARG,
       'Integer -> BigCardinal conversion error')
   else begin
-    HResCheck(BigNumberFromInteger(Result.FNumber, Cardinal(Value)),
+    HResCheck(BigNumberFromInt32(Result.FNumber, Value),
             'TBigNumber.FromInteger');
+  end;
+end;
+
+class operator BigCardinal.Explicit(const Value: Int64): BigCardinal;
+begin
+  if Value < 0 then
+    BigNumberError(TFL_E_INVALIDARG,
+      'Int64 -> BigCardinal conversion error')
+  else begin
+    HResCheck(BigNumberFromInt64(Result.FNumber, Value),
+            'BigNumberFromDblIntLimb');
   end;
 end;
 
@@ -785,7 +828,8 @@ begin
   HResCheck(B.FNumber.DivRemLimbU2(A, Quotient, Result),
             'BigCardinal.Modulus');
 end;
-{ -------------------------- BigCardinal -------------------------- }
+
+{ -------------------------- BigInteger -------------------------- }
 
 function BigInteger.GetSign: Integer;
 begin
@@ -894,28 +938,52 @@ begin
   Result.FNumber:= Value.FNumber;
 end;
 
-class operator BigInteger.Explicit(const Value: BigInteger): Cardinal;
+class operator BigInteger.Explicit(const Value: BigInteger): UInt32;
 begin
-  HResCheck(Value.FNumber.ToCardinal(Result),
-    'BigInteger -> Cardinal conversion error');
+  HResCheck(Value.FNumber.ToUInt32(Result),
+    'BigInteger -> UInt32 conversion error');
 end;
 
-class operator BigInteger.Explicit(const Value: BigInteger): Integer;
+class operator BigInteger.Explicit(const Value: BigInteger): UInt64;
 begin
-  HResCheck(Value.FNumber.ToInteger(Result),
-    'BigInteger -> Integer conversion error');
+  HResCheck(Value.FNumber.ToUInt64(Result),
+    'BigInteger -> UInt64 conversion error');
 end;
 
-class operator BigInteger.Implicit(const Value: Cardinal): BigInteger;
+class operator BigInteger.Explicit(const Value: BigInteger): Int32;
 begin
-  HResCheck(BigNumberFromCardinal(Result.FNumber, Value),
-            'TBigNumber.FromCardinal');
+  HResCheck(Value.FNumber.ToInt32(Result),
+    'BigInteger -> Int32 conversion error');
 end;
 
-class operator BigInteger.Implicit(const Value: Integer): BigInteger;
+class operator BigInteger.Explicit(const Value: BigInteger): Int64;
 begin
-  HResCheck(BigNumberFromInteger(Result.FNumber, Value),
-            'TBigNumber.FromInteger');
+  HResCheck(Value.FNumber.ToInt64(Result),
+    'BigInteger -> Int64 conversion error');
+end;
+
+class operator BigInteger.Implicit(const Value: UInt32): BigInteger;
+begin
+  HResCheck(BigNumberFromUInt32(Result.FNumber, Value),
+            'BigNumberFromLimb');
+end;
+
+class operator BigInteger.Implicit(const Value: UInt64): BigInteger;
+begin
+  HResCheck(BigNumberFromUInt64(Result.FNumber, Value),
+            'BigNumberFromDblLimb');
+end;
+
+class operator BigInteger.Implicit(const Value: Int32): BigInteger;
+begin
+  HResCheck(BigNumberFromInt32(Result.FNumber, Value),
+            'BigNumberFromIntLimb');
+end;
+
+class operator BigInteger.Implicit(const Value: Int64): BigInteger;
+begin
+  HResCheck(BigNumberFromInt64(Result.FNumber, Value),
+            'BigNumberFromDblIntLimb');
 end;
 
 class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
@@ -1307,7 +1375,12 @@ const
 var
   LibHandle: THandle = 0;
 
-function BigNumberFromCardinalStub(var A: IBigNumber; Value: Cardinal): HResult; stdcall;
+function BigNumberFrom32Stub(var A: IBigNumber; Value: UInt32): HResult; stdcall;
+begin
+  Result:= TFL_E_LOADERROR;
+end;
+
+function BigNumberFrom64Stub(var A: IBigNumber; Value: UInt64): HResult; stdcall;
 begin
   Result:= TFL_E_LOADERROR;
 end;
@@ -1327,18 +1400,24 @@ begin
   Result:= False;
   LibHandle:= LoadLibrary(LibName);
   if LibHandle <> 0 then begin
-    @BigNumberFromCardinal:= GetProcAddress(LibHandle, 'BigNumberFromCardinal');
-    @BigNumberFromInteger:= GetProcAddress(LibHandle, 'BigNumberFromInteger');
+    @BigNumberFromUInt32:= GetProcAddress(LibHandle, 'BigNumberFromLimb');
+    @BigNumberFromUInt64:= GetProcAddress(LibHandle, 'BigNumberFromDblLimb');
+    @BigNumberFromInt32:= GetProcAddress(LibHandle, 'BigNumberFromIntLimb');
+    @BigNumberFromInt64:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
     @BigNumberFromPWideChar:= GetProcAddress(LibHandle, 'BigNumberFromPWideChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
-    Result:= (@BigNumberFromCardinal <> nil)
-             and (@BigNumberFromInteger <> nil)
+    Result:= (@BigNumberFromUInt32 <> nil)
+             and (@BigNumberFromUInt64 <> nil)
+             and (@BigNumberFromInt32 <> nil)
+             and (@BigNumberFromInt64 <> nil)
              and (@BigNumberFromPWideChar <> nil)
              and (@BigNumberFromPByte <> nil)
   end;
   if not Result then begin
-    @BigNumberFromCardinal:= @BigNumberFromCardinalStub;
-    @BigNumberFromInteger:= @BigNumberFromCardinalStub;
+    @BigNumberFromUInt32:= @BigNumberFrom32Stub;
+    @BigNumberFromUInt64:= @BigNumberFrom64Stub;
+    @BigNumberFromInt32:= @BigNumberFrom32Stub;
+    @BigNumberFromInt64:= @BigNumberFrom64Stub;
     @BigNumberFromPWideChar:= @BigNumberFromPByteStub;
     @BigNumberFromPByte:= @BigNumberFromPByteStub;
   end;

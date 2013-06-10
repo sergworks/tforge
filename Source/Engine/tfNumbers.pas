@@ -202,8 +202,11 @@ type
     class function ToLimb(A: PBigNumber; var Value: TLimb): HResult; static;
     class function ToIntLimb(A: PBigNumber; var Value: TIntLimb): HResult; static;
 
-    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
-    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
+    class function ToDblLimb(A: PBigNumber; var Value: TDblLimb): HResult; static;
+    class function ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): HResult; static;
+
+//    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
+//    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
     class function ToString(A: PBigNumber; var S: string): HResult; static;
     class function ToHexString(A: PBigNumber; var S: string;
@@ -250,9 +253,13 @@ type
 
   function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //  function BigNumberFromCardinal(var A: PBigNumber; Value: Cardinal): HResult;
 //    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): HResult;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //  function BigNumberFromInteger(var A: PBigNumber; Value: Integer): HResult;
 //    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -274,7 +281,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..55] of Pointer = (
+  BigNumVTable: array[0..57] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -313,6 +320,8 @@ const
 
    @TBigNumber.ToLimb,
    @TBigNumber.ToIntLimb,
+   @TBigNumber.ToDblLimb,
+   @TBigNumber.ToDblIntLimb,
    @TBigNumber.ToWideString,
    @TBigNumber.ToWideHexString,
    @TBigNumber.ToPByte,
@@ -2032,6 +2041,7 @@ begin
   end;
 end;
 
+(*
 class function TBigNumber.ToCardinal(A: PBigNumber; var Value: Cardinal): HResult;
 const
   CardSize = SizeOf(Cardinal) div SizeOf(TLimb);
@@ -2106,19 +2116,19 @@ begin
     Result:= TFL_E_INVALIDARG;
 {$IFEND}
 end;
-
+*)
 
 class function TBigNumber.ToIntLimb(A: PBigNumber; var Value: TIntLimb): HResult;
 const
-  MaxValue = TLimbInfo.MaxLimb shr 1 + 1;
+  MaxValue = TLimb(TLimbInfo.MaxLimb shr 1 + 1);
 
 var
   Tmp: TLimb;
 
 begin
   Tmp:= A.FLimbs[0];
-  if (A.FUsed > 1) or (Tmp > TLimb(MaxValue)) or
-     ((Tmp = TLimb(MaxValue)) and (A.FSign >= 0))
+  if (A.FUsed > 1) or
+    (Tmp > MaxValue) or ((Tmp = MaxValue) and (A.FSign >= 0))
   then
     Result:= TFL_E_INVALIDARG
   else begin
@@ -2128,12 +2138,51 @@ begin
   end;
 end;
 
+class function TBigNumber.ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): HResult;
+const
+  MaxValue = TDblLimb(TLimbInfo.MaxDblIntLimb) + TDblLimb(1);
+
+var
+  Tmp: TDblLimb;
+
+begin
+  if A.FUsed = 1 then begin
+    if A.FSign >= 0 then
+      Value:= TDblIntLimb(A.FLimbs[0])
+    else
+      Value:= -TDblIntLimb(A.FLimbs[0]);
+    Result:= TFL_S_OK;
+  end
+  else if (A.FUsed = 2) then begin
+    Tmp:= PDblLimb(@A.FLimbs)^;
+    if (Tmp > MaxValue) or ((Tmp = MaxValue) and (A.FSign >= 0)) then
+      Result:= TFL_E_INVALIDARG
+    else begin
+      if A.FSign >= 0 then Value:= TDblIntLimb(Tmp)
+      else Value:= -TDblIntLimb(Tmp);
+      Result:= TFL_S_OK;
+    end;
+  end
+  else
+    Result:= TFL_E_INVALIDARG;
+end;
+
 class function TBigNumber.ToLimb(A: PBigNumber; var Value: TLimb): HResult;
 begin
   if (A.FUsed > 1) or (A.FSign < 0) then
     Result:= TFL_E_INVALIDARG
   else begin
     Value:= A.FLimbs[0];
+    Result:= TFL_S_OK;
+  end;
+end;
+
+class function TBigNumber.ToDblLimb(A: PBigNumber; var Value: TDblLimb): HResult;
+begin
+  if (A.FUsed > 2) or (A.FSign < 0) then
+    Result:= TFL_E_INVALIDARG
+  else begin
+    Value:= PDblLimb(@A.FLimbs)^;
     Result:= TFL_S_OK;
   end;
 end;
@@ -3428,6 +3477,21 @@ begin
     A:= Tmp;
   end;
 end;
+
+function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): HResult;
+var
+  Tmp: PBigNumber;
+
+begin
+  Result:= TBigNumber.AllocNumber(Tmp, 2);
+  if Result = TFL_S_OK then begin
+    PDblLimb(@Tmp.FLimbs)^:= Value;
+    if (A <> nil) then TBigNumber.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+
 (*
 function BigNumberFromCardinal(var A: PBigNumber; Value: Cardinal): HResult;
 const
@@ -3467,6 +3531,21 @@ begin
     A:= Tmp;
   end;
 end;
+
+function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): HResult;
+var
+  Tmp: PBigNumber;
+
+begin
+  Result:= TBigNumber.AllocNumber(Tmp, 2);
+  if Result = TFL_S_OK then begin
+    PDblLimb(@Tmp.FLimbs)^:= Abs(Value);
+    if Value < 0 then Tmp.FSign:= -1;
+    if (A <> nil) then TBigNumber.Release(A);
+    A:= Tmp;
+  end;
+end;
+
 (*
 function BigNumberFromInteger(var A: PBigNumber; Value: Integer): HResult;
 const
