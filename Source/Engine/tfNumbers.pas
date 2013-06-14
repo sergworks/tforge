@@ -40,14 +40,11 @@ type
 
   public
     FVTable: Pointer;
-{$IF SizeOf(Pointer) = 4}
-    FReserved: Cardinal;          // to keep FLimbs field 8 byte aligned
-{$IFEND}
     FRefCount: Integer;
     FCapacity: Cardinal;          // number of limbs allocated
     FSign: Integer;
 
-    FUsed: Cardinal;              // number of limbs used
+    FUsed: Integer;               // number of limbs used
     FLimbs: TLimbArray;
 
 // -- IBigNumber implementation
@@ -132,7 +129,16 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function CompareToIntLimb(A: PBigNumber; Limb: TIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function CompareToIntLimbU(A: PBigNumber; Limb: TIntLimb): Integer;
+    class function CompareToIntLimbU(A: PBigNumber; B: TIntLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function CompareToDblLimb(A: PBigNumber; B: TDblLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareToDblLimbU(A: PBigNumber; B: TDblLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareToDblIntLimb(A: PBigNumber; B: TDblIntLimb): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function CompareToDblIntLimbU(A: PBigNumber; B: TDblIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
@@ -281,7 +287,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..57] of Pointer = (
+  BigNumVTable: array[0..61] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -330,6 +336,11 @@ const
    @TBigNumber.CompareToLimbU,
    @TBigNumber.CompareToIntLimb,
    @TBigNumber.CompareToIntLimbU,
+
+   @TBigNumber.CompareToDblLimb,
+   @TBigNumber.CompareToDblLimbU,
+   @TBigNumber.CompareToDblIntLimb,
+   @TBigNumber.CompareToDblIntLimbU,
 
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
@@ -462,33 +473,126 @@ begin
       if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
       else if A.FLimbs[0] < TLimb(Limb) then Result:= -1;
     end
-    else begin
-      Limb:= -Limb;
-      if (Limb <= 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= -1
-      else if A.FLimbs[0] < TLimb(Limb) then Result:= 1;
+    else begin { A < 0 }
+      if (Limb >= 0) or (A.FLimbs[0] > TLimb(-Limb)) then Result:= -1
+      else if A.FLimbs[0] < TLimb(-Limb) then Result:= 1;
     end;
   end
-  else if (A.FSign >= 0) then Result:= 1
-  else Result:= -1;
+  else if (A.FSign < 0) then Result:= -1;
 end;
 
-class function TBigNumber.CompareToIntLimbU(A: PBigNumber; Limb: TIntLimb): Integer;
+class function TBigNumber.CompareToIntLimbU(A: PBigNumber; B: TIntLimb): Integer;
 begin
   Result:= A.FUsed - 1;
   if Result = 0 then begin
-    if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
-    else if (A.FLimbs[0] < TLimb(Limb)) then Result:= -1;
+    if (B < 0) or (A.FLimbs[0] > TLimb(B)) then Result:= 1
+    else if (A.FLimbs[0] < TLimb(B)) then Result:= -1;
+  end;
+end;
+
+class function TBigNumber.CompareToDblIntLimb(A: PBigNumber; B: TDblIntLimb): Integer;
+var
+  Tmp: TDblLimb;
+
+begin
+  Result:= 2 - A.FUsed;
+  if Result = 0 then begin        // A.FUsed = 2
+    Tmp:= PDblLimb(@A.FLimbs)^;
+    if (A.FSign >= 0) then begin
+      if (B < 0) or (Tmp > TDblLimb(B)) then Result:= 1
+      else if Tmp < TDblLimb(B) then Result:= -1;
+    end
+    else if (B >= 0) or (Tmp > TDblLimb(-B)) then Result:= -1
+    else if (Tmp < TDblLimb(-B)) then Result:= 1;
+  end
+  else if Result > 0 then begin   // A.FUsed = 1
+    Tmp:= A.FLimbs[0];
+    if (A.FSign >= 0) then begin
+      if (B >= 0) then begin
+        if (Tmp < TDblLimb(B)) then Result:= -1
+        else if (Tmp = TDblLimb(B)) then Result:= 0;
+      end;
+    end
+    else if (B >= 0) or (Tmp > TDblLimb(-B)) then Result:= -1
+    else if (Tmp = TDblLimb(-B)) then Result:= 0;
+  end
+  else begin                      // A.FUsed > 2
+    if (A.FSign >= 0) then Result:= 1;
+  end;
+end;
+
+class function TBigNumber.CompareToDblIntLimbU(A: PBigNumber; B: TDblIntLimb): Integer;
+var
+  Tmp: TDblLimb;
+
+begin
+  if B < 0 then Result:= 1
+  else begin
+    Result:= 2 - A.FUsed;
+    if Result = 0 then begin        // A.FUsed = 2
+      Tmp:= PDblLimb(@A.FLimbs)^;
+      if (Tmp > TDblLimb(B)) then Result:= 1
+      else if Tmp < TDblLimb(B) then Result:= -1;
+    end
+    else if Result > 0 then begin   // A.FUsed = 1
+      Tmp:= A.FLimbs[0];
+      if (Tmp < TDblLimb(B)) then Result:= -1
+      else if (Tmp = TDblLimb(B)) then Result:= 0;
+    end
   end;
 end;
 
 class function TBigNumber.CompareToLimb(A: PBigNumber; Limb: TLimb): Integer;
 begin
-  Result:= A.FUsed - 1;
-  if Result = 0 then begin
-    if (A.FLimbs[0] > Limb) then Result:= 1
-    else if (A.FLimbs[0] < TLimb(Limb)) then Result:= -1;
+  if (A.FSign < 0) then
+    Result:= -1
+  else begin
+    Result:= A.FUsed - 1;
+    if Result = 0 then begin
+      if (A.FLimbs[0] > Limb) then Result:= 1
+      else if (A.FLimbs[0] < Limb) then Result:= -1;
+    end;
   end;
-  if (A.FSign < 0) then Result:= - Result;
+end;
+
+class function TBigNumber.CompareToDblLimb(A: PBigNumber; B: TDblLimb): Integer;
+var
+  Tmp: TDblLimb;
+
+begin
+  if (A.FSign < 0) then
+    Result:= -1
+  else begin
+    Result:= A.FUsed - 2;
+    if Result = 0 then begin
+      Tmp:= PDblLimb(@A.FLimbs)^;
+      if (Tmp > B) then Result:= 1
+      else if (Tmp < B) then Result:= -1;
+    end
+    else if Result < 0 then begin
+      Tmp:= A.FLimbs[0];
+      if (Tmp > B) then Result:= 1
+      else if (Tmp = B) then Result:= 0;
+    end;
+  end;
+end;
+
+class function TBigNumber.CompareToDblLimbU(A: PBigNumber; B: TDblLimb): Integer;
+var
+  Tmp: TDblLimb;
+
+begin
+  Result:= A.FUsed - 2;
+  if Result = 0 then begin
+    Tmp:= PDblLimb(@A.FLimbs)^;
+    if (Tmp > B) then Result:= 1
+    else if (Tmp < B) then Result:= -1;
+  end
+  else if Result < 0 then begin
+    Tmp:= A.FLimbs[0];
+    if (Tmp > B) then Result:= 1
+    else if (Tmp = B) then Result:= 0;
+  end;
 end;
 
 class function TBigNumber.CompareToLimbU(A: PBigNumber; Limb: TLimb): Integer;

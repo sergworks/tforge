@@ -86,6 +86,11 @@ type
     function CompareToIntLimb(Limb: LongInt): Integer; stdcall;
     function CompareToIntLimbU(Limb: LongInt): Integer; stdcall;
 
+    function CompareToDblLimb(B: UInt64): Integer; stdcall;
+    function CompareToDblLimbU(B: UInt64): Integer; stdcall;
+    function CompareToDblIntLimb(B: Int64): Integer; stdcall;
+    function CompareToDblIntLimbU(B: Int64): Integer; stdcall;
+
     function AddLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function AddLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function AddIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;

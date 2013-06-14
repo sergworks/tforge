@@ -87,6 +87,11 @@ type
     function CompareToIntLimb(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToIntLimbU(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+    function CompareToDblLimb(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblLimbU(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblIntLimb(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AddIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
