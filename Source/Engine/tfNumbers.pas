@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
 { * ------------------------------------------------------- * }
 { *   # engine unit                                         * }
 { *   # exports: TBigNumber                                 * }
@@ -123,11 +123,11 @@ type
                      Digits: Cardinal; TwoCompl: Boolean): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function CompareToLimb(A: PBigNumber; Limb: TLimb): Integer;
+    class function CompareToLimb(A: PBigNumber; B: TLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function CompareToLimbU(A: PBigNumber; Limb: TLimb): Integer;
+    class function CompareToLimbU(A: PBigNumber; B: TLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function CompareToIntLimb(A: PBigNumber; Limb: TIntLimb): Integer;
+    class function CompareToIntLimb(A: PBigNumber; B: TIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function CompareToIntLimbU(A: PBigNumber; B: TIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -148,6 +148,9 @@ type
     class function AddIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function AddIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+//    class function AddDblLimb(A: PBigNumber; B: TDblLimb; var R: PBigNumber): HResult;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
@@ -465,17 +468,17 @@ begin
     Result:= arrCmp(@A.FLimbs, @B.FLimbs, A.FUsed);
 end;
 
-class function TBigNumber.CompareToIntLimb(A: PBigNumber; Limb: TIntLimb): Integer;
+class function TBigNumber.CompareToIntLimb(A: PBigNumber; B: TIntLimb): Integer;
 begin
   Result:= A.FUsed - 1;
   if Result = 0 then begin
     if (A.FSign >= 0) then begin
-      if (Limb < 0) or (A.FLimbs[0] > TLimb(Limb)) then Result:= 1
-      else if A.FLimbs[0] < TLimb(Limb) then Result:= -1;
+      if (B < 0) or (A.FLimbs[0] > TLimb(B)) then Result:= 1
+      else if A.FLimbs[0] < TLimb(B) then Result:= -1;
     end
     else begin { A < 0 }
-      if (Limb >= 0) or (A.FLimbs[0] > TLimb(-Limb)) then Result:= -1
-      else if A.FLimbs[0] < TLimb(-Limb) then Result:= 1;
+      if (B >= 0) or (A.FLimbs[0] > TLimb(-B)) then Result:= -1
+      else if A.FLimbs[0] < TLimb(-B) then Result:= 1;
     end;
   end
   else if (A.FSign < 0) then Result:= -1;
@@ -542,15 +545,15 @@ begin
   end;
 end;
 
-class function TBigNumber.CompareToLimb(A: PBigNumber; Limb: TLimb): Integer;
+class function TBigNumber.CompareToLimb(A: PBigNumber; B: TLimb): Integer;
 begin
   if (A.FSign < 0) then
     Result:= -1
   else begin
     Result:= A.FUsed - 1;
     if Result = 0 then begin
-      if (A.FLimbs[0] > Limb) then Result:= 1
-      else if (A.FLimbs[0] < Limb) then Result:= -1;
+      if (A.FLimbs[0] > B) then Result:= 1
+      else if (A.FLimbs[0] < B) then Result:= -1;
     end;
   end;
 end;
@@ -595,12 +598,12 @@ begin
   end;
 end;
 
-class function TBigNumber.CompareToLimbU(A: PBigNumber; Limb: TLimb): Integer;
+class function TBigNumber.CompareToLimbU(A: PBigNumber; B: TLimb): Integer;
 begin
   Result:= A.FUsed - 1;
   if Result = 0 then begin
-    if (A.FLimbs[0] > Limb) then Result:= 1
-    else if (A.FLimbs[0] = TLimb(Limb)) then Result:= -1;
+    if (A.FLimbs[0] > B) then Result:= 1
+    else if (A.FLimbs[0] = TLimb(B)) then Result:= -1;
   end;
 end;
 
@@ -1545,7 +1548,45 @@ begin
     R:= Tmp;
   end;
 end;
+(*
+class function TBigNumber.AddDblLimb(A: PBigNumber; B: TDblLimb;
+                                     var R: PBigNumber): HResult;
+var
+  UsedA: Integer;
+  Tmp: PBigNumber;
 
+begin
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 2);
+  if Result = TFL_S_OK then begin
+    if A.FSign >= 0 then begin
+      if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
+        then Tmp.FUsed:= UsedA + 1
+        else Tmp.FUsed:= UsedA;
+    end
+    else begin                               // A.FSign < 0
+      if UsedA = 1 then begin
+        if A.FLimbs[0] <= Limb then begin
+          Tmp.FLimbs[0]:= Limb - A.FLimbs[0];
+        end
+        else begin
+          Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
+          Tmp.FSign:= -1;
+        end;
+      end
+      else begin { UsedA > 1 }
+        arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
+          then Tmp.FUsed:= UsedA - 1
+          else Tmp.FUsed:= UsedA;
+        Tmp.FSign:= -1;
+      end;
+    end;
+    if (R <> nil) then Release(R);
+    R:= Tmp;
+  end;
+end;
+*)
 class function TBigNumber.AddLimbU(A: PBigNumber; Limb: TLimb;
                                    var R: PBigNumber): HResult;
 var

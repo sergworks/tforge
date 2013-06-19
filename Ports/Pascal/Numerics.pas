@@ -73,18 +73,18 @@ type
     function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
 
-    function ToUInt32(var Value: Cardinal): HRESULT; stdcall;
-    function ToInt32(var Value: Integer): HRESULT; stdcall;
-    function ToUInt64(var Value: UInt64): HRESULT; stdcall;
-    function ToInt64(var Value: Int64): HRESULT; stdcall;
+    function ToLimb(var Value: UInt32): HRESULT; stdcall;
+    function ToIntLimb(var Value: Int32): HRESULT; stdcall;
+    function ToDblLimb(var Value: UInt64): HRESULT; stdcall;
+    function ToDblIntLimb(var Value: Int64): HRESULT; stdcall;
     function ToWideString(var S: WideString): HRESULT; stdcall;
     function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT; stdcall;
     function ToPByte(P: PByte; var L: Cardinal): HRESULT; stdcall;
 
-    function CompareToLimb(Limb: LongWord): Integer; stdcall;
-    function CompareToLimbU(Limb: LongWord): Integer; stdcall;
-    function CompareToIntLimb(Limb: LongInt): Integer; stdcall;
-    function CompareToIntLimbU(Limb: LongInt): Integer; stdcall;
+    function CompareToLimb(B: UInt32): Integer; stdcall;
+    function CompareToLimbU(B: UInt32): Integer; stdcall;
+    function CompareToIntLimb(B: Int32): Integer; stdcall;
+    function CompareToIntLimbU(B: Int32): Integer; stdcall;
 
     function CompareToDblLimb(B: UInt64): Integer; stdcall;
     function CompareToDblLimbU(B: UInt64): Integer; stdcall;
@@ -107,8 +107,8 @@ type
     function MulLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function MulIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
 
-    function DivRemLimb(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
-    function DivRemLimb2(Limb: LongWord; var Q: LongWord; var R: LongWord): HRESULT; stdcall;
+    function DivRemLimb(Limb: LongWord; var Q: IBigNumber; var R: IBigNumber): HRESULT; stdcall;
+    function DivRemLimb2(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
     function DivRemLimbU(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
     function DivRemLimbU2(Limb: LongWord; var Q: LongWord; var R: LongWord): HRESULT; stdcall;
     function DivRemIntLimb(Limb: LongInt; var Q: IBigNumber; var R: LongInt): HRESULT; stdcall;
@@ -133,13 +133,13 @@ type
     class function DivRem(const Dividend, Divisor: BigCardinal;
                           var Remainder: BigCardinal): BigCardinal; overload; static;
 
-    class operator Explicit(const Value: BigCardinal): UInt32;
-    class operator Explicit(const Value: BigCardinal): Int32;
+    class operator Explicit(const Value: BigCardinal): Cardinal;
+    class operator Explicit(const Value: BigCardinal): Integer;
     class operator Explicit(const Value: BigCardinal): UInt64;
     class operator Explicit(const Value: BigCardinal): Int64;
-    class operator Implicit(const Value: UInt32): BigCardinal;
+    class operator Implicit(const Value: Cardinal): BigCardinal;
     class operator Implicit(const Value: UInt64): BigCardinal;
-    class operator Explicit(const Value: Int32): BigCardinal;
+    class operator Explicit(const Value: Integer): BigCardinal;
     class operator Explicit(const Value: Int64): BigCardinal;
     class operator Explicit(const Value: TBytes): BigCardinal;
     class operator Explicit(const Value: string): BigCardinal;
@@ -167,6 +167,7 @@ type
     function CompareToInt(const B: Integer): Integer;
     function CompareTo(const B: Cardinal): Integer; overload; inline;
     function CompareTo(const B: Integer): Integer; overload; inline;
+
     class operator Equal(const A: BigCardinal; const B: Cardinal): Boolean; inline;
     class operator Equal(const A: Cardinal; const B: BigCardinal): Boolean; inline;
     class operator Equal(const A: BigCardinal; const B: Integer): Boolean; inline;
@@ -191,6 +192,36 @@ type
     class operator LessThanOrEqual(const A: Cardinal; const B: BigCardinal): Boolean; inline;
     class operator LessThanOrEqual(const A: BigCardinal; const B: Integer): Boolean; inline;
     class operator LessThanOrEqual(const A: Integer; const B: BigCardinal): Boolean; inline;
+
+    function CompareToUInt64(const B: UInt64): Integer;
+    function CompareToInt64(const B: Int64): Integer;
+    function CompareTo(const B: UInt64): Integer; overload; inline;
+    function CompareTo(const B: Int64): Integer; overload; inline;
+
+    class operator Equal(const A: BigCardinal; const B: UInt64): Boolean; inline;
+    class operator Equal(const A: UInt64; const B: BigCardinal): Boolean; inline;
+    class operator Equal(const A: BigCardinal; const B: Int64): Boolean; inline;
+    class operator Equal(const A: Int64; const B: BigCardinal): Boolean; inline;
+    class operator NotEqual(const A: BigCardinal; const B: UInt64): Boolean; inline;
+    class operator NotEqual(const A: UInt64; const B: BigCardinal): Boolean; inline;
+    class operator NotEqual(const A: BigCardinal; const B: Int64): Boolean; inline;
+    class operator NotEqual(const A: Int64; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThan(const A: BigCardinal; const B: UInt64): Boolean; inline;
+    class operator GreaterThan(const A: UInt64; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThan(const A: BigCardinal; const B: Int64): Boolean; inline;
+    class operator GreaterThan(const A: Int64; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: UInt64): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: UInt64; const B: BigCardinal): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: Int64): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: Int64; const B: BigCardinal): Boolean; inline;
+    class operator LessThan(const A: BigCardinal; const B: UInt64): Boolean; inline;
+    class operator LessThan(const A: UInt64; const B: BigCardinal): Boolean; inline;
+    class operator LessThan(const A: BigCardinal; const B: Int64): Boolean; inline;
+    class operator LessThan(const A: Int64; const B: BigCardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: UInt64): Boolean; inline;
+    class operator LessThanOrEqual(const A: UInt64; const B: BigCardinal): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: Int64): Boolean; inline;
+    class operator LessThanOrEqual(const A: Int64; const B: BigCardinal): Boolean; inline;
 
     class function DivRem(const Dividend: BigCardinal; Divisor: Cardinal;
                           var Remainder: Cardinal): BigCardinal; overload; static;
@@ -231,14 +262,14 @@ type
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
     class function DivRem(const Dividend, Divisor: BigCardinal;
-                          var Remainder: BigCardinal): BigCardinal; static;
+                          var Remainder: BigCardinal): BigCardinal; overload; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
 
-    class operator Explicit(const Value: BigInteger): UInt32;
+    class operator Explicit(const Value: BigInteger): Cardinal;
     class operator Explicit(const Value: BigInteger): UInt64;
-    class operator Explicit(const Value: BigInteger): Int32;
+    class operator Explicit(const Value: BigInteger): Integer;
     class operator Explicit(const Value: BigInteger): Int64;
     class operator Implicit(const Value: UInt32): BigInteger;
     class operator Implicit(const Value: UInt64): BigInteger;
@@ -307,6 +338,45 @@ type
     class operator LessThanOrEqual(const A: Cardinal; const B: BigInteger): Boolean; inline;
     class operator LessThanOrEqual(const A: BigInteger; const B: Integer): Boolean; inline;
     class operator LessThanOrEqual(const A: Integer; const B: BigInteger): Boolean; inline;
+
+    function CompareToDoubleUInt(const B: UInt64): Integer;
+    function CompareToDoubleInt(const B: Int64): Integer;
+    function CompareTo(const B: UInt64): Integer; overload; inline;
+    function CompareTo(const B: Int64): Integer; overload; inline;
+
+    class operator Equal(const A: BigInteger; const B: UInt64): Boolean; inline;
+    class operator Equal(const A: UInt64; const B: BigInteger): Boolean; inline;
+    class operator Equal(const A: BigInteger; const B: Int64): Boolean; inline;
+    class operator Equal(const A: Int64; const B: BigInteger): Boolean; inline;
+    class operator NotEqual(const A: BigInteger; const B: UInt64): Boolean; inline;
+    class operator NotEqual(const A: UInt64; const B: BigInteger): Boolean; inline;
+    class operator NotEqual(const A: BigInteger; const B: Int64): Boolean; inline;
+    class operator NotEqual(const A: Int64; const B: BigInteger): Boolean; inline;
+    class operator GreaterThan(const A: BigInteger; const B: UInt64): Boolean; inline;
+    class operator GreaterThan(const A: UInt64; const B: BigInteger): Boolean; inline;
+    class operator GreaterThan(const A: BigInteger; const B: Int64): Boolean; inline;
+    class operator GreaterThan(const A: Int64; const B: BigInteger): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: UInt64): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: UInt64; const B: BigInteger): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: Int64): Boolean; inline;
+    class operator GreaterThanOrEqual(const A: Int64; const B: BigInteger): Boolean; inline;
+    class operator LessThan(const A: BigInteger; const B: UInt64): Boolean; inline;
+    class operator LessThan(const A: UInt64; const B: BigInteger): Boolean; inline;
+    class operator LessThan(const A: BigInteger; const B: Int64): Boolean; inline;
+    class operator LessThan(const A: Int64; const B: BigInteger): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigInteger; const B: UInt64): Boolean; inline;
+    class operator LessThanOrEqual(const A: UInt64; const B: BigInteger): Boolean; inline;
+    class operator LessThanOrEqual(const A: BigInteger; const B: Int64): Boolean; inline;
+    class operator LessThanOrEqual(const A: Int64; const B: BigInteger): Boolean; inline;
+
+    class function DivRem(const Dividend: BigInteger; const Divisor: Cardinal;
+                          var Remainder: BigInteger): BigInteger; overload; static;
+    class function DivRem(const Dividend: Cardinal; const Divisor: BigInteger;
+                          var Remainder: Cardinal): BigInteger; overload; static;
+    class function DivRem(const Dividend: BigInteger; const Divisor: Integer;
+                          var Remainder: Integer): BigInteger; overload; static;
+    class function DivRem(const Dividend: Integer; const Divisor: BigInteger;
+                          var Remainder: Integer): Integer; overload; static;
 
     class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
     class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
@@ -445,25 +515,25 @@ end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Cardinal;
 begin
-  HResCheck(Value.FNumber.ToUInt32(Result),
+  HResCheck(Value.FNumber.ToLimb(Result),
     'BigCardinal -> Cardinal conversion error');
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Integer;
 begin
-  HResCheck(Value.FNumber.ToInt32(Result),
+  HResCheck(Value.FNumber.ToIntLimb(Result),
     'BigCardinal -> Integer conversion error');
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): UInt64;
 begin
-  HResCheck(Value.FNumber.ToUInt64(Result),
+  HResCheck(Value.FNumber.ToDblLimb(Result),
     'BigCardinal -> UInt64 conversion error');
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Int64;
 begin
-  HResCheck(Value.FNumber.ToInt64(Result),
+  HResCheck(Value.FNumber.ToDblIntLimb(Result),
     'BigCardinal -> Int64 conversion error');
 end;
 
@@ -746,6 +816,150 @@ begin
   Result:= B.CompareToInt(A) >= 0;
 end;
 
+{--- Comparison with 64-bit integers ---}
+
+function BigCardinal.CompareToUInt64(const B: UInt64): Integer;
+begin
+  Result:= FNumber.CompareToDblLimbU(B);
+end;
+
+function BigCardinal.CompareToInt64(const B: Int64): Integer;
+begin
+  Result:= FNumber.CompareToDblIntLimbU(B);
+end;
+
+function BigCardinal.CompareTo(const B: UInt64): Integer;
+begin
+  Result:= CompareToUInt64(B);
+end;
+
+function BigCardinal.CompareTo(const B: Int64): Integer;
+begin
+  Result:= CompareToInt64(B);
+end;
+
+class operator BigCardinal.Equal(const A: BigCardinal; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToUInt64(B) = 0;
+end;
+
+class operator BigCardinal.Equal(const A: UInt64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToUInt64(A) = 0;
+end;
+
+class operator BigCardinal.Equal(const A: BigCardinal; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToInt64(B) = 0;
+end;
+
+class operator BigCardinal.Equal(const A: Int64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt64(A) = 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: BigCardinal; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToUInt64(B) <> 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: UInt64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToUInt64(A) <> 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: BigCardinal; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToInt64(B) <> 0;
+end;
+
+class operator BigCardinal.NotEqual(const A: Int64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt64(A) <> 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToUInt64(B) > 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: UInt64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToUInt64(A) < 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToInt64(B) > 0;
+end;
+
+class operator BigCardinal.GreaterThan(const A: Int64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt64(A) < 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToUInt64(B) >= 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: UInt64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToUInt64(A) <= 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToInt64(B) >= 0;
+end;
+
+class operator BigCardinal.GreaterThanOrEqual(const A: Int64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt64(A) <= 0;
+end;
+
+class operator BigCardinal.LessThan(const A: BigCardinal; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToUInt64(B) < 0;
+end;
+
+class operator BigCardinal.LessThan(const A: UInt64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToUInt64(A) > 0;
+end;
+
+class operator BigCardinal.LessThan(const A: BigCardinal; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToInt64(B) < 0;
+end;
+
+class operator BigCardinal.LessThan(const A: Int64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt64(A) > 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToUInt64(B) <= 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: UInt64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToUInt64(A) >= 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToInt64(B) <= 0;
+end;
+
+class operator BigCardinal.LessThanOrEqual(const A: Int64; const B: BigCardinal): Boolean;
+begin
+  Result:= B.CompareToInt64(A) >= 0;
+end;
+
+
+
 class operator BigCardinal.Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
 begin
   HResCheck(A.FNumber.AddLimbU(B, Result.FNumber),
@@ -943,27 +1157,27 @@ begin
   Result.FNumber:= Value.FNumber;
 end;
 
-class operator BigInteger.Explicit(const Value: BigInteger): UInt32;
+class operator BigInteger.Explicit(const Value: BigInteger): Cardinal;
 begin
-  HResCheck(Value.FNumber.ToUInt32(Result),
+  HResCheck(Value.FNumber.ToLimb(Result),
     'BigInteger -> UInt32 conversion error');
 end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): UInt64;
 begin
-  HResCheck(Value.FNumber.ToUInt64(Result),
+  HResCheck(Value.FNumber.ToDblLimb(Result),
     'BigInteger -> UInt64 conversion error');
 end;
 
-class operator BigInteger.Explicit(const Value: BigInteger): Int32;
+class operator BigInteger.Explicit(const Value: BigInteger): Integer;
 begin
-  HResCheck(Value.FNumber.ToInt32(Result),
+  HResCheck(Value.FNumber.ToIntLimb(Result),
     'BigInteger -> Int32 conversion error');
 end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): Int64;
 begin
-  HResCheck(Value.FNumber.ToInt64(Result),
+  HResCheck(Value.FNumber.ToDblIntLimb(Result),
     'BigInteger -> Int64 conversion error');
 end;
 
@@ -1297,6 +1511,176 @@ class operator BigInteger.LessThanOrEqual(const A: Integer; const B: BigInteger)
 begin
   Result:= B.CompareToInt(A) >= 0;
 end;
+
+
+function BigInteger.CompareToDoubleUInt(const B: UInt64): Integer;
+begin
+  Result:= FNumber.CompareToDblLimb(B);
+end;
+
+function BigInteger.CompareToDoubleInt(const B: Int64): Integer;
+begin
+  Result:= FNumber.CompareToDblIntLimb(B);
+end;
+
+function BigInteger.CompareTo(const B: UInt64): Integer;
+begin
+  Result:= CompareToDoubleUInt(B);
+end;
+
+function BigInteger.CompareTo(const B: Int64): Integer;
+begin
+  Result:= CompareToDoubleInt(B);
+end;
+
+class operator BigInteger.Equal(const A: BigInteger; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToDoubleUInt(B) = 0;
+end;
+
+class operator BigInteger.Equal(const A: UInt64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleUInt(A) = 0;
+end;
+
+class operator BigInteger.Equal(const A: BigInteger; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToDoubleInt(B) = 0;
+end;
+
+class operator BigInteger.Equal(const A: Int64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleInt(A) = 0;
+end;
+
+class operator BigInteger.NotEqual(const A: BigInteger; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToDoubleUInt(B) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: UInt64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleUInt(A) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: BigInteger; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToDoubleInt(B) <> 0;
+end;
+
+class operator BigInteger.NotEqual(const A: Int64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleInt(A) <> 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: BigInteger; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToDoubleUInt(B) > 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: UInt64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleUInt(A) < 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: BigInteger; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToDoubleInt(B) > 0;
+end;
+
+class operator BigInteger.GreaterThan(const A: Int64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleInt(A) < 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToDoubleUInt(B) >= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: UInt64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleUInt(A) <= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToDoubleInt(B) >= 0;
+end;
+
+class operator BigInteger.GreaterThanOrEqual(const A: Int64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleInt(A) <= 0;
+end;
+
+class operator BigInteger.LessThan(const A: BigInteger; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToDoubleUInt(B) < 0;
+end;
+
+class operator BigInteger.LessThan(const A: UInt64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleUInt(A) > 0;
+end;
+
+class operator BigInteger.LessThan(const A: BigInteger; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToDoubleInt(B) < 0;
+end;
+
+class operator BigInteger.LessThan(const A: Int64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleInt(A) > 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: UInt64): Boolean;
+begin
+  Result:= A.CompareToDoubleUInt(B) <= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: UInt64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleUInt(A) >= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: Int64): Boolean;
+begin
+  Result:= A.CompareToDoubleInt(B) <= 0;
+end;
+
+class operator BigInteger.LessThanOrEqual(const A: Int64; const B: BigInteger): Boolean;
+begin
+  Result:= B.CompareToDoubleInt(A) >= 0;
+end;
+
+class function BigInteger.DivRem(const Dividend: BigInteger;
+               const Divisor: Cardinal; var Remainder: BigInteger): BigInteger;
+begin
+  HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber),
+            'BigCardinal.DivRemLimb');
+end;
+
+class function BigInteger.DivRem(const Dividend: Cardinal;
+               const Divisor: BigInteger; var Remainder: Cardinal): BigInteger;
+begin
+  HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder),
+            'BigCardinal.DivRemLimb2');
+end;
+
+class function BigInteger.DivRem(const Dividend: BigInteger;
+               const Divisor: Integer; var Remainder: Integer): BigInteger;
+begin
+  HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder),
+            'BigCardinal.DivRemIntLimb');
+end;
+
+class function BigInteger.DivRem(const Dividend: Integer;
+               const Divisor: BigInteger; var Remainder: Integer): Integer;
+begin
+  HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder),
+            'BigCardinal.DivRemIntLimb2');
+end;
+
 
 class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
 begin
