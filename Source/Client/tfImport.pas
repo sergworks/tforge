@@ -38,7 +38,7 @@ implementation
 uses Windows;
 
 const
-  LibName = 'tforge32.dll';
+  LibName = 'numerics.dll';
 
 var
   LibHandle: THandle = 0;

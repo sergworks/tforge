@@ -2123,13 +2123,4 @@ begin
             'BigInteger.MulIntLimb');
 end;
 
-{$IFDEF LIMB32}
-
-{$ENDIF}
-
-{$IFDEF TFL_DLL}
-initialization
-  LoadForge;
-{$ENDIF}
-
 end.

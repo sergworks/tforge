@@ -39,6 +39,25 @@ type
   TBytes = array of Byte;
 {$ENDIF}
 
+{ ?BigNumberRec types duplicate ?PBigNumber types from tfTypes.pas }
+type
+  PBigNumberRec = ^TBigNumberRec;
+  TBigNumberRec = record
+  public type
+{$IFDEF DEBUG}
+    TLimbArray = array[0..7] of TLimb;
+{$ELSE}
+    TLimbArray = array[0..0] of TLimb;
+{$ENDIF}
+  public
+    FVTable: Pointer;
+    FRefCount: Integer;
+    FCapacity: Integer;
+    FSign: Integer;
+    FUsed: Integer;
+    FLimbs: TLimbArray;
+  end;
+
 type
   IBigNumber = interface
 
@@ -69,10 +88,13 @@ type
     function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+    function AssignNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AbsNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function NegateNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SqrtNumber(var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function ToLimb(var Value: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToIntLimb(var Value: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -95,7 +117,6 @@ type
     function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AddIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function AddIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function SubLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubLimb2(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -104,12 +125,10 @@ type
     function SubLimbU2(Limb: TLimb; var Res: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubIntLimb2(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function SubIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function MulLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function MulLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function MulIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function MulIntLimbU(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function DivRemLimb(Limb: TLimb; var Q: IBigNumber; var R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DivRemLimb2(Limb: TLimb; var Q: IBigNumber; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

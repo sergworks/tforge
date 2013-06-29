@@ -13,6 +13,8 @@ uses
 exports
   BigNumberFromLimb,
   BigNumberFromIntLimb,
+  BigNumberFromDblLimb,
+  BigNumberFromDblIntLimb,
   BigNumberFromPWideChar,
   BigNumberFromPByte;
 

@@ -11,8 +11,10 @@ uses
   tfNumbers in '..\..\Source\Engine\tfNumbers.pas';
 
 exports
-  BigNumberFromCardinal,
-  BigNumberFromInteger,
+  BigNumberFromLimb,
+  BigNumberFromIntLimb,
+  BigNumberFromDblLimb,
+  BigNumberFromDblIntLimb,
   BigNumberFromPWideChar,
   BigNumberFromPByte;
 

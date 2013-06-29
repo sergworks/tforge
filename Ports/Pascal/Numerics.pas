@@ -31,7 +31,7 @@ const
   TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
   TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
   TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
-  TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading tforge dll
+  TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading dll
 
 {$IFDEF FPC}
 type
@@ -68,10 +68,13 @@ type
     function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
     function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
 
+    function AssignNumber(var Res: IBigNumber): HRESULT; stdcall;
     function AbsNumber(var Res: IBigNumber): HRESULT; stdcall;
+    function NegateNumber(var Res: IBigNumber): HRESULT; stdcall;
     function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
     function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
+    function SqrtNumber(var IRes: IBigNumber): HRESULT; stdcall;
 
     function ToLimb(var Value: UInt32): HRESULT; stdcall;
     function ToIntLimb(var Value: Int32): HRESULT; stdcall;
