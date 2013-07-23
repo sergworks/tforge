@@ -38,7 +38,7 @@ implementation
 uses Windows;
 
 const
-  LibName = 'numerics.dll';
+  LibName = 'numerics32.dll';
 
 var
   LibHandle: THandle = 0;

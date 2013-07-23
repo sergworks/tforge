@@ -20,5 +20,7 @@ exports
 
 {$R *.res}
 
+{$LIBSUFFIX '32'}
+
 begin
 end.

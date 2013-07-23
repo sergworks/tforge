@@ -25,7 +25,7 @@ type
     FNumber: IBigNumber;
   public
     function ToString: string;
-    function ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+    function ToHexString(Digits: Integer = 0; const Prefix: string = ''): string;
     function ToBytes: TBytes;
     function TryParse(const S: string): Boolean;
     procedure Free;
@@ -150,7 +150,8 @@ type
     function GetSign: Integer;
   public
     function ToString: string;
-    function ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+    function ToHexString(Digits: Integer = 0; const Prefix: string = '';
+                         TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
     function TryParse(const S: string): Boolean;
     procedure Free;
@@ -341,12 +342,38 @@ end;
 function BigCardinal.ToString: string;
 {$IFDEF TFL_DLL}
 var
-  S: WideString;
+  BytesUsed: Integer;
+  L, L1: Integer;
+  P, P1: PByte;
+  I: Integer;
+  HR: HResult;
 
 begin
-  HResCheck(FNumber.ToWideString(S),
-    'BigCardinal -> string conversion error');
-  Result:= S;
+  BytesUsed:= FNumber.GetSize;
+// log(256) approximated from above by 41/17
+  L:= (BytesUsed * 41) div 17 + 1;
+  GetMem(P, L);
+  try
+    L1:= L;
+    HR:= FNumber.ToDec(P, L1);
+// -- kludge
+    if HR = TFL_E_INVALIDARG then begin
+      FreeMem(P);
+      L:= L1;
+      GetMem(P, L);
+      HR:= FNumber.ToDec(P, L1);
+    end;
+// -- end of kludge
+    HResCheck(HR, 'BigCardinal -> string conversion error');
+    SetLength(Result, L1);
+    P1:= P;
+    for I:= 1 to L1 do begin
+      Result[I]:= Char(P1^);
+      Inc(P1);
+    end;
+  finally
+    FreeMem(P);
+  end;
 {$ELSE}
 begin
   HResCheck(TBigNumber.ToString(PBigNumber(FNumber), Result),
@@ -354,15 +381,43 @@ begin
 {$ENDIF}
 end;
 
-function BigCardinal.ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+function BigCardinal.ToHexString(Digits: Integer; const Prefix: string): string;
 {$IFDEF TFL_DLL}
 var
-  S: WideString;
+  L, L1: Integer;
+  P, P1: PByte;
+  HR: HResult;
+  I: Integer;
 
 begin
-  HResCheck(FNumber.ToWideHexString(S, Digits, TwoCompl),
-    'BigCardinal -> hex string conversion error');
-  Result:= S;
+  HR:= FNumber.ToHex(nil, L, False);
+  if HR = TFL_E_INVALIDARG then begin
+    GetMem(P, L);
+    try
+      L1:= L;
+      HResCheck(FNumber.ToHex(P, L1, False),
+                       'BigCardinal -> hex string conversion error');
+      if Digits < L1 then Digits:= L1;
+      Inc(Digits, Length(Prefix));
+      SetLength(Result, Digits);
+      Move(Pointer(Prefix)^, Pointer(Result)^, Length(Prefix) * SizeOf(Char));
+      P1:= P;
+      I:= Length(Prefix);
+      while I + L1 < Digits do begin
+        Inc(I);
+        Result[I]:= '0';
+      end;
+      while I < Digits do begin
+        Inc(I);
+        Result[I]:= Char(P1^);
+        Inc(P1);
+      end;
+    finally
+      FreeMem(P);
+    end;
+  end
+  else
+    BigNumberError(HR, 'BigCardinal -> hex string conversion error');
 {$ELSE}
 begin
   HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits, TwoCompl),
@@ -1155,12 +1210,47 @@ end;
 function BigInteger.ToString: string;
 {$IFDEF TFL_DLL}
 var
-  S: WideString;
+  BytesUsed: Integer;
+  L, L1: Integer;
+  P, P1: PByte;
+  I: Integer;
+  IsMinus: Boolean;
+  HR: HResult;
 
 begin
-  HResCheck(FNumber.ToWideString(S),
-    'BigInteger -> string conversion error');
-  Result:= S;
+  BytesUsed:= FNumber.GetSize;
+// log(256) approximated from above by 41/17
+  L:= (BytesUsed * 41) div 17 + 1;
+  GetMem(P, L);
+  try
+    L1:= L;
+    HR:= FNumber.ToDec(P, L1);
+// -- kludge
+    if HR = TFL_E_INVALIDARG then begin
+      FreeMem(P);
+      L:= L1;
+      GetMem(P, L);
+      HR:= FNumber.ToDec(P, L1);
+    end;
+// -- end of kludge
+    HResCheck(HR, 'BigInteger -> string conversion error');
+    IsMinus:= GetSign < 0;
+    if IsMinus then Inc(L1);
+    SetLength(Result, L1);
+    I:= 1;
+    if IsMinus then begin
+      Result[1]:= '-';
+      Inc(I);
+    end;
+    P1:= P;
+    while I <= L1 do begin
+      Result[I]:= Char(P1^);
+      Inc(P1);
+      Inc(I);
+    end;
+  finally
+    FreeMem(P);
+  end;
 {$ELSE}
 begin
   HResCheck(TBigNumber.ToString(PBigNumber(FNumber), Result),
@@ -1483,18 +1573,62 @@ begin
     'BigInteger -> TBytes conversion error');
 end;
 
-function BigInteger.ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+function BigInteger.ToHexString(Digits: Integer; const Prefix: string;
+                                TwoCompl: Boolean): string;
 {$IFDEF TFL_DLL}
+const
+  ASCII_8 = 56;   // Ord('8')
+
 var
-  S: WideString;
+  L, L1: Integer;
+  P, P1: PByte;
+  HR: HResult;
+  Filler: Char;
+  I: Integer;
 
 begin
-  HResCheck(FNumber.ToWideHexString(S, Digits, TwoCompl),
-    'BigInteger -> hex string conversion error');
-  Result:= S;
+  Result:= '';
+  HR:= FNumber.ToHex(nil, L, TwoCompl);
+  if HR = TFL_E_INVALIDARG then begin
+    GetMem(P, L);
+    try
+      L1:= L;
+      HResCheck(FNumber.ToHex(P, L1, TwoCompl),
+                       'BigInteger -> hex string conversion error');
+      if Digits < L1 then Digits:= L1;
+      I:= 1;
+      if (FNumber.GetSign < 0) and not TwoCompl then begin
+        Inc(I);
+        SetLength(Result, Digits + Length(Prefix) + 1);
+        Result[1]:= '-';
+      end
+      else
+        SetLength(Result, Digits + Length(Prefix));
+      Move(Pointer(Prefix)^, Result[I], Length(Prefix) * SizeOf(Char));
+      Inc(I, Length(Prefix));
+      if Digits > L1 then begin
+        if TwoCompl and (P[L1] >= ASCII_8) then Filler:= 'F'
+        else Filler:= '0';
+        while I + L1 <= Length(Result) do begin
+          Result[I]:= Filler;
+          Inc(I);
+        end;
+      end;
+      P1:= P;
+      while I <= Length(Result) do begin
+        Result[I]:= Char(P1^);
+        Inc(I);
+        Inc(P1);
+      end;
+    finally
+      FreeMem(P);
+    end;
+  end
+  else
+    BigNumberError(HR, 'BigInteger -> hex string conversion error');
 {$ELSE}
 begin
-  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits, TwoCompl),
+  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits, Prefix, TwoCompl),
     'BigInteger -> hex string conversion error');
 {$ENDIF}
 end;

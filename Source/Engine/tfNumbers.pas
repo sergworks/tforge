@@ -64,6 +64,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetSign(Inst: PBigNumber): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetSize(Inst: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function CompareNumbers(A, B: PBigNumber): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -122,12 +124,21 @@ type
 
     class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ToDec(A: PBigNumber; P: PByte; var L: Integer): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ToHex(A: PBigNumber; P: PByte; var L: Integer;
+                               TwoCompl: Boolean): HResult;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+(*
     class function ToWideString(A: PBigNumber; var S: WideString): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ToWideHexString(A: PBigNumber; var S: WideString;
                      Digits: Cardinal; TwoCompl: Boolean): HResult;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
+*)
     class function CompareToLimb(A: PBigNumber; B: TLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function CompareToLimbU(A: PBigNumber; B: TLimb): Integer;
@@ -295,7 +306,7 @@ implementation
 uses arrProcs;
 
 const
-  BigNumVTable: array[0..64] of Pointer = (
+  BigNumVTable: array[0..65] of Pointer = (
    @TBigNumber.QueryIntf,
    @TBigNumber.Addref,
    @TBigNumber.Release,
@@ -305,6 +316,7 @@ const
    @TBigNumber.GetIsPowerOfTwo,
    @TBigNumber.GetIsZero,
    @TBigNumber.GetSign,
+   @TBigNumber.GetSize,
 
    @TBigNumber.CompareNumbers,
    @TBigNumber.CompareNumbersU,
@@ -337,10 +349,10 @@ const
 
    @TBigNumber.ToLimb,
    @TBigNumber.ToIntLimb,
-   @TBigNumber.ToDblLimb,
-   @TBigNumber.ToDblIntLimb,
-   @TBigNumber.ToWideString,
-   @TBigNumber.ToWideHexString,
+   @TBigNumber.ToDec,
+   @TBigNumber.ToHex,
+//   @TBigNumber.ToWideString,
+//   @TBigNumber.ToWideHexString,
    @TBigNumber.ToPByte,
 
    @TBigNumber.CompareToLimb,
@@ -348,15 +360,9 @@ const
    @TBigNumber.CompareToIntLimb,
    @TBigNumber.CompareToIntLimbU,
 
-   @TBigNumber.CompareToDblLimb,
-   @TBigNumber.CompareToDblLimbU,
-   @TBigNumber.CompareToDblIntLimb,
-   @TBigNumber.CompareToDblIntLimbU,
-
    @TBigNumber.AddLimb,
    @TBigNumber.AddLimbU,
    @TBigNumber.AddIntLimb,
-//   @TBigNumber.AddIntLimbU,
 
    @TBigNumber.SubLimb,
    @TBigNumber.SubLimb2,
@@ -364,19 +370,24 @@ const
    @TBigNumber.SubLimbU2,
    @TBigNumber.SubIntLimb,
    @TBigNumber.SubIntLimb2,
-//   @TBigNumber.SubIntLimbU,
 
    @TBigNumber.MulLimb,
    @TBigNumber.MulLimbU,
    @TBigNumber.MulIntLimb,
-//   @TBigNumber.MulIntLimbU
 
    @TBigNumber.DivRemLimb,
    @TBigNumber.DivRemLimb2,
    @TBigNumber.DivRemLimbU,
    @TBigNumber.DivRemLimbU2,
    @TBigNumber.DivRemIntLimb,
-   @TBigNumber.DivRemIntLimb2
+   @TBigNumber.DivRemIntLimb2,
+                                  // Double limb support
+   @TBigNumber.ToDblLimb,
+   @TBigNumber.ToDblIntLimb,
+   @TBigNumber.CompareToDblLimb,
+   @TBigNumber.CompareToDblLimbU,
+   @TBigNumber.CompareToDblIntLimb,
+   @TBigNumber.CompareToDblIntLimbU
    );
 
 const
@@ -631,7 +642,7 @@ begin
   if A = B then begin
     Result:= AllocNumber(Tmp, UsedA + 1);
     if Result <> TFL_S_OK then Exit;
-    Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, A.FUsed);
+    Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, UsedA);
 {
     if arrShlOne(@A.FLimbs, @Tmp.FLimbs, A.FUsed) <> 0
       then
@@ -751,7 +762,7 @@ begin
   if A = B then begin
     Result:= AllocNumber(Tmp, UsedA + 1);
     if Result <> TFL_S_OK then Exit;
-    Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, A.FUsed);
+    Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, UsedA);
 {
     if arrShlOne(@A.FLimbs, @Tmp.FLimbs, A.FUsed) <> 0
       then
@@ -959,7 +970,8 @@ begin
     end;
 
     if (UsedA = 1) and (LimbsA^ = 0) { A = 0, B <> 0 } then begin
-      Result:= TFL_E_INVALIDSUB;
+//      Result:= TFL_E_INVALIDSUB;
+      Result:= TFL_E_INVALIDARG;
       Exit;
     end;
 
@@ -986,7 +998,8 @@ begin
       R:= Tmp;
     end
     else { A < B } begin
-      Result:= TFL_E_INVALIDSUB;
+//      Result:= TFL_E_INVALIDSUB;
+      Result:= TFL_E_INVALIDARG;
       Exit;
     end;
   end;
@@ -1112,7 +1125,8 @@ var
 
 begin
   if B.IsZero then begin
-    Result:= TFL_E_ZERODIVIDE;
+//    Result:= TFL_E_ZERODIVIDE;
+    Result:= TFL_E_INVALIDARG;
     Exit;
   end;
 
@@ -1273,7 +1287,8 @@ var
 
 begin
   if B.IsZero then begin
-    Result:= TFL_E_ZERODIVIDE;
+//    Result:= TFL_E_ZERODIVIDE;
+    Result:= TFL_E_INVALIDARG;
     Exit;
   end;
 
@@ -1463,6 +1478,7 @@ begin
   if R <> nil then Release(R);
   R:= A;
   if A <> nil then AddRef(A);
+  Result:= TFL_S_OK;
 end;
 
 class function TBigNumber.AddIntLimb(A: PBigNumber; Limb: TIntLimb;
@@ -1756,7 +1772,8 @@ begin
       Result:= TFL_S_OK;
     end
     else
-      Result:= TFL_E_INVALIDSUB;
+//      Result:= TFL_E_INVALIDSUB;
+      Result:= TFL_E_INVALIDARG;
   end;
 end;
 
@@ -1897,7 +1914,8 @@ begin
       end;
     end
     else begin { A < Limb }
-      Result:= TFL_E_INVALIDSUB;
+//      Result:= TFL_E_INVALIDSUB;
+      Result:= TFL_E_INVALIDARG;
     end;
   end
   else begin { UsedA > 1 }
@@ -1949,7 +1967,8 @@ begin
     Result:= TFL_S_OK;
   end
   else { A > Limb }
-    Result:= TFL_E_INVALIDSUB;
+//    Result:= TFL_E_INVALIDSUB;
+    Result:= TFL_E_INVALIDARG;
 end;
 
 class function TBigNumber.SubIntLimb(A: PBigNumber; Limb: TIntLimb;
@@ -2375,6 +2394,125 @@ end;
 
 { TNumber --> string conversions }
 
+class function TBigNumber.ToHex(A: PBigNumber; P: PByte; var L: Integer;
+                          TwoCompl: Boolean): HResult;
+const
+  ZERO_OFFSET = 48;   // Ord('0');
+  A_OFFSET = 65;      // Ord('A');
+
+var
+  BytesUsed: Integer;
+  NibblesUsed: Integer;
+  Limb: TLimb;
+  I, N: Integer;
+  P1: PByte;
+  B, Nibble: Byte;
+  HiNibble: Boolean;
+  Carry: Boolean;
+
+begin
+// last limb can hold zero nibbles
+  NibblesUsed:= (A.FUsed - 1) * SizeOf(TLimb) * 2;
+
+  Limb:= A.FLimbs[A.FUsed - 1];
+  repeat
+    Inc(NibblesUsed);
+    Limb:= Limb shr 4;
+  until Limb = 0;
+
+  BytesUsed:= (NibblesUsed + 1) shr 1;
+  P1:= @A.FLimbs;
+  Nibble:= P1[BytesUsed - 1];
+  if not Odd(NibblesUsed) then Nibble:= Nibble shr 4;
+  Nibble:= Nibble and $0F;
+  N:= NibblesUsed;
+  if TwoCompl then begin
+    if ((A.FSign >= 0) and (Nibble >= 8))
+      or ((A.FSign < 0) and (Nibble > 8))
+        then Inc(N);
+  end;
+
+  if (P = nil) or (N > L) then begin
+    Result:= TFL_E_INVALIDARG;
+  end
+  else begin
+//    if TwoCompl
+//      then Inc(P, L)
+//      else
+    Inc(P, N);
+    HiNibble:= False;
+    if (A.FSign >= 0) or not TwoCompl then begin
+      I:= 0;
+      while I < NibblesUsed do begin
+        if HiNibble then begin
+          Nibble:= B shr 4;
+          Inc(P1);
+        end
+        else begin
+          B:= P1^;
+          Nibble:= B and $0F;
+        end;
+        Dec(P);
+        if Nibble < 10
+          then P^:= Nibble + ZERO_OFFSET
+          else P^:= Nibble + A_OFFSET - 10;
+        HiNibble:= not HiNibble;
+        Inc(I);
+      end;
+// Two's complement leading zero
+      if I < N then begin
+        Dec(P);
+        P^:= ZERO_OFFSET;
+      end;
+// Two complement leading zeros
+{      if TwoCompl then while I < L do begin
+        Dec(P);
+        P^:= ZERO_OFFSET;
+        Inc(I);
+      end; }
+    end
+    else begin    // A < 0, two compl format
+      Carry:= True;
+      I:= 0;
+      while I < NibblesUsed do begin
+        if HiNibble then begin
+          Nibble:= B shr 4;
+          Inc(P1);
+        end
+        else begin
+          B:= not P1^;
+          if Carry then begin
+            Inc(B);
+            Carry:= B = 0;
+          end;
+          Nibble:= B and $0F;
+        end;
+        if (P <> nil) and (I < L) then begin
+          Dec(P);
+          if Nibble < 10
+            then P^:= Nibble + ZERO_OFFSET
+            else P^:= Nibble + A_OFFSET - 10;
+        end;
+        HiNibble:= not HiNibble;
+        Inc(I);
+      end;
+// Two's complement leading 'F'
+      if I < N then begin
+        Dec(P);
+        P^:= 15 + A_OFFSET - 10;    // 'F'
+      end;
+// Two complement leading 'F's
+{      while I < L do begin
+        Dec(P);
+        P^:= 15 + A_OFFSET - 10;    // 'F'
+        Inc(I);
+      end; }
+    end;
+    Result:= TFL_S_OK;
+  end;
+  L:= N;
+end;
+
 class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
                  Digits: Cardinal; TwoCompl: Boolean): HResult;
 var
@@ -2488,6 +2626,57 @@ begin
   Result:= TFL_S_OK;
 end;
 
+class function TBigNumber.ToDec(A: PBigNumber; P: PByte;
+                                      var L: Integer): HResult;
+const
+  ZERO_OFFSET = 48;  // Ord('0');
+
+var
+  Tmp: PBigNumber;
+  Used: Integer;
+  I: Integer;
+  Digit: Byte;
+  B: Byte;
+  P1: PByte;
+
+begin
+  Used:= A.FUsed;
+  Result:= AllocNumber(Tmp, A.FUsed);
+  if Result = TFL_S_OK then begin
+    Move(A.FLimbs, Tmp.FLimbs, A.FUsed * SizeOf(TLimb));
+    I:= 0;
+    P1:= P;
+    Used:= A.FUsed;
+    repeat
+      Digit:= arrSelfDivModLimb(@Tmp.FLimbs, Used, 10);
+      if (P1 <> nil) and (I < L) then begin
+        P1^:= Digit + ZERO_OFFSET;
+        Inc(P1);
+      end;
+      if (Used > 1) and (Tmp.FLimbs[Used - 1] = 0) then
+        Dec(Used);
+      Inc(I);
+    until (Used <= 1) and (Tmp.FLimbs[0] = 0);
+    Release(Tmp);
+    L:= I;
+    if (P <> nil) and (L >= I) then begin
+// swap digits' string
+      I:= I shr 1;
+      while I > 0 do begin
+        Dec(P1);
+        B:= P1^;
+        P1^:= P^;
+        P^:= B;
+        Inc(P);
+        Dec(I);
+      end;
+//      Result:= TFL_S_OK;
+    end
+    else
+      Result:= TFL_E_INVALIDARG;
+  end;
+end;
+
 class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
 var
   Tmp: PBigNumber;
@@ -2551,6 +2740,7 @@ begin
 
 end;
 
+(*
 class function TBigNumber.ToWideHexString(A: PBigNumber; var S: WideString;
                  Digits: Cardinal; TwoCompl: Boolean): HResult;
 var
@@ -2571,6 +2761,7 @@ begin
   if Result = TFL_S_OK then
     S:= WideString(Tmp);
 end;
+*)
 
 const
   BigNumPrefixSize = SizeOf(TBigNumber) - SizeOf(TBigNumber.TLimbArray);
@@ -2651,6 +2842,19 @@ begin
   if (Inst.FUsed = 1) and (Inst.FLimbs[0] = 0) then Result:= 0
   else if Inst.FSign >= 0 then Result:= 1
   else Result:= -1;
+end;
+
+class function TBigNumber.GetSize(Inst: PBigNumber): Integer;
+var
+  Limb: TLimb;
+
+begin
+  Result:= (Inst.FUsed - 1) * SizeOf(TLimb);
+  Limb:= Inst.FLimbs[Inst.FUsed - 1];
+  repeat
+    Inc(Result);
+    Limb:= Limb shr 8;
+  until Limb = 0;
 end;
 
 class function TBigNumber.FromBytes(var A: PBigNumber; const Bytes: TBytes): HResult;
@@ -3006,7 +3210,8 @@ var
 
 begin
   if (Limb = 0) then begin
-    Result:= TFL_E_ZERODIVIDE;
+//    Result:= TFL_E_ZERODIVIDE;
+    Result:= TFL_E_INVALIDARG;
     Exit;
   end;
                           // Limb > 0
@@ -3052,7 +3257,8 @@ begin
   UsedA:= A.FUsed;
   if (UsedA = 1) then begin
     if (A.FLimbs[0] = 0) then begin
-      Result:= TFL_E_ZERODIVIDE;
+//      Result:= TFL_E_ZERODIVIDE;
+      Result:= TFL_E_INVALIDARG;
       Exit;
     end
     else begin
@@ -3082,7 +3288,8 @@ var
 
 begin
   if (Limb = 0) then begin
-    Result:= TFL_E_ZERODIVIDE;
+//    Result:= TFL_E_ZERODIVIDE;
+    Result:= TFL_E_INVALIDARG;
     Exit;
   end;
                           // Limb > 0
@@ -3110,7 +3317,8 @@ class function TBigNumber.DivRemLimbU2(A: PBigNumber; Limb: TLimb;
 begin
   if (A.FUsed = 1) then begin
     if (A.FLimbs[0] = 0) then begin
-      Result:= TFL_E_ZERODIVIDE;
+//      Result:= TFL_E_ZERODIVIDE;
+      Result:= TFL_E_INVALIDARG;
       Exit;
     end
     else begin
@@ -3133,7 +3341,8 @@ var
 
 begin
   if (Limb = 0) then begin
-    Result:= TFL_E_ZERODIVIDE;
+//    Result:= TFL_E_ZERODIVIDE;
+    Result:= TFL_E_INVALIDARG;
     Exit;
   end;
                           // Limb > 0
@@ -3170,7 +3379,8 @@ class function TBigNumber.DivRemIntLimb2(A: PBigNumber; Limb: TIntLimb;
 begin
   if (A.FUsed = 1) then begin
     if (A.FLimbs[0] = 0) then begin
-      Result:= TFL_E_ZERODIVIDE;
+//      Result:= TFL_E_ZERODIVIDE;
+      Result:= TFL_E_INVALIDARG;
       Exit;
     end
     else begin

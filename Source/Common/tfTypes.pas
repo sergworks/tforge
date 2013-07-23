@@ -29,8 +29,8 @@ const
   TFL_E_OUTOFMEMORY = HRESULT($8007000E);   // Failed to allocate necessary memory
   TFL_E_UNEXPECTED  = HRESULT($8000FFFF);   // Unexpected failure
                                             // = TFL specific codes =
-  TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
-  TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
+//  TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
+//  TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
   TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
   TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading tforge dll
 
@@ -66,6 +66,7 @@ type
     function GetIsPowerOfTwo: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsZero: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetSign: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function CompareNumber(Num: IBigNumber): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareNumberU(Num: IBigNumber): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -98,21 +99,17 @@ type
 
     function ToLimb(var Value: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToIntLimb(var Value: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToDblLimb(var Value: TDblLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToDblIntLimb(var Value: TDblIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDec(P: PByte; var L: Integer): HResult;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): HResult;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function ToPByte(P: PByte; var L: Cardinal): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function CompareToLimb(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToLimbU(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToIntLimb(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToIntLimbU(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-
-    function CompareToDblLimb(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblLimbU(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblIntLimb(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -121,7 +118,6 @@ type
     function SubLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubLimb2(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function SubLimbU2(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubLimbU2(Limb: TLimb; var Res: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SubIntLimb2(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -136,6 +132,13 @@ type
     function DivRemLimbU2(Limb: TLimb; var Q: TLimb; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DivRemIntLimb(Limb: TIntLimb; var Q: IBigNumber; var R: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DivRemIntLimb2(Limb: TIntLimb; var Q: TIntLimb; var R: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function ToDblLimb(var Value: TDblLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblIntLimb(var Value: TDblIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblLimb(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblLimbU(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblIntLimb(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 implementation

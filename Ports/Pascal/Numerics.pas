@@ -28,8 +28,8 @@ const
   TFL_E_OUTOFMEMORY = HRESULT($8007000E);   // Failed to allocate necessary memory
   TFL_E_UNEXPECTED  = HRESULT($8000FFFF);   // Unexpected failure
                                             // = TFL specific codes =
-  TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
-  TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
+//  TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
+//  TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
   TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
   TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading dll
 
@@ -46,6 +46,7 @@ type
     function GetIsPowerOfTwo: Boolean; stdcall;
     function GetIsZero: Boolean; stdcall;
     function GetSign: Integer; stdcall;
+    function GetSize: Integer; stdcall;
 
     function CompareNumber(Num: IBigNumber): Integer; stdcall;
     function CompareNumberU(Num: IBigNumber): Integer; stdcall;
@@ -78,21 +79,16 @@ type
 
     function ToLimb(var Value: UInt32): HRESULT; stdcall;
     function ToIntLimb(var Value: Int32): HRESULT; stdcall;
-    function ToDblLimb(var Value: UInt64): HRESULT; stdcall;
-    function ToDblIntLimb(var Value: Int64): HRESULT; stdcall;
-    function ToWideString(var S: WideString): HRESULT; stdcall;
-    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT; stdcall;
+    function ToDec(P: PByte; var L: Integer): HResult; stdcall;
+    function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): HResult; stdcall;
+//    function ToWideString(var S: WideString): HRESULT; stdcall;
+//    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT; stdcall;
     function ToPByte(P: PByte; var L: Cardinal): HRESULT; stdcall;
 
     function CompareToLimb(B: UInt32): Integer; stdcall;
     function CompareToLimbU(B: UInt32): Integer; stdcall;
     function CompareToIntLimb(B: Int32): Integer; stdcall;
     function CompareToIntLimbU(B: Int32): Integer; stdcall;
-
-    function CompareToDblLimb(B: UInt64): Integer; stdcall;
-    function CompareToDblLimbU(B: UInt64): Integer; stdcall;
-    function CompareToDblIntLimb(B: Int64): Integer; stdcall;
-    function CompareToDblIntLimbU(B: Int64): Integer; stdcall;
 
     function AddLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function AddLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
@@ -101,7 +97,6 @@ type
     function SubLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function SubLimb2(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function SubLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-//    function SubLimbU2(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
     function SubLimbU2(Limb: LongWord; var Res: LongWord): HRESULT; stdcall;
     function SubIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
     function SubIntLimb2(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
@@ -116,6 +111,13 @@ type
     function DivRemLimbU2(Limb: LongWord; var Q: LongWord; var R: LongWord): HRESULT; stdcall;
     function DivRemIntLimb(Limb: LongInt; var Q: IBigNumber; var R: LongInt): HRESULT; stdcall;
     function DivRemIntLimb2(Limb: LongInt; var Q: LongInt; var R: LongInt): HRESULT; stdcall;
+
+    function ToDblLimb(var Value: UInt64): HRESULT; stdcall;
+    function ToDblIntLimb(var Value: Int64): HRESULT; stdcall;
+    function CompareToDblLimb(B: UInt64): Integer; stdcall;
+    function CompareToDblLimbU(B: UInt64): Integer; stdcall;
+    function CompareToDblIntLimb(B: Int64): Integer; stdcall;
+    function CompareToDblIntLimbU(B: Int64): Integer; stdcall;
   end;
 
 type
@@ -124,7 +126,7 @@ type
     FNumber: IBigNumber;
   public
     function ToString: string;
-    function ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+    function ToHexString(Digits: Integer = 0; const Prefix: string = ''): string;
     function ToBytes: TBytes;
     function TryParse(const S: string): Boolean;
     procedure Free;
@@ -249,7 +251,8 @@ type
     function GetSign: Integer;
   public
     function ToString: string;
-    function ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+    function ToHexString(Digits: Integer = 0; const Prefix: string = '';
+                         TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
     function TryParse(const S: string): Boolean;
     procedure Free;
@@ -449,22 +452,77 @@ end;
 
 function BigCardinal.ToString: string;
 var
-  S: WideString;
+//  S: WideString;
+  BytesUsed: Integer;
+  L, L1: Integer;
+  P, P1: PByte;
+  I: Integer;
+  HR: HResult;
 
 begin
-  HResCheck(FNumber.ToWideString(S),
-    'BigCardinal -> string conversion error');
-  Result:= S;
+  BytesUsed:= FNumber.GetSize;
+// log(256) approximated from above by 41/17
+  L:= (BytesUsed * 41) div 17 + 1;
+  GetMem(P, L);
+  try
+    L1:= L;
+    HR:= FNumber.ToDec(P, L1);
+// -- kludge
+    if HR = TFL_E_INVALIDARG then begin
+      FreeMem(P);
+      L:= L1;
+      GetMem(P, L);
+      HR:= FNumber.ToDec(P, L1);
+    end;
+// -- end of kludge
+    HResCheck(HR, 'BigCardinal -> string conversion error');
+    SetLength(Result, L1);
+    P1:= P;
+    for I:= 1 to L1 do begin
+      Result[I]:= Char(P1^);
+      Inc(P1);
+    end;
+  finally
+    FreeMem(P);
+  end;
 end;
 
-function BigCardinal.ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+function BigCardinal.ToHexString(Digits: Integer; const Prefix: string): string;
 var
-  S: WideString;
+  L, L1: Integer;
+  P, P1: PByte;
+  HR: HResult;
+  I: Integer;
 
 begin
-  HResCheck(FNumber.ToWideHexString(S, Digits, TwoCompl),
-    'BigCardinal -> hex string conversion error');
-  Result:= S;
+  HR:= FNumber.ToHex(nil, L, False);
+  if HR = TFL_E_INVALIDARG then begin
+    GetMem(P, L);
+    try
+      L1:= L;
+      HResCheck(FNumber.ToHex(P, L1, False),
+                       'BigCardinal -> hex string conversion error');
+      if Digits < L1 then Digits:= L1;
+      Inc(Digits, Length(Prefix));
+      SetLength(Result, Digits);
+      Move(Pointer(Prefix)^, Pointer(Result)^, Length(Prefix) * SizeOf(Char));
+      P1:= P;
+      I:= Length(Prefix);
+      while I + L1 < Digits do begin
+        Inc(I);
+        Result[I]:= '0';
+      end;
+      while I < Digits do begin
+        Inc(I);
+        Result[I]:= Char(P1^);
+        Inc(P1);
+      end;
+    finally
+      FreeMem(P);
+    end;
+  end
+  else
+    BigNumberError(HR, 'BigCardinal -> hex string conversion error');
 end;
 
 function BigCardinal.ToBytes: TBytes;
@@ -1060,22 +1118,101 @@ end;
 
 function BigInteger.ToString: string;
 var
-  S: WideString;
+  BytesUsed: Integer;
+  L, L1: Integer;
+  P, P1: PByte;
+  I: Integer;
+  IsMinus: Boolean;
+  HR: HResult;
 
 begin
-  HResCheck(FNumber.ToWideString(S),
-    'BigInteger -> string conversion error');
-  Result:= S;
+  BytesUsed:= FNumber.GetSize;
+// log(256) approximated from above by 41/17
+  L:= (BytesUsed * 41) div 17 + 1;
+  GetMem(P, L);
+  try
+    L1:= L;
+    HR:= FNumber.ToDec(P, L1);
+// -- kludge
+    if HR = TFL_E_INVALIDARG then begin
+      FreeMem(P);
+      L:= L1;
+      GetMem(P, L);
+      HR:= FNumber.ToDec(P, L1);
+    end;
+// -- end of kludge
+    HResCheck(HR, 'BigInteger -> string conversion error');
+    IsMinus:= GetSign < 0;
+    if IsMinus then Inc(L1);
+    SetLength(Result, L1);
+    I:= 1;
+    if IsMinus then begin
+      Result[1]:= '-';
+      Inc(I);
+    end;
+    P1:= P;
+    while I <= L1 do begin
+      Result[I]:= Char(P1^);
+      Inc(P1);
+      Inc(I);
+    end;
+  finally
+    FreeMem(P);
+  end;
 end;
 
-function BigInteger.ToHexString(Digits: Cardinal; TwoCompl: Boolean): string;
+function BigInteger.ToHexString(Digits: Integer; const Prefix: string;
+                                TwoCompl: Boolean): string;
+const
+  ASCII_8 = 56;   // Ord('8')
+
 var
-  S: WideString;
+  L, L1: Integer;
+  P, P1: PByte;
+  HR: HResult;
+  Filler: Char;
+  I: Integer;
 
 begin
-  HResCheck(FNumber.ToWideHexString(S, Digits, TwoCompl),
-    'BigInteger -> hex string conversion error');
-  Result:= S;
+  Result:= '';
+  HR:= FNumber.ToHex(nil, L, TwoCompl);
+  if HR = TFL_E_INVALIDARG then begin
+    GetMem(P, L);
+    try
+      L1:= L;
+      HResCheck(FNumber.ToHex(P, L1, TwoCompl),
+                       'BigInteger -> hex string conversion error');
+      if Digits < L1 then Digits:= L1;
+      I:= 1;
+      if (FNumber.GetSign < 0) and not TwoCompl then begin
+        Inc(I);
+        SetLength(Result, Digits + Length(Prefix) + 1);
+        Result[1]:= '-';
+      end
+      else
+        SetLength(Result, Digits + Length(Prefix));
+      Move(Pointer(Prefix)^, Result[I], Length(Prefix) * SizeOf(Char));
+      Inc(I, Length(Prefix));
+      if Digits > L1 then begin
+        if TwoCompl and (P[L1] >= ASCII_8) then Filler:= 'F'
+        else Filler:= '0';
+        while I + L1 <= Length(Result) do begin
+          Result[I]:= Filler;
+          Inc(I);
+        end;
+      end;
+      P1:= P;
+      while I <= Length(Result) do begin
+        Result[I]:= Char(P1^);
+        Inc(I);
+        Inc(P1);
+      end;
+    finally
+      FreeMem(P);
+    end;
+  end
+  else
+    BigNumberError(HR, 'BigInteger -> hex string conversion error');
 end;
 
 function BigInteger.ToBytes: TBytes;
