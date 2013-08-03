@@ -1,11 +1,33 @@
 { *********************************************************** }
-{ *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Numerics(32/64).dll import for Pascal             * }
 { * ------------------------------------------------------- * }
-{ *   # Numerics dll import for Pascal                      * }
-{ *   # Free Pascal & Delphi compilers supported            * }
-{ * ------------------------------------------------------- * }
+{ *       set const LibName = 'numerics32.dll'              * }
+{ *         to import numerics32.dll;                       * }
+{ *       set const LibName = 'numerics64.dll'              * }
+{ *         to import numerics64.dll;                       * }
 { *********************************************************** }
+
+{
+  Copyright (c) 2013 Sergey Kasandrov
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+}
 
 unit Numerics;
 
@@ -17,21 +39,23 @@ interface
 
 uses Windows, SysUtils;
 
+type
+  TF_RESULT = LongInt;
+
 const
-                                            // = common microsoft codes =
-  TFL_S_OK          = HRESULT(0);           // Operation successful
-  TFL_S_FALSE       = HRESULT(1);           // Operation successful
-  TFL_E_FAIL        = HRESULT($80004005);   // Unspecified failure
-  TFL_E_INVALIDARG  = HRESULT($80070057);   // One or more arguments are not valid
-  TFL_E_NOINTERFACE = HRESULT($80004002);   // No such interface supported
-  TFL_E_NOTIMPL     = HRESULT($80004001);   // Not implemented
-  TFL_E_OUTOFMEMORY = HRESULT($8007000E);   // Failed to allocate necessary memory
-  TFL_E_UNEXPECTED  = HRESULT($8000FFFF);   // Unexpected failure
-                                            // = TFL specific codes =
-//  TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
-//  TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
-  TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
-  TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading dll
+                                              // = common microsoft codes =
+  TF_S_OK           = TF_RESULT(0);           // Operation successful
+  TF_S_FALSE        = TF_RESULT(1);           // Operation successful
+  TF_E_FAIL         = TF_RESULT($80004005);   // Unspecified failure
+  TF_E_INVALIDARG   = TF_RESULT($80070057);   // One or more arguments are not valid
+  TF_E_NOINTERFACE  = TF_RESULT($80004002);   // No such interface supported
+  TF_E_NOTIMPL      = TF_RESULT($80004001);   // Not implemented
+  TF_E_OUTOFMEMORY  = TF_RESULT($8007000E);   // Failed to allocate necessary memory
+  TF_E_UNEXPECTED   = TF_RESULT($8000FFFF);   // Unexpected failure
+
+                                              // = TFL specific codes =
+  TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
+  TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading dll
 
 {$IFDEF FPC}
 type
@@ -51,69 +75,67 @@ type
     function CompareNumber(Num: IBigNumber): Integer; stdcall;
     function CompareNumberU(Num: IBigNumber): Integer; stdcall;
 
-    function AddNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function AddNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function SubNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function SubNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function MulNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function DivRemNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
-    function DivRemNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT; stdcall;
+    function AddNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function AddNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function SubNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function SubNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function MulNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function MulNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function DivRemNumber(Num: IBigNumber; var Q, R: IBigNumber): TF_RESULT; stdcall;
+    function DivRemNumberU(Num: IBigNumber; var Q, R: IBigNumber): TF_RESULT; stdcall;
 
-    function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function OrNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
-    function XorNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT; stdcall;
+    function AndNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function OrNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
+    function XorNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT; stdcall;
 
-    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
-    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT; stdcall;
+    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): TF_RESULT; stdcall;
+    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): TF_RESULT; stdcall;
 
-    function AssignNumber(var Res: IBigNumber): HRESULT; stdcall;
-    function AbsNumber(var Res: IBigNumber): HRESULT; stdcall;
-    function NegateNumber(var Res: IBigNumber): HRESULT; stdcall;
-    function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
-    function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT; stdcall;
-    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT; stdcall;
-    function SqrtNumber(var IRes: IBigNumber): HRESULT; stdcall;
+    function AssignNumber(var Res: IBigNumber): TF_RESULT; stdcall;
+    function AbsNumber(var Res: IBigNumber): TF_RESULT; stdcall;
+    function NegateNumber(var Res: IBigNumber): TF_RESULT; stdcall;
+    function Pow(Value: Cardinal; var IRes: IBigNumber): TF_RESULT; stdcall;
+    function PowU(Value: Cardinal; var IRes: IBigNumber): TF_RESULT; stdcall;
+    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT; stdcall;
+    function SqrtNumber(var IRes: IBigNumber): TF_RESULT; stdcall;
 
-    function ToLimb(var Value: UInt32): HRESULT; stdcall;
-    function ToIntLimb(var Value: Int32): HRESULT; stdcall;
-    function ToDec(P: PByte; var L: Integer): HResult; stdcall;
-    function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): HResult; stdcall;
-//    function ToWideString(var S: WideString): HRESULT; stdcall;
-//    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT; stdcall;
-    function ToPByte(P: PByte; var L: Cardinal): HRESULT; stdcall;
+    function ToLimb(var Value: UInt32): TF_RESULT; stdcall;
+    function ToIntLimb(var Value: Int32): TF_RESULT; stdcall;
+    function ToDec(P: PByte; var L: Integer): TF_RESULT; stdcall;
+    function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): TF_RESULT; stdcall;
+    function ToPByte(P: PByte; var L: Cardinal): TF_RESULT; stdcall;
 
     function CompareToLimb(B: UInt32): Integer; stdcall;
     function CompareToLimbU(B: UInt32): Integer; stdcall;
     function CompareToIntLimb(B: Int32): Integer; stdcall;
     function CompareToIntLimbU(B: Int32): Integer; stdcall;
 
-    function AddLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function AddLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function AddIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
+    function AddLimb(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function AddLimbU(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function AddIntLimb(Limb: LongInt; var Res: IBigNumber): TF_RESULT; stdcall;
 
-    function SubLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function SubLimb2(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function SubLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function SubLimbU2(Limb: LongWord; var Res: LongWord): HRESULT; stdcall;
-    function SubIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
-    function SubIntLimb2(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
+    function SubLimb(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function SubLimb2(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function SubLimbU(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function SubLimbU2(Limb: LongWord; var Res: LongWord): TF_RESULT; stdcall;
+    function SubIntLimb(Limb: LongInt; var Res: IBigNumber): TF_RESULT; stdcall;
+    function SubIntLimb2(Limb: LongInt; var Res: IBigNumber): TF_RESULT; stdcall;
 
-    function MulLimb(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function MulLimbU(Limb: LongWord; var Res: IBigNumber): HRESULT; stdcall;
-    function MulIntLimb(Limb: LongInt; var Res: IBigNumber): HRESULT; stdcall;
+    function MulLimb(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function MulLimbU(Limb: LongWord; var Res: IBigNumber): TF_RESULT; stdcall;
+    function MulIntLimb(Limb: LongInt; var Res: IBigNumber): TF_RESULT; stdcall;
 
-    function DivRemLimb(Limb: LongWord; var Q: IBigNumber; var R: IBigNumber): HRESULT; stdcall;
-    function DivRemLimb2(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
-    function DivRemLimbU(Limb: LongWord; var Q: IBigNumber; var R: LongWord): HRESULT; stdcall;
-    function DivRemLimbU2(Limb: LongWord; var Q: LongWord; var R: LongWord): HRESULT; stdcall;
-    function DivRemIntLimb(Limb: LongInt; var Q: IBigNumber; var R: LongInt): HRESULT; stdcall;
-    function DivRemIntLimb2(Limb: LongInt; var Q: LongInt; var R: LongInt): HRESULT; stdcall;
+    function DivRemLimb(Limb: LongWord; var Q: IBigNumber; var R: IBigNumber): TF_RESULT; stdcall;
+    function DivRemLimb2(Limb: LongWord; var Q: IBigNumber; var R: LongWord): TF_RESULT; stdcall;
+    function DivRemLimbU(Limb: LongWord; var Q: IBigNumber; var R: LongWord): TF_RESULT; stdcall;
+    function DivRemLimbU2(Limb: LongWord; var Q: LongWord; var R: LongWord): TF_RESULT; stdcall;
+    function DivRemIntLimb(Limb: LongInt; var Q: IBigNumber; var R: LongInt): TF_RESULT; stdcall;
+    function DivRemIntLimb2(Limb: LongInt; var Q: LongInt; var R: LongInt): TF_RESULT; stdcall;
 
-    function ToDblLimb(var Value: UInt64): HRESULT; stdcall;
-    function ToDblIntLimb(var Value: Int64): HRESULT; stdcall;
+    function ToDblLimb(var Value: UInt64): TF_RESULT; stdcall;
+    function ToDblIntLimb(var Value: Int64): TF_RESULT; stdcall;
     function CompareToDblLimb(B: UInt64): Integer; stdcall;
     function CompareToDblLimbU(B: UInt64): Integer; stdcall;
     function CompareToDblIntLimb(B: Int64): Integer; stdcall;
@@ -126,9 +148,10 @@ type
     FNumber: IBigNumber;
   public
     function ToString: string;
-    function ToHexString(Digits: Integer = 0; const Prefix: string = ''): string;
+    function ToHexString(Digits: Integer = 0; const Prefix: string = '';
+                         TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
-    function TryParse(const S: string): Boolean;
+    function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
     procedure Free;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
@@ -254,7 +277,7 @@ type
     function ToHexString(Digits: Integer = 0; const Prefix: string = '';
                          TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
-    function TryParse(const S: string): Boolean;
+    function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
     procedure Free;
 
     property Sign: Integer read GetSign;
@@ -401,48 +424,48 @@ type
 type
   EBigNumberError = class(Exception)
   private
-    FCode: HResult;
+    FCode: TF_RESULT;
   public
-    constructor Create(ACode: HResult; const Msg: string);
-    property Code: HResult read FCode;
+    constructor Create(ACode: TF_RESULT; const Msg: string);
+    property Code: TF_RESULT read FCode;
   end;
 
-procedure BigNumberError(ACode: HResult; const Msg: string);
+procedure BigNumberError(ACode: TF_RESULT; const Msg: string);
 
 implementation
 
 type
-  TBigNumberFromUInt32 = function(var A: IBigNumber; Value: UInt32): HResult; stdcall;
-  TBigNumberFromUInt64 = function(var A: IBigNumber; Value: UInt64): HResult; stdcall;
-  TBigNumberFromInt32 = function(var A: IBigNumber; Value: Int32): HResult; stdcall;
-  TBigNumberFromInt64 = function(var A: IBigNumber; Value: Int64): HResult; stdcall;
-  TBigNumberFromPWideChar = function(var A: IBigNumber;
-    P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
+  TBigNumberFromUInt32 = function(var A: IBigNumber; Value: UInt32): TF_RESULT; stdcall;
+  TBigNumberFromUInt64 = function(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
+  TBigNumberFromInt32 = function(var A: IBigNumber; Value: Int32): TF_RESULT; stdcall;
+  TBigNumberFromInt64 = function(var A: IBigNumber; Value: Int64): TF_RESULT; stdcall;
+  TBigNumberFromPChar = function(var A: IBigNumber; P: PByte; L: Integer;
+           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
   TBigNumberFromPByte = function(var A: IBigNumber;
-    P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
+    P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
 
 var
   BigNumberFromUInt32: TBigNumberFromUInt32;
   BigNumberFromUInt64: TBigNumberFromUInt64;
   BigNumberFromInt32: TBigNumberFromInt32;
   BigNumberFromInt64: TBigNumberFromInt64;
-  BigNumberFromPWideChar: TBigNumberFromPWideChar;
+  BigNumberFromPChar: TBigNumberFromPChar;
   BigNumberFromPByte: TBigNumberFromPByte;
 
 { EBigNumberError }
 
-constructor EBigNumberError.Create(ACode: HResult; const Msg: string);
+constructor EBigNumberError.Create(ACode: TF_RESULT; const Msg: string);
 begin
   inherited Create(Msg);
   FCode:= ACode;
 end;
 
-procedure BigNumberError(ACode: HResult; const Msg: string);
+procedure BigNumberError(ACode: TF_RESULT; const Msg: string);
 begin
   raise EBigNumberError.Create(ACode, Msg);
 end;
 
-procedure HResCheck(Value: HResult; const ErrMsg: string); inline;
+procedure HResCheck(Value: TF_RESULT; const ErrMsg: string); inline;
 begin
   if Value <> S_OK then
     BigNumberError(Value, ErrMsg);
@@ -452,12 +475,11 @@ end;
 
 function BigCardinal.ToString: string;
 var
-//  S: WideString;
   BytesUsed: Integer;
   L, L1: Integer;
   P, P1: PByte;
   I: Integer;
-  HR: HResult;
+  HR: TF_RESULT;
 
 begin
   BytesUsed:= FNumber.GetSize;
@@ -468,7 +490,7 @@ begin
     L1:= L;
     HR:= FNumber.ToDec(P, L1);
 // -- kludge
-    if HR = TFL_E_INVALIDARG then begin
+    if HR = TF_E_INVALIDARG then begin
       FreeMem(P);
       L:= L1;
       GetMem(P, L);
@@ -487,20 +509,22 @@ begin
   end;
 end;
 
-function BigCardinal.ToHexString(Digits: Integer; const Prefix: string): string;
+function BigCardinal.ToHexString(Digits: Integer; const Prefix: string;
+                         TwoCompl: Boolean): string;
+
 var
   L, L1: Integer;
   P, P1: PByte;
-  HR: HResult;
+  HR: TF_RESULT;
   I: Integer;
 
 begin
-  HR:= FNumber.ToHex(nil, L, False);
-  if HR = TFL_E_INVALIDARG then begin
+  HR:= FNumber.ToHex(nil, L, TwoCompl);
+  if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
       L1:= L;
-      HResCheck(FNumber.ToHex(P, L1, False),
+      HResCheck(FNumber.ToHex(P, L1, TwoCompl),
                        'BigCardinal -> hex string conversion error');
       if Digits < L1 then Digits:= L1;
       Inc(Digits, Length(Prefix));
@@ -527,23 +551,23 @@ end;
 
 function BigCardinal.ToBytes: TBytes;
 var
-  HR: HResult;
+  HR: TF_RESULT;
   L: Cardinal;
 
 begin
   L:= 0;
   HR:= FNumber.ToPByte(nil, L);
-  if (HR = TFL_E_INVALIDARG) and (L > 0) then begin
+  if (HR = TF_E_INVALIDARG) and (L > 0) then begin
     SetLength(Result, L);
     HR:= FNumber.ToPByte(Pointer(Result), L);
   end;
   HResCheck(HR, 'BigCardinal -> TBytes conversion error');
 end;
 
-function BigCardinal.TryParse(const S: string): Boolean;
+function BigCardinal.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-  Result:= BigNumberFromPWideChar(FNumber, Pointer(S), Length(S),
-              False) = TFL_S_OK;
+  Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
+                              SizeOf(Char), False, TwoCompl) = TF_S_OK;
 end;
 
 procedure BigCardinal.Free;
@@ -613,7 +637,7 @@ end;
 class operator BigCardinal.Explicit(const Value: Integer): BigCardinal;
 begin
   if Value < 0 then
-    BigNumberError(TFL_E_INVALIDARG,
+    BigNumberError(TF_E_INVALIDARG,
       'Integer -> BigCardinal conversion error')
   else begin
     HResCheck(BigNumberFromInt32(Result.FNumber, Value),
@@ -624,7 +648,7 @@ end;
 class operator BigCardinal.Explicit(const Value: Int64): BigCardinal;
 begin
   if Value < 0 then
-    BigNumberError(TFL_E_INVALIDARG,
+    BigNumberError(TF_E_INVALIDARG,
       'Int64 -> BigCardinal conversion error')
   else begin
     HResCheck(BigNumberFromInt64(Result.FNumber, Value),
@@ -641,8 +665,8 @@ end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
 begin
-  HResCheck(BigNumberFromPWideChar(Result.FNumber, Pointer(Value),
-            Length(Value), False),
+  HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
+                               SizeOf(Char), False, False),
     'string -> BigCardinal conversion error');
 end;
 
@@ -1123,7 +1147,7 @@ var
   P, P1: PByte;
   I: Integer;
   IsMinus: Boolean;
-  HR: HResult;
+  HR: TF_RESULT;
 
 begin
   BytesUsed:= FNumber.GetSize;
@@ -1134,7 +1158,7 @@ begin
     L1:= L;
     HR:= FNumber.ToDec(P, L1);
 // -- kludge
-    if HR = TFL_E_INVALIDARG then begin
+    if HR = TF_E_INVALIDARG then begin
       FreeMem(P);
       L:= L1;
       GetMem(P, L);
@@ -1169,14 +1193,14 @@ const
 var
   L, L1: Integer;
   P, P1: PByte;
-  HR: HResult;
+  HR: TF_RESULT;
   Filler: Char;
   I: Integer;
 
 begin
   Result:= '';
   HR:= FNumber.ToHex(nil, L, TwoCompl);
-  if HR = TFL_E_INVALIDARG then begin
+  if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
       L1:= L;
@@ -1217,23 +1241,25 @@ end;
 
 function BigInteger.ToBytes: TBytes;
 var
-  HR: HResult;
+  HR: TF_RESULT;
   L: Cardinal;
 
 begin
   L:= 0;
   HR:= FNumber.ToPByte(nil, L);
-  if (HR = TFL_E_INVALIDARG) and (L > 0) then begin
+  if (HR = TF_E_INVALIDARG) and (L > 0) then begin
     SetLength(Result, L);
     HR:= FNumber.ToPByte(Pointer(Result), L);
   end;
   HResCheck(HR, 'BigInteger -> TBytes conversion error');
 end;
 
-function BigInteger.TryParse(const S: string): Boolean;
+function BigInteger.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-  Result:= BigNumberFromPWideChar(FNumber, Pointer(S), Length(S),
-              True) = TFL_S_OK;
+  Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
+                              SizeOf(Char), True, TwoCompl) = TF_S_OK;
+//  Result:= BigNumberFromPWideChar(FNumber, Pointer(S), Length(S),
+//              True) = TF_S_OK;
 end;
 
 procedure BigInteger.Free;
@@ -1293,7 +1319,7 @@ end;
 class operator BigInteger.Explicit(const Value: BigInteger): BigCardinal;
 begin
   if (Value.FNumber.GetSign < 0) then
-      BigNumberError(TFL_E_INVALIDARG, 'Negative value');
+      BigNumberError(TF_E_INVALIDARG, 'Negative value');
   Result.FNumber:= Value.FNumber;
 end;
 
@@ -1354,8 +1380,10 @@ end;
 
 class operator BigInteger.Explicit(const Value: string): BigInteger;
 begin
-  HResCheck(BigNumberFromPWideChar(Result.FNumber, Pointer(Value),
-            Length(Value), True),
+//  HResCheck(BigNumberFromPWideChar(Result.FNumber, Pointer(Value),
+//            Length(Value), True),
+  HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
+                               SizeOf(Char), True, False),
             'string -> BigInteger conversion error');
 end;
 
@@ -1897,28 +1925,37 @@ end;
 
 // -------------------------------------------------------------- //
 
-const
-  LibName = 'numerics32.dll';
-//  LibName = 'numerics64.dll';
-
-var
-  LibHandle: THandle = 0;
-
-function BigNumberFrom32Stub(var A: IBigNumber; Value: UInt32): HResult; stdcall;
+function BigNumberFrom32Stub(var A: IBigNumber; Value: UInt32): TF_RESULT; stdcall;
 begin
-  Result:= TFL_E_LOADERROR;
+  Result:= TF_E_LOADERROR;
 end;
 
-function BigNumberFrom64Stub(var A: IBigNumber; Value: UInt64): HResult; stdcall;
+function BigNumberFrom64Stub(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
 begin
-  Result:= TFL_E_LOADERROR;
+  Result:= TF_E_LOADERROR;
+end;
+
+function BigNumberFromPCharStub(var A: IBigNumber; P: PByte; L: Integer;
+           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
 end;
 
 function BigNumberFromPByteStub(var A: IBigNumber;
-           P: PByte; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
+           P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
 begin
-  Result:= TFL_E_LOADERROR;
+  Result:= TF_E_LOADERROR;
 end;
+
+const
+{$IFDEF WIN64}
+  LibName = 'numerics64.dll';
+{$ELSE}
+  LibName = 'numerics32.dll';
+{$ENDIF}
+
+var
+  LibHandle: THandle = 0;
 
 function LoadLib: Boolean;
 begin
@@ -1933,13 +1970,13 @@ begin
     @BigNumberFromUInt64:= GetProcAddress(LibHandle, 'BigNumberFromDblLimb');
     @BigNumberFromInt32:= GetProcAddress(LibHandle, 'BigNumberFromIntLimb');
     @BigNumberFromInt64:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
-    @BigNumberFromPWideChar:= GetProcAddress(LibHandle, 'BigNumberFromPWideChar');
+    @BigNumberFromPChar:= GetProcAddress(LibHandle, 'BigNumberFromPChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
     Result:= (@BigNumberFromUInt32 <> nil)
              and (@BigNumberFromUInt64 <> nil)
              and (@BigNumberFromInt32 <> nil)
              and (@BigNumberFromInt64 <> nil)
-             and (@BigNumberFromPWideChar <> nil)
+             and (@BigNumberFromPChar <> nil)
              and (@BigNumberFromPByte <> nil)
   end;
   if not Result then begin
@@ -1947,7 +1984,7 @@ begin
     @BigNumberFromUInt64:= @BigNumberFrom64Stub;
     @BigNumberFromInt32:= @BigNumberFrom32Stub;
     @BigNumberFromInt64:= @BigNumberFrom64Stub;
-    @BigNumberFromPWideChar:= @BigNumberFromPByteStub;
+    @BigNumberFromPChar:= @BigNumberFromPCharStub;
     @BigNumberFromPByte:= @BigNumberFromPByteStub;
   end;
 end;

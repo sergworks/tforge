@@ -15,7 +15,8 @@ exports
   BigNumberFromIntLimb,
   BigNumberFromDblLimb,
   BigNumberFromDblIntLimb,
-  BigNumberFromPWideChar,
+//  BigNumberFromPWideChar,
+  BigNumberFromPChar,
   BigNumberFromPByte;
 
 {$R *.res}

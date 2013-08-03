@@ -50,7 +50,7 @@ type
 // -- IBigNumber implementation
 
     class function QueryIntf(Inst: PBigNumber; const IID: TGUID;
-                             out Obj): HResult; stdcall; static;
+                             out Obj): TF_RESULT; stdcall; static;
     class function Addref(Inst: PBigNumber): Integer; stdcall; static;
     class function Release(Inst: PBigNumber): Integer; stdcall; static;
 
@@ -72,64 +72,64 @@ type
     class function CompareNumbersU(A, B: PBigNumber): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function AddNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function AddNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function AddNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function SubNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function SubNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function MulNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function MulNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function MulNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function MulNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DivRemNumbers(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+    class function DivRemNumbers(A, B: PBigNumber; var Q, R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DivRemNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
-    class function AndNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function AndNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function OrNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function OrNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function XorNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+    class function DivRemNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function ShlNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+    class function AndNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+    class function AndNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function OrNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function OrNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function XorNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ShlNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
 // TODO: to be renamed "AssignNumber"
-    class function CopyNumber(A: PBigNumber; var R: PBigNumber): HResult;
+    class function CopyNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function AbsNumber(A: PBigNumber; var R: PBigNumber): HResult;
+    class function AbsNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function NegateNumber(A: PBigNumber; var R: PBigNumber): HResult;
+    class function NegateNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+    class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+    class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult;
+    class function PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SqrtNumber(A: PBigNumber; var R: PBigNumber): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
-
-    class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult;
+    class function SqrtNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function ToDec(A: PBigNumber; P: PByte; var L: Integer): HResult;
+
+    class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ToDec(A: PBigNumber; P: PByte; var L: Integer): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function ToHex(A: PBigNumber; P: PByte; var L: Integer;
-                               TwoCompl: Boolean): HResult;
+                               TwoCompl: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
 (*
@@ -157,11 +157,11 @@ type
     class function CompareToDblIntLimbU(A: PBigNumber; B: TDblIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function AddLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function AddIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+    class function AddIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function AddIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -169,90 +169,93 @@ type
 //    class function AddDblLimb(A: PBigNumber; B: TDblLimb; var R: PBigNumber): HResult;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function SubLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubLimb2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function SubLimb2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function SubLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
-    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: TLimb): HResult;
+    class function SubLimbU2(A: PBigNumber; Limb: TLimb; var R: TLimb): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+    class function SubIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SubIntLimb2(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+    class function SubIntLimb2(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function SubIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+    class function MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+    class function MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function MulIntLimbU(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function DivRemLimb(A: PBigNumber; Limb: TLimb;
-                              var Q, R: PBigNumber): HResult;
+                              var Q, R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DivRemLimb2(A: PBigNumber; Limb: TLimb;
-                              var Q: PBigNumber; var R: TLimb): HResult;
+                              var Q: PBigNumber; var R: TLimb): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DivRemLimbU(A: PBigNumber; Limb: TLimb;
-                               var Q: PBigNumber; var R: TLimb): HResult;
+                               var Q: PBigNumber; var R: TLimb): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DivRemLimbU2(A: PBigNumber; Limb: TLimb;
-                               var Q: TLimb; var R: TLimb): HResult;
+                               var Q: TLimb; var R: TLimb): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function DivRemIntLimb(A: PBigNumber; Limb: TIntLimb;
-                                 var Q: PBigNumber; var R: TIntLimb): HResult;
+                                 var Q: PBigNumber; var R: TIntLimb): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DivRemIntLimb2(A: PBigNumber; Limb: TIntLimb;
-                                  var Q: TIntLimb; var R: TIntLimb): HResult;
+                                  var Q: TIntLimb; var R: TIntLimb): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
 // -- end of IBigNumber implementation
 
 // -- conversions from/to BigNumber
 
-    class function FromBytes(var A: PBigNumber; const Bytes: TBytes): HResult; static;
+    class function FromBytes(var A: PBigNumber; const Bytes: TBytes): TF_RESULT; static;
+//    class function FromPAnsiCharHex(var A: PBigNumber; S: PByte; L: Integer;
+//                     AllowNegative, TwoCompl: Boolean): HResult; static;
     class function FromPCharHex(var A: PBigNumber; S: PChar; L: Integer;
-                     AllowNegative, TwoCompl: Boolean): HResult; static;
+                     AllowNegative, TwoCompl: Boolean): TF_RESULT; static;
 
-    class function FromString(var A: PBigNumber; const S: string): HResult; static;
+    class function FromString(var A: PBigNumber;
+                   const S: string; TwoCompl: Boolean = False): TF_RESULT; static;
 
-    class function ToLimb(A: PBigNumber; var Value: TLimb): HResult; static;
-    class function ToIntLimb(A: PBigNumber; var Value: TIntLimb): HResult; static;
+    class function ToLimb(A: PBigNumber; var Value: TLimb): TF_RESULT; static;
+    class function ToIntLimb(A: PBigNumber; var Value: TIntLimb): TF_RESULT; static;
 
-    class function ToDblLimb(A: PBigNumber; var Value: TDblLimb): HResult; static;
-    class function ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): HResult; static;
+    class function ToDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT; static;
+    class function ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): TF_RESULT; static;
 
 //    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
 //    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
-    class function ToString(A: PBigNumber; var S: string): HResult; static;
+    class function ToString(A: PBigNumber; var S: string): TF_RESULT; static;
     class function ToHexString(A: PBigNumber; var S: string;
-                     Digits: Cardinal; TwoCompl: Boolean): HResult; static;
-    class function ToBytes(A: PBigNumber; var Bytes: TBytes): HResult; static;
+                     Digits: Cardinal; TwoCompl: Boolean): TF_RESULT; static;
+    class function ToBytes(A: PBigNumber; var Bytes: TBytes): TF_RESULT; static;
 
     class procedure Normalize(Inst: PBigNumber); static;
 
-    class function AllocNumber(var A: PBigNumber; NLimbs: Cardinal = 0): HResult; static;
+    class function AllocNumber(var A: PBigNumber; NLimbs: Cardinal = 0): TF_RESULT; static;
 
     class function AssignNumber(var A: PBigNumber; B: PBigNumber;
-                                ASign: Integer = 0): HResult; static;
+                                ASign: Integer = 0): TF_RESULT; static;
 
     class function AssignCardinal(var A: PBigNumber; const Value: Cardinal;
-                                ASign: Integer = 0): HResult; static;
+                                ASign: Integer = 0): TF_RESULT; static;
 
     class function AssignInteger(var A: PBigNumber; const Value: Integer;
-                                ASign: Integer = 0): HResult; static;
+                                ASign: Integer = 0): TF_RESULT; static;
 
     class function DivModLimbU(A: PBigNumber; Limb: TLimb;
-                               var Q: PBigNumber; var R: TLimb): HResult; stdcall; static;
+                               var Q: PBigNumber; var R: TLimb): TF_RESULT; stdcall; static;
 
     procedure Free; inline;
     class procedure FreeAndNil(var Inst: PBigNumber); static;
@@ -263,37 +266,41 @@ type
     function AsString: string;
     function AsHexString(Digits: Cardinal; TwoCompl: Boolean = False): string;
 
-    function SelfCopy(Inst: PBigNumber): HResult;
-    function SelfAddLimb(Value: TLimb): HResult;
-    function SelfAddLimbU(Value: TLimb): HResult;
+    function SelfCopy(Inst: PBigNumber): TF_RESULT;
+    function SelfAddLimb(Value: TLimb): TF_RESULT;
+    function SelfAddLimbU(Value: TLimb): TF_RESULT;
 
-    function SelfSubLimbU(Value: TLimb): HResult;
-    function SelfSubLimb(Value: TLimb): HResult;
+    function SelfSubLimbU(Value: TLimb): TF_RESULT;
+    function SelfSubLimb(Value: TLimb): TF_RESULT;
 
-    function SelfMulLimb(Value: TLimb): HResult;
-    function SelfDivModLimbU(Value: TLimb; var Remainder: TLimb): HResult;
+    function SelfMulLimb(Value: TLimb): TF_RESULT;
+    function SelfDivModLimbU(Value: TLimb; var Remainder: TLimb): TF_RESULT;
   end;
 
 // -- conversions to BigNumber
 
-  function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): HResult;
+  function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): HResult;
+  function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//  function BigNumberFromCardinal(var A: PBigNumber; Value: Cardinal): HResult;
-//    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): HResult;
+
+  function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): HResult;
+  function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//  function BigNumberFromInteger(var A: PBigNumber; Value: Integer): HResult;
-//    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
   function BigNumberFromPByte(var A: PBigNumber;
-               P: PByte; L: Cardinal; AllowNegative: Boolean): HResult;
+               P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+  function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
+           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+(*
   function BigNumberFromPWideChar(var A: PBigNumber;
                P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+*)
 
 {$IFDEF DEBUG}
 type
@@ -431,7 +438,7 @@ const
     );
 
 class function TBigNumber.AssignNumber(var A: PBigNumber; B: PBigNumber;
-                                       ASign: Integer = 0): HResult;
+                                       ASign: Integer = 0): TF_RESULT;
 var
   Used: Cardinal;
   Tmp: PBigNumber;
@@ -439,7 +446,7 @@ var
 begin
   Used:= B.FUsed;
   Result:= AllocNumber(Tmp, Used);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Move(B.FUsed, Tmp.FUsed, FUsedSize + Used * SizeOf(TLimb));
     if ASign = 0 then
       Tmp.FSign:= B.FSign
@@ -626,7 +633,7 @@ begin
   end;
 end;
 
-class function TBigNumber.AddNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.AddNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB: Cardinal;
   LimbsA, LimbsB: PLimb;
@@ -641,7 +648,7 @@ begin
 
   if A = B then begin
     Result:= AllocNumber(Tmp, UsedA + 1);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
     Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, UsedA);
 {
     if arrShlOne(@A.FLimbs, @Tmp.FLimbs, A.FUsed) <> 0
@@ -662,7 +669,7 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end;
 
@@ -672,7 +679,7 @@ begin
         R:= B;
         AddRef(R);
       end;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end;
 
@@ -681,7 +688,7 @@ begin
 
       if UsedA >= UsedB then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         if arrAdd(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB)
           then
             Tmp.FUsed:= UsedA + 1
@@ -691,7 +698,7 @@ begin
       end
       else begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         if arrAdd(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA)
           then
             Tmp.FUsed:= UsedB + 1
@@ -712,7 +719,7 @@ begin
         if Diff = 0 then begin
           if (R <> nil) then Release(R);
           R:= @BigNumZero;
-          Result:= TFL_S_OK;
+          Result:= TF_S_OK;
           Exit;
         end;
       end
@@ -721,7 +728,7 @@ begin
 
       if Diff > 0 then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
         Tmp.FUsed:= UsedA;
         Tmp.FSign:= A.FSign;
@@ -732,7 +739,7 @@ begin
       end
       else begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         arrSub(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA);
 
         Tmp.FUsed:= UsedB;
@@ -744,10 +751,10 @@ begin
       end;
     end;
   end;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
-class function TBigNumber.AddNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.AddNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB: Cardinal;
   LimbsA, LimbsB: PLimb;
@@ -761,7 +768,7 @@ begin
 
   if A = B then begin
     Result:= AllocNumber(Tmp, UsedA + 1);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
     Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, UsedA);
 {
     if arrShlOne(@A.FLimbs, @Tmp.FLimbs, A.FUsed) <> 0
@@ -782,7 +789,7 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end;
 
@@ -792,13 +799,13 @@ begin
         R:= B;
         AddRef(R);
       end;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end;
 
     if UsedA >= UsedB then begin
       Result:= AllocNumber(Tmp, UsedA + 1);
-      if Result <> TFL_S_OK then Exit;
+      if Result <> TF_S_OK then Exit;
       if arrAdd(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB)
         then
           Tmp.FUsed:= UsedA + 1
@@ -811,7 +818,7 @@ begin
     end
     else begin
       Result:= AllocNumber(Tmp, UsedB + 1);
-      if Result <> TFL_S_OK then Exit;
+      if Result <> TF_S_OK then Exit;
       if arrAdd(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA)
         then
           Tmp.FUsed:= UsedB + 1
@@ -822,10 +829,10 @@ begin
       R:= Tmp;
     end
   end;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
-class function TBigNumber.SubNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.SubNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB: Cardinal;
   LimbsA, LimbsB: PLimb;
@@ -841,7 +848,7 @@ begin
   if A = B then begin
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
     Exit;
   end
 
@@ -852,14 +859,14 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end;
 
     if (UsedA = 1) and (LimbsA^ = 0) { A = 0, B <> 0 } then begin
 
       Result:= AllocNumber(Tmp, B.FUsed);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         Move(B.FUsed, Tmp.FUsed, FUsedSize + B.FUsed * SizeOf(TLimb));
         Tmp.FSign:= not B.FSign;
         if (R <> nil) then Release(R);
@@ -875,7 +882,7 @@ begin
         if Diff = 0 then begin
           if (R <> nil) then Release(R);
           R:= @BigNumZero;
-          Result:= TFL_S_OK;
+          Result:= TF_S_OK;
           Exit;
         end;
       end
@@ -884,7 +891,7 @@ begin
 
       if Diff > 0 { Abs(A) > Abs(B) } then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
         Tmp.FUsed:= UsedA;
         Tmp.FSign:= A.FSign;
@@ -892,7 +899,7 @@ begin
       end
       else { Abs(A) < Abs(B) } begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         arrSub(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA);
 
         Tmp.FUsed:= UsedB;
@@ -910,7 +917,7 @@ begin
 
       if UsedA >= UsedB then begin
         Result:= AllocNumber(Tmp, UsedA + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         if arrAdd(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB)
           then
             Tmp.FUsed:= UsedA + 1
@@ -919,7 +926,7 @@ begin
       end
       else begin
         Result:= AllocNumber(Tmp, UsedB + 1);
-        if Result <> TFL_S_OK then Exit;
+        if Result <> TF_S_OK then Exit;
         if arrAdd(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA)
           then
             Tmp.FUsed:= UsedB + 1
@@ -935,10 +942,10 @@ begin
 
     end {Sign(A) <> Sign(B)};
   end { A <> B };
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
-class function TBigNumber.SubNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.SubNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB: Cardinal;
   LimbsA, LimbsB: PLimb;
@@ -954,7 +961,7 @@ begin
   if A = B then begin  { A - B = 0 }
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
     Exit;
   end
 
@@ -965,13 +972,13 @@ begin
         R:= A;
         AddRef(R);
       end;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end;
 
     if (UsedA = 1) and (LimbsA^ = 0) { A = 0, B <> 0 } then begin
 //      Result:= TFL_E_INVALIDSUB;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
       Exit;
     end;
 
@@ -981,7 +988,7 @@ begin
       if Diff = 0 then begin
         if (R <> nil) then Release(R);
         R:= @BigNumZero;
-        Result:= TFL_S_OK;
+        Result:= TF_S_OK;
         Exit;
       end;
     end
@@ -990,7 +997,7 @@ begin
 
     if Diff > 0 { A > B } then begin
       Result:= AllocNumber(Tmp, UsedA + 1);
-      if Result <> TFL_S_OK then Exit;
+      if Result <> TF_S_OK then Exit;
       arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
       Tmp.FUsed:= UsedA;
       Normalize(Tmp);
@@ -999,14 +1006,14 @@ begin
     end
     else { A < B } begin
 //      Result:= TFL_E_INVALIDSUB;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
       Exit;
     end;
   end;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
-class function TBigNumber.MulNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.MulNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, Used: Cardinal;
   Tmp: PBigNumber;
@@ -1015,7 +1022,7 @@ begin
   if A.IsZero or B.IsZero then begin
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     Tmp:= nil;
@@ -1025,7 +1032,7 @@ begin
     Used:= UsedA + UsedB;
 
     Result:= AllocNumber(Tmp, Used);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
 
     if UsedA >= UsedB
       then
@@ -1041,7 +1048,7 @@ begin
   end;
 end;
 
-class function TBigNumber.MulNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.MulNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, Used: Cardinal;
   Tmp: PBigNumber;
@@ -1050,7 +1057,7 @@ begin
   if A.IsZero or B.IsZero then begin
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     Tmp:= nil;
@@ -1060,7 +1067,7 @@ begin
     Used:= UsedA + UsedB;
 
     Result:= AllocNumber(Tmp, Used);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
 
     if UsedA >= UsedB
       then
@@ -1095,7 +1102,7 @@ end;
 {$ENDIF}
 
 class function TBigNumber.DivModLimbU(A: PBigNumber; Limb: TLimb;
-                          var Q: PBigNumber; var R: TLimb): HResult;
+                          var Q: PBigNumber; var R: TLimb): TF_RESULT;
 var
   Used: Cardinal;
   Tmp: PBigNumber;
@@ -1103,7 +1110,7 @@ var
 begin
   Used:= A.FUsed;
   Result:= AllocNumber(Tmp, Used);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     R:= arrDivModLimb(@A.FLimbs, @Tmp.FLimbs, Used, Limb);
     if Tmp.FLimbs[Used - 1] = 0 then Dec(Used);
     Tmp.FUsed:= Used;
@@ -1113,7 +1120,7 @@ begin
 end;
 
 class function TBigNumber.DivRemNumbers(A, B: PBigNumber;
-                                        var Q, R: PBigNumber): HResult;
+                                        var Q, R: PBigNumber): TF_RESULT;
 var
   Cond: Boolean;
   Diff: Integer;
@@ -1126,7 +1133,7 @@ var
 begin
   if B.IsZero then begin
 //    Result:= TFL_E_ZERODIVIDE;
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
@@ -1148,7 +1155,7 @@ begin
         if A.FSign xor B.FSign < 0
           then Q:= @BigNumMinusOne
           else Q:= @BigNumOne;
-        Result:= TFL_S_OK;
+        Result:= TF_S_OK;
         Exit;
       end
       else if Diff < 0 then Cond:= True;
@@ -1164,15 +1171,15 @@ begin
       R:= A;
       AddRef(R);
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
     Exit;
   end;
 
   Result:= AllocNumber(Quotient, UsedA - UsedB + 1);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
 
   Result:= AllocNumber(Remainder, UsedB);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
 
 // divisor (B) has only 1 limb
   if (UsedB = 1) then begin
@@ -1225,7 +1232,7 @@ begin
   Shift:= TLimbInfo.BitSize - SeniorBit(Limb);
 
   Result:= AllocNumber(Divisor, UsedB);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
 
   Divisor.FUsed:= UsedB;
   arrShlShort(@B.FLimbs, @Divisor.FLimbs, UsedB, Shift);
@@ -1233,7 +1240,7 @@ begin
 // create normalized dividend (same shift as divisor)
 
   Result:= AllocNumber(Dividend, UsedA + 1);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
   UsedD:= arrShlShort(@A.FLimbs, @Dividend.FLimbs, UsedA, Shift);
 
 // normalized dividend is 1 limb longer than non-normalized one (A);
@@ -1275,7 +1282,7 @@ begin
   R:= Remainder;
 end;
 
-class function TBigNumber.DivRemNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): HResult;
+class function TBigNumber.DivRemNumbersU(A, B: PBigNumber; var Q, R: PBigNumber): TF_RESULT;
 var
   Cond: Boolean;
   Diff: Integer;
@@ -1288,7 +1295,7 @@ var
 begin
   if B.IsZero then begin
 //    Result:= TFL_E_ZERODIVIDE;
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
@@ -1308,7 +1315,7 @@ begin
         R:= @BigNumZero;
         if (Q <> nil) then Release(Q);
         Q:= @BigNumOne;
-        Result:= TFL_S_OK;
+        Result:= TF_S_OK;
         Exit;
       end
       else if Diff < 0 then Cond:= True;
@@ -1324,7 +1331,7 @@ begin
       R:= A;
       AddRef(R);
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
     Exit;
   end;
 
@@ -1332,10 +1339,10 @@ begin
   if (UsedB = 1) then begin
 
     Result:= AllocNumber(Quotient, UsedA);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
 
     Result:= AllocNumber(Remainder, 1);
-    if Result <> TFL_S_OK then begin
+    if Result <> TF_S_OK then begin
       Release(Quotient);
       Exit;
     end;
@@ -1364,10 +1371,10 @@ begin
 // Now the real thing - big number division of length (used) > 1
 
   Result:= AllocNumber(Quotient, UsedA - UsedB + 1);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
 
   Result:= AllocNumber(Remainder, UsedB);
-  if Result <> TFL_S_OK then begin
+  if Result <> TF_S_OK then begin
     Release(Quotient);
     Exit;
   end;
@@ -1377,7 +1384,7 @@ begin
   Shift:= TLimbInfo.BitSize - SeniorBit(Limb);
 
   Result:= AllocNumber(Divisor, UsedB);
-  if Result <> TFL_S_OK then begin
+  if Result <> TF_S_OK then begin
     Release(Remainder);
     Release(Quotient);
     Exit;
@@ -1389,7 +1396,7 @@ begin
 // create normalized dividend (same shift as divisor)
 
   Result:= AllocNumber(Dividend, UsedA + 1);
-  if Result <> TFL_S_OK then begin
+  if Result <> TF_S_OK then begin
     Release(Divisor);
     Release(Remainder);
     Release(Quotient);
@@ -1428,7 +1435,7 @@ begin
   R:= Remainder;
 end;
 
-class function TBigNumber.AbsNumber(A: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.AbsNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
 
@@ -1439,11 +1446,11 @@ begin
       R:= A;
       AddRef(R);
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     Result:= AllocNumber(Tmp, A.FUsed);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
       if R <> nil then Release(R);
       R:= Tmp;
@@ -1451,7 +1458,7 @@ begin
   end;
 end;
 
-class function TBigNumber.NegateNumber(A: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.NegateNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
 
@@ -1459,11 +1466,11 @@ begin
   if A.IsZero then begin
     if R <> nil then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     Result:= AllocNumber(Tmp, A.FUsed);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
       if A.FSign >= 0 then Tmp.FSign:= -1;
 //      else Tmp.FSign:= 0;
@@ -1473,16 +1480,16 @@ begin
   end;
 end;
 
-class function TBigNumber.CopyNumber(A: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.CopyNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 begin
   if R <> nil then Release(R);
   R:= A;
   if A <> nil then AddRef(A);
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
 class function TBigNumber.AddIntLimb(A: PBigNumber; Limb: TIntLimb;
-                                     var R: PBigNumber): HResult;
+                                     var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   AbsLimb: TLimb;
@@ -1492,7 +1499,7 @@ begin
   UsedA:= A.FUsed;
   AbsLimb:= Abs(Limb);
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if A.FSign xor Integer(Limb) >= 0 then begin
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1570,7 +1577,7 @@ begin
 end;
 }
 class function TBigNumber.AddLimb(A: PBigNumber; Limb: TLimb;
-                                  var R: PBigNumber): HResult;
+                                  var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   Tmp: PBigNumber;
@@ -1578,7 +1585,7 @@ var
 begin
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if A.FSign >= 0 then begin
       if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1646,7 +1653,7 @@ begin
 end;
 *)
 class function TBigNumber.AddLimbU(A: PBigNumber; Limb: TLimb;
-                                   var R: PBigNumber): HResult;
+                                   var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   Tmp: PBigNumber;
@@ -1654,7 +1661,7 @@ var
 begin
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
       then Tmp.FUsed:= UsedA + 1
       else Tmp.FUsed:= UsedA;
@@ -1664,18 +1671,18 @@ begin
   end;
 end;
 
-function TBigNumber.SelfCopy(Inst: PBigNumber): HResult;
+function TBigNumber.SelfCopy(Inst: PBigNumber): TF_RESULT;
 begin
   if FCapacity <= Inst.FUsed then
-    Result:= TFL_E_NOMEMORY
+    Result:= TF_E_NOMEMORY
   else begin
     Move(Inst.FSign, FSign, Inst.FUsed * SizeOf(TLimb) + 2 * FUsedSize);
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
 function TBigNumber.SelfDivModLimbU(Value: TLimb;
-                                    var Remainder: TLimb): HResult;
+                                    var Remainder: TLimb): TF_RESULT;
 var
   Used: Cardinal;
 
@@ -1684,26 +1691,26 @@ begin
   Remainder:= arrSelfDivModLimb(@FLimbs, Used, Value);
   if (Used > 1) and (FLimbs[Used - 1] = 0) then
     FUsed:= Used - 1;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
-function TBigNumber.SelfMulLimb(Value: TLimb): HResult;
+function TBigNumber.SelfMulLimb(Value: TLimb): TF_RESULT;
 begin
   if Value = 0 then begin
     FUsed:= 1;
     FSign:= 0;
     FLimbs[0]:= 0;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else if FCapacity <= FUsed
-    then Result:= TFL_E_NOMEMORY
+    then Result:= TF_E_NOMEMORY
   else begin
     if arrSelfMulLimb(@FLimbs, Value, FUsed) then Inc(FUsed);
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
-function TBigNumber.SelfAddLimb(Value: TLimb): HResult;
+function TBigNumber.SelfAddLimb(Value: TLimb): TF_RESULT;
 var
   Used: Integer;
 //  Minus: Boolean;
@@ -1711,7 +1718,7 @@ var
 begin
   Used:= FUsed;
   if FCapacity <= Used then
-    Result:= TFL_E_NOMEMORY
+    Result:= TF_E_NOMEMORY
   else begin
     if (FSign >= 0) then begin
       if arrSelfAddLimb(@FLimbs, Value, Used) then
@@ -1734,26 +1741,26 @@ begin
         FSign:= 0;     // sign changed to plus
       end;
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
-function TBigNumber.SelfAddLimbU(Value: TLimb): HResult;
+function TBigNumber.SelfAddLimbU(Value: TLimb): TF_RESULT;
 var
   Used: Integer;
 
 begin
   Used:= FUsed;
   if FCapacity <= Used then
-    Result:= TFL_E_NOMEMORY
+    Result:= TF_E_NOMEMORY
   else begin
     if arrSelfAddLimb(@FLimbs, Value, Used) then
       FUsed:= Used + 1;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
-function TBigNumber.SelfSubLimbU(Value: TLimb): HResult;
+function TBigNumber.SelfSubLimbU(Value: TLimb): TF_RESULT;
 var
   Used: Cardinal;
 
@@ -1764,20 +1771,20 @@ begin
     if FLimbs[Used - 1] = 0 then begin
       FUsed:= Used - 1;
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     if FLimbs[0] >= Value then begin
       Dec(FLimbs[0], Value);
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end
     else
 //      Result:= TFL_E_INVALIDSUB;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
   end;
 end;
 
-function TBigNumber.SelfSubLimb(Value: TLimb): HResult;
+function TBigNumber.SelfSubLimb(Value: TLimb): TF_RESULT;
 var
   Used: Integer;
 
@@ -1786,11 +1793,11 @@ begin
 
   if FSign < 0 then begin
     if FCapacity <= Used then
-      Result:= TFL_E_NOMEMORY
+      Result:= TF_E_NOMEMORY
     else begin
       if arrSelfAddLimb(@FLimbs, Value, Used) then
         FUsed:= Used + 1;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end;
   end
   else begin
@@ -1811,12 +1818,12 @@ begin
         FSign:= -1;
       end;
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
 class function TBigNumber.SubLimb(A: PBigNumber; Limb: TLimb;
-                                  var R: PBigNumber): HResult;
+                                  var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   Tmp: PBigNumber;
@@ -1824,7 +1831,7 @@ var
 begin
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if (A.FSign < 0) then begin
       if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1856,7 +1863,7 @@ end;
 
 // R:= Limb - A
 class function TBigNumber.SubLimb2(A: PBigNumber; Limb: TLimb;
-                                  var R: PBigNumber): HResult;
+                                  var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   Tmp: PBigNumber;
@@ -1864,7 +1871,7 @@ var
 begin
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if (A.FSign < 0) then begin
       if arrAddLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -1896,7 +1903,7 @@ end;
 
 // R:= A - Limb
 class function TBigNumber.SubLimbU(A: PBigNumber; Limb: TLimb;
-                                   var R: PBigNumber): HResult;
+                                   var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   Tmp: PBigNumber;
@@ -1906,7 +1913,7 @@ begin
   if (UsedA = 1) then begin
     if A.FLimbs[0] >= Limb then begin
       Result:= AllocNumber(Tmp, 1);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         Tmp.FUsed:= 1;
         Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
         if (R <> nil) then Release(R);
@@ -1915,12 +1922,12 @@ begin
     end
     else begin { A < Limb }
 //      Result:= TFL_E_INVALIDSUB;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
     end;
   end
   else begin { UsedA > 1 }
     Result:= AllocNumber(Tmp, UsedA);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       arrSubLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA);
       if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
@@ -1956,7 +1963,7 @@ end;
 
 // R:= Limb - A
 class function TBigNumber.SubLimbU2(A: PBigNumber; Limb: TLimb;
-                                    var R: TLimb): HResult;
+                                    var R: TLimb): TF_RESULT;
 var
   UsedA: Cardinal;
 
@@ -1964,15 +1971,15 @@ begin
   UsedA:= A.FUsed;
   if (UsedA = 1) and (A.FLimbs[0] <= Limb) then begin
     R:= Limb - A.FLimbs[0];
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else { A > Limb }
 //    Result:= TFL_E_INVALIDSUB;
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
 end;
 
 class function TBigNumber.SubIntLimb(A: PBigNumber; Limb: TIntLimb;
-                                     var R: PBigNumber): HResult;
+                                     var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   AbsLimb: TLimb;
@@ -1982,7 +1989,7 @@ begin
   UsedA:= A.FUsed;
   AbsLimb:= Abs(Limb);
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if A.FSign xor Integer(Limb) < 0 then begin
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -2017,7 +2024,7 @@ end;
 
 // R:= Limb - A
 class function TBigNumber.SubIntLimb2(A: PBigNumber; Limb: TIntLimb;
-                                      var R: PBigNumber): HResult;
+                                      var R: PBigNumber): TF_RESULT;
 var
   UsedA: Cardinal;
   AbsLimb: TLimb;
@@ -2027,7 +2034,7 @@ begin
   UsedA:= A.FUsed;
   AbsLimb:= Abs(Limb);
   Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if A.FSign xor Integer(Limb) < 0 then begin
 // Abs(Tmp) = Abs(A) + Abs(Limb)
       if arrAddLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
@@ -2110,7 +2117,7 @@ begin
 end;
 *)
 class function TBigNumber.AssignCardinal(var A: PBigNumber;
-               const Value: Cardinal; ASign: Integer = 0): HResult;
+               const Value: Cardinal; ASign: Integer = 0): TF_RESULT;
 const
   CardSize = SizeOf(Cardinal) div SizeOf(TLimb);
 
@@ -2122,7 +2129,7 @@ begin
   Result:= TFL_E_NOTIMPL;
 {$ELSE}
   Result:= AllocNumber(Tmp, CardSize);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
   {$IF CardSize = 1}
     Tmp.FLimbs[0]:= Value;
   {$ELSE}
@@ -2137,7 +2144,7 @@ begin
 end;
 
 class function TBigNumber.AssignInteger(var A: PBigNumber;
-               const Value: Integer; ASign: Integer = 0): HResult;
+               const Value: Integer; ASign: Integer = 0): TF_RESULT;
 
 const
   IntSize = SizeOf(Integer) div SizeOf(TLimb);
@@ -2169,7 +2176,7 @@ begin
 {$IFEND}
 end;
 
-class function TBigNumber.ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): HResult;
+class function TBigNumber.ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): TF_RESULT;
 var
   BytesUsed: Cardinal;
   BytesReq: Cardinal;
@@ -2193,10 +2200,10 @@ begin
     if (P <> nil) and (L >= BytesReq) then begin
       Move(A.FLimbs, P^, BytesUsed);
       if NeedExtraByte then P[BytesUsed]:= 0;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end
     else begin
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
     end;
     L:= BytesReq;
   end
@@ -2225,22 +2232,22 @@ begin
         Dec(BytesUsed);
       end;
       if NeedExtraByte then P^:= $FF;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end
     else begin
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
     end;
     L:= BytesReq;
   end;
 end;
 
-class function TBigNumber.ToBytes(A: PBigNumber; var Bytes: TBytes): HResult;
+class function TBigNumber.ToBytes(A: PBigNumber; var Bytes: TBytes): TF_RESULT;
 var
   L: Cardinal;
 
 begin
   Result:= ToPByte(A, nil, L);
-  if Result = TFL_E_INVALIDARG then begin
+  if Result = TF_E_INVALIDARG then begin
     SetLength(Bytes, L);
     Result:= ToPByte(A, @Bytes[0], L);
   end;
@@ -2323,7 +2330,7 @@ begin
 end;
 *)
 
-class function TBigNumber.ToIntLimb(A: PBigNumber; var Value: TIntLimb): HResult;
+class function TBigNumber.ToIntLimb(A: PBigNumber; var Value: TIntLimb): TF_RESULT;
 const
   MaxValue = TLimb(TLimbInfo.MaxLimb shr 1 + 1);
 
@@ -2335,15 +2342,15 @@ begin
   if (A.FUsed > 1) or
     (Tmp > MaxValue) or ((Tmp = MaxValue) and (A.FSign >= 0))
   then
-    Result:= TFL_E_INVALIDARG
+    Result:= TF_E_INVALIDARG
   else begin
     if A.FSign >= 0 then Value:= TIntLimb(Tmp)
     else Value:= -TIntLimb(Tmp);
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
-class function TBigNumber.ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): HResult;
+class function TBigNumber.ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): TF_RESULT;
 const
   MaxValue = TDblLimb(TLimbInfo.MaxDblIntLimb) + TDblLimb(1);
 
@@ -2356,46 +2363,46 @@ begin
       Value:= TDblIntLimb(A.FLimbs[0])
     else
       Value:= -TDblIntLimb(A.FLimbs[0]);
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else if (A.FUsed = 2) then begin
     Tmp:= PDblLimb(@A.FLimbs)^;
     if (Tmp > MaxValue) or ((Tmp = MaxValue) and (A.FSign >= 0)) then
-      Result:= TFL_E_INVALIDARG
+      Result:= TF_E_INVALIDARG
     else begin
       if A.FSign >= 0 then Value:= TDblIntLimb(Tmp)
       else Value:= -TDblIntLimb(Tmp);
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end;
   end
   else
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
 end;
 
-class function TBigNumber.ToLimb(A: PBigNumber; var Value: TLimb): HResult;
+class function TBigNumber.ToLimb(A: PBigNumber; var Value: TLimb): TF_RESULT;
 begin
   if (A.FUsed > 1) or (A.FSign < 0) then
-    Result:= TFL_E_INVALIDARG
+    Result:= TF_E_INVALIDARG
   else begin
     Value:= A.FLimbs[0];
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
-class function TBigNumber.ToDblLimb(A: PBigNumber; var Value: TDblLimb): HResult;
+class function TBigNumber.ToDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT;
 begin
   if (A.FUsed > 2) or (A.FSign < 0) then
-    Result:= TFL_E_INVALIDARG
+    Result:= TF_E_INVALIDARG
   else begin
     Value:= PDblLimb(@A.FLimbs)^;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
 end;
 
 { TNumber --> string conversions }
 
 class function TBigNumber.ToHex(A: PBigNumber; P: PByte; var L: Integer;
-                          TwoCompl: Boolean): HResult;
+                          TwoCompl: Boolean): TF_RESULT;
 const
   ZERO_OFFSET = 48;   // Ord('0');
   A_OFFSET = 65;      // Ord('A');
@@ -2433,7 +2440,7 @@ begin
   end;
 
   if (P = nil) or (N > L) then begin
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
   end
   else begin
 //    if TwoCompl
@@ -2508,13 +2515,13 @@ begin
         Inc(I);
       end; }
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end;
   L:= N;
 end;
 
 class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
-                 Digits: Cardinal; TwoCompl: Boolean): HResult;
+                 Digits: Cardinal; TwoCompl: Boolean): TF_RESULT;
 var
   BytesUsed: Cardinal;
 {$IF SizeOf(TLimb) <> 1}
@@ -2623,11 +2630,11 @@ begin
               and (S[1] = 'F') and (S[2] >= '8') do
       S:= Copy(S, 2, Length(S) - 1);
   end;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
 class function TBigNumber.ToDec(A: PBigNumber; P: PByte;
-                                      var L: Integer): HResult;
+                                      var L: Integer): TF_RESULT;
 const
   ZERO_OFFSET = 48;  // Ord('0');
 
@@ -2642,21 +2649,27 @@ var
 begin
   Used:= A.FUsed;
   Result:= AllocNumber(Tmp, A.FUsed);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Move(A.FLimbs, Tmp.FLimbs, A.FUsed * SizeOf(TLimb));
     I:= 0;
     P1:= P;
     Used:= A.FUsed;
+
     repeat
       Digit:= arrSelfDivModLimb(@Tmp.FLimbs, Used, 10);
       if (P1 <> nil) and (I < L) then begin
         P1^:= Digit + ZERO_OFFSET;
         Inc(P1);
       end;
-      if (Used > 1) and (Tmp.FLimbs[Used - 1] = 0) then
-        Dec(Used);
       Inc(I);
-    until (Used <= 1) and (Tmp.FLimbs[0] = 0);
+      if (Tmp.FLimbs[Used - 1] = 0) then begin
+        if (Used > 1) then
+          Dec(Used)
+        else
+          Break;
+      end;
+    until False;
+
     Release(Tmp);
     L:= I;
     if (P <> nil) and (L >= I) then begin
@@ -2673,71 +2686,58 @@ begin
 //      Result:= TFL_S_OK;
     end
     else
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
   end;
 end;
 
-class function TBigNumber.ToString(A: PBigNumber; var S: string): HResult;
+
+class function TBigNumber.ToString(A: PBigNumber; var S: string): TF_RESULT;
 var
   Tmp: PBigNumber;
-  Used: Cardinal;
+  Used: Integer;
   I, J: Integer;
   Digits: array of Byte;
 
 begin
   S:= '';
-  if A.IsZero then begin
-    S:= '0';
-    Result:= S_OK;
-    Exit;
-  end;
 
-  Used:= A.FUsed;
-
-{$IF SizeOf(TLimb) = 1}         // max 3 decimal digits per byte
-  SetLength(Digits, Used * 3);
-{$ELSEIF SizeOf(TLimb) = 2}     // max 5 decimal digits per word
-  SetLength(Digits, Used * 5);
-{$ELSEIF SizeOf(TLimb) = 4}     // max 10 decimal digits per longword
-  SetLength(Digits, Used * 10);
-{$ELSE}
-  Result:= E_NOTIMPLEMENTED;
-  Exit;
-{$IFEND}
+// log(256) approximated from above by 41/17
+  SetLength(Digits, (GetSize(A) * 41) div 17 + 1);
 
   Result:= AllocNumber(Tmp, A.FUsed);
-  if Result <> S_OK then Exit;
-  Move(A.FUsed, Tmp.FUsed, FUsedSize + A.FUsed * SizeOf(TLimb));
+  if Result = TF_S_OK then begin
+    Move(A.FLimbs, Tmp.FLimbs, A.FUsed * SizeOf(TLimb));
+    I:= 0;
+    Used:= A.FUsed;
+    repeat
+      Digits[I]:= arrSelfDivModLimb(@Tmp.FLimbs, Used, 10);
+      Inc(I);
+      if (Tmp.FLimbs[Used - 1] = 0) then begin
+        if (Used > 1) then
+          Dec(Used)
+        else
+          Break;
+      end;
+    until False;
 
-  I:= 0;
-  while not Tmp.IsZero do begin
-    Used:= Tmp.FUsed;
-    Digits[I]:= arrSelfDivModLimb(@Tmp.FLimbs, Used, 10);
-    if (Used > 1) and (Tmp.FLimbs[Used - 1] = 0) then
-      Tmp.FUsed:= Used - 1;
+    Release(Tmp);
 
-//    Digits[I]:= SelfDivModLimb(Tmp, 10);
-    Inc(I);
+    if A.FSign < 0 then begin
+      Inc(I);
+      SetLength(S, I);
+      S[1]:= '-';
+      J:= 2;
+    end
+    else begin
+      SetLength(S, I);
+      J:= 1;
+    end;
+
+    while J <= I do begin
+      S[J]:= Chr(Ord('0') + Digits[I - J]);
+      Inc(J);
+    end;
   end;
-
-  Release(Tmp);
-
-  if A.FSign < 0 then begin
-    Inc(I);
-    SetLength(S, I);
-    S[1]:= '-';
-    J:= 2;
-  end
-  else begin
-    SetLength(S, I);
-    J:= 1;
-  end;
-
-  while J <= I do begin
-    S[J]:= Chr(Ord('0') + Digits[I - J]);
-    Inc(J);
-  end;
-
 end;
 
 (*
@@ -2767,13 +2767,13 @@ const
   BigNumPrefixSize = SizeOf(TBigNumber) - SizeOf(TBigNumber.TLimbArray);
 
 class function TBigNumber.AllocNumber(var A: PBigNumber;
-                                       NLimbs: Cardinal = 0): HResult;
+                                       NLimbs: Cardinal = 0): TF_RESULT;
 var
   BytesRequired: Cardinal;
 
 begin
   if NLimbs >= TLimbInfo.MaxCapacity then begin
-    Result:= TFL_E_NOMEMORY;
+    Result:= TF_E_NOMEMORY;
     Exit;
   end;
   BytesRequired:= NLimbs * SizeOf(TLimb) + BigNumPrefixSize;
@@ -2786,15 +2786,18 @@ begin
     A^.FUsed:= 1;
     A^.FSign:= 0;
     A^.FLimbs[0]:= 0;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   except
-    Result:= TFL_E_OUTOFMEMORY;
+    Result:= TF_E_OUTOFMEMORY;
   end;
 end;
 
-class function TBigNumber.FromString(var A: PBigNumber; const S: string): HResult;
+class function TBigNumber.FromString(var A: PBigNumber;
+               const S: string; TwoCompl: Boolean): TF_RESULT;
 begin
-  Result:= BigNumberFromPWideChar(A, PWideChar(Pointer(S)), Length(S), True);
+//  Result:= BigNumberFromPWideChar(A, PWideChar(Pointer(S)), Length(S), True);
+  Result:= BigNumberFromPChar(A, Pointer(S), Length(S),
+                              SizeOf(Char), True, TwoCompl);
 end;
 
 class function TBigNumber.GetIsEven(Inst: PBigNumber): Boolean;
@@ -2857,13 +2860,13 @@ begin
   until Limb = 0;
 end;
 
-class function TBigNumber.FromBytes(var A: PBigNumber; const Bytes: TBytes): HResult;
+class function TBigNumber.FromBytes(var A: PBigNumber; const Bytes: TBytes): TF_RESULT;
 begin
   Result:= BigNumberFromPByte(A, PByte(Bytes), Length(Bytes), True);
 end;
 
 class function TBigNumber.FromPCharHex(var A: PBigNumber; S: PChar; L: Integer;
-                 AllowNegative, TwoCompl: Boolean): HResult;
+                 AllowNegative, TwoCompl: Boolean): TF_RESULT;
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
    LIMB_SHIFT = 4;
@@ -2887,7 +2890,7 @@ var
 
 begin
   if L <= 0 then begin
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
   I:= 0;
@@ -2902,7 +2905,7 @@ begin
   end;
 
   if (L <= I) or (IsMinus and not AllowNegative) then begin
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
@@ -2911,7 +2914,7 @@ begin
 
   LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
   Result:= AllocNumber(Tmp, LimbsRequired);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
 
   N:= 0;
   Limb:= 0;
@@ -2926,7 +2929,7 @@ begin
         'a'..'f': Digit:= 10 + Ord(Ch) - Ord('a');
     else
         Release(Tmp);
-        Result:= TFL_E_INVALIDARG;
+        Result:= TF_E_INVALIDARG;
         Exit;
     end;
                       // shift digit to its position in a limb
@@ -2977,7 +2980,7 @@ begin
   Result:= (FUsed = 1) and (FLimbs[0] = 0);
 end;
 
-class function TBigNumber.ShlNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.ShlNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -2990,13 +2993,13 @@ begin
       R:= A;
       AddRef(R);
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     UsedA:= A.FUsed;
     UsedR:= UsedA + (Shift + TLimbInfo.BitSize - 1) div TLimbInfo.BitSize;
     Result:= AllocNumber(Tmp, UsedR);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       if Shift < TLimbInfo.BitSize then begin
         Tmp.FUsed:= arrShlShort(@A.FLimbs, @Tmp.FLimbs, UsedA, Shift);
       end
@@ -3015,7 +3018,7 @@ begin
   end;
 end;
 
-class function TBigNumber.ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -3028,7 +3031,7 @@ begin
       R:= A;
       AddRef(R);
     end;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin
     UsedA:= A.FUsed;
@@ -3038,12 +3041,12 @@ begin
       if A.FSign < 0
         then R:= @BigNumMinusOne
         else R:= @BigNumZero;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end
     else begin
       UsedR:= UsedA - LimbShift;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         BitShift:= Shift and TLimbInfo.BitShiftMask;
         Tmp.FUsed:=
           arrShrShort(@A.FLimbs[LimbShift], @Tmp.FLimbs, UsedR, BitShift);
@@ -3060,22 +3063,22 @@ begin
   end;
 end;
 
-class function TBigNumber.SqrtNumber(A: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.SqrtNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
   L: Cardinal;
 
 begin
   if A.FSign < 0 then begin
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
   end
   else begin
     Result:= AllocNumber(Tmp, (A.FUsed + 1) shr 1);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       L:= arrSqrt(@A.FLimbs, @Tmp.FLimbs, A.FUsed);
       if L = 0 then begin
         Release(Tmp);
-        Result:= TFL_E_OUTOFMEMORY;
+        Result:= TF_E_OUTOFMEMORY;
       end
       else begin
         Tmp.FUsed:= L;
@@ -3087,7 +3090,7 @@ begin
 end;
 
 // R:= A * Limb
-class function TBigNumber.MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): HResult;
+class function TBigNumber.MulIntLimb(A: PBigNumber; Limb: TIntLimb; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
   UsedA: Cardinal;
@@ -3097,12 +3100,12 @@ begin
   if (Limb = 0) or ((A.FUsed = 1) and (A.FLimbs[0] = 0)) then begin
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin            // Limb <> 0, A <> 0
     UsedA:= A.FUsed;
     Result:= AllocNumber(Tmp, UsedA + 1);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       AbsLimb:= Abs(Limb);
       if arrMulLimb(@A.FLimbs, AbsLimb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -3147,7 +3150,7 @@ begin
 end;
 *)
 
-class function TBigNumber.MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+class function TBigNumber.MulLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
   UsedA: Cardinal;
@@ -3156,12 +3159,12 @@ begin
   if (Limb = 0) then begin
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin              // Limb <> 0
     UsedA:= A.FUsed;
     Result:= AllocNumber(Tmp, UsedA + 1);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
 
       if arrMulLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -3175,7 +3178,7 @@ begin
   end;
 end;
 
-class function TBigNumber.MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): HResult;
+class function TBigNumber.MulLimbU(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
   UsedA: Cardinal;
@@ -3184,12 +3187,12 @@ begin
   if (Limb = 0) then begin
     if (R <> nil) then Release(R);
     R:= @BigNumZero;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
   end
   else begin              // Limb <> 0
     UsedA:= A.FUsed;
     Result:= AllocNumber(Tmp, UsedA + 1);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
 
       if arrMulLimb(@A.FLimbs, Limb, @Tmp.FLimbs, UsedA)
         then Tmp.FUsed:= UsedA + 1
@@ -3203,7 +3206,7 @@ end;
 
 // Q:= A div Limb, R:= A mod Limb
 class function TBigNumber.DivRemLimb(A: PBigNumber; Limb: TLimb;
-                                     var Q, R: PBigNumber): HResult;
+                                     var Q, R: PBigNumber): TF_RESULT;
 var
   TmpQ, TmpR: PBigNumber;
   UsedA: Cardinal;
@@ -3211,16 +3214,16 @@ var
 begin
   if (Limb = 0) then begin
 //    Result:= TFL_E_ZERODIVIDE;
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
                           // Limb > 0
   UsedA:= A.FUsed;
   Result:= AllocNumber(TmpQ, UsedA);
-  if Result <> TFL_S_OK then Exit;
+  if Result <> TF_S_OK then Exit;
 
   Result:= AllocNumber(TmpR, 1);
-  if Result <> TFL_S_OK then begin
+  if Result <> TF_S_OK then begin
     Release(TmpQ);
     Exit;
   end;
@@ -3248,7 +3251,7 @@ end;
 
 // Q:= Limb div A; R:= Limb mod A;
 class function TBigNumber.DivRemLimb2(A: PBigNumber; Limb: TLimb;
-                                      var Q: PBigNumber; var R: TLimb): HResult;
+                                      var Q: PBigNumber; var R: TLimb): TF_RESULT;
 var
   TmpQ: PBigNumber;
   UsedA: Cardinal;
@@ -3258,12 +3261,12 @@ begin
   if (UsedA = 1) then begin
     if (A.FLimbs[0] = 0) then begin
 //      Result:= TFL_E_ZERODIVIDE;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
       Exit;
     end
     else begin
       Result:= AllocNumber(TmpQ, 1);
-      if Result <> TFL_S_OK then Exit;
+      if Result <> TF_S_OK then Exit;
       TmpQ.FLimbs[0]:= Limb div A.FLimbs[0];
       if TmpQ.FLimbs[0] <> 0
         then TmpQ.FSign:= A.FSign;
@@ -3272,7 +3275,7 @@ begin
   end
   else begin
     Result:= AllocNumber(TmpQ, UsedA);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
     TmpQ.FLimbs[0]:= 0;
     R:= Limb;
   end;
@@ -3281,7 +3284,7 @@ begin
 end;
 
 class function TBigNumber.DivRemLimbU(A: PBigNumber; Limb: TLimb;
-                                      var Q: PBigNumber; var R: TLimb): HResult;
+                                      var Q: PBigNumber; var R: TLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
   UsedA: Cardinal;
@@ -3289,13 +3292,13 @@ var
 begin
   if (Limb = 0) then begin
 //    Result:= TFL_E_ZERODIVIDE;
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
                           // Limb > 0
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if UsedA = 1 then begin
       Tmp.FLimbs[0]:= A.FLimbs[0] div Limb;
       R:= A.FLimbs[0] mod Limb;
@@ -3313,12 +3316,12 @@ end;
 
 // Q:= Limb div A; R:= Limb mod A;
 class function TBigNumber.DivRemLimbU2(A: PBigNumber; Limb: TLimb;
-                                      var Q: TLimb; var R: TLimb): HResult;
+                                      var Q: TLimb; var R: TLimb): TF_RESULT;
 begin
   if (A.FUsed = 1) then begin
     if (A.FLimbs[0] = 0) then begin
 //      Result:= TFL_E_ZERODIVIDE;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
       Exit;
     end
     else begin
@@ -3330,11 +3333,11 @@ begin
     Q:= 0;
     R:= Limb;
   end;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
 class function TBigNumber.DivRemIntLimb(A: PBigNumber; Limb: TIntLimb;
-                                       var Q: PBigNumber; var R: TIntLimb): HResult;
+                                       var Q: PBigNumber; var R: TIntLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
   UsedA: Cardinal;
@@ -3342,13 +3345,13 @@ var
 begin
   if (Limb = 0) then begin
 //    Result:= TFL_E_ZERODIVIDE;
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
                           // Limb > 0
   UsedA:= A.FUsed;
   Result:= AllocNumber(Tmp, UsedA);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
 
     if UsedA = 1 then begin
       Tmp.FLimbs[0]:= A.FLimbs[0] div TLimb(Abs(Limb));
@@ -3375,12 +3378,12 @@ end;
 
 // Q:= Limb div A, R:= Limb mod A
 class function TBigNumber.DivRemIntLimb2(A: PBigNumber; Limb: TIntLimb;
-                                        var Q: TIntLimb; var R: TIntLimb): HResult;
+                                        var Q: TIntLimb; var R: TIntLimb): TF_RESULT;
 begin
   if (A.FUsed = 1) then begin
     if (A.FLimbs[0] = 0) then begin
 //      Result:= TFL_E_ZERODIVIDE;
-      Result:= TFL_E_INVALIDARG;
+      Result:= TF_E_INVALIDARG;
       Exit;
     end
     else begin
@@ -3403,7 +3406,7 @@ begin
     Q:= 0;
     R:= Limb;
   end;
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
 end;
 
 class procedure TBigNumber.Normalize(Inst: PBigNumber);
@@ -3421,7 +3424,7 @@ begin
   else Inst.FUsed:= Used;
 end;
 
-class function TBigNumber.AndNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.AndNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -3435,13 +3438,13 @@ begin
         then UsedR:= UsedB
         else UsedR:= UsedA;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then
+      if Result = TF_S_OK then
         arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedR);
     end
     else begin
       UsedR:= UsedA;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then
+      if Result = TF_S_OK then
         arrAndTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
     end
   end
@@ -3449,14 +3452,14 @@ begin
     if B.FSign >= 0 then begin
       UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then
+      if Result = TF_S_OK then
         arrAndTwoCompl(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
     end
     else begin
       if UsedA >= UsedB then begin
         UsedR:= UsedA;
         Result:= AllocNumber(Tmp, UsedR + 1);
-        if Result = TFL_S_OK then begin
+        if Result = TF_S_OK then begin
           if arrAndTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB)
             then Inc(UsedR);
         end;
@@ -3464,7 +3467,7 @@ begin
       else begin
         UsedR:= UsedB;
         Result:= AllocNumber(Tmp, UsedR + 1);
-        if Result = TFL_S_OK then begin
+        if Result = TF_S_OK then begin
           if arrAndTwoCompl2(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA)
             then Inc(UsedR);
         end;
@@ -3472,7 +3475,7 @@ begin
       Tmp.FSign:= -1;
     end;
   end;
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
     if R <> nil then Release(R);
@@ -3480,7 +3483,7 @@ begin
   end;
 end;
 
-class function TBigNumber.AndNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.AndNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -3492,7 +3495,7 @@ begin
     then UsedR:= UsedB
     else UsedR:= UsedA;
   Result:= AllocNumber(Tmp, UsedR);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedR);
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
@@ -3502,7 +3505,7 @@ begin
 end;
 
 class function TBigNumber.OrNumbers(A, B: PBigNumber;
-  var R: PBigNumber): HResult;
+  var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -3518,7 +3521,7 @@ begin
         then UsedR:= UsedA
         else UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrOr(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
       end;
     end
@@ -3526,7 +3529,7 @@ begin
                                       // A >= 0, B < 0
       UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrOrTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
         Tmp.FSign:= -1;
       end;
@@ -3537,7 +3540,7 @@ begin
                                       // A < 0, B >= 0
       UsedR:= UsedA;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrOrTwoCompl(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
         Tmp.FSign:= -1;
       end;
@@ -3548,13 +3551,13 @@ begin
         then UsedR:= UsedB
         else UsedR:= UsedA;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrOrTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
         Tmp.FSign:= -1;
       end
     end;
   end;
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
     if R <> nil then Release(R);
@@ -3562,7 +3565,7 @@ begin
   end;
 end;
 
-class function TBigNumber.OrNumbersU(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.OrNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB: Cardinal;
   Tmp: PBigNumber;
@@ -3572,7 +3575,7 @@ begin
   UsedB:= B.FUsed;
   if UsedA >= UsedB then begin
     Result:= AllocNumber(Tmp, UsedA);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       arrOr(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
       Tmp.FUsed:= UsedA;
       if R <> nil then Release(R);
@@ -3581,7 +3584,7 @@ begin
   end
   else begin
     Result:= AllocNumber(Tmp, UsedB);
-    if Result = TFL_S_OK then begin
+    if Result = TF_S_OK then begin
       arrOr(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
       Tmp.FUsed:= UsedB;
       if R <> nil then Release(R);
@@ -3590,7 +3593,7 @@ begin
   end;
 end;
 
-class function TBigNumber.XorNumbers(A, B: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.XorNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, UsedR: Cardinal;
   Tmp: PBigNumber;
@@ -3606,7 +3609,7 @@ begin
         then UsedR:= UsedA
         else UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrXor(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
       end;
     end
@@ -3616,7 +3619,7 @@ begin
         then UsedR:= UsedA
         else UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrXorTwoCompl(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
         Tmp.FSign:= -1;
       end;
@@ -3629,7 +3632,7 @@ begin
         then UsedR:= UsedA
         else UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrXorTwoCompl(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
         Tmp.FSign:= -1;
       end;
@@ -3640,12 +3643,12 @@ begin
         then UsedR:= UsedA
         else UsedR:= UsedB;
       Result:= AllocNumber(Tmp, UsedR);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         arrXorTwoCompl2(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
       end
     end;
   end;
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
     if R <> nil then Release(R);
@@ -3668,7 +3671,7 @@ end;
   }
 *)
 
-class function TBigNumber.Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
 var
   Tmp, TmpR: PBigNumber;
 
@@ -3677,7 +3680,7 @@ begin
     if R <> nil then Release(R);
     if A.IsZero then R:= @BigNumZero
     else R:= @BigNumOne;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
     Exit;
   end;
 
@@ -3685,18 +3688,18 @@ begin
   Tmp:= A;
   AddRef(Tmp);
 
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
   while APower > 0 do begin
     if Odd(APower) then begin
       Result:= MulNumbers(Tmp, TmpR, TmpR);
-      if Result <> TFL_S_OK then Break;
+      if Result <> TF_S_OK then Break;
       if APower = 1 then Break;
     end;
     Result:= MulNumbers(Tmp, Tmp, Tmp);
-    if Result <> TFL_S_OK then Break;
+    if Result <> TF_S_OK then Break;
     APower:= APower shr 1;
   end;
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if (R <> nil) then Release(R);
     R:= TmpR;
   end
@@ -3705,7 +3708,7 @@ begin
   Release(Tmp);
 end;
 
-class function TBigNumber.PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): HResult;
+class function TBigNumber.PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
 var
   Tmp, TmpR: PBigNumber;
 
@@ -3714,7 +3717,7 @@ begin
     if R <> nil then Release(R);
     if A.IsZero then R:= @BigNumZero
     else R:= @BigNumOne;
-    Result:= TFL_S_OK;
+    Result:= TF_S_OK;
     Exit;
   end;
 
@@ -3722,18 +3725,18 @@ begin
   Tmp:= A;
   AddRef(Tmp);
 
-  Result:= TFL_S_OK;
+  Result:= TF_S_OK;
   while APower > 0 do begin
     if Odd(APower) then begin
       Result:= MulNumbersU(Tmp, TmpR, TmpR);
-      if Result <> TFL_S_OK then Break;
+      if Result <> TF_S_OK then Break;
       if APower = 1 then Break;
     end;
     Result:= MulNumbersU(Tmp, Tmp, Tmp);
-    if Result <> TFL_S_OK then Break;
+    if Result <> TF_S_OK then Break;
     APower:= APower shr 1;
   end;
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     if (R <> nil) then Release(R);
     R:= TmpR;
   end
@@ -3742,7 +3745,7 @@ begin
   Release(Tmp);
 end;
 
-class function TBigNumber.PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): HResult;
+class function TBigNumber.PowerMod(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   Tmp, TmpR, Q: PBigNumber;
   Used, I: Cardinal;
@@ -3815,9 +3818,9 @@ begin
 end;
 
 class function TBigNumber.QueryIntf(Inst: PBigNumber; const IID: TGUID;
-  out Obj): HResult;
+  out Obj): TF_RESULT;
 begin
-  Result:= E_NOINTERFACE;
+  Result:= TF_E_NOINTERFACE;
 end;
 
 class function TBigNumber.Addref(Inst: PBigNumber): Integer;
@@ -3858,26 +3861,26 @@ end;
 
 // ------------------------------------------------------------- //
 
-function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): HResult;
+function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
 
 begin
   Result:= TBigNumber.AllocNumber(Tmp, 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Tmp.FLimbs[0]:= Value;
     if (A <> nil) then TBigNumber.Release(A);
     A:= Tmp;
   end;
 end;
 
-function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): HResult;
+function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
 
 begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     PDblLimb(@Tmp.FLimbs)^:= Value;
     if (A <> nil) then TBigNumber.Release(A);
     A:= Tmp;
@@ -3911,13 +3914,13 @@ begin
 {$IFEND}
 end;
 *)
-function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): HResult;
+function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
 
 begin
   Result:= TBigNumber.AllocNumber(Tmp, 1);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     Tmp.FLimbs[0]:= Abs(Value);
     if Value < 0 then Tmp.FSign:= -1;
     if (A <> nil) then TBigNumber.Release(A);
@@ -3925,13 +3928,13 @@ begin
   end;
 end;
 
-function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): HResult;
+function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
 
 begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
-  if Result = TFL_S_OK then begin
+  if Result = TF_S_OK then begin
     PDblLimb(@Tmp.FLimbs)^:= Abs(Value);
     if Value < 0 then Tmp.FSign:= -1;
     if (A <> nil) then TBigNumber.Release(A);
@@ -3971,7 +3974,7 @@ begin
 end;
 *)
 function BigNumberFromPByte(var A: PBigNumber;
-               P: PByte; L: Cardinal; AllowNegative: Boolean): HResult;
+               P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT;
 var
   SeniorByte: Byte;
   Tmp: PBigNumber;
@@ -3986,12 +3989,12 @@ begin
     if L = 0 then begin
       if A <> nil then TBigNumber.Release(A);
       A:= @BigNumZero;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
     end
     else begin
       Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
       Result:= TBigNumber.AllocNumber(Tmp, Used);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         Tmp.FLimbs[Used - 1]:= 0;
         Move(P^, Tmp.FLimbs, L);
         Tmp.FUsed:= Used;
@@ -4005,13 +4008,13 @@ begin
     if L = 0 then begin
       if A <> nil then TBigNumber.Release(A);
       A:= @BigNumMinusOne;
-      Result:= TFL_S_OK;
+      Result:= TF_S_OK;
       Exit;
     end
     else begin
       Used:= (L + SizeOf(TLimb) - 1) div SizeOf(TLimb);
       Result:= TBigNumber.AllocNumber(Tmp, Used);
-      if Result = TFL_S_OK then begin
+      if Result = TF_S_OK then begin
         Tmp.FLimbs[Used - 1]:= TLimbInfo.MaxLimb;
         Move(P^, Tmp.FLimbs, L);
         Tmp.FUsed:= Used;
@@ -4025,9 +4028,250 @@ begin
     end;
   end
   else
-    Result:= TFL_E_INVALIDARG;
+    Result:= TF_E_INVALIDARG;
 end;
 
+(*
+function GetChar(P: PByte; Index, Size: Integer): Cardinal;
+begin
+  Inc(P, Index * Size);
+  if Size = 2 then Result:= PWord(P)^
+  else if Size = 4 then Result:= PLongWord(P)^
+  else Result:= P^;
+end;
+var
+  Tmp: Cardinal;
+  I: Integer;
+
+  Result:= P^;
+  I:= 1;
+  while I < Size do begin
+    Inc(P);
+    Tmp:= P^;
+    Result:= Result or (Tmp shl (I * 8));
+    Inc(I);
+  end;
+end;
+*)
+
+type
+  TGetChar = function(P: Pointer; Index: Integer): Cardinal;
+
+function GetChar1(P: Pointer; Index: Integer): Cardinal;
+begin
+  Result:= (PByte(P) + Index)^;
+end;
+
+function GetChar2(P: Pointer; Index: Integer): Cardinal;
+begin
+  Result:= (PWord(P) + Index)^;
+end;
+
+function GetChar4(P: Pointer; Index: Integer): Cardinal;
+begin
+  Result:= (PLongWord(P) + Index)^;
+end;
+
+const
+{$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
+   LIMB_SHIFT = 4;
+{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
+   LIMB_SHIFT = 3;
+{$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
+   LIMB_SHIFT = 2;
+{$ELSE}                         // 2 hex digits per byte limb
+   LIMB_SHIFT = 1;
+{$IFEND}
+
+function BigNumberFromPCharHex(var A: PBigNumber; P: PByte; L: Integer;
+            GetChar: TGetChar; AllowNegative, TwoCompl: Boolean): TF_RESULT;
+var
+  IsMinus: Boolean;
+  I, N: Integer;
+  Limb: TLimb;
+  Carry: Boolean;
+  Digit: Cardinal;
+  Ch: Cardinal;
+  LimbsRequired: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  I:= 0;
+  if L > 0 then begin
+                              // S is zero-based PChar
+    if TwoCompl then begin
+      IsMinus:= (GetChar(P, 0) >= Ord('8'));
+      TwoCompl:= TwoCompl and IsMinus;
+    end
+{    else begin
+      IsMinus:= GetChar(P, 0) = Ord('-');
+      if IsMinus then Inc(I);
+    end;}
+  end;
+
+  if (L <= I) or (IsMinus and not AllowNegative) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  N:= L - I;                // number of hex digits;
+                            //   1 limb holds 2 * SizeOf(TLimb) hex digits
+
+  LimbsRequired:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
+  Result:= TBigNumber.AllocNumber(Tmp, LimbsRequired);
+  if Result <> TF_S_OK then Exit;
+
+  N:= 0;
+  Limb:= 0;
+  Carry:= True;
+
+  repeat
+                    // moving from end of string
+    Ch:= GetChar(P, L - N - 1);
+    case Ch of
+        Ord('0')..Ord('9'): Digit:= Ch - Ord('0');
+        Ord('A')..Ord('F'): Digit:= 10 + Ch - Ord('A');
+        Ord('a')..Ord('f'): Digit:= 10 + Ch - Ord('a');
+    else
+        TBigNumber.Release(Tmp);
+        Result:= TF_E_INVALIDARG;
+        Exit;
+    end;
+                      // shift digit to its position in a limb
+    Limb:= Limb + (Digit shl ((N and (2 * SizeOf(TLimb) - 1)) shl 2));
+
+    Inc(N);
+    if N and (2 * SizeOf(TLimb) - 1) = 0 then begin
+
+      if TwoCompl then begin
+        Limb:= not Limb;
+        if Carry then begin
+          Inc(Limb);
+          Carry:= Limb = 0;
+        end;
+      end;
+
+      Tmp^.FLimbs[N shr LIMB_SHIFT - 1]:= Limb;
+      Limb:= 0;
+    end;
+  until I + N >= L;
+
+  if N and (2 * SizeOf(TLimb) - 1) <> 0 then begin
+    if TwoCompl then begin
+      Limb:= TLimb((-1) shl ((N and (2 * SizeOf(TLimb) - 1)) * 4)) or Limb;
+      Limb:= not Limb;
+      if Carry then Inc(Limb);
+    end;
+    Tmp^.FLimbs[N shr LIMB_SHIFT]:= Limb;
+  end;
+
+  N:= (N + 2 * SizeOf(TLimb) - 1) shr LIMB_SHIFT;
+  Tmp^.FUsed:= N;
+
+  TBigNumber.Normalize(Tmp);
+  if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
+    then Tmp.FSign:= -1;
+  if A <> nil then TBigNumber.Release(A);
+  A:= Tmp;
+end;
+
+function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
+         CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT;
+var
+  IsMinus, IsHex: Boolean;
+  I, N: Cardinal;
+  Digit: Cardinal;
+  Ch: Cardinal;
+  Tmp: PBigNumber;
+  GetChar: TGetChar;
+
+begin
+  if L <= 0 then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  case CharSize of
+    1: GetChar:= GetChar1;
+    2: GetChar:= GetChar2;
+    4: GetChar:= GetChar4;
+  else
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  IsMinus:= GetChar(P, 0) = Ord('-');
+  if IsMinus then begin
+    Dec(L);
+    if (L <= 0) or not AllowNegative or TwoCompl then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+    Inc(P, CharSize);
+  end;
+  IsHex:= GetChar(P, 0) = Ord('$');
+  if IsHex then begin
+    Inc(P, CharSize);
+    Dec(L);
+  end
+  else begin
+    IsHex:= (L > 1) and (GetChar(P, 0) = Ord('0'))
+                    and (GetChar(P, 1) = Ord('x'));
+    if IsHex then begin
+      Inc(P, 2 * CharSize);
+      Dec(L, 2);
+    end;
+  end;
+  if IsHex then begin
+    Result:= BigNumberFromPCharHex(A, P, L, GetChar, AllowNegative, TwoCompl);
+    if (Result = TF_S_OK) and IsMinus then begin
+      if A.FSign < 0 then A.FSign:= 0
+      else A.FSign:= -1;
+    end;
+  end
+  else begin
+    I:= 0;
+               // number of decimal digits
+               // good rational approximations from above
+               //   to log2(10) / 8 are:
+               //     98981 / 238370;  267 / 643;  49 / 118;  5 / 12
+
+               // number of bytes to hold these digits
+    N:= (Cardinal(L) * 49) div 118 + 1;
+
+               // number of limbs to hold these digits
+{$IF SizeOf(TLimb) > 1}
+    N:= (N + SizeOf(TLimb) - 1) shr (LIMB_SHIFT - 1);
+{$IFEND}
+
+    Result:= TBigNumber.AllocNumber(Tmp, N);
+    if Result <> TF_S_OK then Exit;
+// Tmp = 0 here
+    repeat
+      Ch:= GetChar(P, I);
+      case Ch of
+        Ord('0')..Ord('9'): begin
+          Digit:= Ch - Ord('0');
+// Tmp:= Tmp * 10 + Digit;
+          if arrSelfMulLimb(@Tmp^.FLimbs, 10, Tmp^.FUsed) then
+            Inc(Tmp^.FUsed);
+          if arrSelfAddLimb(@Tmp^.FLimbs, Digit, Tmp^.FUsed) then
+            Inc(Tmp^.FUsed);
+        end;
+      else
+        TBigNumber.Release(Tmp);
+        Result:= TF_E_INVALIDARG;
+        Exit;
+      end;
+      Inc(I);
+
+    until I >= L;
+    if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
+      then Tmp.FSign:= -1;
+    if A <> nil then TBigNumber.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+(*
 function BigNumberFromPWideChar(var A: PBigNumber;
                P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;
 const
@@ -4084,7 +4328,7 @@ begin
 {$IFEND}
 
     Result:= TBigNumber.AllocNumber(Tmp, N);
-    if Result <> TFL_S_OK then Exit;
+    if Result <> TF_S_OK then Exit;
 // Tmp = 0 here
     repeat
       Ch:= P[I];
@@ -4111,6 +4355,7 @@ begin
     A:= Tmp;
   end;
 end;
+*)
 
 end.
 

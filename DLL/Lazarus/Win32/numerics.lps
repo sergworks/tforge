@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="9"/>
+    <BuildModes Active="Default"/>
+    <Units Count="6">
+      <Unit0>
+        <Filename Value="numerics.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="numerics"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="40" Y="10"/>
+        <UsageCount Value="28"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="..\..\..\Source\Common\tfLimbs.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfLimbs"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="4" Y="10"/>
+        <UsageCount Value="28"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="..\..\..\Source\Include\TFL.inc"/>
+        <IsPartOfProject Value="True"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="1"/>
+        <UsageCount Value="28"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\Source\Engine\arrProcs.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="arrProcs"/>
+        <UsageCount Value="28"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\Source\Engine\tfNumbers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfNumbers"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="3526"/>
+        <CursorPos X="110" Y="3941"/>
+        <UsageCount Value="28"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\..\Source\Common\tfTypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfTypes"/>
+        <UsageCount Value="28"/>
+      </Unit5>
+    </Units>
+    <General>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <JumpHistory Count="0" HistoryIndex="-1"/>
+  </ProjectSession>
+</CONFIG>

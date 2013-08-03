@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
 { * ------------------------------------------------------- * }
 { *   # client unit                                         * }
 { *   # exports: BigCardinal, BigInteger                    * }
@@ -25,9 +25,10 @@ type
     FNumber: IBigNumber;
   public
     function ToString: string;
-    function ToHexString(Digits: Integer = 0; const Prefix: string = ''): string;
+    function ToHexString(Digits: Integer = 0; const Prefix: string = '';
+                         TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
-    function TryParse(const S: string): Boolean;
+    function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
     procedure Free;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
@@ -153,7 +154,7 @@ type
     function ToHexString(Digits: Integer = 0; const Prefix: string = '';
                          TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
-    function TryParse(const S: string): Boolean;
+    function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
     procedure Free;
 
     property Sign: Integer read GetSign;
@@ -308,32 +309,32 @@ type
 type
   EBigNumberError = class(Exception)
   private
-    FCode: HResult;
+    FCode: TF_RESULT;
   public
-    constructor Create(ACode: HResult; const Msg: string);
-    property Code: HResult read FCode;
+    constructor Create(ACode: TF_RESULT; const Msg: string);
+    property Code: TF_RESULT read FCode;
   end;
 
-procedure BigNumberError(ACode: HResult; const Msg: string);
+procedure BigNumberError(ACode: TF_RESULT; const Msg: string);
 
 implementation
 
 { EBigNumberError }
 
-constructor EBigNumberError.Create(ACode: HResult; const Msg: string);
+constructor EBigNumberError.Create(ACode: TF_RESULT; const Msg: string);
 begin
   inherited Create(Msg);
   FCode:= ACode;
 end;
 
-procedure BigNumberError(ACode: HResult; const Msg: string);
+procedure BigNumberError(ACode: TF_RESULT; const Msg: string);
 begin
   raise EBigNumberError.Create(ACode, Msg);
 end;
 
-procedure HResCheck(Value: HResult; const ErrMsg: string); inline;
+procedure HResCheck(Value: TF_RESULT; const ErrMsg: string); inline;
 begin
-  if Value <> S_OK then
+  if Value <> TF_S_OK then
     BigNumberError(Value, ErrMsg);
 end;
 
@@ -346,7 +347,7 @@ var
   L, L1: Integer;
   P, P1: PByte;
   I: Integer;
-  HR: HResult;
+  HR: TF_RESULT;
 
 begin
   BytesUsed:= FNumber.GetSize;
@@ -357,7 +358,7 @@ begin
     L1:= L;
     HR:= FNumber.ToDec(P, L1);
 // -- kludge
-    if HR = TFL_E_INVALIDARG then begin
+    if HR = TF_E_INVALIDARG then begin
       FreeMem(P);
       L:= L1;
       GetMem(P, L);
@@ -381,21 +382,22 @@ begin
 {$ENDIF}
 end;
 
-function BigCardinal.ToHexString(Digits: Integer; const Prefix: string): string;
+function BigCardinal.ToHexString(Digits: Integer; const Prefix: string;
+                         TwoCompl: Boolean): string;
 {$IFDEF TFL_DLL}
 var
   L, L1: Integer;
   P, P1: PByte;
-  HR: HResult;
+  HR: TF_RESULT;
   I: Integer;
 
 begin
-  HR:= FNumber.ToHex(nil, L, False);
-  if HR = TFL_E_INVALIDARG then begin
+  HR:= FNumber.ToHex(nil, L, TwoCompl);
+  if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
       L1:= L;
-      HResCheck(FNumber.ToHex(P, L1, False),
+      HResCheck(FNumber.ToHex(P, L1, TwoCompl),
                        'BigCardinal -> hex string conversion error');
       if Digits < L1 then Digits:= L1;
       Inc(Digits, Length(Prefix));
@@ -428,13 +430,13 @@ end;
 function BigCardinal.ToBytes: TBytes;
 {$IFDEF TFL_DLL}
 var
-  HR: HResult;
+  HR: TF_RESULT;
   L: Cardinal;
 
 begin
   L:= 0;
   HR:= FNumber.ToPByte(nil, L);
-  if (HR = TFL_E_INVALIDARG) and (L > 0) then begin
+  if (HR = TF_E_INVALIDARG) and (L > 0) then begin
     SetLength(Result, L);
     HR:= FNumber.ToPByte(Pointer(Result), L);
   end;
@@ -446,20 +448,15 @@ begin
     'BigCardinal -> TBytes conversion error');
 end;
 
-function BigCardinal.TryParse(const S: string): Boolean;
+function BigCardinal.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 {$IFDEF TFL_DLL}
-//var
-//  WS: WideString;
-
 begin
-//  WS:= WideString(S);
-//  Result:= WideStringToBigNumberU(FNumber, WS) = TFL_S_OK;
-  Result:= BigNumberFromPWideChar(FNumber, Pointer(S), Length(S),
-              False) = TFL_S_OK;
+  Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
+                              SizeOf(Char), False, TwoCompl) = TF_S_OK;
 {$ELSE}
 begin
-  Result:= BigNumberFromPWideChar(PBigNumber(FNumber), Pointer(S), Length(S),
-              False) = TFL_S_OK;
+  Result:= BigNumberFromPChar(PBigNumber(FNumber), Pointer(S), Length(S),
+                              SizeOf(Char), False, TwoCompl) = TF_S_OK;
 {$ENDIF}
 end;
 
@@ -542,18 +539,13 @@ end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
 {$IFDEF TFL_DLL}
-//var
-//  WS: WideString;
-
 begin
-//  WS:= WideString(S);
-//  HResCheck(WideStringToBigNumberU(FNumber, WS),
-  HResCheck(BigNumberFromPWideChar(Result.FNumber, Pointer(Value),
-            Length(Value), False),
+  HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
+                               SizeOf(Char), False, False),
 {$ELSE}
 begin
-  HResCheck(BigNumberFromPWideChar(PBigNumber(Result.FNumber), Pointer(Value),
-            Length(Value), False),
+  HResCheck(BigNumberFromPChar(PBigNumber(Result.FNumber), Pointer(Value),
+            Length(Value), SizeOf(Char), False, False),
 {$ENDIF}
     'string -> BigCardinal conversion error');
 end;
@@ -617,7 +609,7 @@ end;
 class operator BigCardinal.Explicit(const Value: TIntLimb): BigCardinal;
 begin
   if Value < 0 then
-    BigNumberError(TFL_E_INVALIDARG,
+    BigNumberError(TF_E_INVALIDARG,
       'IntLimb -> BigCardinal conversion error')
   else begin
 {$IFDEF TFL_DLL}
@@ -632,7 +624,7 @@ end;
 class operator BigCardinal.Explicit(const Value: TDblIntLimb): BigCardinal;
 begin
   if Value < 0 then
-    BigNumberError(TFL_E_INVALIDARG,
+    BigNumberError(TF_E_INVALIDARG,
       'DblIntLimb -> BigCardinal conversion error')
   else begin
 {$IFDEF TFL_DLL}
@@ -1215,7 +1207,7 @@ var
   P, P1: PByte;
   I: Integer;
   IsMinus: Boolean;
-  HR: HResult;
+  HR: TF_RESULT;
 
 begin
   BytesUsed:= FNumber.GetSize;
@@ -1226,7 +1218,7 @@ begin
     L1:= L;
     HR:= FNumber.ToDec(P, L1);
 // -- kludge
-    if HR = TFL_E_INVALIDARG then begin
+    if HR = TF_E_INVALIDARG then begin
       FreeMem(P);
       L:= L1;
       GetMem(P, L);
@@ -1392,20 +1384,15 @@ begin
 {$ELSE}
   if (PBigNumber(Value.FNumber).FSign < 0) then
 {$ENDIF}
-    BigNumberError(TFL_E_INVALIDARG, 'Negative value');
+    BigNumberError(TF_E_INVALIDARG, 'Negative value');
   Result.FNumber:= Value.FNumber;
 end;
 
 class operator BigInteger.Explicit(const Value: string): BigInteger;
 {$IFDEF TFL_DLL}
-//var
-//  WS: WideString;
-
 begin
-//  WS:= WideString(S);
-//  HResCheck(WideStringToBigNumber(FNumber, WS),
-  HResCheck(BigNumberFromPWideChar(Result.FNumber, Pointer(Value),
-            Length(Value), True),
+  HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
+                               SizeOf(Char), True, False),
 {$ELSE}
 begin
   HResCheck(TBigNumber.FromString(PBigNumber(Result.FNumber), Value),
@@ -1555,13 +1542,13 @@ end;
 function BigInteger.ToBytes: TBytes;
 {$IFDEF TFL_DLL}
 var
-  HR: HResult;
+  HR: TF_RESULT;
   L: Cardinal;
 
 begin
   L:= 0;
   HR:= FNumber.ToPByte(nil, L);
-  if (HR = TFL_E_INVALIDARG) and (L > 0) then begin
+  if (HR = TF_E_INVALIDARG) and (L > 0) then begin
     SetLength(Result, L);
     HR:= FNumber.ToPByte(Pointer(Result), L);
   end;
@@ -1582,14 +1569,14 @@ const
 var
   L, L1: Integer;
   P, P1: PByte;
-  HR: HResult;
+  HR: TF_RESULT;
   Filler: Char;
   I: Integer;
 
 begin
   Result:= '';
   HR:= FNumber.ToHex(nil, L, TwoCompl);
-  if HR = TFL_E_INVALIDARG then begin
+  if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
       L1:= L;
@@ -1633,21 +1620,15 @@ begin
 {$ENDIF}
 end;
 
-function BigInteger.TryParse(const S: string): Boolean;
-{$IFDEF TFL_DLL}
-//var
-//  WS: WideString;
-
+function BigInteger.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-//  WS:= WideString(S);
-//  Result:= WideStringToBigNumber(FNumber, WS) = TFL_S_OK;
-  Result:= BigNumberFromPWideChar(FNumber, Pointer(S), Length(S),
-              True) = TFL_S_OK;
+{$IFDEF TFL_DLL}
+  Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
+                              SizeOf(Char), True, TwoCompl) = TF_S_OK;
 {$ELSE}
 begin
-//  Result:= TBigNumber.FromString(PBigNumber(FNumber), S) = TFL_S_OK;
-  Result:= BigNumberFromPWideChar(PBigNumber(FNumber), Pointer(S), Length(S),
-              True) = TFL_S_OK;
+  Result:= BigNumberFromPChar(PBigNumber(FNumber), Pointer(S), Length(S),
+                              SizeOf(Char), True, TwoCompl) = TF_S_OK;
 {$ENDIF}
 end;
 

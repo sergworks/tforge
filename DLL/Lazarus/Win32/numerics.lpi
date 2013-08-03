@@ -33,26 +33,47 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="2">
+    <Units Count="6">
       <Unit0>
         <Filename Value="numerics.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="numerics"/>
       </Unit0>
       <Unit1>
-        <Filename Value="..\..\Source\Include\TFL.inc"/>
+        <Filename Value="..\..\..\Source\Common\tfLimbs.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="tfLimbs"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="..\..\..\Source\Include\TFL.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="..\..\..\Source\Engine\arrProcs.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="arrProcs"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\Source\Engine\tfNumbers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfNumbers"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\..\Source\Common\tfTypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfTypes"/>
+      </Unit5>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="numerics64"/>
+      <Filename Value="numerics32"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);..\..\Source\Include"/>
+      <IncludeFiles Value="$(ProjOutDir);..\..\..\Source\Include"/>
+      <OtherUnitFiles Value="..\..\..\Source\Engine;..\..\..\Source\Common"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>
@@ -70,6 +91,7 @@
       <CompilerMessages>
         <MsgFileName Value=""/>
       </CompilerMessages>
+      <CustomOptions Value="-dTFL_DLL"/>
       <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>

@@ -13,26 +13,26 @@ interface
 
 uses
   tfLimbs;
-//  SysUtils;
 
-// HRESULT codes returned by TFL functions; see also
+type
+  TF_RESULT = LongInt;
+
+// Codes returned by TF functions; see also
 //   http://msdn.microsoft.com/en-us/library/cc231198(v=prot.10).aspx
 //   http://msdn.microsoft.com/en-us/library/windows/desktop/aa378137(v=vs.85).aspx
 const
-                                            // = common microsoft codes =
-  TFL_S_OK          = HRESULT(0);           // Operation successful
-  TFL_S_FALSE       = HRESULT(1);           // Operation successful
-  TFL_E_FAIL        = HRESULT($80004005);   // Unspecified failure
-  TFL_E_INVALIDARG  = HRESULT($80070057);   // One or more arguments are not valid
-  TFL_E_NOINTERFACE = HRESULT($80004002);   // No such interface supported
-  TFL_E_NOTIMPL     = HRESULT($80004001);   // Not implemented
-  TFL_E_OUTOFMEMORY = HRESULT($8007000E);   // Failed to allocate necessary memory
-  TFL_E_UNEXPECTED  = HRESULT($8000FFFF);   // Unexpected failure
-                                            // = TFL specific codes =
-//  TFL_E_ZERODIVIDE  = HRESULT($A0000001);   // Division by zero
-//  TFL_E_INVALIDSUB  = HRESULT($A0000002);   // Unsigned subtract greater from lesser
-  TFL_E_NOMEMORY    = HRESULT($A0000003);   // specific TFL memory error
-  TFL_E_LOADERROR   = HRESULT($A0000004);   // Error loading tforge dll
+                                              // = common microsoft codes =
+  TF_S_OK           = TF_RESULT(0);           // Operation successful
+  TF_S_FALSE        = TF_RESULT(1);           // Operation successful
+  TF_E_FAIL         = TF_RESULT($80004005);   // Unspecified failure
+  TF_E_INVALIDARG   = TF_RESULT($80070057);   // One or more arguments are not valid
+  TF_E_NOINTERFACE  = TF_RESULT($80004002);   // No such interface supported
+  TF_E_NOTIMPL      = TF_RESULT($80004001);   // Not implemented
+  TF_E_OUTOFMEMORY  = TF_RESULT($8007000E);   // Failed to allocate necessary memory
+  TF_E_UNEXPECTED   = TF_RESULT($8000FFFF);   // Unexpected failure
+                                              // = TFL specific codes =
+  TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
+  TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading tforge dll
 
 {$IFDEF FPC}
 type
@@ -71,70 +71,70 @@ type
     function CompareNumber(Num: IBigNumber): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareNumberU(Num: IBigNumber): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AddNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function AddNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function MulNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function MulNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemNumber(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemNumberU(Num: IBigNumber; var Q, R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemNumber(Num: IBigNumber; var Q, R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemNumberU(Num: IBigNumber; var Q, R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AndNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function OrNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function XorNumber(Num: IBigNumber; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AndNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AndNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function OrNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function OrNumberU(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function XorNumber(Num: IBigNumber; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ShlNumber(Shift: Cardinal; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ShrNumber(Shift: Cardinal; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AssignNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function AbsNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function NegateNumber(var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Pow(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PowU(Value: Cardinal; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SqrtNumber(var IRes: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AssignNumber(var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AbsNumber(var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function NegateNumber(var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Pow(Value: Cardinal; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function PowU(Value: Cardinal; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SqrtNumber(var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToLimb(var Value: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToIntLimb(var Value: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToLimb(var Value: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToIntLimb(var Value: TIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToDec(P: PByte; var L: Integer): HResult;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): HResult;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDec(P: PByte; var L: Integer): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToPByte(P: PByte; var L: Cardinal): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToPByte(P: PByte; var L: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function CompareToLimb(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToLimbU(Limb: TLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToIntLimb(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToIntLimbU(Limb: TIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function AddLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function AddLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function AddIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddLimb(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddLimbU(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddIntLimb(Limb: TIntLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function SubLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubLimb2(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubLimbU2(Limb: TLimb; var Res: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SubIntLimb2(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubLimb(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubLimb2(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubLimbU(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubLimbU2(Limb: TLimb; var Res: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubIntLimb(Limb: TIntLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubIntLimb2(Limb: TIntLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function MulLimb(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function MulLimbU(Limb: TLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function MulIntLimb(Limb: TIntLimb; var Res: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulLimb(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulLimbU(Limb: TLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulIntLimb(Limb: TIntLimb; var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function DivRemLimb(Limb: TLimb; var Q: IBigNumber; var R: IBigNumber): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemLimb2(Limb: TLimb; var Q: IBigNumber; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemLimbU(Limb: TLimb; var Q: IBigNumber; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemLimbU2(Limb: TLimb; var Q: TLimb; var R: TLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemIntLimb(Limb: TIntLimb; var Q: IBigNumber; var R: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DivRemIntLimb2(Limb: TIntLimb; var Q: TIntLimb; var R: TIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemLimb(Limb: TLimb; var Q: IBigNumber; var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemLimb2(Limb: TLimb; var Q: IBigNumber; var R: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemLimbU(Limb: TLimb; var Q: IBigNumber; var R: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemLimbU2(Limb: TLimb; var Q: TLimb; var R: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemIntLimb(Limb: TIntLimb; var Q: IBigNumber; var R: TIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DivRemIntLimb2(Limb: TIntLimb; var Q: TIntLimb; var R: TIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToDblLimb(var Value: TDblLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToDblIntLimb(var Value: TDblIntLimb): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblLimb(var Value: TDblLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblIntLimb(var Value: TDblIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToDblLimb(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToDblLimbU(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToDblIntLimb(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
