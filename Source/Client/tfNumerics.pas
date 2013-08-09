@@ -422,7 +422,8 @@ begin
     BigNumberError(HR, 'BigCardinal -> hex string conversion error');
 {$ELSE}
 begin
-  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits, TwoCompl),
+  HResCheck(TBigNumber.ToHexString(PBigNumber(FNumber), Result, Digits,
+                                   Prefix, TwoCompl),
     'BigCardinal -> hex string conversion error');
 {$ENDIF}
 end;
@@ -1626,7 +1627,6 @@ begin
   Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
                               SizeOf(Char), True, TwoCompl) = TF_S_OK;
 {$ELSE}
-begin
   Result:= BigNumberFromPChar(PBigNumber(FNumber), Pointer(S), Length(S),
                               SizeOf(Char), True, TwoCompl) = TF_S_OK;
 {$ENDIF}

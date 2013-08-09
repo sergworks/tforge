@@ -237,8 +237,9 @@ type
 //    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
     class function ToString(A: PBigNumber; var S: string): TF_RESULT; static;
-    class function ToHexString(A: PBigNumber; var S: string;
-                     Digits: Cardinal; TwoCompl: Boolean): TF_RESULT; static;
+    class function ToHexString(A: PBigNumber; var S: string; Digits: Integer;
+                   const Prefix: string; TwoCompl: Boolean): TF_RESULT; static;
+
     class function ToBytes(A: PBigNumber; var Bytes: TBytes): TF_RESULT; static;
 
     class procedure Normalize(Inst: PBigNumber); static;
@@ -468,7 +469,7 @@ end;
 function TBigNumber.AsHexString(Digits: Cardinal; TwoCompl: Boolean): string;
 begin
   Result:= '';
-  ToHexString(@Self, Result, Digits, TwoCompl);
+  ToHexString(@Self, Result, Digits, '$', TwoCompl);
 end;
 
 class function TBigNumber.CompareNumbers(A, B: PBigNumber): Integer;
@@ -2521,6 +2522,59 @@ begin
 end;
 
 class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
+               Digits: Integer; const Prefix: string; TwoCompl: Boolean): TF_RESULT;
+const
+  ASCII_8 = 56;   // Ord('8')
+
+var
+  L, L1: Integer;
+  P, P1: PByte;
+  Filler: Char;
+  I: Integer;
+
+begin
+  if TBigNumber.ToHex(A, nil, L, TwoCompl) = TF_E_INVALIDARG then begin
+    GetMem(P, L);
+    try
+      L1:= L;
+      Result:= TBigNumber.ToHex(A, P, L1, TwoCompl);
+      if Result = TF_S_OK then begin
+        if Digits < L1 then Digits:= L1;
+        I:= 1;
+        if (A.FSign < 0) and not TwoCompl then begin
+          Inc(I);
+          SetLength(S, Digits + Length(Prefix) + 1);
+          S[1]:= '-';
+        end
+        else
+          SetLength(S, Digits + Length(Prefix));
+        Move(Pointer(Prefix)^, S[I], Length(Prefix) * SizeOf(Char));
+        Inc(I, Length(Prefix));
+        if Digits > L1 then begin
+          if TwoCompl and (P[L1] >= ASCII_8) then Filler:= 'F'
+          else Filler:= '0';
+          while I + L1 <= Length(S) do begin
+            S[I]:= Filler;
+            Inc(I);
+          end;
+        end;
+        P1:= P;
+        while I <= Length(S) do begin
+          S[I]:= Char(P1^);
+          Inc(I);
+          Inc(P1);
+        end;
+      end;
+    finally
+      FreeMem(P);
+    end;
+  end
+  else
+    Result:= TF_E_UNEXPECTED;
+end;
+
+(*
+class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
                  Digits: Cardinal; TwoCompl: Boolean): TF_RESULT;
 var
   BytesUsed: Cardinal;
@@ -2632,6 +2686,7 @@ begin
   end;
   Result:= TF_S_OK;
 end;
+*)
 
 class function TBigNumber.ToDec(A: PBigNumber; P: PByte;
                                       var L: Integer): TF_RESULT;
@@ -4103,10 +4158,11 @@ begin
       IsMinus:= (GetChar(P, 0) >= Ord('8'));
       TwoCompl:= TwoCompl and IsMinus;
     end
-{    else begin
-      IsMinus:= GetChar(P, 0) = Ord('-');
-      if IsMinus then Inc(I);
-    end;}
+    else begin
+//      IsMinus:= GetChar(P, 0) = Ord('-');
+//      if IsMinus then Inc(I);
+      IsMinus:= False;
+    end;
   end;
 
   if (L <= I) or (IsMinus and not AllowNegative) then begin
