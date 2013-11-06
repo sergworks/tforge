@@ -17,8 +17,8 @@ unit arrProcs;
 
 {$I TFL.inc}
 
-{$IFDEF TFL_LIMB32_ASM86}
-  {.$DEFINE LIMB32_ASM86}
+{$IFDEF TFL_WIN32_ASM86}
+  {.$DEFINE WIN32_ASM86}
 {$ENDIF}
 
 interface
@@ -31,7 +31,7 @@ function arrGetLimbCount(A: PLimb; L: Cardinal): Cardinal;
 { Addition primitives }
 function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 function arrSelfAdd(A, B: PLimb; LA, LB: Cardinal): Boolean;
-function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
+function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
 function arrSelfAddLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
 function arrSelfInc(A: PLimb; L: Cardinal): Boolean;
@@ -112,8 +112,8 @@ begin
   Result:= L;
 end;
 
-{$IFDEF LIMB32_ASM86}
-function arrAdd(A, B, Res: PLongWord; LA, LB: LongWord): Boolean;
+{$IFDEF WIN32_ASM86}
+function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
 asm
         PUSH  ESI
         PUSH  EDI
@@ -125,8 +125,12 @@ asm
         MOV   ECX,LB
         CLC
 @@Loop:
+//        MOV   EAX,[ESI]
+//        LEA   ESI,[ESI+4]
         LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
         ADC   EAX,[EDX]
+//        MOV   [EDI],EAX
+//        LEA   EDI,[EDI+4]
         STOSD             // [EDI] <-- EAX, EDI <-- EDI + 4
         LEA   EDX,[EDX+4]
         LOOP  @@Loop
@@ -268,7 +272,35 @@ end;
     function returns True if carry is propagated out of A[L-1];
     if function returns True the Res senior limb is set: Res[L] = 1
 }
-function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
+
+{$IFDEF WIN32_ASM86}
+function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
+asm
+        ADD   EDX,[EAX]
+        MOV   [ECX],EDX
+        MOV   EDX,ECX
+        MOV   ECX,LA
+        DEC   ECX
+        JZ    @@Done
+        PUSH  ESI
+        LEA   ESI,[EAX+4]
+@@Loop:
+        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        LEA   EDX,[EDX+4]
+        ADC   EAX,0
+        MOV   [EDX],EAX
+        LOOP  @@Loop
+        POP   ESI
+@@Done:
+        MOV   EAX,0
+        JNC   @@Skip
+        INC   EAX
+@@Skip:
+        LEA   EDX,[EDX+4]
+        MOV   [EDX],EAX
+end;
+{$ELSE}
+function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
 var
   CarryIn: Boolean;
   Tmp: TLimb;
@@ -277,28 +309,29 @@ begin
   Tmp:= A^ + Limb;
   CarryIn:= Tmp < Limb;
   Inc(A);
-  Dec(L);
+  Dec(LA);
   Res^:= Tmp;
   Inc(Res);
-  while (L > 0) and CarryIn do begin
+  while (LA > 0) and CarryIn do begin
     Tmp:= A^ + 1;
     CarryIn:= Tmp = 0;
     Inc(A);
     Res^:= Tmp;
     Inc(Res);
-    Dec(L);
+    Dec(LA);
   end;
-  while (L > 0) do begin
+  while (LA > 0) do begin
     Res^:= A^;
     Inc(A);
     Inc(Res);
-    Dec(L);
+    Dec(LA);
   end;
   Res^:= Ord(CarryIn);
 //  if CarryIn then Res^:= 1;
 //  else Res^:= 0;
   Result:= CarryIn;
 end;
+{$ENDIF}
 
 {
   Description:
@@ -420,8 +453,8 @@ end;
     if function returns True the Res is invalid
     any (A = B = Res) coincidence is allowed
 }
-{$IFDEF LIMB32_ASM86}
-function arrSub(A, B, Res: PLongWord; LA, LB: LongInt): Boolean;
+{$IFDEF WIN32_ASM86}
+function arrSub(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 asm
         PUSH  ESI
         PUSH  EDI

@@ -48,13 +48,12 @@
 // Enable logging
 {$DEFINE TFL_LOG}
 
-// Enable intel 32-bit CPU assembler optimization
-{.$DEFINE TFL_ASM86}
-
 // -----------------------------------------------------
 
-{$IFDEF TFL_LIMB32}
-  {$IFDEF TFL_ASM86}
-    {$DEFINE TFL_LIMB32_ASM86}
+{$IFDEF CPU386}
+  {$IFDEF WIN32}
+    {$IFDEF TFL_LIMB32}
+      {$DEFINE TFL_WIN32_ASM86}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}

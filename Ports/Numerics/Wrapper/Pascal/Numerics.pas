@@ -98,8 +98,10 @@ type
     function NegateNumber(var Res: IBigNumber): TF_RESULT; stdcall;
     function Pow(Value: Cardinal; var IRes: IBigNumber): TF_RESULT; stdcall;
     function PowU(Value: Cardinal; var IRes: IBigNumber): TF_RESULT; stdcall;
-    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT; stdcall;
+    function ModPow(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT; stdcall;
     function SqrtNumber(var IRes: IBigNumber): TF_RESULT; stdcall;
+    function EGCD(B: IBigNumber; var G, X, Y: IBigNumber): TF_RESULT; stdcall;
+    function ModInverse(M: IBigNumber; var R: IBigNumber): TF_RESULT; stdcall;
 
     function ToLimb(var Value: UInt32): TF_RESULT; stdcall;
     function ToIntLimb(var Value: Int32): TF_RESULT; stdcall;

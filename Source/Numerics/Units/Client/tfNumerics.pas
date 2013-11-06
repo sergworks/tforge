@@ -169,6 +169,10 @@ type
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
     class function DivRem(const Dividend, Divisor: BigInteger;
                           var Remainder: BigInteger): BigInteger; overload; static;
+    class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
+    class function Sqrt(A: BigInteger): BigInteger; static;
+    class procedure EGCD(A, B: BigInteger; var G, X, Y: BigInteger); static;
+    class function ModInverse(A, Modulo: BigInteger): BigInteger; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
@@ -1760,6 +1764,31 @@ begin
             'BigInteger.DivRem');
 end;
 
+class function BigInteger.ModPow(const BaseValue, ExpValue,
+               Modulo: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(BaseValue.FNumber.ModPow(ExpValue.FNumber,
+            Modulo.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.ModPow(PBigNumber(BaseValue.FNumber),
+            PBigNumber(ExpValue.FNumber), PBigNumber(Modulo.FNumber),
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.ModPow');
+end;
+
+class function BigInteger.ModInverse(A, Modulo: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
+            PBigNumber(Modulo.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.ModInverse');
+end;
+
 function BigInteger.CompareTo(const B: TLimb): Integer;
 begin
   Result:= CompareToUInt(B);
@@ -1950,6 +1979,17 @@ end;
 class operator BigInteger.Equal(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
   Result:= A.CompareToDoubleInt(B) = 0;
+end;
+
+class procedure BigInteger.EGCD(A, B: BigInteger; var G, X, Y: BigInteger);
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.EGCD(B.FNumber, G.FNumber, X.FNumber, Y.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.EGCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(G.FNumber), PBigNumber(X.FNumber), PBigNumber(Y.FNumber)),
+{$ENDIF}
+            'BigInteger.ModInverse');
 end;
 
 class operator BigInteger.Equal(const A: TDblIntLimb; const B: BigInteger): Boolean;
@@ -2181,6 +2221,16 @@ begin
             PBigNumber(Result.FNumber)),
 {$ENDIF}
             'BigInteger.Subtract');
+end;
+
+class function BigInteger.Sqrt(A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.Sqrt(Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.Sqrt');
 end;
 
 class operator BigInteger.Subtract(const A: TIntLimb; const B: BigInteger): BigInteger;

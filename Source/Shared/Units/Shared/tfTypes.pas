@@ -1,8 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
 { *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
-{ * ------------------------------------------------------- * }
-{ *   # shared unit                                         * }
 { *********************************************************** }
 
 unit tfTypes;
@@ -30,33 +28,16 @@ const
   TF_E_NOTIMPL      = TF_RESULT($80004001);   // Not implemented
   TF_E_OUTOFMEMORY  = TF_RESULT($8007000E);   // Failed to allocate necessary memory
   TF_E_UNEXPECTED   = TF_RESULT($8000FFFF);   // Unexpected failure
-                                              // = TFL specific codes =
+                                              // = Numerics codes =
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
   TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading tforge dll
+                                              // = Crypto codes =
+  TF_E_INVALIDKEY   = TF_RESULT($A0001001);   // Invalid crypto key
 
 {$IFDEF FPC}
 type
   TBytes = array of Byte;
 {$ENDIF}
-
-{ ?BigNumberRec types duplicate ?PBigNumber types from tfTypes.pas }
-type
-  PBigNumberRec = ^TBigNumberRec;
-  TBigNumberRec = record
-  public type
-{$IFDEF DEBUG}
-    TLimbArray = array[0..7] of TLimb;
-{$ELSE}
-    TLimbArray = array[0..0] of TLimb;
-{$ENDIF}
-  public
-    FVTable: Pointer;
-    FRefCount: Integer;
-    FCapacity: Integer;
-    FSign: Integer;
-    FUsed: Integer;
-    FLimbs: TLimbArray;
-  end;
 
 type
   IBigNumber = interface
@@ -94,8 +75,10 @@ type
     function NegateNumber(var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Pow(Value: Cardinal; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PowU(Value: Cardinal; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PowerMod(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ModPow(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SqrtNumber(var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function EGCD(B: IBigNumber; var G, X, Y: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ModInverse(M: IBigNumber; var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function ToLimb(var Value: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToIntLimb(var Value: TIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -139,6 +122,44 @@ type
     function CompareToDblLimbU(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToDblIntLimb(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+  IBlockCipherAlgorithm = interface
+    function ImportKey(Key: PByte; KeySize: LongWord; AlgID: Integer): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure ExpandKey(Encryption: Boolean);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DeleteKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+  IHashAlgorithm = interface
+    procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetHashSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+{ PBigNumberRec is client type to cast engine type PBigNumber for debugging }
+type
+  PBigNumberRec = ^TBigNumberRec;
+  TBigNumberRec = record
+    FVTable: Pointer;
+    FRefCount: Integer;
+    FCapacity: Integer;
+    FSign: Integer;
+    FUsed: Integer;
+    FLimbs: array[0..0] of TLimb;
+  end;
+
+{ Hash helper types }
+type
+  PSHA256Digest = ^TSHA256Digest;
+  TSHA256Digest = array[0..7] of LongWord;
+
+  PMD5Digest = ^TMD5Digest;
+  TMD5Digest = record
+    A, B, C, D: LongWord;
   end;
 
 implementation
