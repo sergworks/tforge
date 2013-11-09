@@ -2,7 +2,7 @@ library numerics;
 
 {$I TFL.inc}
 
-uses arrProcs, tfNumbers, tfLimbs, tfTypes;
+uses arrProcs, tfNumbers, tfLimbs, tfTypes, tfRecords;
 
 exports
   BigNumberFromLimb,

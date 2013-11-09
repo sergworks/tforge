@@ -33,36 +33,41 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="6">
+    <Units Count="7">
       <Unit0>
         <Filename Value="numerics.lpr"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="numerics"/>
       </Unit0>
       <Unit1>
-        <Filename Value="..\..\..\Source\Common\tfLimbs.pas"/>
+        <Filename Value="..\..\..\..\..\Source\Include\TFL.inc"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="tfLimbs"/>
       </Unit1>
       <Unit2>
-        <Filename Value="..\..\..\Source\Include\TFL.inc"/>
+        <Filename Value="..\..\..\..\..\Source\Shared\Units\Shared\tfLimbs.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="tfLimbs"/>
       </Unit2>
       <Unit3>
-        <Filename Value="..\..\..\Source\Engine\arrProcs.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="arrProcs"/>
-      </Unit3>
-      <Unit4>
-        <Filename Value="..\..\..\Source\Engine\tfNumbers.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="tfNumbers"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="..\..\..\Source\Common\tfTypes.pas"/>
+        <Filename Value="..\..\..\..\..\Source\Shared\Units\Shared\tfTypes.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="tfTypes"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="..\..\..\..\..\Source\Shared\Units\Engine\tfRecords.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfRecords"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="..\..\..\..\..\Source\Numerics\Units\Engine\arrProcs.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="arrProcs"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="..\..\..\..\..\Source\Numerics\Units\Engine\tfNumbers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfNumbers"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -72,8 +77,8 @@
       <Filename Value="numerics64"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);..\..\..\Source\Include"/>
-      <OtherUnitFiles Value="..\..\..\Source\Engine;..\..\..\Source\Common"/>
+      <IncludeFiles Value="$(ProjOutDir);..\..\..\..\..\Source\Include"/>
+      <OtherUnitFiles Value="..\..\..\..\..\Source\Shared\Units\Shared;..\..\..\..\..\Source\Shared\Units\Engine;..\..\..\..\..\Source\Numerics\Units\Engine"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

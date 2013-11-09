@@ -75,15 +75,15 @@ type
     function NegateNumber(var Res: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Pow(Value: Cardinal; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PowU(Value: Cardinal; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ModPow(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function SqrtNumber(var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GCD(B: IBigNumber; var G: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EGCD(B: IBigNumber; var G, X, Y: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ModPow(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ModInverse(M: IBigNumber; var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function ToLimb(var Value: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToIntLimb(var Value: TIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function ToWideString(var S: WideString): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function ToWideHexString(var S: WideString; Digits: Cardinal; TwoCompl: Boolean): HRESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToDec(P: PByte; var L: Integer): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ToHex(P: PByte; var L: Integer; TwoCompl: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 

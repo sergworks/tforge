@@ -169,9 +169,11 @@ type
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
     class function DivRem(const Dividend, Divisor: BigInteger;
                           var Remainder: BigInteger): BigInteger; overload; static;
-    class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
+
     class function Sqrt(A: BigInteger): BigInteger; static;
-    class procedure EGCD(A, B: BigInteger; var G, X, Y: BigInteger); static;
+    class function GCD(A, B: BigInteger): BigInteger; static;
+    class function EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
+    class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
     class function ModInverse(A, Modulo: BigInteger): BigInteger; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
@@ -1981,15 +1983,26 @@ begin
   Result:= A.CompareToDoubleInt(B) = 0;
 end;
 
-class procedure BigInteger.EGCD(A, B: BigInteger; var G, X, Y: BigInteger);
+class function BigInteger.GCD(A, B: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.EGCD(B.FNumber, G.FNumber, X.FNumber, Y.FNumber),
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber),
+{$ELSE}
+  HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(Result.FNumber)),
+{$ENDIF}
+            'BigInteger.GCD');
+end;
+
+class function BigInteger.EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber),
 {$ELSE}
   HResCheck(TBigNumber.EGCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
-            PBigNumber(G.FNumber), PBigNumber(X.FNumber), PBigNumber(Y.FNumber)),
+            PBigNumber(Result.FNumber), PBigNumber(X.FNumber), PBigNumber(Y.FNumber)),
 {$ENDIF}
-            'BigInteger.ModInverse');
+            'BigInteger.EGCD');
 end;
 
 class operator BigInteger.Equal(const A: TDblIntLimb; const B: BigInteger): Boolean;
@@ -2226,7 +2239,7 @@ end;
 class function BigInteger.Sqrt(A: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.Sqrt(Result.FNumber),
+  HResCheck(A.FNumber.SqrtNumber(Result.FNumber),
 {$ELSE}
   HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)),
 {$ENDIF}

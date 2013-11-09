@@ -98,9 +98,11 @@ type
     function NegateNumber(var Res: IBigNumber): TF_RESULT; stdcall;
     function Pow(Value: Cardinal; var IRes: IBigNumber): TF_RESULT; stdcall;
     function PowU(Value: Cardinal; var IRes: IBigNumber): TF_RESULT; stdcall;
-    function ModPow(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT; stdcall;
+
     function SqrtNumber(var IRes: IBigNumber): TF_RESULT; stdcall;
+    function GCD(B: IBigNumber; var G: IBigNumber): TF_RESULT; stdcall;
     function EGCD(B: IBigNumber; var G, X, Y: IBigNumber): TF_RESULT; stdcall;
+    function ModPow(IExp, IMod: IBigNumber; var IRes: IBigNumber): TF_RESULT; stdcall;
     function ModInverse(M: IBigNumber; var R: IBigNumber): TF_RESULT; stdcall;
 
     function ToLimb(var Value: UInt32): TF_RESULT; stdcall;
@@ -294,6 +296,12 @@ type
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
     class function DivRem(const Dividend, Divisor: BigCardinal;
                           var Remainder: BigCardinal): BigCardinal; overload; static;
+
+    class function Sqrt(A: BigInteger): BigInteger; static;
+    class function GCD(A, B: BigInteger): BigInteger; static;
+    class function EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
+    class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
+    class function ModInverse(A, Modulo: BigInteger): BigInteger; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
@@ -1311,6 +1319,38 @@ begin
   HResCheck(Dividend.FNumber.DivRemNumber(Divisor.FNumber,
             Result.FNumber, Remainder.FNumber),
             'BigInteger.DivRem');
+end;
+
+class function BigInteger.Sqrt(A: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.SqrtNumber(Result.FNumber),
+            'BigInteger.Sqrt');
+end;
+
+class function BigInteger.GCD(A, B: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber),
+            'BigInteger.GCD');
+end;
+
+class function BigInteger.EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber),
+            'BigInteger.EGCD');
+end;
+
+class function BigInteger.ModPow(const BaseValue, ExpValue,
+               Modulo: BigInteger): BigInteger;
+begin
+  HResCheck(BaseValue.FNumber.ModPow(ExpValue.FNumber,
+            Modulo.FNumber, Result.FNumber),
+            'BigInteger.ModPow');
+end;
+
+class function BigInteger.ModInverse(A, Modulo: BigInteger): BigInteger;
+begin
+  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber),
+            'BigInteger.ModInverse');
 end;
 
 class operator BigInteger.Implicit(const Value: BigCardinal): BigInteger;

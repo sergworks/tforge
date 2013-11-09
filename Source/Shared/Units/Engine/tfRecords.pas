@@ -5,6 +5,8 @@
 
 unit tfRecords;
 
+{$I TFL.inc}
+
 interface
 
 uses tfTypes;

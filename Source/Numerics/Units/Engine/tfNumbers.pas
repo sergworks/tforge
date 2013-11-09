@@ -117,14 +117,15 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ModPow(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
     class function SqrtNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
     class function GCD(A, B: PBigNumber; var G: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EGCD(A, B: PBigNumber; var G, X, Y: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ModPow(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ModInverse(A, M: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -322,7 +323,7 @@ implementation
 uses tfRecords, arrProcs;
 
 const
-  BigNumVTable: array[0..67] of Pointer = (
+  BigNumVTable: array[0..68] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -360,9 +361,11 @@ const
    @TBigNumber.NegateNumber,
    @TBigNumber.Pow,
    @TBigNumber.PowU,
-   @TBigNumber.ModPow,
+
    @TBigNumber.SqrtNumber,
+   @TBigNumber.GCD,
    @TBigNumber.EGCD,
+   @TBigNumber.ModPow,
    @TBigNumber.ModInverse,
 
    @TBigNumber.ToLimb,
