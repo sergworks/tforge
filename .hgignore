@@ -21,3 +21,6 @@ dunit.ini
 *.bak
 *.err
 *.out
+*.lps
+*.layout
+*.depend

@@ -245,11 +245,11 @@ type
 //    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
 //    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
-    class function ToString(A: PBigNumber; var S: string): TF_RESULT; static;
-    class function ToHexString(A: PBigNumber; var S: string; Digits: Integer;
-                   const Prefix: string; TwoCompl: Boolean): TF_RESULT; static;
+//    class function ToString(A: PBigNumber; var S: string): TF_RESULT; static;
+//    class function ToHexString(A: PBigNumber; var S: string; Digits: Integer;
+//                   const Prefix: string; TwoCompl: Boolean): TF_RESULT; static;
 
-    class function ToBytes(A: PBigNumber; var Bytes: TBytes): TF_RESULT; static;
+//    class function ToBytes(A: PBigNumber; var Bytes: TBytes): TF_RESULT; static;
 
     class procedure Normalize(Inst: PBigNumber); static;
 
@@ -273,8 +273,8 @@ type
     function IsNegative: Boolean; inline;
     function IsZero: Boolean; inline;
 
-    function AsString: string;
-    function AsHexString(Digits: Cardinal; TwoCompl: Boolean = False): string;
+//    function AsString: string;
+//    function AsHexString(Digits: Cardinal; TwoCompl: Boolean = False): string;
 
     function SelfCopy(Inst: PBigNumber): TF_RESULT;
     function SelfAddLimb(Value: TLimb): TF_RESULT;
@@ -300,7 +300,7 @@ type
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   function BigNumberFromPByte(var A: PBigNumber;
-               P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT;
+               P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
@@ -473,6 +473,7 @@ begin
   end;
 end;
 
+{
 function TBigNumber.AsString: string;
 begin
   Result:= '';
@@ -484,6 +485,7 @@ begin
   Result:= '';
   ToHexString(@Self, Result, Digits, '$', TwoCompl);
 end;
+}
 
 class function TBigNumber.CompareNumbers(A, B: PBigNumber): Integer;
 begin
@@ -2472,7 +2474,7 @@ begin
     L:= BytesReq;
   end;
 end;
-
+(*
 class function TBigNumber.ToBytes(A: PBigNumber; var Bytes: TBytes): TF_RESULT;
 var
   L: Cardinal;
@@ -2484,7 +2486,7 @@ begin
     Result:= ToPByte(A, @Bytes[0], L);
   end;
 end;
-
+*)
 (*
 class function TBigNumber.ToCardinal(A: PBigNumber; var Value: Cardinal): HResult;
 const
@@ -2751,7 +2753,7 @@ begin
   end;
   L:= N;
 end;
-
+{
 class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
                Digits: Integer; const Prefix: string; TwoCompl: Boolean): TF_RESULT;
 const
@@ -2803,7 +2805,7 @@ begin
   else
     Result:= TF_E_UNEXPECTED;
 end;
-
+}
 (*
 class function TBigNumber.ToHexString(A: PBigNumber; var S: string;
                  Digits: Cardinal; TwoCompl: Boolean): TF_RESULT;
@@ -2976,7 +2978,7 @@ begin
   end;
 end;
 
-
+(*
 class function TBigNumber.ToString(A: PBigNumber; var S: string): TF_RESULT;
 var
   Tmp: PBigNumber;
@@ -3025,7 +3027,7 @@ begin
     end;
   end;
 end;
-
+*)
 (*
 class function TBigNumber.ToWideHexString(A: PBigNumber; var S: WideString;
                  Digits: Cardinal; TwoCompl: Boolean): HResult;
@@ -4307,7 +4309,7 @@ begin
 end;
 *)
 function BigNumberFromPByte(var A: PBigNumber;
-               P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT;
+               P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT;
 var
   SeniorByte: Byte;
   Tmp: PBigNumber;

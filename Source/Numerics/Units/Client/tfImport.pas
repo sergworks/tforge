@@ -1,9 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2012         * }
-{ * ------------------------------------------------------- * }
-{ *   # client unit                                         * }
-{ *   # loads TForge dll                                    * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
 { *********************************************************** }
 
 unit tfImport;
@@ -22,19 +19,16 @@ type
   TBigNumberFromIntLimb = function(var A: IBigNumber; Value: TIntLimb): TF_RESULT; stdcall;
   TBigNumberFromDblIntLimb = function(var A: IBigNumber; Value: TDblIntLimb): TF_RESULT; stdcall;
 
-//  TBigNumberFromPWideChar = function(var A: IBigNumber;
-//    P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult; stdcall;
   TBigNumberFromPChar = function(var A: IBigNumber; P: PByte; L: Integer;
            CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
   TBigNumberFromPByte = function(var A: IBigNumber;
-    P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
+    P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT; stdcall;
 
 var
   BigNumberFromLimb: TBigNumberFromLimb;
   BigNumberFromDblLimb: TBigNumberFromDblLimb;
   BigNumberFromIntLimb: TBigNumberFromIntLimb;
   BigNumberFromDblIntLimb: TBigNumberFromDblIntLimb;
-//  BigNumberFromPWideChar: TBigNumberFromPWideChar;
   BigNumberFromPChar: TBigNumberFromPChar;
   BigNumberFromPByte: TBigNumberFromPByte;
 
@@ -43,7 +37,11 @@ implementation
 uses Windows;
 
 const
+{$IFDEF WIN64}
+  LibName = 'numerics64.dll';
+{$ELSE}
   LibName = 'numerics32.dll';
+{$ENDIF}
 
 var
   LibHandle: THandle = 0;
@@ -83,14 +81,12 @@ begin
     @BigNumberFromDblLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblLimb');
     @BigNumberFromIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromIntLimb');
     @BigNumberFromDblIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
-//    @BigNumberFromPWideChar:= GetProcAddress(LibHandle, 'BigNumberFromPWideChar');
     @BigNumberFromPChar:= GetProcAddress(LibHandle, 'BigNumberFromPChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
     Result:= (@BigNumberFromLimb <> nil)
              and (@BigNumberFromDblLimb <> nil)
              and (@BigNumberFromIntLimb <> nil)
              and (@BigNumberFromDblIntLimb <> nil)
-//             and (@BigNumberFromPWideChar <> nil)
              and (@BigNumberFromPChar <> nil)
              and (@BigNumberFromPByte <> nil)
   end;
@@ -99,7 +95,6 @@ begin
     @BigNumberFromDblLimb:= @BigNumberFromDblLimbStub;
     @BigNumberFromIntLimb:= @BigNumberFromLimbStub;
     @BigNumberFromDblIntLimb:= @BigNumberFromDblLimbStub;
-//    @BigNumberFromPWideChar:= @BigNumberFromPByteStub;
     @BigNumberFromPChar:= @BigNumberFromPCharStub;
     @BigNumberFromPByte:= @BigNumberFromPByteStub;
   end;

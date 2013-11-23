@@ -159,7 +159,7 @@ type
     procedure Free;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
-    function CompareTo(const B: BigCardinal): Integer; overload;
+    function CompareTo(const B: BigCardinal): Integer; overload; inline;
 
     class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
     class function DivRem(const Dividend, Divisor: BigCardinal;
@@ -436,23 +436,23 @@ type
   private
     FCode: TF_RESULT;
   public
-    constructor Create(ACode: TF_RESULT; const Msg: string);
+    constructor Create(ACode: TF_RESULT; const Msg: string = '');
     property Code: TF_RESULT read FCode;
   end;
 
-procedure BigNumberError(ACode: TF_RESULT; const Msg: string);
+procedure BigNumberError(ACode: TF_RESULT; const Msg: string = '');
 
 implementation
 
 type
-  TBigNumberFromUInt32 = function(var A: IBigNumber; Value: UInt32): TF_RESULT; stdcall;
+  TBigNumberFromUInt32 = function(var A: IBigNumber; Value: Cardinal): TF_RESULT; stdcall;
   TBigNumberFromUInt64 = function(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
-  TBigNumberFromInt32 = function(var A: IBigNumber; Value: Int32): TF_RESULT; stdcall;
+  TBigNumberFromInt32 = function(var A: IBigNumber; Value: Integer): TF_RESULT; stdcall;
   TBigNumberFromInt64 = function(var A: IBigNumber; Value: Int64): TF_RESULT; stdcall;
   TBigNumberFromPChar = function(var A: IBigNumber; P: PByte; L: Integer;
            CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
   TBigNumberFromPByte = function(var A: IBigNumber;
-    P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
+    P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT; stdcall;
 
 var
   BigNumberFromUInt32: TBigNumberFromUInt32;
@@ -466,7 +466,10 @@ var
 
 constructor EBigNumberError.Create(ACode: TF_RESULT; const Msg: string);
 begin
-  inherited Create(Msg);
+  if Msg = '' then
+    inherited Create(Format('Big Number Error 0x%.8x', [ACode]))
+  else
+    inherited Create(Msg);
   FCode:= ACode;
 end;
 
@@ -475,10 +478,10 @@ begin
   raise EBigNumberError.Create(ACode, Msg);
 end;
 
-procedure HResCheck(Value: TF_RESULT; const ErrMsg: string); inline;
+procedure HResCheck(Value: TF_RESULT); inline;
 begin
   if Value <> S_OK then
-    BigNumberError(Value, ErrMsg);
+    BigNumberError(Value);
 end;
 
 { BigCardinal }
@@ -486,10 +489,9 @@ end;
 function BigCardinal.ToString: string;
 var
   BytesUsed: Integer;
-  L, L1: Integer;
+  L: Integer;
   P, P1: PByte;
   I: Integer;
-  HR: TF_RESULT;
 
 begin
   BytesUsed:= FNumber.GetSize;
@@ -497,20 +499,10 @@ begin
   L:= (BytesUsed * 41) div 17 + 1;
   GetMem(P, L);
   try
-    L1:= L;
-    HR:= FNumber.ToDec(P, L1);
-// -- kludge
-    if HR = TF_E_INVALIDARG then begin
-      FreeMem(P);
-      L:= L1;
-      GetMem(P, L);
-      HR:= FNumber.ToDec(P, L1);
-    end;
-// -- end of kludge
-    HResCheck(HR, 'BigCardinal -> string conversion error');
-    SetLength(Result, L1);
+    HResCheck(FNumber.ToDec(P, L));
+    SetLength(Result, L);
     P1:= P;
-    for I:= 1 to L1 do begin
+    for I:= 1 to L do begin
       Result[I]:= Char(P1^);
       Inc(P1);
     end;
@@ -523,26 +515,25 @@ function BigCardinal.ToHexString(Digits: Integer; const Prefix: string;
                          TwoCompl: Boolean): string;
 
 var
-  L, L1: Integer;
+  L: Integer;
   P, P1: PByte;
   HR: TF_RESULT;
   I: Integer;
 
 begin
+  Result:= '';
   HR:= FNumber.ToHex(nil, L, TwoCompl);
   if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
-      L1:= L;
-      HResCheck(FNumber.ToHex(P, L1, TwoCompl),
-                       'BigCardinal -> hex string conversion error');
-      if Digits < L1 then Digits:= L1;
+      HResCheck(FNumber.ToHex(P, L, TwoCompl));
+      if Digits < L then Digits:= L;
       Inc(Digits, Length(Prefix));
       SetLength(Result, Digits);
       Move(Pointer(Prefix)^, Pointer(Result)^, Length(Prefix) * SizeOf(Char));
       P1:= P;
       I:= Length(Prefix);
-      while I + L1 < Digits do begin
+      while I + L < Digits do begin
         Inc(I);
         Result[I]:= '0';
       end;
@@ -556,7 +547,7 @@ begin
     end;
   end
   else
-    BigNumberError(HR, 'BigCardinal -> hex string conversion error');
+    BigNumberError(HR);
 end;
 
 function BigCardinal.ToBytes: TBytes;
@@ -571,7 +562,7 @@ begin
     SetLength(Result, L);
     HR:= FNumber.ToPByte(Pointer(Result), L);
   end;
-  HResCheck(HR, 'BigCardinal -> TBytes conversion error');
+  HResCheck(HR);
 end;
 
 function BigCardinal.TryParse(const S: string; TwoCompl: Boolean): Boolean;
@@ -597,87 +588,72 @@ end;
 
 class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
-  HResCheck(Base.FNumber.PowU(Value, Result.FNumber), 'BigCardinal.Power');
+  HResCheck(Base.FNumber.PowU(Value, Result.FNumber));
 end;
 
 class function BigCardinal.DivRem(const Dividend, Divisor: BigCardinal;
                                   var Remainder: BigCardinal): BigCardinal;
 begin
   HResCheck(Dividend.FNumber.DivRemNumberU(Divisor.FNumber,
-            Result.FNumber, Remainder.FNumber),
-            'BigCardinal.DivRem');
+            Result.FNumber, Remainder.FNumber));
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Cardinal;
 begin
-  HResCheck(Value.FNumber.ToLimb(Result),
-    'BigCardinal -> Cardinal conversion error');
+  HResCheck(Value.FNumber.ToLimb(Result));
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Integer;
 begin
-  HResCheck(Value.FNumber.ToIntLimb(Result),
-    'BigCardinal -> Integer conversion error');
+  HResCheck(Value.FNumber.ToIntLimb(Result));
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): UInt64;
 begin
-  HResCheck(Value.FNumber.ToDblLimb(Result),
-    'BigCardinal -> UInt64 conversion error');
+  HResCheck(Value.FNumber.ToDblLimb(Result));
 end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): Int64;
 begin
-  HResCheck(Value.FNumber.ToDblIntLimb(Result),
-    'BigCardinal -> Int64 conversion error');
+  HResCheck(Value.FNumber.ToDblIntLimb(Result));
 end;
 
 class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
 begin
-  HResCheck(BigNumberFromUInt32(Result.FNumber, Value),
-            'BigNumberFromLimb');
+  HResCheck(BigNumberFromUInt32(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Implicit(const Value: UInt64): BigCardinal;
 begin
-  HResCheck(BigNumberFromUInt64(Result.FNumber, Value),
-            'BigNumberFromDblLimb');
+  HResCheck(BigNumberFromUInt64(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Explicit(const Value: Integer): BigCardinal;
 begin
   if Value < 0 then
-    BigNumberError(TF_E_INVALIDARG,
-      'Integer -> BigCardinal conversion error')
-  else begin
-    HResCheck(BigNumberFromInt32(Result.FNumber, Value),
-            'TBigNumber.FromInteger');
-  end;
+    BigNumberError(TF_E_INVALIDARG)
+  else
+    HResCheck(BigNumberFromInt32(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Explicit(const Value: Int64): BigCardinal;
 begin
   if Value < 0 then
-    BigNumberError(TF_E_INVALIDARG,
-      'Int64 -> BigCardinal conversion error')
-  else begin
-    HResCheck(BigNumberFromInt64(Result.FNumber, Value),
-            'BigNumberFromDblIntLimb');
-  end;
+    BigNumberError(TF_E_INVALIDARG)
+  else
+    HResCheck(BigNumberFromInt64(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Explicit(const Value: TBytes): BigCardinal;
 begin
   HResCheck(BigNumberFromPByte(Result.FNumber,
-            Pointer(Value), Length(Value), False),
-    'TBytes -> BigCardinal conversion error');
+            Pointer(Value), Length(Value), False));
 end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
 begin
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
-                               SizeOf(Char), False, False),
-    'string -> BigCardinal conversion error');
+                               SizeOf(Char), False, False));
 end;
 
 class operator BigCardinal.Equal(const A, B: BigCardinal): Boolean;
@@ -712,20 +688,17 @@ end;
 
 class operator BigCardinal.Add(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AddNumberU(B.FNumber, Result.FNumber),
-            'BigCardinal.Add');
+  HResCheck(A.FNumber.AddNumberU(B.FNumber, Result.FNumber));
 end;
 
 class operator BigCardinal.Subtract(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.SubNumberU(B.FNumber, Result.FNumber),
-            'BigCardinal.Subtract');
+  HResCheck(A.FNumber.SubNumberU(B.FNumber, Result.FNumber));
 end;
 
 class operator BigCardinal.Multiply(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.MulNumberU(B.FNumber, Result.FNumber),
-            'BigCardinal.Multiply');
+  HResCheck(A.FNumber.MulNumberU(B.FNumber, Result.FNumber));
 end;
 
 class operator BigCardinal.IntDivide(const A, B: BigCardinal): BigCardinal;
@@ -733,8 +706,7 @@ var
   Remainder: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Result.FNumber, Remainder),
-            'BigCardinal.IntDivide');
+  HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Result.FNumber, Remainder));
 end;
 
 class operator BigCardinal.Modulus(const A, B: BigCardinal): BigCardinal;
@@ -742,33 +714,28 @@ var
   Quotient: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Quotient, Result.FNumber),
-            'BigCardinal.Modulus');
+  HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Quotient, Result.FNumber));
 end;
 
 
 class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber),
-            'BigCardinal.Shl');
+  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber));
 end;
 
 class operator BigCardinal.RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber),
-            'BigCardinal.Shr');
+  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber));
 end;
 
 class operator BigCardinal.BitwiseAnd(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AndNumberU(B.FNumber, Result.FNumber),
-            'BigCardinal.And');
+  HResCheck(A.FNumber.AndNumberU(B.FNumber, Result.FNumber));
 end;
 
 class operator BigCardinal.BitwiseOr(const A, B: BigCardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.OrNumberU(B.FNumber, Result.FNumber),
-            'BigCardinal.Or');
+  HResCheck(A.FNumber.OrNumberU(B.FNumber, Result.FNumber));
 end;
 
 function BigCardinal.CompareToCard(const B: Cardinal): Integer;
@@ -1057,53 +1024,45 @@ end;
 
 class operator BigCardinal.Add(const A: BigCardinal; const B: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.AddLimbU(B, Result.FNumber),
-            'BigCardinal.AddLimbU');
+  HResCheck(A.FNumber.AddLimbU(B, Result.FNumber));
 end;
 
 class operator BigCardinal.Add(const A: Cardinal; const B: BigCardinal): BigCardinal;
 begin
-  HResCheck(B.FNumber.AddLimbU(A, Result.FNumber),
-            'BigCardinal.AddLimbU');
+  HResCheck(B.FNumber.AddLimbU(A, Result.FNumber));
 end;
 
 class operator BigCardinal.Subtract(const A: BigCardinal; const B: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.SubLimbU(B, Result.FNumber),
-            'BigCardinal.SubLimbU');
+  HResCheck(A.FNumber.SubLimbU(B, Result.FNumber));
 end;
 
 class operator BigCardinal.Subtract(const A: Cardinal; const B: BigCardinal): Cardinal;
 begin
-  HResCheck(B.FNumber.SubLimbU2(A, Result),
-            'BigCardinal.SubLimbU2');
+  HResCheck(B.FNumber.SubLimbU2(A, Result));
 end;
 
 class operator BigCardinal.Multiply(const A: BigCardinal; const B: Cardinal): BigCardinal;
 begin
-  HResCheck(A.FNumber.MulLimbU(B, Result.FNumber),
-            'BigCardinal.MulLimbU');
+  HResCheck(A.FNumber.MulLimbU(B, Result.FNumber));
 end;
 
 class operator BigCardinal.Multiply(const A: Cardinal; const B: BigCardinal): BigCardinal;
 begin
-  HResCheck(B.FNumber.MulLimbU(A, Result.FNumber),
-            'BigCardinal.MulLimbU');
+  HResCheck(B.FNumber.MulLimbU(A, Result.FNumber));
 end;
 
 
 class function BigCardinal.DivRem(const Dividend: BigCardinal;
                Divisor: Cardinal; var Remainder: Cardinal): BigCardinal;
 begin
-  HResCheck(Dividend.FNumber.DivRemLimbU(Divisor, Result.FNumber, Remainder),
-            'BigCardinal.DivRemLimbU');
+  HResCheck(Dividend.FNumber.DivRemLimbU(Divisor, Result.FNumber, Remainder));
 end;
 
 class function BigCardinal.DivRem(const Dividend: Cardinal;
                Divisor: BigCardinal; var Remainder: Cardinal): Cardinal;
 begin
-  HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder),
-            'BigCardinal.DivRemLimbU2');
+  HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder));
 end;
 
 class operator BigCardinal.IntDivide(const A: BigCardinal; const B: Cardinal): BigCardinal;
@@ -1111,8 +1070,7 @@ var
   Remainder: Cardinal;
 
 begin
-  HResCheck(A.FNumber.DivRemLimbU(B, Result.FNumber, Remainder),
-            'BigCardinal.IntDivide');
+  HResCheck(A.FNumber.DivRemLimbU(B, Result.FNumber, Remainder));
 end;
 
 class operator BigCardinal.IntDivide(const A: Cardinal; const B: BigCardinal): Cardinal;
@@ -1120,8 +1078,7 @@ var
   Remainder: Cardinal;
 
 begin
-  HResCheck(B.FNumber.DivRemLimbU2(A, Result, Remainder),
-            'BigCardinal.IntDivide');
+  HResCheck(B.FNumber.DivRemLimbU2(A, Result, Remainder));
 end;
 
 class operator BigCardinal.Modulus(const A: BigCardinal; const B: Cardinal): Cardinal;
@@ -1129,8 +1086,7 @@ var
   Quotient: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivRemLimbU(B, Quotient, Result),
-            'BigCardinal.Modulus');
+  HResCheck(A.FNumber.DivRemLimbU(B, Quotient, Result));
 end;
 
 
@@ -1139,8 +1095,7 @@ var
   Quotient: Cardinal;
 
 begin
-  HResCheck(B.FNumber.DivRemLimbU2(A, Quotient, Result),
-            'BigCardinal.Modulus');
+  HResCheck(B.FNumber.DivRemLimbU2(A, Quotient, Result));
 end;
 
 { -------------------------- BigInteger -------------------------- }
@@ -1153,11 +1108,10 @@ end;
 function BigInteger.ToString: string;
 var
   BytesUsed: Integer;
-  L, L1: Integer;
+  L: Integer;
   P, P1: PByte;
   I: Integer;
   IsMinus: Boolean;
-  HR: TF_RESULT;
 
 begin
   BytesUsed:= FNumber.GetSize;
@@ -1165,27 +1119,17 @@ begin
   L:= (BytesUsed * 41) div 17 + 1;
   GetMem(P, L);
   try
-    L1:= L;
-    HR:= FNumber.ToDec(P, L1);
-// -- kludge
-    if HR = TF_E_INVALIDARG then begin
-      FreeMem(P);
-      L:= L1;
-      GetMem(P, L);
-      HR:= FNumber.ToDec(P, L1);
-    end;
-// -- end of kludge
-    HResCheck(HR, 'BigInteger -> string conversion error');
+    HResCheck(FNumber.ToDec(P, L));
     IsMinus:= GetSign < 0;
-    if IsMinus then Inc(L1);
-    SetLength(Result, L1);
+    if IsMinus then Inc(L);
+    SetLength(Result, L);
     I:= 1;
     if IsMinus then begin
       Result[1]:= '-';
       Inc(I);
     end;
     P1:= P;
-    while I <= L1 do begin
+    while I <= L do begin
       Result[I]:= Char(P1^);
       Inc(P1);
       Inc(I);
@@ -1201,7 +1145,7 @@ const
   ASCII_8 = 56;   // Ord('8')
 
 var
-  L, L1: Integer;
+  L: Integer;
   P, P1: PByte;
   HR: TF_RESULT;
   Filler: Char;
@@ -1213,10 +1157,8 @@ begin
   if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
-      L1:= L;
-      HResCheck(FNumber.ToHex(P, L1, TwoCompl),
-                       'BigInteger -> hex string conversion error');
-      if Digits < L1 then Digits:= L1;
+      HResCheck(FNumber.ToHex(P, L, TwoCompl));
+      if Digits < L then Digits:= L;
       I:= 1;
       if (FNumber.GetSign < 0) and not TwoCompl then begin
         Inc(I);
@@ -1227,10 +1169,10 @@ begin
         SetLength(Result, Digits + Length(Prefix));
       Move(Pointer(Prefix)^, Result[I], Length(Prefix) * SizeOf(Char));
       Inc(I, Length(Prefix));
-      if Digits > L1 then begin
-        if TwoCompl and (P[L1] >= ASCII_8) then Filler:= 'F'
+      if Digits > L then begin
+        if TwoCompl and (P[L] >= ASCII_8) then Filler:= 'F'
         else Filler:= '0';
-        while I + L1 <= Length(Result) do begin
+        while I + L <= Length(Result) do begin
           Result[I]:= Filler;
           Inc(I);
         end;
@@ -1246,7 +1188,7 @@ begin
     end;
   end
   else
-    BigNumberError(HR, 'BigInteger -> hex string conversion error');
+    BigNumberError(HR);
 end;
 
 function BigInteger.ToBytes: TBytes;
@@ -1255,21 +1197,19 @@ var
   L: Cardinal;
 
 begin
-  L:= 0;
+  Result:= nil;
   HR:= FNumber.ToPByte(nil, L);
   if (HR = TF_E_INVALIDARG) and (L > 0) then begin
     SetLength(Result, L);
     HR:= FNumber.ToPByte(Pointer(Result), L);
   end;
-  HResCheck(HR, 'BigInteger -> TBytes conversion error');
+  HResCheck(HR);
 end;
 
 function BigInteger.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
   Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
                               SizeOf(Char), True, TwoCompl) = TF_S_OK;
-//  Result:= BigNumberFromPWideChar(FNumber, Pointer(S), Length(S),
-//              True) = TF_S_OK;
 end;
 
 procedure BigInteger.Free;
@@ -1304,53 +1244,46 @@ end;
 
 class function BigInteger.Abs(const A: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.AbsNumber(Result.FNumber), 'BigInteger.Abs');
+  HResCheck(A.FNumber.AbsNumber(Result.FNumber));
 end;
 
 class function BigInteger.Pow(const Base: BigInteger; Value: Cardinal): BigInteger;
 begin
-  HResCheck(Base.FNumber.Pow(Value, Result.FNumber),
-                        'BigInteger.Power');
+  HResCheck(Base.FNumber.Pow(Value, Result.FNumber));
 end;
 
 class function BigInteger.DivRem(const Dividend, Divisor: BigCardinal;
                var Remainder: BigCardinal): BigCardinal;
 begin
   HResCheck(Dividend.FNumber.DivRemNumber(Divisor.FNumber,
-            Result.FNumber, Remainder.FNumber),
-            'BigInteger.DivRem');
+            Result.FNumber, Remainder.FNumber));
 end;
 
 class function BigInteger.Sqrt(A: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.SqrtNumber(Result.FNumber),
-            'BigInteger.Sqrt');
+  HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
 end;
 
 class function BigInteger.GCD(A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber),
-            'BigInteger.GCD');
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
 end;
 
 class function BigInteger.EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber),
-            'BigInteger.EGCD');
+  HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber));
 end;
 
 class function BigInteger.ModPow(const BaseValue, ExpValue,
                Modulo: BigInteger): BigInteger;
 begin
   HResCheck(BaseValue.FNumber.ModPow(ExpValue.FNumber,
-            Modulo.FNumber, Result.FNumber),
-            'BigInteger.ModPow');
+            Modulo.FNumber, Result.FNumber));
 end;
 
 class function BigInteger.ModInverse(A, Modulo: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber),
-            'BigInteger.ModInverse');
+  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 end;
 
 class operator BigInteger.Implicit(const Value: BigCardinal): BigInteger;
@@ -1361,72 +1294,60 @@ end;
 class operator BigInteger.Explicit(const Value: BigInteger): BigCardinal;
 begin
   if (Value.FNumber.GetSign < 0) then
-      BigNumberError(TF_E_INVALIDARG, 'Negative value');
+    BigNumberError(TF_E_INVALIDARG);
   Result.FNumber:= Value.FNumber;
 end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): Cardinal;
 begin
-  HResCheck(Value.FNumber.ToLimb(Result),
-    'BigInteger -> UInt32 conversion error');
+  HResCheck(Value.FNumber.ToLimb(Result));
 end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): UInt64;
 begin
-  HResCheck(Value.FNumber.ToDblLimb(Result),
-    'BigInteger -> UInt64 conversion error');
+  HResCheck(Value.FNumber.ToDblLimb(Result));
 end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): Integer;
 begin
-  HResCheck(Value.FNumber.ToIntLimb(Result),
-    'BigInteger -> Int32 conversion error');
+  HResCheck(Value.FNumber.ToIntLimb(Result));
 end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): Int64;
 begin
-  HResCheck(Value.FNumber.ToDblIntLimb(Result),
-    'BigInteger -> Int64 conversion error');
+  HResCheck(Value.FNumber.ToDblIntLimb(Result));
 end;
 
 class operator BigInteger.Implicit(const Value: UInt32): BigInteger;
 begin
-  HResCheck(BigNumberFromUInt32(Result.FNumber, Value),
-            'BigNumberFromLimb');
+  HResCheck(BigNumberFromUInt32(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Implicit(const Value: UInt64): BigInteger;
 begin
-  HResCheck(BigNumberFromUInt64(Result.FNumber, Value),
-            'BigNumberFromDblLimb');
+  HResCheck(BigNumberFromUInt64(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Implicit(const Value: Int32): BigInteger;
 begin
-  HResCheck(BigNumberFromInt32(Result.FNumber, Value),
-            'BigNumberFromIntLimb');
+  HResCheck(BigNumberFromInt32(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Implicit(const Value: Int64): BigInteger;
 begin
-  HResCheck(BigNumberFromInt64(Result.FNumber, Value),
-            'BigNumberFromDblIntLimb');
+  HResCheck(BigNumberFromInt64(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
 begin
   HResCheck(BigNumberFromPByte(Result.FNumber,
-            Pointer(Value), Length(Value), True),
-            'TBytes -> BigInteger conversion error');
+            Pointer(Value), Length(Value), True));
 end;
 
 class operator BigInteger.Explicit(const Value: string): BigInteger;
 begin
-//  HResCheck(BigNumberFromPWideChar(Result.FNumber, Pointer(Value),
-//            Length(Value), True),
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
-                               SizeOf(Char), True, False),
-            'string -> BigInteger conversion error');
+            SizeOf(Char), True, False));
 end;
 
 class operator BigInteger.Equal(const A, B: BigInteger): Boolean;
@@ -1521,17 +1442,17 @@ end;
 
 class operator BigInteger.Add(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.AddNumber(B.FNumber, Result.FNumber), 'BigInteger.Add');
+  HResCheck(A.FNumber.AddNumber(B.FNumber, Result.FNumber));
 end;
 
 class operator BigInteger.Subtract(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.SubNumber(B.FNumber, Result.FNumber), 'BigInteger.Subtract');
+  HResCheck(A.FNumber.SubNumber(B.FNumber, Result.FNumber));
 end;
 
 class operator BigInteger.Multiply(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.MulNumber(B.FNumber, Result.FNumber), 'BigInteger.Multiply');
+  HResCheck(A.FNumber.MulNumber(B.FNumber, Result.FNumber));
 end;
 
 class operator BigInteger.IntDivide(const A, B: BigInteger): BigInteger;
@@ -1539,8 +1460,7 @@ var
   Remainder: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivRemNumber(B.FNumber, Result.FNumber, Remainder),
-            'BigInteger.IntDivide');
+  HResCheck(A.FNumber.DivRemNumber(B.FNumber, Result.FNumber, Remainder));
 end;
 
 class operator BigInteger.Modulus(const A, B: BigInteger): BigInteger;
@@ -1548,38 +1468,32 @@ var
   Quotient: IBigNumber;
 
 begin
-  HResCheck(A.FNumber.DivRemNumber(B.FNumber, Quotient, Result.FNumber),
-            'BigInteger.Modulus');
+  HResCheck(A.FNumber.DivRemNumber(B.FNumber, Quotient, Result.FNumber));
 end;
 
 class operator BigInteger.LeftShift(const A: BigInteger; Shift: Cardinal): BigInteger;
 begin
-  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber),
-   'BigInteger.Shl');
+  HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber));
 end;
 
 class operator BigInteger.RightShift(const A: BigInteger; Shift: Cardinal): BigInteger;
 begin
-  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber),
-   'BigInteger.Shr');
+  HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber));
 end;
 
 class operator BigInteger.BitwiseAnd(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber),
-                       'BigInteger.And');
+  HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber));
 end;
 
 class operator BigInteger.BitwiseOr(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber),
-                       'BigInteger.Or');
+  HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber));
 end;
 
 class operator BigInteger.BitwiseXor(const A, B: BigInteger): BigInteger;
 begin
-  HResCheck(A.FNumber.XorNumber(B.FNumber, Result.FNumber),
-                       'BigInteger.Xor');
+  HResCheck(A.FNumber.XorNumber(B.FNumber, Result.FNumber));
 end;
 
 function BigInteger.CompareToCard(const B: Cardinal): Integer;
@@ -1866,102 +1780,85 @@ end;
 class function BigInteger.DivRem(const Dividend: BigInteger;
                const Divisor: Cardinal; var Remainder: BigInteger): BigInteger;
 begin
-  HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber),
-            'BigCardinal.DivRemLimb');
+  HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber));
 end;
 
 class function BigInteger.DivRem(const Dividend: Cardinal;
                const Divisor: BigInteger; var Remainder: Cardinal): BigInteger;
 begin
-  HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder),
-            'BigCardinal.DivRemLimb2');
+  HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder));
 end;
 
 class function BigInteger.DivRem(const Dividend: BigInteger;
                const Divisor: Integer; var Remainder: Integer): BigInteger;
 begin
-  HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder),
-            'BigCardinal.DivRemIntLimb');
+  HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder));
 end;
 
 class function BigInteger.DivRem(const Dividend: Integer;
                const Divisor: BigInteger; var Remainder: Integer): Integer;
 begin
-  HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder),
-            'BigCardinal.DivRemIntLimb2');
+  HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder));
 end;
-
 
 class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
 begin
-  HResCheck(A.FNumber.AddLimb(B, Result.FNumber),
-            'BigCardinal.AddLimb');
+  HResCheck(A.FNumber.AddLimb(B, Result.FNumber));
 end;
 
 class operator BigInteger.Add(const A: Cardinal; const B: BigInteger): BigInteger;
 begin
-  HResCheck(B.FNumber.AddLimb(A, Result.FNumber),
-            'BigCardinal.AddLimb');
+  HResCheck(B.FNumber.AddLimb(A, Result.FNumber));
 end;
 
 class operator BigInteger.Add(const A: BigInteger; const B: Integer): BigInteger;
 begin
-  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber),
-           'BigInteger.AddIntLimb');
+  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber));
 end;
 
 class operator BigInteger.Add(const A: Integer; const B: BigInteger): BigInteger;
 begin
-  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber),
-            'BigInteger.AddIntLimb');
+  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber));
 end;
 
 class operator BigInteger.Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
 begin
-  HResCheck(A.FNumber.SubLimb(B, Result.FNumber),
-            'BigInteger.Subtract');
+  HResCheck(A.FNumber.SubLimb(B, Result.FNumber));
 end;
 
 class operator BigInteger.Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
 begin
-  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber),
-            'BigInteger.Subtract');
+  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber));
 end;
 
 class operator BigInteger.Subtract(const A: BigInteger; const B: Integer): BigInteger;
 begin
-  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber),
-            'BigInteger.Subtract');
+  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber));
 end;
 
 class operator BigInteger.Subtract(const A: Integer; const B: BigInteger): BigInteger;
 begin
-  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber),
-            'BigInteger.Subtract');
+  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber));
 end;
 
 class operator BigInteger.Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
 begin
-  HResCheck(A.FNumber.MulLimb(B, Result.FNumber),
-            'BigInteger.MulLimb');
+  HResCheck(A.FNumber.MulLimb(B, Result.FNumber));
 end;
 
 class operator BigInteger.Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
 begin
-  HResCheck(B.FNumber.MulLimb(A, Result.FNumber),
-            'BigInteger.MulLimb');
+  HResCheck(B.FNumber.MulLimb(A, Result.FNumber));
 end;
 
 class operator BigInteger.Multiply(const A: BigInteger; const B: Integer): BigInteger;
 begin
-  HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber),
-            'BigInteger.MulIntLimb');
+  HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber));
 end;
 
 class operator BigInteger.Multiply(const A: Integer; const B: BigInteger): BigInteger;
 begin
-  HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber),
-            'BigInteger.MulIntLimb');
+  HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber));
 end;
 
 
