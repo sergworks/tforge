@@ -16,6 +16,8 @@ typedef int16_t SmallInt;
 typedef int32_t LongInt;
 typedef int64_t Int64;
 
+typedef LongInt Int32;
+typedef LongWord UInt32;
 typedef LongInt Integer;
 typedef LongWord Cardinal;
 
@@ -73,10 +75,14 @@ class IBigNumber {
     virtual TF_RESULT __stdcall AssignNumber(IBigNumber** Res) = 0;
     virtual TF_RESULT __stdcall AbsNumber(IBigNumber** Res) = 0;
     virtual TF_RESULT __stdcall NegateNumber(IBigNumber** Res) = 0;
-    virtual TF_RESULT __stdcall PowLimb(LongWord Power, IBigNumber** Res) = 0;
-    virtual TF_RESULT __stdcall PowLimbU(LongWord Power, IBigNumber** Res) = 0;
-    virtual TF_RESULT __stdcall ModPow(IBigNumber* IExp, IBigNumber* IMod, IBigNumber** Res) = 0;
+    virtual TF_RESULT __stdcall Pow(LongWord Power, IBigNumber** Res) = 0;
+    virtual TF_RESULT __stdcall PowU(LongWord Power, IBigNumber** Res) = 0;
+
     virtual TF_RESULT __stdcall SqrtNumber(IBigNumber** Res) = 0;
+    virtual TF_RESULT __stdcall GCD(IBigNumber* B, IBigNumber** G) = 0;
+    virtual TF_RESULT __stdcall EGCD(IBigNumber* B, IBigNumber** G, IBigNumber** X, IBigNumber** Y) = 0;
+    virtual TF_RESULT __stdcall ModPow(IBigNumber* IExp, IBigNumber* IMod, IBigNumber** Res) = 0;
+    virtual TF_RESULT __stdcall ModInverse(IBigNumber* M, IBigNumber** R) = 0;
 
     virtual TF_RESULT __stdcall ToLimb(LongWord& Value) = 0;
     virtual TF_RESULT __stdcall ToIntLimb(LongInt& Value) = 0;
@@ -96,7 +102,7 @@ class IBigNumber {
     virtual TF_RESULT __stdcall SubLimb(LongWord Limb, IBigNumber** Res) = 0;
     virtual TF_RESULT __stdcall SubLimb2(LongWord Limb, IBigNumber** Res) = 0;
     virtual TF_RESULT __stdcall SubLimbU(LongWord Limb, IBigNumber** Res) = 0;
-    virtual TF_RESULT __stdcall SubLimbU2(LongWord Limb, IBigNumber** Res) = 0;
+    virtual TF_RESULT __stdcall SubLimbU2(LongWord Limb, Cardinal* Res) = 0;
     virtual TF_RESULT __stdcall SubIntLimb(LongInt Limb, IBigNumber** Res) = 0;
     virtual TF_RESULT __stdcall SubIntLimb2(LongInt Limb, IBigNumber** Res) = 0;
 
@@ -119,9 +125,10 @@ class IBigNumber {
     virtual LongInt __stdcall CompareToDblIntLimbU(Int64 Value) = 0;
 };
 
-TF_RESULT LoadNumerics(string Name);
+TF_RESULT LoadNumerics(string Name = "");
 
 class BigCardinal {
+    friend class BigInteger;
   private:
     IBigNumber* FNumber;
   public:
@@ -147,18 +154,29 @@ class BigCardinal {
   	    if (FNumber != NULL)
   	    {
   		    FNumber->Release();
+  		    FNumber = NULL;
   	    }
     };
+
     BigCardinal& operator= (const BigCardinal& A);
 
     string ToString();
     string ToHexString(int Digits = 0, const string Prefix = "", bool TwoCompl = false);
     TBytes ToBytes();
     bool TryParse(const string S, bool TwoCompl = false);
-    void Free();
+
+    void Free()
+    {
+        if (FNumber != NULL)
+        {
+            FNumber->Release();
+            FNumber = NULL;
+        }
+    }
+
 
     static int Compare(const BigCardinal& A, const BigCardinal& B);
-    Integer CompareTo(const BigCardinal& B)
+    int CompareTo(const BigCardinal& B) const
     {
         return Compare(*this, B);
     }
@@ -209,13 +227,13 @@ class BigCardinal {
     friend BigCardinal operator&(const BigCardinal& A, const BigCardinal& B);
     friend BigCardinal operator|(const BigCardinal& A, const BigCardinal& B);
 
-    Integer CompareToCard(Cardinal B) const;
-    Integer CompareToInt(Integer B) const;
-    Integer CompareTo(Cardinal B) const
+    int CompareToCard(Cardinal B) const;
+    int CompareToInt(Integer B) const;
+    int CompareTo(Cardinal B) const
     {
         return CompareToCard(B);
     }
-    Integer CompareTo(Integer B) const
+    int CompareTo(Integer B) const
     {
         return CompareToInt(B);
     }
@@ -322,13 +340,13 @@ class BigCardinal {
         return (B.CompareToInt(A) >= 0);
     }
 
-    Integer CompareToUInt64(UInt64 B) const;
-    Integer CompareToInt64(Int64 B) const;
-    Integer CompareTo(UInt64 B) const
+    int CompareToUInt64(UInt64 B) const;
+    int CompareToInt64(Int64 B) const;
+    int CompareTo(UInt64 B) const
     {
         return CompareToUInt64(B);
     }
-    Integer CompareTo(Int64 B) const
+    int CompareTo(Int64 B) const
     {
         return CompareToInt64(B);
     }
@@ -444,7 +462,6 @@ class BigCardinal {
     friend BigCardinal operator+(Cardinal A, const BigCardinal& B);
     friend BigCardinal operator-(const BigCardinal& A, Cardinal B);
     friend Cardinal operator-(Cardinal A, const BigCardinal& B);
-
     friend BigCardinal operator*(const BigCardinal& A, Cardinal B);
     friend BigCardinal operator*(Cardinal A, const BigCardinal& B);
     friend BigCardinal operator/(const BigCardinal& A, Cardinal B);
@@ -452,4 +469,469 @@ class BigCardinal {
     friend Cardinal operator%(const BigCardinal& A, Cardinal B);
     friend Cardinal operator%(const Cardinal A, const BigCardinal& B);
 };
+
+class BigInteger {
+  private:
+    IBigNumber* FNumber;
+  public:
+    BigInteger() : FNumber(NULL) {};
+    BigInteger(const BigCardinal& A)
+    {
+    	FNumber = A.FNumber;
+    	if (FNumber != NULL)
+    	{
+    		FNumber->AddRef();
+    	}
+    };
+    BigInteger(const BigInteger& A)
+    {
+    	FNumber = A.FNumber;
+    	if (FNumber != NULL)
+    	{
+    		FNumber->AddRef();
+    	}
+    };
+    BigInteger(Cardinal A);
+    BigInteger(Integer A);
+    BigInteger(UInt64 A);
+    BigInteger(Int64 A);
+    BigInteger(const TBytes A);
+    BigInteger(const string A);
+
+
+    ~BigInteger()      // !! non-virtual !!
+    {
+  	    if (FNumber != NULL)
+  	    {
+  		    FNumber->Release();
+  		    FNumber = NULL;
+  	    }
+    };
+
+    BigInteger& operator= (const BigInteger& A);
+
+    string ToString();
+    string ToHexString(int Digits = 0, const string Prefix = "", bool TwoCompl = false);
+    TBytes ToBytes();
+    bool TryParse(const string S, bool TwoCompl = false);
+
+    void Free()
+    {
+        if (FNumber != NULL)
+        {
+            FNumber->Release();
+            FNumber = NULL;
+        }
+    }
+
+    int Sign();
+
+    static BigInteger Abs(const BigInteger& A);
+    static BigInteger Pow(const BigInteger& Base, Cardinal Value);
+    static BigInteger DivRem(const BigInteger& Dividend, const BigInteger& Divisor,
+                             BigInteger& Remainder);
+
+    static BigInteger Sqrt(const BigInteger& A);
+    static BigInteger GCD(const BigInteger& A, const BigInteger& B);
+    static BigInteger EGCD(const BigInteger& A, const BigInteger& B, BigInteger& X, BigInteger& Y);
+    static BigInteger ModPow(const BigInteger& BaseValue, const BigInteger& ExpValue,
+                             const BigInteger& Modulo);
+    static BigInteger ModInverse(const BigInteger& A, const BigInteger& Modulo);
+/*
+    class operator Implicit(const Value: BigCardinal): BigInteger; inline;
+    class operator Explicit(const Value: BigInteger): BigCardinal; inline;
+
+    class operator Explicit(const Value: BigInteger): Cardinal;
+    class operator Explicit(const Value: BigInteger): UInt64;
+    class operator Explicit(const Value: BigInteger): Integer;
+    class operator Explicit(const Value: BigInteger): Int64;
+    class operator Implicit(const Value: UInt32): BigInteger;
+    class operator Implicit(const Value: UInt64): BigInteger;
+    class operator Implicit(const Value: Int32): BigInteger;
+    class operator Implicit(const Value: Int64): BigInteger;
+    class operator Explicit(const Value: TBytes): BigInteger;
+    class operator Explicit(const Value: string): BigInteger;
+*/
+
+    static int Compare(const BigInteger& A, const BigInteger& B);
+    static int Compare(const BigInteger& A, const BigCardinal& B);
+    static int Compare(const BigCardinal& A, const BigInteger& B);
+
+    int CompareTo(const BigInteger& B) const
+    {
+        return Compare(*this, B);
+    }
+    int CompareTo(const BigCardinal& B) const
+    {
+        return Compare(*this, B);
+    }
+
+    friend bool operator==(const BigInteger& A, const BigInteger& B)
+    {
+        return (Compare(A, B) == 0);
+    }
+
+    friend bool operator==(const BigInteger& A, const BigCardinal& B)
+    {
+        return (Compare(A, B) == 0);
+    }
+
+    friend bool operator==(const BigCardinal& A, const BigInteger& B)
+    {
+        return (Compare(A, B) == 0);
+    }
+
+    friend bool operator!=(const BigInteger& A, const BigInteger& B)
+    {
+        return (Compare(A, B) != 0);
+    }
+
+    friend bool operator!=(const BigInteger& A, const BigCardinal& B)
+    {
+        return (Compare(A, B) != 0);
+    }
+
+    friend bool operator!=(const BigCardinal& A, const BigInteger& B)
+    {
+        return (Compare(A, B) != 0);
+    }
+
+    friend bool operator>(const BigInteger& A, const BigInteger& B)
+    {
+        return (Compare(A, B) > 0);
+    }
+
+    friend bool operator>(const BigInteger& A, const BigCardinal& B)
+    {
+        return (Compare(A, B) > 0);
+    }
+
+    friend bool operator>(const BigCardinal& A, const BigInteger& B)
+    {
+        return (Compare(A, B) > 0);
+    }
+
+    friend bool operator>=(const BigInteger& A, const BigInteger& B)
+    {
+        return (Compare(A, B) >= 0);
+    }
+
+    friend bool operator>=(const BigInteger& A, const BigCardinal& B)
+    {
+        return (Compare(A, B) >= 0);
+    }
+
+    friend bool operator>=(const BigCardinal& A, const BigInteger& B)
+    {
+        return (Compare(A, B) >= 0);
+    }
+
+    friend bool operator<(const BigInteger& A, const BigInteger& B)
+    {
+        return (Compare(A, B) < 0);
+    }
+
+    friend bool operator<(const BigInteger& A, const BigCardinal& B)
+    {
+        return (Compare(A, B) < 0);
+    }
+
+    friend bool operator<(const BigCardinal& A, const BigInteger& B)
+    {
+        return (Compare(A, B) < 0);
+    }
+
+    friend bool operator<=(const BigInteger& A, const BigInteger& B)
+    {
+        return (Compare(A, B) <= 0);
+    }
+
+    friend bool operator<=(const BigInteger& A, const BigCardinal& B)
+    {
+        return (Compare(A, B) <= 0);
+    }
+
+    friend bool operator<=(const BigCardinal& A, const BigInteger& B)
+    {
+        return (Compare(A, B) <= 0);
+    }
+
+
+    friend BigInteger operator+(const BigInteger& A, const BigInteger& B);
+    friend BigInteger operator-(const BigInteger& A, const BigInteger& B);
+    friend BigInteger operator*(const BigInteger& A, const BigInteger& B);
+    friend BigInteger operator/(const BigInteger& A, const BigInteger& B);
+    friend BigInteger operator%(const BigInteger& A, const BigInteger& B);
+
+    friend BigInteger operator<<(const BigInteger& A, Cardinal Shift);
+    friend BigInteger operator>>(const BigInteger& A, Cardinal Shift);
+
+    friend BigInteger operator&(const BigInteger& A, const BigInteger& B);
+    friend BigInteger operator|(const BigInteger& A, const BigInteger& B);
+    friend BigInteger operator^(const BigInteger& A, const BigInteger& B);
+
+    int CompareToCard(Cardinal B) const;
+    int CompareToInt(Integer B) const;
+    int CompareTo(Cardinal B) const
+    {
+        return CompareToCard(B);
+    }
+    int CompareTo(Integer B) const
+    {
+        return CompareToInt(B);
+    }
+
+    friend bool operator==(const BigInteger& A, Cardinal B)
+    {
+        return (A.CompareToCard(B) == 0);
+    }
+    friend bool operator==(Cardinal A, const BigInteger& B)
+    {
+        return (B.CompareToCard(A) == 0);
+    }
+    friend bool operator==(const BigInteger& A, Integer B)
+    {
+        return (A.CompareToInt(B) == 0);
+    }
+    friend bool operator==(Integer A, const BigInteger& B)
+    {
+        return (B.CompareToInt(A) == 0);
+    }
+
+    friend bool operator!=(const BigInteger& A, Cardinal B)
+    {
+        return (A.CompareToCard(B) != 0);
+    }
+    friend bool operator!=(Cardinal A, const BigInteger& B)
+    {
+        return (B.CompareToCard(A) != 0);
+    }
+    friend bool operator!=(const BigInteger& A, Integer B)
+    {
+        return (A.CompareToInt(B) != 0);
+    }
+    friend bool operator!=(Integer A, const BigInteger& B)
+    {
+        return (B.CompareToInt(A) != 0);
+    }
+
+    friend bool operator>(const BigInteger& A, Cardinal B)
+    {
+        return (A.CompareToCard(B) > 0);
+    }
+    friend bool operator>(Cardinal A, const BigInteger& B)
+    {
+        return (B.CompareToCard(A) < 0);
+    }
+    friend bool operator>(const BigInteger& A, Integer B)
+    {
+        return (A.CompareToInt(B) > 0);
+    }
+    friend bool operator>(Integer A, const BigInteger& B)
+    {
+        return (B.CompareToInt(A) < 0);
+    }
+
+    friend bool operator>=(const BigInteger& A, Cardinal B)
+    {
+        return (A.CompareToCard(B) >= 0);
+    }
+    friend bool operator>=(Cardinal A, const BigInteger& B)
+    {
+        return (B.CompareToCard(A) <= 0);
+    }
+    friend bool operator>=(const BigInteger& A, Integer B)
+    {
+        return (A.CompareToInt(B) >= 0);
+    }
+    friend bool operator>=(Integer A, const BigInteger& B)
+    {
+        return (B.CompareToInt(A) <= 0);
+    }
+
+    friend bool operator<(const BigInteger& A, Cardinal B)
+    {
+        return (A.CompareToCard(B) < 0);
+    }
+    friend bool operator<(Cardinal A, const BigInteger& B)
+    {
+        return (B.CompareToCard(A) > 0);
+    }
+    friend bool operator<(const BigInteger& A, Integer B)
+    {
+        return (A.CompareToInt(B) < 0);
+    }
+    friend bool operator<(Integer A, const BigInteger& B)
+    {
+        return (B.CompareToInt(A) > 0);
+    }
+
+    friend bool operator<=(const BigInteger& A, Cardinal B)
+    {
+        return (A.CompareToCard(B) <= 0);
+    }
+    friend bool operator<=(Cardinal A, const BigInteger& B)
+    {
+        return (B.CompareToCard(A) >= 0);
+    }
+    friend bool operator<=(const BigInteger& A, Integer B)
+    {
+        return (A.CompareToInt(B) <= 0);
+    }
+    friend bool operator<=(Integer A, const BigInteger& B)
+    {
+        return (B.CompareToInt(A) >= 0);
+    }
+
+    int CompareToUInt64(UInt64 B) const;
+    int CompareToInt64(Int64 B) const;
+    int CompareTo(UInt64 B) const
+    {
+        return CompareToUInt64(B);
+    }
+    int CompareTo(Int64 B) const
+    {
+        return CompareToInt64(B);
+    }
+
+    friend bool operator==(const BigInteger& A, UInt64 B)
+    {
+        return (A.CompareToUInt64(B) == 0);
+    }
+    friend bool operator==(UInt64 A, const BigInteger& B)
+    {
+        return (B.CompareToUInt64(A) == 0);
+    }
+    friend bool operator==(const BigInteger& A, Int64 B)
+    {
+        return (A.CompareToInt64(B) == 0);
+    }
+    friend bool operator==(Int64 A, const BigInteger& B)
+    {
+        return (B.CompareToInt64(A) == 0);
+    }
+
+    friend bool operator!=(const BigInteger& A, UInt64 B)
+    {
+        return (A.CompareToUInt64(B) != 0);
+    }
+    friend bool operator!=(UInt64 A, const BigInteger& B)
+    {
+        return (B.CompareToUInt64(A) != 0);
+    }
+    friend bool operator!=(const BigInteger& A, Int64 B)
+    {
+        return (A.CompareToInt64(B) != 0);
+    }
+    friend bool operator!=(Int64 A, const BigInteger& B)
+    {
+        return (B.CompareToInt64(A) != 0);
+    }
+
+    friend bool operator>(const BigInteger& A, UInt64 B)
+    {
+        return (A.CompareToUInt64(B) > 0);
+    }
+    friend bool operator>(UInt64 A, const BigInteger& B)
+    {
+        return (B.CompareToUInt64(A) < 0);
+    }
+    friend bool operator>(const BigInteger& A, Int64 B)
+    {
+        return (A.CompareToInt64(B) > 0);
+    }
+    friend bool operator>(Int64 A, const BigInteger& B)
+    {
+        return (B.CompareToInt64(A) < 0);
+    }
+
+    friend bool operator>=(const BigInteger& A, UInt64 B)
+    {
+        return (A.CompareToUInt64(B) >= 0);
+    }
+    friend bool operator>=(UInt64 A, const BigInteger& B)
+    {
+        return (B.CompareToUInt64(A) <= 0);
+    }
+    friend bool operator>=(const BigInteger& A, Int64 B)
+    {
+        return (A.CompareToInt64(B) >= 0);
+    }
+    friend bool operator>=(Int64 A, const BigInteger& B)
+    {
+        return (B.CompareToInt64(A) <= 0);
+    }
+
+    friend bool operator<(const BigInteger& A, UInt64 B)
+    {
+        return (A.CompareToUInt64(B) < 0);
+    }
+    friend bool operator<(UInt64 A, const BigInteger& B)
+    {
+        return (B.CompareToUInt64(A) > 0);
+    }
+    friend bool operator<(const BigInteger& A, Int64 B)
+    {
+        return (A.CompareToInt64(B) < 0);
+    }
+    friend bool operator<(Int64 A, const BigInteger& B)
+    {
+        return (B.CompareToInt64(A) > 0);
+    }
+
+    friend bool operator<=(const BigInteger& A, UInt64 B)
+    {
+        return (A.CompareToUInt64(B) <= 0);
+    }
+    friend bool operator<=(UInt64 A, const BigInteger& B)
+    {
+        return (B.CompareToUInt64(A) >= 0);
+    }
+    friend bool operator<=(const BigInteger& A, Int64 B)
+    {
+        return (A.CompareToInt64(B) <= 0);
+    }
+    friend bool operator<=(Int64 A, const BigInteger& B)
+    {
+        return (B.CompareToInt64(A) >= 0);
+    }
+
+// arithmetic operations on BigInteger & Cardinal
+    friend BigInteger operator+(const BigInteger& A, Cardinal B);
+    friend BigInteger operator-(const BigInteger& A, Cardinal B);
+    friend BigInteger operator*(const BigInteger& A, Cardinal B);
+    friend BigInteger operator/(const BigInteger& A, Cardinal B);
+    friend BigInteger operator%(const BigInteger& A, Cardinal B);
+    static BigInteger DivRem(const BigInteger& Dividend, Cardinal Divisor,
+                             BigInteger& Remainder);
+
+// arithmetic operations on Cardinal & BigInteger
+    friend BigInteger operator+(Cardinal A, const BigInteger& B);
+    friend BigInteger operator-(Cardinal A, const BigInteger& B);
+    friend BigInteger operator*(Cardinal A, const BigInteger& B);
+    friend BigInteger operator/(Cardinal A, const BigInteger& B);
+    friend Cardinal operator%(Cardinal A, const BigInteger& B);
+    static BigInteger DivRem(Cardinal Dividend, const BigInteger& Divisor,
+                             Cardinal& Remainder);
+
+// arithmetic operations on BigInteger & Integer
+    friend BigInteger operator+(const BigInteger& A, Integer B);
+    friend BigInteger operator-(const BigInteger& A, Integer B);
+    friend BigInteger operator*(const BigInteger& A, Integer B);
+    friend BigInteger operator/(const BigInteger& A, Integer B);
+    friend Integer operator%(const BigInteger& A, Integer B);
+    static BigInteger DivRem(const BigInteger& Dividend, Integer Divisor,
+                             Integer& Remainder);
+
+// arithmetic operations on Integer & BigInteger
+    friend BigInteger operator+(Integer A, const BigInteger& B);
+    friend BigInteger operator-(Integer A, const BigInteger& B);
+    friend BigInteger operator*(Integer A, const BigInteger& B);
+    friend Integer operator/(Integer A, const BigInteger& B);
+    friend Integer operator%(Integer A, const BigInteger& B);
+    static Integer DivRem(Integer Dividend, const BigInteger& Divisor,
+                          Integer& Remainder);
+
+};
+
 #endif // NUMERICS_HPP_INCLUDED

@@ -33,7 +33,7 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="numerics.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -68,6 +68,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="tfNumbers"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="..\..\..\..\..\Source\Numerics\Units\Shared\tfNumVer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="tfNumVer"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -78,7 +83,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);..\..\..\..\..\Source\Include"/>
-      <OtherUnitFiles Value="..\..\..\..\..\Source\Shared\Units\Shared;..\..\..\..\..\Source\Shared\Units\Engine;..\..\..\..\..\Source\Numerics\Units\Engine"/>
+      <OtherUnitFiles Value="..\..\..\..\..\Source\Shared\Units\Shared;..\..\..\..\..\Source\Shared\Units\Engine;..\..\..\..\..\Source\Numerics\Units\Engine;..\..\..\..\..\Source\Numerics\Units\Shared"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <CodeGeneration>

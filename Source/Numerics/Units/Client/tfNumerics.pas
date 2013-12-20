@@ -159,12 +159,6 @@ type
 
     property Sign: Integer read GetSign;
 
-    class function Compare(const A, B: BigInteger): Integer; overload; static;
-    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
-    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
-    function CompareTo(const B: BigInteger): Integer; overload; inline;
-    function CompareTo(const B: BigCardinal): Integer; overload; inline;
-
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
     class function DivRem(const Dividend, Divisor: BigInteger;
@@ -189,6 +183,12 @@ type
     class operator Implicit(const Value: TDblIntLimb): BigInteger;
     class operator Explicit(const Value: TBytes): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
+
+    class function Compare(const A, B: BigInteger): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
+    function CompareTo(const B: BigInteger): Integer; overload; inline;
+    function CompareTo(const B: BigCardinal): Integer; overload; inline;
 
     class operator Equal(const A, B: BigInteger): Boolean; inline;
     class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean; inline;
@@ -282,34 +282,41 @@ type
     class operator LessThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
     class operator LessThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
 
+// arithmetic operations on BigInteger & TLimb
+    class operator Add(const A: BigInteger; const B: TLimb): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: TLimb): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: TLimb): BigInteger;
+    class operator IntDivide(const A: BigInteger; const B: TLimb): BigInteger;
+    class operator Modulus(const A: BigInteger; const B: TLimb): BigInteger;
     class function DivRem(const Dividend: BigInteger; const Divisor: TLimb;
                           var Remainder: BigInteger): BigInteger; overload; static;
+
+// arithmetic operations on TLimb & BigInteger
+    class operator Add(const A: TLimb; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: TLimb; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: TLimb; const B: BigInteger): BigInteger;
+    class operator IntDivide(const A: TLimb; const B: BigInteger): BigInteger;
+    class operator Modulus(const A: TLimb; const B: BigInteger): TLimb;
     class function DivRem(const Dividend: TLimb; const Divisor: BigInteger;
                           var Remainder: TLimb): BigInteger; overload; static;
+
+// arithmetic operations on BigInteger & TIntLimb
+    class operator Add(const A: BigInteger; const B: TIntLimb): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: TIntLimb): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: TIntLimb): BigInteger;
+    class operator IntDivide(const A: BigInteger; const B: TIntLimb): BigInteger;
+    class operator Modulus(const A: BigInteger; const B: TIntLimb): TIntLimb;
     class function DivRem(const Dividend: BigInteger; const Divisor: TIntLimb;
                           var Remainder: TIntLimb): BigInteger; overload; static;
+
+// arithmetic operations on TIntLimb & BigInteger
+    class operator Add(const A: TIntLimb; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: TIntLimb; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: TIntLimb; const B: BigInteger): BigInteger;
+    class operator IntDivide(const A: TIntLimb; const B: BigInteger): TIntLimb;
+    class operator Modulus(const A: TIntLimb; const B: BigInteger): TIntLimb;
     class function DivRem(const Dividend: TIntLimb; const Divisor: BigInteger;
                           var Remainder: TIntLimb): TIntLimb; overload; static;
-
-    class operator Add(const A: BigInteger; const B: TLimb): BigInteger;
-    class operator Add(const A: TLimb; const B: BigInteger): BigInteger;
-    class operator Add(const A: BigInteger; const B: TIntLimb): BigInteger;
-    class operator Add(const A: TIntLimb; const B: BigInteger): BigInteger;
-    class operator Subtract(const A: BigInteger; const B: TLimb): BigInteger;
-    class operator Subtract(const A: TLimb; const B: BigInteger): BigInteger;
-    class operator Subtract(const A: BigInteger; const B: TIntLimb): BigInteger;
-    class operator Subtract(const A: TIntLimb; const B: BigInteger): BigInteger;
-    class operator Multiply(const A: BigInteger; const B: TLimb): BigInteger;
-    class operator Multiply(const A: TLimb; const B: BigInteger): BigInteger;
-    class operator Multiply(const A: BigInteger; const B: TIntLimb): BigInteger;
-    class operator Multiply(const A: TIntLimb; const B: BigInteger): BigInteger;
-{$IFDEF LIMB32}
-{    class operator IntDivide(const A: BigInteger; const B: Cardinal): BigInteger;
-    class operator IntDivide(const A: Cardinal; const B: BigInteger): BigInteger;
-    class operator IntDivide(const A: BigInteger; const B: Integer): BigInteger;
-    class operator IntDivide(const A: Integer; const B: BigInteger): Integer;
-}
-{$ENDIF}
   end;
 
 type
@@ -2028,50 +2035,17 @@ begin
   Result:= B.CompareToDoubleInt(A) >= 0;
 end;
 
-
-class function BigInteger.DivRem(const Dividend: BigInteger;
-               const Divisor: TLimb; var Remainder: BigInteger): BigInteger;
+class function BigInteger.Sqrt(A: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber));
+  HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
 {$ELSE}
-  HResCheck(TBigNumber.DivRemLimb(PBigNumber(Dividend.FNumber), Divisor,
-            PBigNumber(Result.FNumber), PBigNumber(Remainder.FNumber)));
+  HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
 
-class function BigInteger.DivRem(const Dividend: TLimb;
-               const Divisor: BigInteger; var Remainder: TLimb): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder));
-{$ELSE}
-  HResCheck(TBigNumber.DivRemLimb2(PBigNumber(Divisor.FNumber), Dividend,
-            PBigNumber(Result.FNumber), Remainder));
-{$ENDIF}
-end;
 
-class function BigInteger.DivRem(const Dividend: BigInteger;
-               const Divisor: TIntLimb; var Remainder: TIntLimb): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder));
-{$ELSE}
-  HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(Dividend.FNumber), Divisor,
-            PBigNumber(Result.FNumber), Remainder));
-{$ENDIF}
-end;
-
-class function BigInteger.DivRem(const Dividend: TIntLimb;
-               const Divisor: BigInteger; var Remainder: TIntLimb): TIntLimb;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder));
-{$ELSE}
-  HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(Divisor.FNumber), Dividend,
-            Result, Remainder));
-{$ENDIF}
-end;
+// -- arithmetic operations on BigInteger & TLimb --
 
 class operator BigInteger.Add(const A: BigInteger; const B: TLimb): BigInteger;
 begin
@@ -2079,36 +2053,6 @@ begin
   HResCheck(A.FNumber.AddLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddLimb(PBigNumber(A.FNumber), B,
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class operator BigInteger.Add(const A: TLimb; const B: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(B.FNumber.AddLimb(A, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.AddLimb(PBigNumber(B.FNumber), A,
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class operator BigInteger.Add(const A: BigInteger; const B: TIntLimb): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.AddIntLimb(PBigNumber(A.FNumber), B,
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class operator BigInteger.Add(const A: TIntLimb; const B: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.AddIntLimb(PBigNumber(B.FNumber), A,
             PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
@@ -2123,51 +2067,71 @@ begin
 {$ENDIF}
 end;
 
-class operator BigInteger.Subtract(const A: TLimb; const B: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.SubLimb2(PBigNumber(B.FNumber), A,
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class operator BigInteger.Subtract(const A: BigInteger; const B: TIntLimb): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.SubIntLimb(PBigNumber(A.FNumber), B,
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class function BigInteger.Sqrt(A: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class operator BigInteger.Subtract(const A: TIntLimb; const B: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.SubIntLimb2(PBigNumber(B.FNumber), A,
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
 class operator BigInteger.Multiply(const A: BigInteger; const B: TLimb): BigInteger;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(A.FNumber.MulLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.IntDivide(const A: BigInteger; const B: TLimb): BigInteger;
+var
+  Remainder: BigInteger;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.DivRemLimb(B, Result.FNumber, Remainder.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber), PBigNumber(Remainder.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.Modulus(const A: BigInteger; const B: TLimb): BigInteger;
+var
+  Quotient: BigInteger;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.DivRemLimb(B, Quotient.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Quotient.FNumber), PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.DivRem(const Dividend: BigInteger;
+               const Divisor: TLimb; var Remainder: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimb(PBigNumber(Dividend.FNumber), Divisor,
+            PBigNumber(Result.FNumber), PBigNumber(Remainder.FNumber)));
+{$ENDIF}
+end;
+
+// -- arithmetic operations on TLimb & BigInteger --
+
+class operator BigInteger.Add(const A: TLimb; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.AddLimb(A, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.AddLimb(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.Subtract(const A: TLimb; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.SubLimb2(PBigNumber(B.FNumber), A,
             PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
@@ -2182,12 +2146,130 @@ begin
 {$ENDIF}
 end;
 
+class operator BigInteger.IntDivide(const A: TLimb; const B: BigInteger): BigInteger;
+var
+  Remainder: TLimb;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.DivRemLimb2(A, Result.FNumber, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimb2(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber), Remainder));
+{$ENDIF}
+end;
+
+class operator BigInteger.Modulus(const A: TLimb; const B: BigInteger): TLimb;
+var
+  Quotient: BigInteger;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.DivRemLimb2(A, Quotient.FNumber, Result));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimb2(PBigNumber(B.FNumber), A,
+            PBigNumber(Quotient.FNumber), Result));
+{$ENDIF}
+end;
+
+class function BigInteger.DivRem(const Dividend: TLimb;
+               const Divisor: BigInteger; var Remainder: TLimb): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimb2(PBigNumber(Divisor.FNumber), Dividend,
+            PBigNumber(Result.FNumber), Remainder));
+{$ENDIF}
+end;
+
+// -- arithmetic operations on BigInteger & TIntLimb --
+
+class operator BigInteger.Add(const A: BigInteger; const B: TIntLimb): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.AddIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.Subtract(const A: BigInteger; const B: TIntLimb): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.SubIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
 class operator BigInteger.Multiply(const A: BigInteger; const B: TIntLimb): BigInteger;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.IntDivide(const A: BigInteger; const B: TIntLimb): BigInteger;
+var
+  Remainder: TIntLimb;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.DivRemIntLimb(B, Result.FNumber, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Result.FNumber), Remainder));
+{$ENDIF}
+end;
+
+class operator BigInteger.Modulus(const A: BigInteger; const B: TIntLimb): TIntLimb;
+var
+  Quotient: BigInteger;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.DivRemIntLimb(B, Quotient.FNumber, Result));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(A.FNumber), B,
+            PBigNumber(Quotient.FNumber), Result));
+{$ENDIF}
+end;
+
+class function BigInteger.DivRem(const Dividend: BigInteger;
+               const Divisor: TIntLimb; var Remainder: TIntLimb): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(Dividend.FNumber), Divisor,
+            PBigNumber(Result.FNumber), Remainder));
+{$ENDIF}
+end;
+
+// -- arithmetic operations on TIntLimb & BigInteger --
+
+class operator BigInteger.Add(const A: TIntLimb; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.AddIntLimb(PBigNumber(B.FNumber), A,
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.Subtract(const A: TIntLimb; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.SubIntLimb2(PBigNumber(B.FNumber), A,
             PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
@@ -2199,6 +2281,43 @@ begin
 {$ELSE}
   HResCheck(TBigNumber.MulIntLimb(PBigNumber(B.FNumber), A,
             PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.IntDivide(const A: TIntLimb; const B: BigInteger): TIntLimb;
+var
+  Remainder: TIntLimb;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.DivRemIntLimb2(A, Result, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(B.FNumber), A,
+                       Result, Remainder));
+{$ENDIF}
+end;
+
+class operator BigInteger.Modulus(const A: TIntLimb; const B: BigInteger): TIntLimb;
+var
+  Quotient: TIntLimb;
+
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(B.FNumber.DivRemIntLimb2(A, Quotient, Result));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(B.FNumber), A,
+                       Quotient, Result));
+{$ENDIF}
+end;
+
+class function BigInteger.DivRem(const Dividend: TIntLimb;
+               const Divisor: BigInteger; var Remainder: TIntLimb): TIntLimb;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(Divisor.FNumber), Dividend,
+            Result, Remainder));
 {$ENDIF}
 end;
 

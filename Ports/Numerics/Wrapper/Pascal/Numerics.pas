@@ -286,16 +286,10 @@ type
 
     property Sign: Integer read GetSign;
 
-    class function Compare(const A, B: BigInteger): Integer; overload; static;
-    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
-    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
-    function CompareTo(const B: BigInteger): Integer; overload; inline;
-    function CompareTo(const B: BigCardinal): Integer; overload; inline;
-
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
-    class function DivRem(const Dividend, Divisor: BigCardinal;
-                          var Remainder: BigCardinal): BigCardinal; overload; static;
+    class function DivRem(const Dividend, Divisor: BigInteger;
+                          var Remainder: BigInteger): BigInteger; overload; static;
 
     class function Sqrt(A: BigInteger): BigInteger; static;
     class function GCD(A, B: BigInteger): BigInteger; static;
@@ -316,6 +310,12 @@ type
     class operator Implicit(const Value: Int64): BigInteger;
     class operator Explicit(const Value: TBytes): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
+
+    class function Compare(const A, B: BigInteger): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
+    function CompareTo(const B: BigInteger): Integer; overload; inline;
+    function CompareTo(const B: BigCardinal): Integer; overload; inline;
 
     class operator Equal(const A, B: BigInteger): Boolean; inline;
     class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean; inline;
@@ -408,27 +408,41 @@ type
     class operator LessThanOrEqual(const A: BigInteger; const B: Int64): Boolean; inline;
     class operator LessThanOrEqual(const A: Int64; const B: BigInteger): Boolean; inline;
 
+// arithmetic operations on BigInteger & Cardinal
+    class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator IntDivide(const A: BigInteger; const B: Cardinal): BigInteger;
+    class operator Modulus(const A: BigInteger; const B: Cardinal): BigInteger;
     class function DivRem(const Dividend: BigInteger; const Divisor: Cardinal;
                           var Remainder: BigInteger): BigInteger; overload; static;
+
+// arithmetic operations on Cardinal & BigInteger
+    class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator IntDivide(const A: Cardinal; const B: BigInteger): BigInteger;
+    class operator Modulus(const A: Cardinal; const B: BigInteger): Cardinal;
     class function DivRem(const Dividend: Cardinal; const Divisor: BigInteger;
                           var Remainder: Cardinal): BigInteger; overload; static;
+
+// arithmetic operations on BigInteger & Integer
+    class operator Add(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Subtract(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Multiply(const A: BigInteger; const B: Integer): BigInteger;
+    class operator IntDivide(const A: BigInteger; const B: Integer): BigInteger;
+    class operator Modulus(const A: BigInteger; const B: Integer): Integer;
     class function DivRem(const Dividend: BigInteger; const Divisor: Integer;
                           var Remainder: Integer): BigInteger; overload; static;
+
+// arithmetic operations on Integer & BigInteger
+    class operator Add(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Subtract(const A: Integer; const B: BigInteger): BigInteger;
+    class operator Multiply(const A: Integer; const B: BigInteger): BigInteger;
+    class operator IntDivide(const A: Integer; const B: BigInteger): Integer;
+    class operator Modulus(const A: Integer; const B: BigInteger): Integer;
     class function DivRem(const Dividend: Integer; const Divisor: BigInteger;
                           var Remainder: Integer): Integer; overload; static;
-
-    class operator Add(const A: BigInteger; const B: Cardinal): BigInteger;
-    class operator Add(const A: Cardinal; const B: BigInteger): BigInteger;
-    class operator Add(const A: BigInteger; const B: Integer): BigInteger;
-    class operator Add(const A: Integer; const B: BigInteger): BigInteger;
-    class operator Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
-    class operator Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
-    class operator Subtract(const A: BigInteger; const B: Integer): BigInteger;
-    class operator Subtract(const A: Integer; const B: BigInteger): BigInteger;
-    class operator Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
-    class operator Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
-    class operator Multiply(const A: BigInteger; const B: Integer): BigInteger;
-    class operator Multiply(const A: Integer; const B: BigInteger): BigInteger;
   end;
 
 type
@@ -442,9 +456,15 @@ type
 
 procedure BigNumberError(ACode: TF_RESULT; const Msg: string = '');
 
+function LoadNumerics(const Name: string = ''): TF_RESULT;
+
 implementation
 
+const
+  NumericsVersion = 55;
+
 type
+  TGetNumericsVersion = function(var Version: LongWord): TF_RESULT; stdcall;
   TBigNumberFromUInt32 = function(var A: IBigNumber; Value: Cardinal): TF_RESULT; stdcall;
   TBigNumberFromUInt64 = function(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
   TBigNumberFromInt32 = function(var A: IBigNumber; Value: Integer): TF_RESULT; stdcall;
@@ -455,10 +475,11 @@ type
     P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT; stdcall;
 
 var
-  BigNumberFromUInt32: TBigNumberFromUInt32;
-  BigNumberFromUInt64: TBigNumberFromUInt64;
-  BigNumberFromInt32: TBigNumberFromInt32;
-  BigNumberFromInt64: TBigNumberFromInt64;
+  GetNumericsVersion: TGetNumericsVersion;
+  BigNumberFromLimb: TBigNumberFromUInt32;
+  BigNumberFromDblLimb: TBigNumberFromUInt64;
+  BigNumberFromIntLimb: TBigNumberFromInt32;
+  BigNumberFromDblIntLimb: TBigNumberFromInt64;
   BigNumberFromPChar: TBigNumberFromPChar;
   BigNumberFromPByte: TBigNumberFromPByte;
 
@@ -620,12 +641,12 @@ end;
 
 class operator BigCardinal.Implicit(const Value: Cardinal): BigCardinal;
 begin
-  HResCheck(BigNumberFromUInt32(Result.FNumber, Value));
+  HResCheck(BigNumberFromLimb(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Implicit(const Value: UInt64): BigCardinal;
 begin
-  HResCheck(BigNumberFromUInt64(Result.FNumber, Value));
+  HResCheck(BigNumberFromDblLimb(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Explicit(const Value: Integer): BigCardinal;
@@ -633,7 +654,7 @@ begin
   if Value < 0 then
     BigNumberError(TF_E_INVALIDARG)
   else
-    HResCheck(BigNumberFromInt32(Result.FNumber, Value));
+    HResCheck(BigNumberFromIntLimb(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Explicit(const Value: Int64): BigCardinal;
@@ -641,7 +662,7 @@ begin
   if Value < 0 then
     BigNumberError(TF_E_INVALIDARG)
   else
-    HResCheck(BigNumberFromInt64(Result.FNumber, Value));
+    HResCheck(BigNumberFromDblIntLimb(Result.FNumber, Value));
 end;
 
 class operator BigCardinal.Explicit(const Value: TBytes): BigCardinal;
@@ -1252,8 +1273,8 @@ begin
   HResCheck(Base.FNumber.Pow(Value, Result.FNumber));
 end;
 
-class function BigInteger.DivRem(const Dividend, Divisor: BigCardinal;
-               var Remainder: BigCardinal): BigCardinal;
+class function BigInteger.DivRem(const Dividend, Divisor: BigInteger;
+               var Remainder: BigInteger): BigInteger;
 begin
   HResCheck(Dividend.FNumber.DivRemNumber(Divisor.FNumber,
             Result.FNumber, Remainder.FNumber));
@@ -1320,22 +1341,22 @@ end;
 
 class operator BigInteger.Implicit(const Value: UInt32): BigInteger;
 begin
-  HResCheck(BigNumberFromUInt32(Result.FNumber, Value));
+  HResCheck(BigNumberFromLimb(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Implicit(const Value: UInt64): BigInteger;
 begin
-  HResCheck(BigNumberFromUInt64(Result.FNumber, Value));
+  HResCheck(BigNumberFromDblLimb(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Implicit(const Value: Int32): BigInteger;
 begin
-  HResCheck(BigNumberFromInt32(Result.FNumber, Value));
+  HResCheck(BigNumberFromIntLimb(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Implicit(const Value: Int64): BigInteger;
 begin
-  HResCheck(BigNumberFromInt64(Result.FNumber, Value));
+  HResCheck(BigNumberFromDblIntLimb(Result.FNumber, Value));
 end;
 
 class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
@@ -1777,10 +1798,76 @@ begin
   Result:= B.CompareToDoubleInt(A) >= 0;
 end;
 
+// -- arithmetic operations on BigInteger & Cardinal --
+
+class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+  HResCheck(A.FNumber.AddLimb(B, Result.FNumber));
+end;
+
+class operator BigInteger.Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+  HResCheck(A.FNumber.SubLimb(B, Result.FNumber));
+end;
+
+class operator BigInteger.Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
+begin
+  HResCheck(A.FNumber.MulLimb(B, Result.FNumber));
+end;
+
+class operator BigInteger.IntDivide(const A: BigInteger; const B: Cardinal): BigInteger;
+var
+  Remainder: BigInteger;
+
+begin
+  HResCheck(A.FNumber.DivRemLimb(B, Result.FNumber, Remainder.FNumber));
+end;
+
+class operator BigInteger.Modulus(const A: BigInteger; const B: Cardinal): BigInteger;
+var
+  Quotient: BigInteger;
+
+begin
+  HResCheck(A.FNumber.DivRemLimb(B, Quotient.FNumber, Result.FNumber));
+end;
+
 class function BigInteger.DivRem(const Dividend: BigInteger;
                const Divisor: Cardinal; var Remainder: BigInteger): BigInteger;
 begin
   HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber));
+end;
+
+// -- arithmetic operations on Cardinal & BigInteger --
+
+class operator BigInteger.Add(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.AddLimb(A, Result.FNumber));
+end;
+
+class operator BigInteger.Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber));
+end;
+
+class operator BigInteger.Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.MulLimb(A, Result.FNumber));
+end;
+
+class operator BigInteger.IntDivide(const A: Cardinal; const B: BigInteger): BigInteger;
+var
+  Remainder: Cardinal;
+
+begin
+  HResCheck(B.FNumber.DivRemLimb2(A, Result.FNumber, Remainder));
+end;
+
+class operator BigInteger.Modulus(const A: Cardinal; const B: BigInteger): Cardinal;
+var
+  Quotient: BigInteger;
+
+begin
+  HResCheck(B.FNumber.DivRemLimb2(A, Quotient.FNumber, Result));
 end;
 
 class function BigInteger.DivRem(const Dividend: Cardinal;
@@ -1789,10 +1876,76 @@ begin
   HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder));
 end;
 
+// -- arithmetic operations on BigInteger & Integer --
+
+class operator BigInteger.Add(const A: BigInteger; const B: Integer): BigInteger;
+begin
+  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber));
+end;
+
+class operator BigInteger.Subtract(const A: BigInteger; const B: Integer): BigInteger;
+begin
+  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber));
+end;
+
+class operator BigInteger.Multiply(const A: BigInteger; const B: Integer): BigInteger;
+begin
+  HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber));
+end;
+
+class operator BigInteger.IntDivide(const A: BigInteger; const B: Integer): BigInteger;
+var
+  Remainder: Integer;
+
+begin
+  HResCheck(A.FNumber.DivRemIntLimb(B, Result.FNumber, Remainder));
+end;
+
+class operator BigInteger.Modulus(const A: BigInteger; const B: Integer): Integer;
+var
+  Quotient: BigInteger;
+
+begin
+  HResCheck(A.FNumber.DivRemIntLimb(B, Quotient.FNumber, Result));
+end;
+
 class function BigInteger.DivRem(const Dividend: BigInteger;
                const Divisor: Integer; var Remainder: Integer): BigInteger;
 begin
   HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder));
+end;
+
+// -- arithmetic operations on Integer & BigInteger --
+
+class operator BigInteger.Add(const A: Integer; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber));
+end;
+
+class operator BigInteger.Subtract(const A: Integer; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber));
+end;
+
+class operator BigInteger.Multiply(const A: Integer; const B: BigInteger): BigInteger;
+begin
+  HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber));
+end;
+
+class operator BigInteger.IntDivide(const A: Integer; const B: BigInteger): Integer;
+var
+  Remainder: Integer;
+
+begin
+  HResCheck(B.FNumber.DivRemIntLimb2(A, Result, Remainder));
+end;
+
+class operator BigInteger.Modulus(const A: Integer; const B: BigInteger): Integer;
+var
+  Quotient: Integer;
+
+begin
+  HResCheck(B.FNumber.DivRemIntLimb2(A, Quotient, Result));
 end;
 
 class function BigInteger.DivRem(const Dividend: Integer;
@@ -1801,90 +1954,8 @@ begin
   HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder));
 end;
 
-class operator BigInteger.Add(const A: BigInteger; const B: Cardinal): BigInteger;
-begin
-  HResCheck(A.FNumber.AddLimb(B, Result.FNumber));
-end;
 
-class operator BigInteger.Add(const A: Cardinal; const B: BigInteger): BigInteger;
-begin
-  HResCheck(B.FNumber.AddLimb(A, Result.FNumber));
-end;
-
-class operator BigInteger.Add(const A: BigInteger; const B: Integer): BigInteger;
-begin
-  HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber));
-end;
-
-class operator BigInteger.Add(const A: Integer; const B: BigInteger): BigInteger;
-begin
-  HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber));
-end;
-
-class operator BigInteger.Subtract(const A: BigInteger; const B: Cardinal): BigInteger;
-begin
-  HResCheck(A.FNumber.SubLimb(B, Result.FNumber));
-end;
-
-class operator BigInteger.Subtract(const A: Cardinal; const B: BigInteger): BigInteger;
-begin
-  HResCheck(B.FNumber.SubLimb2(A, Result.FNumber));
-end;
-
-class operator BigInteger.Subtract(const A: BigInteger; const B: Integer): BigInteger;
-begin
-  HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber));
-end;
-
-class operator BigInteger.Subtract(const A: Integer; const B: BigInteger): BigInteger;
-begin
-  HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber));
-end;
-
-class operator BigInteger.Multiply(const A: BigInteger; const B: Cardinal): BigInteger;
-begin
-  HResCheck(A.FNumber.MulLimb(B, Result.FNumber));
-end;
-
-class operator BigInteger.Multiply(const A: Cardinal; const B: BigInteger): BigInteger;
-begin
-  HResCheck(B.FNumber.MulLimb(A, Result.FNumber));
-end;
-
-class operator BigInteger.Multiply(const A: BigInteger; const B: Integer): BigInteger;
-begin
-  HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber));
-end;
-
-class operator BigInteger.Multiply(const A: Integer; const B: BigInteger): BigInteger;
-begin
-  HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber));
-end;
-
-
-// -------------------------------------------------------------- //
-
-function BigNumberFrom32Stub(var A: IBigNumber; Value: UInt32): TF_RESULT; stdcall;
-begin
-  Result:= TF_E_LOADERROR;
-end;
-
-function BigNumberFrom64Stub(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
-begin
-  Result:= TF_E_LOADERROR;
-end;
-
-function BigNumberFromPCharStub(var A: IBigNumber; P: PByte; L: Integer;
-           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
-begin
-  Result:= TF_E_LOADERROR;
-end;
-
-function BigNumberFromPByteStub(var A: IBigNumber;
-           P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
-begin
-  Result:= TF_E_LOADERROR;
-end;
+// ------------------------ DLL load stuff ---------------------------- //
 
 const
 {$IFDEF WIN64}
@@ -1893,42 +1964,130 @@ const
   LibName = 'numerics32.dll';
 {$ENDIF}
 
-var
-  LibHandle: THandle = 0;
-
-function LoadLib: Boolean;
+function GetNumericsVersionError(var Version: LongWord): TF_RESULT; stdcall;
 begin
-  if LibHandle <> 0 then begin
-    Result:= True;
+  Result:= TF_E_LOADERROR;
+end;
+
+function BigNumberFrom32Error(var A: IBigNumber; Value: UInt32): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
+end;
+
+function BigNumberFrom64Error(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
+end;
+
+function BigNumberFromPCharError(var A: IBigNumber; P: PByte; L: Integer;
+           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
+end;
+
+function BigNumberFromPByteError(var A: IBigNumber;
+           P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
+end;
+
+var
+  LibLoaded: Boolean = False;
+
+function LoadNumerics(const Name: string): TF_RESULT;
+var
+  LibHandle: THandle;
+  Version: LongWord;
+
+begin
+  if LibLoaded then begin
+    Result:= TF_S_FALSE;
     Exit;
   end;
-  Result:= False;
-  LibHandle:= LoadLibrary(LibName);
-  if LibHandle <> 0 then begin
-    @BigNumberFromUInt32:= GetProcAddress(LibHandle, 'BigNumberFromLimb');
-    @BigNumberFromUInt64:= GetProcAddress(LibHandle, 'BigNumberFromDblLimb');
-    @BigNumberFromInt32:= GetProcAddress(LibHandle, 'BigNumberFromIntLimb');
-    @BigNumberFromInt64:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
+  if Name = ''
+    then LibHandle:= LoadLibrary(LibName)
+    else LibHandle:= LoadLibrary(PChar(Name));
+  if (LibHandle <> 0) then begin
+    @GetNumericsVersion:= GetProcAddress(LibHandle, 'GetNumericsVersion');
+    @BigNumberFromLimb:= GetProcAddress(LibHandle, 'BigNumberFromLimb');
+    @BigNumberFromDblLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblLimb');
+    @BigNumberFromIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromIntLimb');
+    @BigNumberFromDblIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
     @BigNumberFromPChar:= GetProcAddress(LibHandle, 'BigNumberFromPChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
-    Result:= (@BigNumberFromUInt32 <> nil)
-             and (@BigNumberFromUInt64 <> nil)
-             and (@BigNumberFromInt32 <> nil)
-             and (@BigNumberFromInt64 <> nil)
-             and (@BigNumberFromPChar <> nil)
-             and (@BigNumberFromPByte <> nil)
+
+    if (@GetNumericsVersion <> nil) and
+       (@BigNumberFromLimb <> nil) and
+       (@BigNumberFromDblLimb <> nil) and
+       (@BigNumberFromIntLimb <> nil) and
+       (@BigNumberFromDblIntLimb <> nil) and
+       (@BigNumberFromPChar <> nil) and
+       (@BigNumberFromPByte <> nil)
+    then begin
+      if (GetNumericsVersion(Version) = TF_S_OK) and
+         (Version = NumericsVersion)
+      then begin
+        LibLoaded:= True;
+        Result:= TF_S_OK;
+        Exit;
+      end;
+    end;
+    FreeLibrary(LibHandle);
   end;
-  if not Result then begin
-    @BigNumberFromUInt32:= @BigNumberFrom32Stub;
-    @BigNumberFromUInt64:= @BigNumberFrom64Stub;
-    @BigNumberFromInt32:= @BigNumberFrom32Stub;
-    @BigNumberFromInt64:= @BigNumberFrom64Stub;
-    @BigNumberFromPChar:= @BigNumberFromPCharStub;
-    @BigNumberFromPByte:= @BigNumberFromPByteStub;
-  end;
+  @GetNumericsVersion:= @GetNumericsVersionError;
+  @BigNumberFromLimb:= @BigNumberFrom32Error;
+  @BigNumberFromDblLimb:= @BigNumberFrom64Error;
+  @BigNumberFromIntLimb:= @BigNumberFrom32Error;
+  @BigNumberFromDblIntLimb:= @BigNumberFrom64Error;
+  @BigNumberFromPChar:= @BigNumberFromPCharError;
+  @BigNumberFromPByte:= @BigNumberFromPByteError;
+  Result:= TF_E_LOADERROR;
+end;
+
+function BigNumberFromLimbStub(var A: IBigNumber; Value: UInt32): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberFromLimb(A, Value);
+end;
+
+function BigNumberFromDblLimbStub(var A: IBigNumber; Value: UInt64): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberFromDblLimb(A, Value);
+end;
+
+function BigNumberFromIntLimbStub(var A: IBigNumber; Value: Int32): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberFromIntLimb(A, Value);
+end;
+
+function BigNumberFromDblIntLimbStub(var A: IBigNumber; Value: Int64): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberFromDblIntLimb(A, Value);
+end;
+
+function BigNumberFromPCharStub(var A: IBigNumber; P: PByte; L: Integer;
+           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberFromPCharStub(A, P, L, CharSize, AllowNegative, TwoCompl);
+end;
+
+function BigNumberFromPByteStub(var A: IBigNumber;
+           P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberFromPByteStub(A, P, L, AllowNegative);
 end;
 
 initialization
-  LoadLib;
+  @BigNumberFromLimb:= @BigNumberFromLimbStub;
+  @BigNumberFromDblLimb:= @BigNumberFromDblLimbStub;
+  @BigNumberFromIntLimb:= @BigNumberFromIntLimbStub;
+  @BigNumberFromDblIntLimb:= @BigNumberFromDblIntLimbStub;
+  @BigNumberFromPChar:= @BigNumberFromPCharStub;
+  @BigNumberFromPByte:= @BigNumberFromPByteStub;
 
 end.
