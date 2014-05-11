@@ -12,6 +12,28 @@
 { *   # not(A xor B) = (not A) xor B = A xor (not B)        * }
 { *   # (not A) xor (not B) = A xor B                       * }
 { *********************************************************** }
+{
+  Win64 Register Usage
+  --------------------
+    RAX        Volatile     Return value register
+    RCX        Volatile     First integer argument
+    RDX        Volatile     Second integer argument
+    R8         Volatile     Third integer argument
+    R9         Volatile     Fourth integer argument
+    R10:R11    Volatile
+    R12:R15    Nonvolatile
+    RDI        Nonvolatile
+    RSI        Nonvolatile
+    RBX        Nonvolatile
+    RBP        Nonvolatile
+    RSP        Nonvolatile
+    XMM0       Volatile     First FP argument
+    XMM1       Volatile     Second FP argument
+    XMM2       Volatile     Third FP argument
+    XMM3       Volatile     Fourth FP argument
+    XMM4:XMM5  Volatile
+    XMM6:XMM15 Nonvolatile
+}
 
 unit arrProcs;
 
@@ -30,10 +52,10 @@ function arrGetLimbCount(A: PLimb; L: Cardinal): Cardinal;
 
 { Addition primitives }
 function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
-function arrSelfAdd(A, B: PLimb; LA, LB: Cardinal): Boolean;
 function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
-function arrSelfAddLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
+function arrSelfAdd(A, B: PLimb; LA, LB: Cardinal): Boolean;
+function arrSelfAddLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 function arrSelfInc(A: PLimb; L: Cardinal): Boolean;
 
 { Subtraction primitives }
@@ -112,8 +134,8 @@ begin
   Result:= L;
 end;
 
-{$IFDEF WIN32_ASM86}
 function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
+{$IFDEF WIN32_ASM86}
 asm
         PUSH  ESI
         PUSH  EDI
@@ -143,16 +165,46 @@ asm
         STOSD
         LOOP  @@Loop2
 @@Done:
-        MOV   EAX,0
-        JNC   @@Skip
-        INC   EAX
-@@Skip:
+        SETC  AL
+        MOVZX EAX,AL
         MOV   [EDI],EAX
         POP   EDI
         POP   ESI
 end;
 {$ELSE}
-function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
+{$IFDEF WIN64_ASM86}
+asm
+        .PUSHNV  RSI
+        .PUSHNV  RDI
+        MOV   RDI,R8      // EDI <-- Res
+        MOV   RSI,RCX     // ESI <-- A
+        MOV   RCX,LB
+        SUB   R9,RCX
+        CLC
+@@Loop:
+//        MOV   EAX,[ESI]
+//        LEA   ESI,[ESI+4]
+        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        ADC   EAX,[RDX]
+//        MOV   [EDI],EAX
+//        LEA   EDI,[EDI+4]
+        STOSD             // [EDI] <-- EAX, EDI <-- EDI + 4
+        LEA   RDX,[RDX+4]
+        LOOP  @@Loop
+
+        MOV   RCX,R9         // ECX <-- LA - LB;
+        JECXZ @@Done
+@@Loop2:
+        LODSD
+        ADC   EAX, 0
+        STOSD
+        LOOP  @@Loop2
+@@Done:
+        SETC  AL
+        MOVZX EAX,AL
+        MOV   [RDI],EAX
+end;
+{$ELSE}
 var
   CarryOut, CarryIn: Boolean;
   Tmp: TLimb;
@@ -192,9 +244,179 @@ begin
   Result:= CarryIn;
 end;
 {$ENDIF}
+{$ENDIF}
 
-{$IFDEF LIMB32_ASM86}
-function arrSelfAdd(A, B: PLongWord; LA, LB: LongInt): Boolean;
+{
+  Description:
+    Res:= A + Limb
+  Asserts:
+    L >= 1
+    Res must have enough space for L + 1 limbs
+  Remarks:
+    function returns True if carry is propagated out of A[L-1];
+    if function returns True the Res senior limb is set: Res[L] = 1
+}
+
+function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
+{$IFDEF WIN32_ASM86}
+asm
+        ADD   EDX,[EAX]     // Limb:= Limb + A[0]
+        MOV   [ECX],EDX
+        MOV   EDX,ECX
+        MOV   ECX,LA
+        DEC   ECX
+        JZ    @@Done
+        PUSH  ESI
+        LEA   ESI,[EAX+4]
+@@Loop:
+        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        LEA   EDX,[EDX+4]
+        ADC   EAX,0
+        MOV   [EDX],EAX
+        LOOP  @@Loop
+        POP   ESI
+@@Done:
+        SETC  AL
+        MOVZX EAX,AL
+        LEA   EDX,[EDX+4]
+        MOV   [EDX],EAX
+end;
+{$ELSE}
+{$IFDEF WIN64_ASM86}
+asm
+        .PUSHNV  RSI
+        ADD   EDX,[RCX]     // Limb:= Limb + A[0]
+        MOV   [R8],EDX
+        MOV   RDX,R8
+        LEA   RSI,[RCX+4]
+        MOV   RCX,R9
+        DEC   ECX
+        JZ    @@Done
+@@Loop:
+        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        LEA   RDX,[RDX+4]
+        ADC   EAX,0
+        MOV   [RDX],EAX
+        LOOP  @@Loop
+@@Done:
+        SETC  AL
+        MOVZX EAX,AL
+        LEA   RDX,[RDX+4]
+        MOV   [RDX],EAX
+end;
+{$ELSE}
+var
+  CarryIn: Boolean;
+  Tmp: TLimb;
+
+begin
+  Tmp:= A^ + Limb;
+  CarryIn:= Tmp < Limb;
+  Inc(A);
+  Dec(LA);
+  Res^:= Tmp;
+  Inc(Res);
+  while (LA > 0) and CarryIn do begin
+    Tmp:= A^ + 1;
+    CarryIn:= Tmp = 0;
+    Inc(A);
+    Res^:= Tmp;
+    Inc(Res);
+    Dec(LA);
+  end;
+  while (LA > 0) do begin
+    Res^:= A^;
+    Inc(A);
+    Inc(Res);
+    Dec(LA);
+  end;
+  Res^:= Ord(CarryIn);
+  Result:= CarryIn;
+end;
+{$ENDIF}
+{$ENDIF}
+
+function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
+{$IFDEF WIN32_ASM86}
+asm
+        PUSH  [EAX]
+        POP   [EDX]
+        ADD   [EDX],1
+        DEC   ECX
+        JZ    @@Done
+        PUSH  ESI
+        LEA   ESI,[EAX+4]
+@@Loop:
+        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        LEA   EDX,[EDX+4]
+        ADC   EAX,0
+        MOV   [EDX],EAX
+        LOOP  @@Loop
+        POP   ESI
+@@Done:
+        SETC  AL
+        MOVZX EAX,AL
+        LEA   EDX,[EDX+4]
+        MOV   [EDX],EAX
+end;
+{$ELSE}
+{$IFDEF WIN64_ASM86}
+// RCX <-- A, RDX <--Res, R8 <-- L
+asm
+        .NOFRAME
+        MOV   R9,[RCX]
+        MOV   [RDX],R9
+        ADD   [RDX],1
+        DEC   R8
+        JZ    @@Done
+@@Loop:
+        LEA   RCX,[RCX+4]
+        LEA   EDX,[EDX+4]
+        MOV   EAX,[RCX]
+        ADC   EAX,0
+        MOV   [RDX],EAX
+        DEC   R8
+        JNZ   @@Loop
+@@Done:
+        SETC  AL
+        MOVZX EAX,AL
+        LEA   RDX,[RDX+4]
+        MOV   [RDX],EAX
+end;
+{$ELSE}
+var
+  Tmp: TLimb;
+
+begin
+  Tmp:= A^ + 1;
+  Res^:= Tmp;
+                          //  while we have carry from prev limb ..
+  while (Tmp = 0) do begin
+    Dec(L);
+    Inc(Res);
+    if (L = 0) then begin
+      Res^:= 1;
+      Result:= True;
+      Exit;
+    end;
+    Inc(A);
+    Tmp:= A^ + 1;
+    Res^:= Tmp;
+  end;
+  repeat
+    Inc(A);
+    Inc(Res);
+    Dec(L);
+    Res^:= A^;
+  until L = 0;
+  Res^:= 0;
+  Result:= False;
+end;
+{$ENDIF}
+{$ENDIF}
+
+function arrSelfAdd(A, B: PLimb; LA, LB: Cardinal): Boolean;
+{$IFDEF WIN32_ASM86}
 asm
         PUSH  ESI
         PUSH  EDI
@@ -227,7 +449,36 @@ asm
         POP   ESI
 end;
 {$ELSE}
-function arrSelfAdd(A, B: PLimb; LA, LB: Cardinal): Boolean;
+{$IFDEF WIN64_ASM86}
+asm
+        .PUSHNV  RSI
+        .PUSHNV  RDI
+        MOV   RDI,RCX     // RDI <-- A
+        MOV   RSI,RDX     // RSI <-- B
+        SUB   R8,R9       // R8 <-- LA - LB
+        MOV   RCX,R9      // RCX <-- LB
+        CLC
+@@Loop:
+        LODSD             // EAX <-- [RSI], RSI <-- RSI + 4
+        ADC   EAX,[RDI]
+        STOSD             // [RDI] <-- EAX, RDI <-- RDI + 4
+        LOOP  @@Loop
+
+        MOV   EAX,0
+        MOV   RCX,R8         // RCX <-- LA - LB;
+        JECXZ @@Done
+@@Loop2:
+        ADC   [RDI], 0
+        LEA   RDI,[RDI+4]
+        JNC   @@Exit
+        LOOP  @@Loop2
+@@Done:
+        JNC   @@Exit
+        INC   EAX
+        MOV   [RDI],1
+@@Exit:
+end;
+{$ELSE}
 var
   CarryOut, CarryIn: Boolean;
   Tmp: TLimb;
@@ -261,76 +512,6 @@ begin
   Result:= CarryIn;
 end;
 {$ENDIF}
-
-{
-  Description:
-    Res:= A + Limb
-  Asserts:
-    L >= 1
-    Res must have enough space for L + 1 limbs
-  Remarks:
-    function returns True if carry is propagated out of A[L-1];
-    if function returns True the Res senior limb is set: Res[L] = 1
-}
-
-{$IFDEF WIN32_ASM86}
-function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
-asm
-        ADD   EDX,[EAX]
-        MOV   [ECX],EDX
-        MOV   EDX,ECX
-        MOV   ECX,LA
-        DEC   ECX
-        JZ    @@Done
-        PUSH  ESI
-        LEA   ESI,[EAX+4]
-@@Loop:
-        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
-        LEA   EDX,[EDX+4]
-        ADC   EAX,0
-        MOV   [EDX],EAX
-        LOOP  @@Loop
-        POP   ESI
-@@Done:
-        MOV   EAX,0
-        JNC   @@Skip
-        INC   EAX
-@@Skip:
-        LEA   EDX,[EDX+4]
-        MOV   [EDX],EAX
-end;
-{$ELSE}
-function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
-var
-  CarryIn: Boolean;
-  Tmp: TLimb;
-
-begin
-  Tmp:= A^ + Limb;
-  CarryIn:= Tmp < Limb;
-  Inc(A);
-  Dec(LA);
-  Res^:= Tmp;
-  Inc(Res);
-  while (LA > 0) and CarryIn do begin
-    Tmp:= A^ + 1;
-    CarryIn:= Tmp = 0;
-    Inc(A);
-    Res^:= Tmp;
-    Inc(Res);
-    Dec(LA);
-  end;
-  while (LA > 0) do begin
-    Res^:= A^;
-    Inc(A);
-    Inc(Res);
-    Dec(LA);
-  end;
-  Res^:= Ord(CarryIn);
-//  if CarryIn then Res^:= 1;
-//  else Res^:= 0;
-  Result:= CarryIn;
-end;
 {$ENDIF}
 
 {
@@ -343,8 +524,8 @@ end;
     function returns True if carry is propagated out of A[L-1];
     if function returns True the A senior limb is set: A[L] = 1
 }
-{$IFDEF LIMB32_ASM86}
-function arrSelfAddLimb(A: PLongWord; Limb: LongWord; L: LongInt): Boolean;
+function arrSelfAddLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
+{$IFDEF WIN32_ASM86}
 asm
         ADD   [EAX],EDX
         JNC   @@Exit
@@ -360,11 +541,12 @@ asm
         LEA   EAX,[EAX+4]
         MOV   [EAX],1
 @@Exit:
-        MOV   EAX,0
         SETC  AL
+        MOVZX EAX,AL
 end;
 {$ELSE}
-function arrSelfAddLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
+{$IFDEF WIN64_ASM86}
+{$ELSE}
 var
   CarryIn: Boolean;
   Tmp: TLimb;
@@ -388,38 +570,30 @@ begin
   Result:= CarryIn;
 end;
 {$ENDIF}
+{$ENDIF}
 
-function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
-var
-  Tmp: TLimb;
-
-begin
-// todo: if A = Res then .. optimize
-  Tmp:= A^ + 1;
-  Res^:= Tmp;
-                          //  while we have carry from prev limb ..
-  while (Tmp = 0) do begin
-    Dec(L);
-    Inc(Res);
-    if (L = 0) then begin
-      Res^:= 1;
-      Result:= True;
-      Exit;
-    end;
-    Inc(A);
-    Tmp:= A^ + 1;
-    Res^:= Tmp;
-  end;
-  repeat
-    Inc(A);
-    Inc(Res);
-    Dec(L);
-    Res^:= A^;
-  until L = 0;
-  Res^:= 0;
-  Result:= True;
+{$IFDEF WIN32_ASM86}
+function arrSelfInc(A: PLimb; L: Cardinal): Boolean;
+asm
+        ADD   [EAX],1
+        JNC   @@Exit
+        MOV   ECX,EDX
+        DEC   ECX
+        JECXZ @@Done
+@@Loop:
+        LEA   EAX,[EAX+4]
+        ADC   [EAX], 0
+        JNC   @@Exit
+        LOOP  @@Loop
+        JNC   @@Exit
+@@Done:
+        LEA   EAX,[EAX+4]
+        MOV   [EAX],1
+@@Exit:
+        SETC  AL
+        MOVZX EAX,AL
 end;
-
+{$ELSE}
 function arrSelfInc(A: PLimb; L: Cardinal): Boolean;
 var
   Tmp: TLimb;
@@ -441,6 +615,7 @@ begin
   end;
   Result:= False;
 end;
+{$ENDIF}
 
 {
   Description:

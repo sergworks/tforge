@@ -473,6 +473,7 @@ type
            CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
   TBigNumberFromPByte = function(var A: IBigNumber;
     P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT; stdcall;
+  TBigNumberAlloc = function(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
 
 var
   GetNumericsVersion: TGetNumericsVersion;
@@ -482,6 +483,7 @@ var
   BigNumberFromDblIntLimb: TBigNumberFromInt64;
   BigNumberFromPChar: TBigNumberFromPChar;
   BigNumberFromPByte: TBigNumberFromPByte;
+  BigNumberAlloc: TBigNumberAlloc;
 
 { EBigNumberError }
 
@@ -1991,6 +1993,11 @@ begin
   Result:= TF_E_LOADERROR;
 end;
 
+function BigNumberAllocError(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
+end;
+
 var
   LibLoaded: Boolean = False;
 
@@ -2015,6 +2022,7 @@ begin
     @BigNumberFromDblIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
     @BigNumberFromPChar:= GetProcAddress(LibHandle, 'BigNumberFromPChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
+    @BigNumberAlloc:= GetProcAddress(LibHandle, 'BigNumberAlloc');
 
     if (@GetNumericsVersion <> nil) and
        (@BigNumberFromLimb <> nil) and
@@ -2022,7 +2030,8 @@ begin
        (@BigNumberFromIntLimb <> nil) and
        (@BigNumberFromDblIntLimb <> nil) and
        (@BigNumberFromPChar <> nil) and
-       (@BigNumberFromPByte <> nil)
+       (@BigNumberFromPByte <> nil) and
+       (@BigNumberAlloc <> nil)
     then begin
       if (GetNumericsVersion(Version) = TF_S_OK) and
          (Version = NumericsVersion)
@@ -2041,6 +2050,7 @@ begin
   @BigNumberFromDblIntLimb:= @BigNumberFrom64Error;
   @BigNumberFromPChar:= @BigNumberFromPCharError;
   @BigNumberFromPByte:= @BigNumberFromPByteError;
+  @BigNumberAlloc:= @BigNumberAllocError;
   Result:= TF_E_LOADERROR;
 end;
 
@@ -2082,6 +2092,12 @@ begin
   Result:= BigNumberFromPByteStub(A, P, L, AllowNegative);
 end;
 
+function BigNumberAllocStub(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
+begin
+  LoadNumerics(LibName);
+  Result:= BigNumberAllocError(A, ASize);
+end;
+
 initialization
   @BigNumberFromLimb:= @BigNumberFromLimbStub;
   @BigNumberFromDblLimb:= @BigNumberFromDblLimbStub;
@@ -2089,5 +2105,6 @@ initialization
   @BigNumberFromDblIntLimb:= @BigNumberFromDblIntLimbStub;
   @BigNumberFromPChar:= @BigNumberFromPCharStub;
   @BigNumberFromPByte:= @BigNumberFromPByteStub;
+  @BigNumberAlloc:= @BigNumberAllocStub;
 
 end.

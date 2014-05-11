@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 unit tfRecords;
@@ -14,6 +14,16 @@ uses tfTypes;
 type
   PtfRecord = ^TtfRecord;
   TtfRecord = record
+    FVTable: Pointer;
+    FRefCount: Integer;
+    class function QueryIntf(Inst: Pointer; const IID: TGUID;
+                             out Obj): TF_RESULT; stdcall; static;
+    class function Addref(Inst: Pointer): Integer; stdcall; static;
+    class function Release(Inst: Pointer): Integer; stdcall; static;
+  end;
+
+  PtfSingleton = ^TtfSingleton;
+  TtfSingleton = record
     FVTable: Pointer;
     FRefCount: Integer;
     class function QueryIntf(Inst: Pointer; const IID: TGUID;
@@ -98,5 +108,23 @@ begin
     Result:= PtfRecord(Inst).FRefCount;
 end;
 {$ENDIF}
+
+{ TtfSingleton }
+
+class function TtfSingleton.QueryIntf(Inst: Pointer; const IID: TGUID;
+  out Obj): TF_RESULT;
+begin
+  Result:= E_NOINTERFACE;
+end;
+
+class function TtfSingleton.Addref(Inst: Pointer): Integer;
+begin
+  Result:= -1;
+end;
+
+class function TtfSingleton.Release(Inst: Pointer): Integer;
+begin
+  Result:= -1;
+end;
 
 end.

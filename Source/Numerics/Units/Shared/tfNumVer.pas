@@ -8,7 +8,7 @@ unit tfNumVer;
 interface
 
 const
-  NumericsVersion = 55;
+  NumericsVersion = 56;
 
 implementation
 

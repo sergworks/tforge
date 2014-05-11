@@ -9,14 +9,14 @@ interface
 
 uses SysUtils, Classes, tfTypes, tfConsts;
 
-// THash type supports fluent coding style, ex to get a file's MD5 use
+// to get a file's MD5 use:
 //   var
 //     MD5Digest: TMD5Digest;
 //   begin
-//     THash.Create(HashAlg.MD5).HashFile(FileName, MD5Digest);
+//     HashFunction.Create(HashAlg.MD5).HashFile(FileName, MD5Digest);
 
 type
-  THash = record
+  HashFunction = record
   private
     FAlgorithm: IHashAlgorithm;
   public
@@ -54,60 +54,75 @@ type
     class function TextToBytes(const Text: string): TBytes; static;
   end;
 
+type
+  ByteArray = record
+  private
+    FBytes: TBytes;
+    function Get(Index: Integer): Byte;
+  public
+    class function FromBit7String(const S: string): ByteArray; static;
+    class function FromText(const S: string): ByteArray; static;
+    class operator BitwiseXor(const A, B: ByteArray): ByteArray;
+    function Slice(I: Integer; L: Integer = 0): ByteArray;
+    function Len: Integer;
+    function ToText: string;
+    property Bytes[Index: Integer]: Byte read Get; default;
+  end;
+
 implementation
 
 { THash }
 
-constructor THash.Create(const AAlgorithm: IHashAlgorithm);
+constructor HashFunction.Create(const AAlgorithm: IHashAlgorithm);
 begin
   FAlgorithm:= AAlgorithm;
 end;
 
-procedure THash.Init;
+procedure HashFunction.Init;
 begin
   FAlgorithm.Init;
 end;
 
-procedure THash.Update(var Data; DataSize: LongWord);
+procedure HashFunction.Update(var Data; DataSize: LongWord);
 begin
   FAlgorithm.Update(@Data, DataSize);
 end;
 
-procedure THash.Done(var Digest);
+procedure HashFunction.Done(var Digest);
 begin
   FAlgorithm.Done(@Digest);
 end;
 
-function THash.HashSize: LongInt;
+function HashFunction.HashSize: LongInt;
 begin
   Result:= FAlgorithm.GetHashSize;
 end;
 
-procedure THash.Free;
+procedure HashFunction.Free;
 begin
   FAlgorithm:= nil;
 end;
 
-procedure THash.Purge;
+procedure HashFunction.Purge;
 begin
   FAlgorithm.Purge;
 end;
 
-procedure THash.HashMemory(var Memory; MemorySize: LongWord; var Digest);
+procedure HashFunction.HashMemory(var Memory; MemorySize: LongWord; var Digest);
 begin
   Init;
   Update(Memory, MemorySize);
   Done(Digest);
 end;
 
-function THash.HashMemory(var Memory; MemorySize: LongWord): TBytes;
+function HashFunction.HashMemory(var Memory; MemorySize: LongWord): TBytes;
 begin
   Result:= nil;
   SetLength(Result, HashSize);
   HashMemory(Memory, MemorySize, Pointer(Result)^);
 end;
 
-procedure THash.HashStream(Stream: TStream; var Digest; BufSize: Integer);
+procedure HashFunction.HashStream(Stream: TStream; var Digest; BufSize: Integer);
 const
   MIN_SIZE = 1024;
   MAX_SIZE = 1024 * 1024;
@@ -139,7 +154,7 @@ begin
   end;
 end;
 
-function THash.HashStream(Stream: TStream; BufSize: Integer): TBytes;
+function HashFunction.HashStream(Stream: TStream; BufSize: Integer): TBytes;
 var
   Tmp: TBytes;
 
@@ -150,19 +165,19 @@ begin
   Result:= Tmp;
 end;
 
-procedure THash.HashBytes(const Bytes: TBytes; var Digest);
+procedure HashFunction.HashBytes(const Bytes: TBytes; var Digest);
 begin
   HashMemory(Pointer(Bytes)^, Length(Bytes), Digest);
 end;
 
-function THash.HashBytes(const Bytes: TBytes): TBytes;
+function HashFunction.HashBytes(const Bytes: TBytes): TBytes;
 begin
   Result:= nil;
   SetLength(Result, HashSize);
   HashMemory(Pointer(Bytes)^, Length(Bytes), Pointer(Result)^);
 end;
 
-procedure THash.HashFile(const AFileName: string; var Digest);
+procedure HashFunction.HashFile(const AFileName: string; var Digest);
 var
   Stream: TStream;
 
@@ -175,7 +190,7 @@ begin
   end;
 end;
 
-function THash.HashFile(const AFileName: string): TBytes;
+function HashFunction.HashFile(const AFileName: string): TBytes;
 var
   Tmp: TBytes;
 
@@ -308,6 +323,106 @@ begin
     P2^:= PByte(P1)^;
     Inc(P2);
     Inc(P1);
+  end;
+end;
+
+{ ByteArray }
+
+class operator ByteArray.BitwiseXor(const A, B: ByteArray): ByteArray;
+var
+  I: Integer;
+
+begin
+  Result.FBytes:= nil;
+  if A.Len <> B.Len then
+    raise Exception.Create('Wrong lengths');
+  SetLength(Result.FBytes, A.Len);
+  for I:= 0 to Length(Result.FBytes) - 1 do begin
+    Result.FBytes[I]:= A.FBytes[I] xor B.FBytes[I];
+  end;
+end;
+
+class function ByteArray.FromBit7String(const S: string): ByteArray;
+var
+  Ch: Char;
+  I: Integer;
+  Tmp: Cardinal;
+
+begin
+  Result.FBytes:= nil;
+  if Length(S) mod 7 <> 0 then
+    raise Exception.Create('Wrong string length');
+  SetLength(Result.FBytes, Length(S) div 7);
+  I:= 0;
+  Tmp:= 0;
+  for Ch in S do begin
+    Tmp:= Tmp shl 1;
+    if Ch = '1' then Tmp:= Tmp or 1
+    else if Ch <> '0' then
+      raise Exception.Create('Wrong string char');
+    Inc(I);
+    if I mod 7 = 0 then begin
+      Result.FBytes[I div 7 - 1]:= Tmp;
+      Tmp:= 0;
+    end;
+  end;
+end;
+
+class function ByteArray.FromText(const S: string): ByteArray;
+var
+  Ch: Char;
+  I: Integer;
+
+begin
+  Result.FBytes:= nil;
+  SetLength(Result.FBytes, Length(S));
+  I:= 0;
+  for Ch in S do begin
+    if Integer(Ch) >= 256 then
+      raise Exception.Create('Wrong string char');
+    Result.FBytes[I]:= Byte(Ch);
+    Inc(I);
+  end;
+end;
+
+function ByteArray.Get(Index: Integer): Byte;
+begin
+  if Cardinal(Index) < Cardinal(Length(FBytes)) then
+    Result:= FBytes[Index]
+  else
+    raise EArgumentOutOfRangeException.CreateResFmt(@SIndexOutOfRange, [Index]);
+end;
+
+function ByteArray.Len: Integer;
+begin
+  Result:= Length(FBytes);
+end;
+
+function ByteArray.Slice(I, L: Integer): ByteArray;
+var
+  LL: Integer;
+
+begin
+  Result.FBytes:= nil;
+  LL:= Length(FBytes);
+  if I < LL then begin
+    if (L = 0) or (I + L > LL)
+      then L:= LL - I;
+    Result.FBytes:= Copy(FBytes, I, L);
+  end;
+end;
+
+function ByteArray.ToText: string;
+var
+  I: Integer;
+  B: Byte;
+
+begin
+  Result:= '';
+  SetLength(Result, Len);
+  for I:= 0 to Len - 1 do begin
+    B:= FBytes[I];
+    Result[I + 1]:= Char(B);
   end;
 end;
 

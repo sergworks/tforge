@@ -1233,7 +1233,7 @@ begin
     GetMem(P, L);
     try
 {$IFDEF TFL_DLL}
-      HResCheck(FNumber.ToHex(P, L, TwoCompl),
+      HResCheck(FNumber.ToHex(P, L, TwoCompl));
 {$ELSE}
       HResCheck(TBigNumber.ToHex(PBigNumber(FNumber), P, L, TwoCompl));
 {$ENDIF}

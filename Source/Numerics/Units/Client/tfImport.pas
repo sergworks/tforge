@@ -25,6 +25,8 @@ type
   TBigNumberFromPByte = function(var A: IBigNumber;
     P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT; stdcall;
 
+  TBigNumberAlloc = function(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
+
 var
   GetNumericsVersion: TGetNumericsVersion;
   BigNumberFromLimb: TBigNumberFromLimb;
@@ -33,6 +35,7 @@ var
   BigNumberFromDblIntLimb: TBigNumberFromDblIntLimb;
   BigNumberFromPChar: TBigNumberFromPChar;
   BigNumberFromPByte: TBigNumberFromPByte;
+  BigNumberAlloc: TBigNumberAlloc;
 
 function LoadNumerics(const Name: string = ''): TF_RESULT;
 
@@ -74,6 +77,11 @@ begin
   Result:= TF_E_LOADERROR;
 end;
 
+function BigNumberAllocError(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
+begin
+  Result:= TF_E_LOADERROR;
+end;
+
 var
   LibLoaded: Boolean = False;
 
@@ -98,6 +106,7 @@ begin
     @BigNumberFromDblIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
     @BigNumberFromPChar:= GetProcAddress(LibHandle, 'BigNumberFromPChar');
     @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
+    @BigNumberAlloc:= GetProcAddress(LibHandle, 'BigNumberAlloc');
 
     if (@GetNumericsVersion <> nil) and
        (@BigNumberFromLimb <> nil) and
@@ -105,7 +114,8 @@ begin
        (@BigNumberFromIntLimb <> nil) and
        (@BigNumberFromDblIntLimb <> nil) and
        (@BigNumberFromPChar <> nil) and
-       (@BigNumberFromPByte <> nil)
+       (@BigNumberFromPByte <> nil) and
+       (@BigNumberAlloc <> nil)
     then begin
       if (GetNumericsVersion(Version) = TF_S_OK) and
          (Version = NumericsVersion)
@@ -124,6 +134,7 @@ begin
   @BigNumberFromDblIntLimb:= @BigNumberFromDblLimbError;
   @BigNumberFromPChar:= @BigNumberFromPCharError;
   @BigNumberFromPByte:= @BigNumberFromPByteError;
+  @BigNumberAlloc:= @BigNumberAllocError;
   Result:= TF_E_LOADERROR;
 end;
 
@@ -166,48 +177,18 @@ begin
   Result:= BigNumberFromPByteStub(A, P, L, AllowNegative);
 end;
 
-//var
-//  LibHandle: THandle = 0;
-
-{
-function LoadLib: Boolean;
+function BigNumberAllocStub(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
 begin
-  if LibHandle <> 0 then begin
-    Result:= True;
-    Exit;
-  end;
-  Result:= False;
-  LibHandle:= LoadLibrary(LibName);
-  if LibHandle <> 0 then begin
-    @BigNumberFromLimb:= GetProcAddress(LibHandle, 'BigNumberFromLimb');
-    @BigNumberFromDblLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblLimb');
-    @BigNumberFromIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromIntLimb');
-    @BigNumberFromDblIntLimb:= GetProcAddress(LibHandle, 'BigNumberFromDblIntLimb');
-    @BigNumberFromPChar:= GetProcAddress(LibHandle, 'BigNumberFromPChar');
-    @BigNumberFromPByte:= GetProcAddress(LibHandle, 'BigNumberFromPByte');
-    Result:= (@BigNumberFromLimb <> nil)
-             and (@BigNumberFromDblLimb <> nil)
-             and (@BigNumberFromIntLimb <> nil)
-             and (@BigNumberFromDblIntLimb <> nil)
-             and (@BigNumberFromPChar <> nil)
-             and (@BigNumberFromPByte <> nil)
-  end;
-  if not Result then begin
-    @BigNumberFromLimb:= @BigNumberFromLimbStub;
-    @BigNumberFromDblLimb:= @BigNumberFromDblLimbStub;
-    @BigNumberFromIntLimb:= @BigNumberFromLimbStub;
-    @BigNumberFromDblIntLimb:= @BigNumberFromDblLimbStub;
-    @BigNumberFromPChar:= @BigNumberFromPCharStub;
-    @BigNumberFromPByte:= @BigNumberFromPByteStub;
-  end;
+  LoadNumerics(LibName);
+  Result:= BigNumberAllocError(A, ASize);
 end;
-}
+
 initialization
-//  LoadLib;
   @BigNumberFromLimb:= @BigNumberFromLimbStub;
   @BigNumberFromDblLimb:= @BigNumberFromDblLimbStub;
   @BigNumberFromIntLimb:= @BigNumberFromIntLimbStub;
   @BigNumberFromDblIntLimb:= @BigNumberFromDblIntLimbStub;
   @BigNumberFromPChar:= @BigNumberFromPCharStub;
   @BigNumberFromPByte:= @BigNumberFromPByteStub;
+  @BigNumberAlloc:= @BigNumberAllocStub;
 end.

@@ -140,18 +140,6 @@ type
     procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-{ PBigNumberRec is client type to cast engine type PBigNumber for debugging }
-type
-  PBigNumberRec = ^TBigNumberRec;
-  TBigNumberRec = record
-    FVTable: Pointer;
-    FRefCount: Integer;
-    FCapacity: Integer;
-    FSign: Integer;
-    FUsed: Integer;
-    FLimbs: array[0..0] of TLimb;
-  end;
-
 { Hash helper types }
 type
   PSHA256Digest = ^TSHA256Digest;

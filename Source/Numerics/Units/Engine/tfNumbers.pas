@@ -252,7 +252,7 @@ type
 
     class function AllocNumber(var A: PBigNumber; NLimbs: Cardinal = 0): TF_RESULT; static;
 
-    class function AssignNumber(var A: PBigNumber; B: PBigNumber;
+    class function CloneNumber(var A: PBigNumber; B: PBigNumber;
                                 ASign: Integer = 0): TF_RESULT; static;
 
     class function AssignCardinal(var A: PBigNumber; const Value: Cardinal;
@@ -303,6 +303,10 @@ type
   function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
            CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT;
     {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+  function BigNumberAlloc(var A: PBigNumber; ASize: Integer): TF_RESULT;
+    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
 (*
   function BigNumberFromPWideChar(var A: PBigNumber;
                P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;
@@ -448,7 +452,7 @@ const
 {$ENDIF}
     );
 
-class function TBigNumber.AssignNumber(var A: PBigNumber; B: PBigNumber;
+class function TBigNumber.CloneNumber(var A: PBigNumber; B: PBigNumber;
                                        ASign: Integer = 0): TF_RESULT;
 var
   Used: Cardinal;
@@ -1208,6 +1212,8 @@ begin
     Quotient.FUsed:= UsedA;
     Remainder.FUsed:= 1;
 
+//  a mod b = a - b * (a div b)
+//  ---------------------------
 // -5 div 2 = -2, -5 mod 2 = -1
 //  5 div -2 = -2, 5 mod -2 = 1
 // -5 div -2 = 2, -5 mod -2 = -1
@@ -3052,7 +3058,7 @@ const
   BigNumPrefixSize = SizeOf(TBigNumber) - SizeOf(TBigNumber.TLimbArray);
 
 class function TBigNumber.AllocNumber(var A: PBigNumber;
-                                       NLimbs: Cardinal = 0): TF_RESULT;
+                                       NLimbs: Cardinal): TF_RESULT;
 var
   BytesRequired: Cardinal;
 
@@ -4604,6 +4610,17 @@ begin
   end;
 end;
 
+function BigNumberAlloc(var A: PBigNumber; ASize: Integer): TF_RESULT;
+var
+  Tmp: PBigNumber;
+
+begin
+  Result:= TBigNumber.AllocNumber(Tmp, ASize div SizeOf(TLimb));
+  if Result = TF_S_OK then begin
+    if A <> nil then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
 (*
 function BigNumberFromPWideChar(var A: PBigNumber;
                P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;
