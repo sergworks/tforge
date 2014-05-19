@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 unit tfMD5;
@@ -41,10 +41,11 @@ type
   end;
 
 const
-  MD5VTable: array[0..7] of Pointer = (
+  MD5VTable: array[0..8] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
+   nil,
    @TMD5Alg.Init,
    @TMD5Alg.Update,
    @TMD5Alg.Done,

@@ -46,12 +46,8 @@ type
 
 // -- IBigNumber implementation
 
-(*
-    class function QueryIntf(Inst: PBigNumber; const IID: TGUID;
-                             out Obj): TF_RESULT; stdcall; static;
-    class function Addref(Inst: PBigNumber): Integer; stdcall; static;
-    class function Release(Inst: PBigNumber): Integer; stdcall; static;
-*)
+    class function GetHashCode(Inst: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIsEven(Inst: PBigNumber): Boolean;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIsOne(Inst: PBigNumber): Boolean;
@@ -286,26 +282,26 @@ type
 
 // -- conversions to BigNumber
 
-  function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-  function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-  function BigNumberFromPByte(var A: PBigNumber;
-               P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberFromPByte(var A: PBigNumber;
+             P: PByte; L: Integer; AllowNegative: Boolean): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-  function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
-           CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
+         CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-  function BigNumberAlloc(var A: PBigNumber; ASize: Integer): TF_RESULT;
-    {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+function BigNumberAlloc(var A: PBigNumber; ASize: Integer): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 (*
   function BigNumberFromPWideChar(var A: PBigNumber;
@@ -321,13 +317,16 @@ type
 
 implementation
 
-uses tfRecords, arrProcs;
+uses tfRecords, tfJenkinsOne, arrProcs;
 
 const
-  BigNumVTable: array[0..68] of Pointer = (
+  BigNumVTable: array[0..70] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
+   nil,
+
+   @TBigNumber.GetHashCode,
 
    @TBigNumber.GetIsEven,
    @TBigNumber.GetIsOne,
@@ -3089,6 +3088,12 @@ begin
 //  Result:= BigNumberFromPWideChar(A, PWideChar(Pointer(S)), Length(S), True);
   Result:= BigNumberFromPChar(A, Pointer(S), Length(S),
                               SizeOf(Char), True, TwoCompl);
+end;
+
+class function TBigNumber.GetHashCode(Inst: PBigNumber): Integer;
+begin
+  Result:= JenkinsOneHash(Inst.FLimbs, Inst.FUsed * SizeOf(TLimb));
+  if Inst.FSign < 0 then Result:= - Result;
 end;
 
 class function TBigNumber.GetIsEven(Inst: PBigNumber): Boolean;

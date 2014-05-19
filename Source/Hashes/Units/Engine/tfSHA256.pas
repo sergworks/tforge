@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 unit tfSHA256;
@@ -41,10 +41,11 @@ type
 end;
 
 const
-  SHA256VTable: array[0..7] of Pointer = (
+  SHA256VTable: array[0..8] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
+   nil,
    @TSHA256Alg.Init,
    @TSHA256Alg.Update,
    @TSHA256Alg.Done,

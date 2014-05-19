@@ -40,8 +40,21 @@ type
 {$ENDIF}
 
 type
-  IBigNumber = interface
+  TClearMemProc = function(Inst: Pointer): TF_RESULT; stdcall;
 
+  IForge = interface
+    function ClearMem: TF_RESULT; stdcall;
+  end;
+
+type
+  IBytes = interface(IForge)
+    function GetHashCode: Integer;
+  end;
+
+type
+  IBigNumber = interface(IForge)
+
+    function GetHashCode: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsEven: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsOne: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsPowerOfTwo: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -124,7 +137,7 @@ type
     function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  IBlockCipherAlgorithm = interface
+  IBlockCipherAlgorithm = interface(IForge)
     function ImportKey(Key: PByte; KeySize: LongWord; AlgID: Integer): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure ExpandKey(Encryption: Boolean);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DeleteKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -132,7 +145,7 @@ type
     procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  IHashAlgorithm = interface
+  IHashAlgorithm = interface(IForge)
     procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 unit tfCRC32;
@@ -33,10 +33,11 @@ type
   end;
 
 const
-  VTable: array[0..7] of Pointer = (
+  VTable: array[0..8] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfRecord.Addref,
     @TtfRecord.Release,
+    nil,
 
     @TCRC32Alg.Init,
     @TCRC32Alg.Update,

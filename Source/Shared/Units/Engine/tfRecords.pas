@@ -14,21 +14,21 @@ uses tfTypes;
 type
   PtfRecord = ^TtfRecord;
   TtfRecord = record
-    FVTable: Pointer;
+    FVTable: PPointer;
     FRefCount: Integer;
     class function QueryIntf(Inst: Pointer; const IID: TGUID;
                              out Obj): TF_RESULT; stdcall; static;
-    class function Addref(Inst: Pointer): Integer; stdcall; static;
+    class function AddRef(Inst: Pointer): Integer; stdcall; static;
     class function Release(Inst: Pointer): Integer; stdcall; static;
   end;
 
   PtfSingleton = ^TtfSingleton;
   TtfSingleton = record
-    FVTable: Pointer;
+    FVTable: PPointer;
     FRefCount: Integer;
-    class function QueryIntf(Inst: Pointer; const IID: TGUID;
-                             out Obj): TF_RESULT; stdcall; static;
-    class function Addref(Inst: Pointer): Integer; stdcall; static;
+//    class function QueryIntf(Inst: Pointer; const IID: TGUID;
+//                             out Obj): TF_RESULT; stdcall; static;
+    class function AddRef(Inst: Pointer): Integer; stdcall; static;
     class function Release(Inst: Pointer): Integer; stdcall; static;
   end;
 
@@ -81,7 +81,11 @@ begin
 // we need this check because FRefCount = -1 is allowed
   if PtfRecord(Inst).FRefCount > 0 then begin
     Result:= InterlockedDecrement(PtfRecord(Inst).FRefCount);
-    if Result = 0 then FreeMem(Inst);
+    if Result = 0 then begin
+      if PtfRecord(Inst).FVTable[3] <> nil then
+        TClearMemProc(PtfRecord(Inst).FVTable[3])(Inst);
+      FreeMem(Inst);
+    end;
   end
   else
     Result:= PtfRecord(Inst).FRefCount;
@@ -102,7 +106,11 @@ begin
   if PtfRecord(Inst).FRefCount > 0 then begin
     Dec(PtfRecord(Inst).FRefCount);
     Result:= PtfRecord(Inst).FRefCount;
-    if Result = 0 then FreeMem(Inst);
+    if Result = 0 then begin
+      if PtfRecord(Inst).FVTable[3] <> nil then
+        TClearMemProc(PtfRecord(Inst).FVTable[3])(Inst);
+      FreeMem(Inst);
+    end;
   end
   else
     Result:= PtfRecord(Inst).FRefCount;
@@ -110,13 +118,13 @@ end;
 {$ENDIF}
 
 { TtfSingleton }
-
+{
 class function TtfSingleton.QueryIntf(Inst: Pointer; const IID: TGUID;
   out Obj): TF_RESULT;
 begin
   Result:= E_NOINTERFACE;
 end;
-
+}
 class function TtfSingleton.Addref(Inst: Pointer): Integer;
 begin
   Result:= -1;
