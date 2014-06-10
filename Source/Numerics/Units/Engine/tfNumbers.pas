@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 unit tfNumbers;
@@ -48,6 +48,11 @@ type
 
     class function GetHashCode(Inst: PBigNumber): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetLen(Inst: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetRawData(Inst: PBigNumber): PByte;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
     class function GetIsEven(Inst: PBigNumber): Boolean;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIsOne(Inst: PBigNumber): Boolean;
@@ -64,6 +69,10 @@ type
     class function CompareNumbers(A, B: PBigNumber): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function CompareNumbersU(A, B: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EqualNumbers(A, B: PBigNumber): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EqualNumbersU(A, B: PBigNumber): Boolean;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function AddNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
@@ -317,16 +326,18 @@ type
 
 implementation
 
-uses tfRecords, tfJenkinsOne, arrProcs;
+uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..70] of Pointer = (
+  BigNumVTable: array[0..74] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
    nil,
 
    @TBigNumber.GetHashCode,
+   @TBigNumber.GetLen,
+   @TBigNumber.GetRawData,
 
    @TBigNumber.GetIsEven,
    @TBigNumber.GetIsOne,
@@ -337,6 +348,8 @@ const
 
    @TBigNumber.CompareNumbers,
    @TBigNumber.CompareNumbersU,
+   @TBigNumber.EqualNumbers,
+   @TBigNumber.EqualNumbersU,
 
    @TBigNumber.AddNumbers,
    @TBigNumber.AddNumbersU,
@@ -508,6 +521,18 @@ begin
   Result:= A.FUsed - B.FUsed;
   if Result = 0 then
     Result:= arrCmp(@A.FLimbs, @B.FLimbs, A.FUsed);
+end;
+
+class function TBigNumber.EqualNumbers(A, B: PBigNumber): Boolean;
+begin
+  Result:= (A.FSign xor B.FSign = 0) and (A.FUsed = B.FUsed)
+    and CompareMem(@A.FLimbs, @B.FLimbs, A.FUsed);
+end;
+
+class function TBigNumber.EqualNumbersU(A, B: PBigNumber): Boolean;
+begin
+  Result:= (A.FUsed = B.FUsed)
+    and CompareMem(@A.FLimbs, @B.FLimbs, A.FUsed);
 end;
 
 class function TBigNumber.CompareToIntLimb(A: PBigNumber; B: TIntLimb): Integer;
@@ -3091,8 +3116,19 @@ begin
 end;
 
 class function TBigNumber.GetHashCode(Inst: PBigNumber): Integer;
+var
+  Limb: TLimb;
+  L: Integer;
+
 begin
-  Result:= JenkinsOneHash(Inst.FLimbs, Inst.FUsed * SizeOf(TLimb));
+  L:= (Inst.FUsed - 1) * SizeOf(TLimb);
+  Limb:= Inst.FLimbs[Inst.FUsed - 1];
+  while Limb <> 0 do begin
+    Inc(L);
+    Limb:= Limb shr 8;
+  end;
+  if L = 0 then L:= 1;
+  Result:= JenkinsOneHash(Inst.FLimbs, L);
   if Inst.FSign < 0 then Result:= - Result;
 end;
 
@@ -3134,6 +3170,25 @@ end;
 class function TBigNumber.GetIsZero(Inst: PBigNumber): Boolean;
 begin
   Result:= (Inst.FUsed = 1) and (Inst.FLimbs[0] = 0);
+end;
+
+class function TBigNumber.GetLen(Inst: PBigNumber): Integer;
+var
+  Limb: TLimb;
+
+begin
+  Result:= (Inst.FUsed - 1) * SizeOf(TLimb);
+  Limb:= Inst.FLimbs[Inst.FUsed - 1];
+  while Limb <> 0 do begin
+    Inc(Result);
+    Limb:= Limb shr 8;
+  end;
+  if Result = 0 then Result:= 1;
+end;
+
+class function TBigNumber.GetRawData(Inst: PBigNumber): PByte;
+begin
+  Result:= @Inst.FLimbs;
 end;
 
 class function TBigNumber.GetSign(Inst: PBigNumber): Integer;
@@ -4061,6 +4116,7 @@ begin
   TmpR:= @BigNumOne;
   Tmp:= BaseValue;
   TtfRecord.Addref(Tmp);
+  Q:= nil;
 
   Used:= ExpValue.FUsed;
   P:= @ExpValue.FLimbs;

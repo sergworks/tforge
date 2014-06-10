@@ -1,9 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
 { *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
-{ * ------------------------------------------------------- * }
-{ *   # client unit                                         * }
-{ *   # exports: BigCardinal, BigInteger                    * }
 { *********************************************************** }
 
 unit tfNumerics;
@@ -24,15 +21,20 @@ type
   private
     FNumber: IBigNumber;
   public
+    procedure Free;
+
     function ToString: string;
     function ToHexString(Digits: Integer = 0; const Prefix: string = '';
                          TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
     function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
-    procedure Free;
+
+    function HashCode: Integer;
 
     class function Compare(const A, B: BigCardinal): Integer; static;
-    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+//    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+    class function Equals(const A, B: BigCardinal): Boolean; static;
+//    function EqualTo(const B: BigCardinal): Boolean; overload; inline;
 
     class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
     class function DivRem(const Dividend, Divisor: BigCardinal;
@@ -150,12 +152,15 @@ type
     FNumber: IBigNumber;
     function GetSign: Integer;
   public
+    procedure Free;
+
     function ToString: string;
     function ToHexString(Digits: Integer = 0; const Prefix: string = '';
                          TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
     function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
-    procedure Free;
+
+    function HashCode: Integer;
 
     property Sign: Integer read GetSign;
 
@@ -187,8 +192,11 @@ type
     class function Compare(const A, B: BigInteger): Integer; overload; static;
     class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
     class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
-    function CompareTo(const B: BigInteger): Integer; overload; inline;
-    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+//    function CompareTo(const B: BigInteger): Integer; overload; inline;
+//    function CompareTo(const B: BigCardinal): Integer; overload; inline;
+    class function Equals(const A, B: BigInteger): Boolean; overload; static;
+    class function Equals(const A: BigInteger; const B: BigCardinal): Boolean; overload; static;
+    class function Equals(const A: BigCardinal; const B: BigInteger): Boolean; overload; static;
 
     class operator Equal(const A, B: BigInteger): Boolean; inline;
     class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean; inline;
@@ -473,11 +481,28 @@ begin
 {$ENDIF}
 end;
 
+{
 function BigCardinal.CompareTo(const B: BigCardinal): Integer;
 begin
   Result:= Compare(Self, B);
 end;
+}
 
+class function BigCardinal.Equals(const A, B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumberU(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+{
+function BigCardinal.EqualTo(const B: BigCardinal): Boolean;
+begin
+  Result:= Equal(Self, B);
+end;
+}
 class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
@@ -488,14 +513,23 @@ begin
 {$ENDIF}
 end;
 
+function BigCardinal.HashCode: Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.GetHashCode;
+{$ELSE}
+  Result:= TBigNumber.GetHashCode(PBigNumber(FNumber));
+{$ENDIF}
+end;
+
 class operator BigCardinal.Equal(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) = 0;
+  Result:= Equals(A, B);
 end;
 
 class operator BigCardinal.NotEqual(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) <> 0;
+  Result:= not Equals(A, B);
 end;
 
 class operator BigCardinal.GreaterThan(const A, B: BigCardinal): Boolean;
@@ -1360,7 +1394,7 @@ begin
                       PBigNumber(B.FNumber));
 {$ENDIF}
 end;
-
+{
 function BigInteger.CompareTo(const B: BigCardinal): Integer;
 begin
   Result:= Compare(Self, B);
@@ -1369,6 +1403,37 @@ end;
 function BigInteger.CompareTo(const B: BigInteger): Integer;
 begin
   Result:= Compare(Self, B);
+end;
+}
+
+class function BigInteger.Equals(const A, B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+class function BigInteger.Equals(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+class function BigInteger.Equals(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
 end;
 
 function BigInteger.GetSign: Integer;
@@ -1465,32 +1530,32 @@ end;
 
 class operator BigInteger.Equal(const A, B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) = 0;
+  Result:= Equals(A, B);
 end;
 
 class operator BigInteger.Equal(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) = 0;
+  Result:= Equals(A, B);
 end;
 
 class operator BigInteger.Equal(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) = 0;
+  Result:= Equals(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A, B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) <> 0;
+  Result:= not Equals(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) <> 0;
+  Result:= not Equals(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) <> 0;
+  Result:= not Equals(A, B);
 end;
 
 class operator BigInteger.GreaterThan(const A, B: BigInteger): Boolean;
@@ -1993,6 +2058,15 @@ end;
 class operator BigInteger.GreaterThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
   Result:= B.CompareToDoubleInt(A) <= 0;
+end;
+
+function BigInteger.HashCode: Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.GetHashCode;
+{$ELSE}
+  Result:= TBigNumber.GetHashCode(PBigNumber(FNumber));
+{$ENDIF}
 end;
 
 class operator BigInteger.LessThan(const A: BigInteger; const B: TDblLimb): Boolean;

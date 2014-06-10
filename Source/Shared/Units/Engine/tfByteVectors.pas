@@ -3,7 +3,7 @@
 { *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
-unit tgBytes;
+unit tfByteVectors;
 
 {$I TFL.inc}
 
@@ -35,12 +35,21 @@ type
     FData: TData;
 
     class function AllocVector(var A: PByteVector; NBytes: Cardinal): TF_RESULT; static;
+
     class function GetHashCode(Inst: PByteVector): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EqualBytes(A, B: PByteVector): Boolean;
+    class function GetLen(A: PByteVector): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetRawData(A: PByteVector): PByte;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function AssignBytes(A: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ConcatBytes(A, B: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EqualBytes(A, B: PByteVector): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
     class function AddBytes(A, B: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SubBytes(A, B: PByteVector; var R: PByteVector): TF_RESULT;
@@ -52,17 +61,23 @@ type
     class function XorBytes(A, B: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function AssignBytes(A: PByteVector; var R: PByteVector): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
-    class function ToDec(A: PByteVector; var R: PByteVector): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
     class function AppendByte(A: PByteVector; B: Byte; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PrependByte(A: PByteVector; B: Byte; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EqualToByte(A: PByteVector; B: Byte): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function AppendPByte(A: PByteVector; P: PByte; L: Cardinal;
+                               var R: PByteVector): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PrependPByte(A: PByteVector; P: PByte; L: Cardinal;
+                               var R: PByteVector): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EqualToPByte(A: PByteVector; P: PByte; L: Integer): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ToDec(A: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -77,18 +92,22 @@ function ByteVectorFromByte(var A: PByteVector; Value: Byte): TF_RESULT;
 
 implementation
 
-uses tfRecords, tfJenkinsOne;
+uses tfRecords, tfUtils;
 
 const
-  ByteVecVTable: array[0..15] of Pointer = (
+  ByteVecVTable: array[0..21] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
    nil,
 
    @TByteVector.GetHashCode,
-   @TByteVector.EqualBytes,
+   @TByteVector.GetLen,
+   @TByteVector.GetRawData,
+
+   @TByteVector.AssignBytes,
    @TByteVector.ConcatBytes,
+   @TByteVector.EqualBytes,
 
    @TByteVector.AddBytes,
    @TByteVector.SubBytes,
@@ -96,28 +115,29 @@ const
    @TByteVector.OrBytes,
    @TByteVector.XorBytes,
 
-   @TByteVector.AssignBytes,
-
-   @TByteVector.ToDec,
-
+   @TByteVector.AppendByte,
+   @TByteVector.PrependByte,
    @TByteVector.EqualToByte,
-   @TByteVector.AppendByte
+
+   @TByteVector.AppendPByte,
+   @TByteVector.PrependPByte,
+   @TByteVector.EqualToByte,
+
+   @TByteVector.ToDec
    );
 
-(*
 const
-  ByteVecZero: TByteVector = (
+  ZeroVector: TByteVector = (
     FVTable: @ByteVecVTable;
     FRefCount: -1;
     FCapacity: 0;
-    FUsed: 1;
+    FUsed: 0;
 {$IFDEF DEBUG}
-    FBytes: (0, 0, 0, 0, 0, 0, 0, 0);
+    FData: (0, 0, 0, 0, 0, 0, 0, 0);
 {$ELSE}
-    FBytes: (0);
+    FData: (0);
 {$ENDIF}
     );
-*)
 
 { TByteVector }
 
@@ -135,6 +155,11 @@ begin
     Result:= TF_E_NOMEMORY;
     Exit;
   end;
+{  if NBytes = 0 then begin
+    A:= @ByteVecEmpty;
+    Result:= TF_S_OK;
+    Exit;
+  end; }
   BytesRequired:= NBytes + ByteVecPrefixSize;
   BytesRequired:= (BytesRequired + 7) and not 7;
   try
@@ -142,74 +167,22 @@ begin
     A^.FVTable:= @ByteVecVTable;
     A^.FRefCount:= 1;
     A^.FCapacity:= BytesRequired - ByteVecPrefixSize;
-    A^.FUsed:= 1;
-    A^.FData[0]:= 0;
+    A^.FUsed:= NBytes;
+//    A^.FData[0]:= 0;
     Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
   end;
 end;
 
+class function TByteVector.GetLen(A: PByteVector): Integer;
+begin
+  Result:= A.FUsed;
+end;
+
 class function TByteVector.GetHashCode(Inst: PByteVector): Integer;
 begin
   Result:= JenkinsOneHash(Inst.FData, Inst.FUsed);
-end;
-
-class function TByteVector.EqualBytes(A, B: PByteVector): Boolean;
-begin
-  Result:= (A.FUsed = B.FUsed) and
-    CompareMem(@A.FData, @B.FData, A.FUsed);
-end;
-
-class function TByteVector.AppendByte(A: PByteVector; B: Byte;
-                           var R: PByteVector): TF_RESULT;
-var
-  UsedA: Cardinal;
-  P: PByte;
-  Tmp: PByteVector;
-
-begin
-  UsedA:= A.FUsed;
-
-  Result:= AllocVector(Tmp, UsedA + 1);
-  if Result <> TF_S_OK then Exit;
-
-  P:= @Tmp.FData;
-  Move(A.FData, P^, UsedA);
-  Inc(P, UsedA);
-  P^:= B;
-  Tmp.FUsed:= UsedA + 1;
-
-  if (R <> nil) then TtfRecord.Release(R);
-  R:= Tmp;
-end;
-
-class function TByteVector.PrependByte(A: PByteVector; B: Byte;
-                           var R: PByteVector): TF_RESULT;
-var
-  UsedA: Cardinal;
-  P: PByte;
-  Tmp: PByteVector;
-
-begin
-  UsedA:= A.FUsed;
-
-  Result:= AllocVector(Tmp, UsedA + 1);
-  if Result <> TF_S_OK then Exit;
-
-  P:= @Tmp.FData;
-  P^:= B;
-  Inc(P);
-  Move(A.FData, P^, UsedA);
-  Tmp.FUsed:= UsedA + 1;
-
-  if (R <> nil) then TtfRecord.Release(R);
-  R:= Tmp;
-end;
-
-class function TByteVector.EqualToByte(A: PByteVector; B: Byte): Boolean;
-begin
-  Result:= (A.FUsed = 1) and (A.FData[0] = B);
 end;
 
 class function TByteVector.ConcatBytes(A, B: PByteVector;
@@ -234,6 +207,12 @@ begin
 
   if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
+end;
+
+class function TByteVector.EqualBytes(A, B: PByteVector): Boolean;
+begin
+  Result:= (A.FUsed = B.FUsed) and
+    CompareMem(@A.FData, @B.FData, A.FUsed);
 end;
 
 class function TByteVector.AddBytes(A, B: PByteVector;
@@ -405,50 +384,18 @@ begin
   Result:= TF_S_OK;
 end;
 
-(*
-function ByteToDec(B: Byte; Target: PByte): Integer; inline;
-var
-  Tmp: Byte;
-
-begin
-  if B >= 100 then begin
-    Tmp:= B div 100;
-    B:= B mod 100;
-    Target^:= Tmp + $30;
-    Inc(Target);
-    Tmp:= B div 10;
-    B:= B mod 10;
-    Target^:= Tmp + $30;
-    Inc(Target);
-    Target^:= B + $30;
-    Result:= 3;
-  end
-  else if B >= 10 then begin
-    Tmp:= B div 10;
-    B:= B mod 10;
-    Target^:= Tmp + $30;
-    Inc(Target);
-    Target^:= B + $30;
-    Result:= 2;
-  end
-  else begin
-    Target^:= B + $30;
-    Result:= 1;
-  end;
-end;
-*)
-
 class function TByteVector.ToDec(A: PByteVector; var R: PByteVector): TF_RESULT;
 var
   Tmp: PByteVector;
   PA, PTmp: PByte;
-  I: Integer;
   B: Byte;
+  UsedA: Integer;
 
 begin
-  if (A = nil) or (A.FUsed = 0) then begin
+  UsedA:= A.FUsed;
+  if (UsedA = 0) then begin
     if R <> nil then TtfRecord.Release(R);
-    R:= nil;
+    R:= @ZeroVector;
     Result:= TF_S_OK;
     Exit;
   end;
@@ -459,7 +406,7 @@ begin
   PA:= @A.FData;
   PTmp:= @Tmp.FData;
 
-  for I:= 1 to A.FUsed - 1 do begin
+  repeat
     B:= PA^;
     if B >= 100 then begin
       PTmp^:= B div 100 + $30;
@@ -482,13 +429,130 @@ begin
 
     Inc(PA);
     Inc(PTmp);
-  end;
-  Tmp.FUsed:= NativeInt(PTmp) - NativeInt(@Tmp.FData);
+    Dec(UsedA);
+  until UsedA = 0;
+
+// last #0 is not included in the length
+  Tmp.FUsed:= NativeInt(PTmp) - NativeInt(@Tmp.FData) - 1;
 
   if R <> nil then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
+class function TByteVector.AppendByte(A: PByteVector; B: Byte;
+                           var R: PByteVector): TF_RESULT;
+var
+  UsedA: Cardinal;
+  P: PByte;
+  Tmp: PByteVector;
+
+begin
+  UsedA:= A.FUsed;
+
+  Result:= AllocVector(Tmp, UsedA + 1);
+  if Result <> TF_S_OK then Exit;
+
+  P:= @Tmp.FData;
+  Move(A.FData, P^, UsedA);
+  Inc(P, UsedA);
+  P^:= B;
+  Tmp.FUsed:= UsedA + 1;
+
+  if (R <> nil) then TtfRecord.Release(R);
+  R:= Tmp;
+end;
+
+class function TByteVector.PrependByte(A: PByteVector; B: Byte;
+                           var R: PByteVector): TF_RESULT;
+var
+  UsedA: Cardinal;
+  P: PByte;
+  Tmp: PByteVector;
+
+begin
+  UsedA:= A.FUsed;
+
+  Result:= AllocVector(Tmp, UsedA + 1);
+  if Result <> TF_S_OK then Exit;
+
+  P:= @Tmp.FData;
+  P^:= B;
+  Inc(P);
+  Move(A.FData, P^, UsedA);
+  Tmp.FUsed:= UsedA + 1;
+
+  if (R <> nil) then TtfRecord.Release(R);
+  R:= Tmp;
+end;
+
+class function TByteVector.EqualToByte(A: PByteVector; B: Byte): Boolean;
+begin
+  Result:= (A.FUsed = 1) and (A.FData[0] = B);
+end;
+
+class function TByteVector.AppendPByte(A: PByteVector; P: PByte; L: Cardinal;
+                           var R: PByteVector): TF_RESULT;
+var
+  UsedA: Cardinal;
+  PA: PByte;
+  Tmp: PByteVector;
+
+begin
+  if L >= MaxCapacity then
+    Result:= TF_E_NOMEMORY
+  else begin
+    UsedA:= A.FUsed;
+    Result:= AllocVector(Tmp, UsedA + L);
+  end;
+  if Result <> TF_S_OK then Exit;
+
+  PA:= @Tmp.FData;
+  Move(A.FData, PA^, UsedA);
+  Inc(PA, UsedA);
+  Move(P^, PA^, L);
+  Tmp.FUsed:= UsedA + L;
+
+  if (R <> nil) then TtfRecord.Release(R);
+  R:= Tmp;
+end;
+
+class function TByteVector.PrependPByte(A: PByteVector; P: PByte; L: Cardinal;
+                           var R: PByteVector): TF_RESULT;
+var
+  UsedA: Cardinal;
+  PA: PByte;
+  Tmp: PByteVector;
+
+begin
+  if L >= MaxCapacity then
+    Result:= TF_E_NOMEMORY
+  else begin
+    UsedA:= A.FUsed;
+    Result:= AllocVector(Tmp, UsedA + L);
+  end;
+  if Result <> TF_S_OK then Exit;
+
+  PA:= @Tmp.FData;
+  Move(P^, PA^, L);
+  Inc(PA, L);
+  Move(A.FData, PA^, UsedA);
+  Tmp.FUsed:= UsedA + L;
+
+  if (R <> nil) then TtfRecord.Release(R);
+  R:= Tmp;
+end;
+
+class function TByteVector.GetRawData(A: PByteVector): PByte;
+begin
+  Result:= @A.FData;
+end;
+
+class function TByteVector.EqualToPByte(A: PByteVector; P: PByte;
+                           L: Integer): Boolean;
+begin
+  Result:= (A.FUsed = L) and
+    CompareMem(@A.FData, P, L);
+end;
 
 function ByteVectorAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -509,6 +573,12 @@ var
   Tmp: PByteVector;
 
 begin
+  if L = 0 then begin
+    if A <> nil then TtfRecord.Release(A);
+    A:= @ZeroVector;
+    Result:= TF_S_OK;
+    Exit;
+  end;
   Result:= TByteVector.AllocVector(Tmp, L);
   if Result = TF_S_OK then begin
     Move(P^, Tmp.FData, L);
