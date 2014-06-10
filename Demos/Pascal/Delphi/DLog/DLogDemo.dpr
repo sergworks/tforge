@@ -3,8 +3,10 @@ program DLogDemo;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfNumerics,
-  UseDict in 'UseDict.pas';
+  SysUtils,
+  tfNumerics,
+  UseDict in 'UseDict.pas',
+  UseList in 'UseList.pas';
 
 const
   ModuloStr = '134078079299425970995740249982058461274793658205923933' +
@@ -31,6 +33,15 @@ begin
   Value:= BigInteger(ValueStr);
   Base:= BigInteger(BaseStr);
   Modulo:= BigInteger(ModuloStr);
+
+  Writeln('Using Hash Table...');
+  SaveTime:= Now;
+  DL:= UseDict.DLog(Value, Base, Modulo);
+  TimeElapsed:= Round((Now - SaveTime) * 24 * 60 * 60 * 1000);
+  Writeln('DLog = ', DL, ', Time: ', TimeElapsed, ' ms');
+
+  Writeln;
+  Writeln('Using Sorted List...');
   SaveTime:= Now;
   DL:= UseDict.DLog(Value, Base, Modulo);
   TimeElapsed:= Round((Now - SaveTime) * 24 * 60 * 60 * 1000);

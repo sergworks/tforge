@@ -8,37 +8,24 @@ unit tfGNumerics;
 interface
 
 uses tfNumerics, Generics.Defaults, Generics.Collections;
-(*
-type
-  TCustComparer<T> = class(TSingletonImplementation, IComparer<T>, IEqualityComparer<T>)
-  protected
-    function Compare(const Left, Right: T): Integer; virtual; abstract;
-    function Equals(const Left, Right: T): Boolean; virtual; abstract;
-    function GetHashCode(const Value: T): Integer; virtual; abstract;
-  end;
 
-  TBigCardinalComparer = class(TCustComparer<BigCardinal>)
-  private
-    class var
-      FOrdinal: TCustComparer<BigCardinal>;
-  public
-    class function Ordinal: TBigCardinalComparer;
-  end;
-
-  TBigIntegerComparer = class(TCustComparer<BigInteger>)
-  private
-    class var
-      FOrdinal: TCustComparer<BigInteger>;
-  public
-    class function Ordinal: TBigIntegerComparer;
-  end;
-*)
-//  IBigIntegerEqualityComparer = interface(IEqualityComparer<BigInteger>) end;
+function GetBigCardinalComparer: IComparer<BigCardinal>;
+function GetBigIntegerComparer: IComparer<BigInteger>;
 
 function GetBigCardinalEqualityComparer: IEqualityComparer<BigCardinal>;
 function GetBigIntegerEqualityComparer: IEqualityComparer<BigInteger>;
 
 type
+  TBigCardinalList = class(TList<BigCardinal>)
+  public
+    constructor Create; overload;
+  end;
+
+  TBigIntegerList = class(TList<BigInteger>)
+  public
+    constructor Create; overload;
+  end;
+
   TBigCardinalDictionary<TValue> = class(TDictionary<BigCardinal,TValue>)
   public
     constructor Create(ACapacity: Integer = 0); overload;
@@ -66,6 +53,16 @@ begin
   Result := E_NOINTERFACE;
 end;
 
+function Compare_BigCardinal(Inst: Pointer; const Left, Right: BigCardinal): Integer;
+begin
+  Result:= BigCardinal.Compare(Left, Right);
+end;
+
+function Compare_BigInteger(Inst: Pointer; const Left, Right: BigInteger): Integer;
+begin
+  Result:= BigInteger.Compare(Left, Right);
+end;
+
 function Equals_BigCardinal(Inst: Pointer; const Left, Right: BigCardinal): Boolean;
 begin
   Result:= BigCardinal.Equals(Left, Right);
@@ -87,6 +84,22 @@ begin
 end;
 
 const
+  Comparer_BigCardinal: array[0..3] of Pointer =
+  (
+    @NopQueryInterface,
+    @NopAddref,
+    @NopRelease,
+    @Compare_BigCardinal
+  );
+
+  Comparer_BigInteger: array[0..3] of Pointer =
+  (
+    @NopQueryInterface,
+    @NopAddref,
+    @NopRelease,
+    @Compare_BigInteger
+  );
+
   EqualityComparer_BigCardinal: array[0..4] of Pointer =
   (
     @NopQueryInterface,
@@ -112,11 +125,27 @@ type
   end;
 
 const
+  Comparer_BigCardinal_Instance: TDummyInstance =
+    (VTable: @Comparer_BigCardinal);
+
+  Comparer_BigInteger_Instance: TDummyInstance =
+    (VTable: @Comparer_BigInteger);
+
   EqualityComparer_BigCardinal_Instance: TDummyInstance =
     (VTable: @EqualityComparer_BigCardinal);
 
   EqualityComparer_BigInteger_Instance: TDummyInstance =
     (VTable: @EqualityComparer_BigInteger);
+
+function GetBigCardinalComparer: IComparer<BigCardinal>;
+begin
+  Pointer(Result):= @Comparer_BigCardinal_Instance;
+end;
+
+function GetBigIntegerComparer: IComparer<BigInteger>;
+begin
+  Pointer(Result):= @Comparer_BigInteger_Instance;
+end;
 
 function GetBigCardinalEqualityComparer: IEqualityComparer<BigCardinal>;
 begin
@@ -128,76 +157,19 @@ begin
   Pointer(Result):= @EqualityComparer_BigInteger_Instance;
 end;
 
+{ TBigCardinalList }
 
-(*
-{ TOrdinalBigIntegerComparer }
-
-type
-  TOrdinalBigIntegerComparer = class(TBigIntegerComparer)
-  public
-    function Compare(const Left, Right: BigInteger): Integer; override;
-    function Equals(const Left, Right: BigInteger): Boolean; override;
-    function GetHashCode(const Value: BigInteger): Integer; override;
-  end;
-
-function TOrdinalBigIntegerComparer.Compare(const Left, Right: BigInteger): Integer;
+constructor TBigCardinalList.Create;
 begin
-  Result:= BigInteger.Compare(Left, Right);
+  inherited Create(GetBigCardinalComparer);
 end;
 
-function TOrdinalBigIntegerComparer.Equals(const Left, Right: BigInteger): Boolean;
+{ TBigIntegerList }
+
+constructor TBigIntegerList.Create;
 begin
-  Result:= BigInteger.Equals(Left, Right);
+  inherited Create(GetBigIntegerComparer);
 end;
-
-function TOrdinalBigIntegerComparer.GetHashCode(const Value: BigInteger): Integer;
-begin
-  Result:= Value.HashCode;
-end;
-
-{ TBigIntegerComparer }
-
-class function TBigIntegerComparer.Ordinal: TBigIntegerComparer;
-begin
-//  if FOrdinal = nil then
-//    FOrdinal:= TOrdinalBigIntegerComparer.Create;
-  Result:= TBigIntegerComparer(FOrdinal);
-end;
-
-{ TOrdinalBigCardinalComparer }
-
-type
-  TOrdinalBigCardinalComparer = class(TBigCardinalComparer)
-  public
-    function Compare(const Left, Right: BigCardinal): Integer; override;
-    function Equals(const Left, Right: BigCardinal): Boolean; override;
-    function GetHashCode(const Value: BigCardinal): Integer; override;
-  end;
-
-function TOrdinalBigCardinalComparer.Compare(const Left, Right: BigCardinal): Integer;
-begin
-  Result:= BigCardinal.Compare(Left, Right);
-end;
-
-function TOrdinalBigCardinalComparer.Equals(const Left, Right: BigCardinal): Boolean;
-begin
-  Result:= BigCardinal.Equals(Left, Right);
-end;
-
-function TOrdinalBigCardinalComparer.GetHashCode(const Value: BigCardinal): Integer;
-begin
-  Result:= Value.HashCode;
-end;
-
-{ TBigCardinalComparer }
-
-class function TBigCardinalComparer.Ordinal: TBigCardinalComparer;
-begin
-  if FOrdinal = nil then
-    FOrdinal:= TOrdinalBigCardinalComparer.Create;
-  Result:= TBigCardinalComparer(FOrdinal);
-end;
-*)
 
 { TBigCardinalDictionary<TValue> }
 
@@ -210,16 +182,7 @@ end;
 
 constructor TBigIntegerDictionary<TValue>.Create(ACapacity: Integer);
 begin
-//  inherited Create(ACapacity, TBigIntegerComparer.Ordinal);
   inherited Create(ACapacity, GetBigIntegerEqualityComparer);
 end;
-
-(*
-initialization
-  TBigIntegerComparer.FOrdinal:= TOrdinalBigIntegerComparer.Create;
-
-finalization
-  TBigIntegerComparer(TBigIntegerComparer.FOrdinal).Free;
-*)
 
 end.
