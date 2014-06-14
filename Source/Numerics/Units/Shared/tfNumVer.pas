@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 unit tfNumVer;
@@ -8,7 +8,7 @@ unit tfNumVer;
 interface
 
 const
-  NumericsVersion = 56;
+  NumericsVersion = 57;
 
 implementation
 

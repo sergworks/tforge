@@ -13,9 +13,10 @@ uses
   tfRecords in '..\..\..\..\Source\Shared\Units\Engine\tfRecords.pas',
   arrProcs in '..\..\..\..\Source\Numerics\Units\Engine\arrProcs.pas',
   tfNumbers in '..\..\..\..\Source\Numerics\Units\Engine\tfNumbers.pas',
-  tfNumVer in '..\..\..\..\Source\Numerics\Units\Shared\tfNumVer.pas';
+  tfNumVer in '..\..\..\..\Source\Numerics\Units\Shared\tfNumVer.pas',
+  tfUtils in '..\..\..\..\Source\Shared\Units\Shared\tfUtils.pas';
 
-function GetNumericsVersion(var Version: TNumericsVersion): TF_RESULT;
+function GetNumericsVersion(var Version: LongWord): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 begin
   Version:= NumericsVersion;
@@ -29,7 +30,8 @@ exports
   BigNumberFromDblLimb,
   BigNumberFromDblIntLimb,
   BigNumberFromPChar,
-  BigNumberFromPByte;
+  BigNumberFromPByte,
+  BigNumberAlloc;
 
 {$R *.res}
 

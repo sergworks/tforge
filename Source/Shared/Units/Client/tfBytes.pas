@@ -120,7 +120,7 @@ end;
 function ByteArray.RawData: PByte;
 begin
 {$IFDEF TFL_DLL}
-  Result:= FBytes.RawData;
+  Result:= FBytes.GetRawData;
 {$ELSE}
   Result:= TByteVector.GetRawData(PByteVector(FBytes));
 {$ENDIF}
@@ -137,7 +137,7 @@ begin
   L:= Value.FBytes.GetLen;
   if L > 0 then begin
     SetLength(Result, L);
-    Move(Value.FBytes.RawData^, Pointer(Result)^, L);
+    Move(Value.FBytes.GetRawData^, Pointer(Result)^, L);
   end;
 {$ELSE}
   L:= TByteVector.GetLen(PByteVector(Value.FBytes));
@@ -151,7 +151,8 @@ end;
 class operator ByteArray.Implicit(const Value: TBytes): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  ByteVectorFromPByte(Result.FBytes, Pointer(Value), Length(Value));
+// todo: uncomment
+//  ByteVectorFromPByte(Result.FBytes, Pointer(Value), Length(Value));
 {$ELSE}
   ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(Value), Length(Value));
 {$ENDIF}
@@ -160,7 +161,8 @@ end;
 class operator ByteArray.Implicit(const Value: Byte): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  ByteVectorFromByte(Result.FBytes, Value);
+// todo: uncomment
+//  ByteVectorFromByte(Result.FBytes, Value);
 {$ELSE}
   ByteVectorFromByte(PByteVector(Result.FBytes), Value);
 {$ENDIF}
@@ -169,7 +171,7 @@ end;
 class operator ByteArray.Explicit(const Value: ByteArray): Pointer;
 begin
 {$IFDEF TFL_DLL}
-  Result:= Value.FBytes.RawData;
+  Result:= Value.FBytes.GetRawData;
 {$ELSE}
   Result:= TByteVector.GetRawData(PByteVector(Value.FBytes));
 {$ENDIF}
@@ -187,7 +189,8 @@ begin
     raise Exception.Create('Wrong string length');
 
 {$IFDEF TFL_DLL}
-  HResCheck(ByteVectorAlloc(Result.FBytes, Length(S) div 7));
+// todo: uncomment
+//  HResCheck(ByteVectorAlloc(Result.FBytes, Length(S) div 7));
 {$ELSE}
   HResCheck(ByteVectorAlloc(PByteVector(Result.FBytes), Length(S) div 7));
 {$ENDIF}
@@ -218,7 +221,8 @@ var
 begin
   S8:= UTF8String(S);
 {$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S8), Length(S8)));
+// todo: uncomment
+//  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S8), Length(S8)));
 {$ELSE}
   HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S8), Length(S8)));
 {$ENDIF}
@@ -236,7 +240,7 @@ begin
   L:= Len;
   if L = 0 then Exit;
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.ToDec(FBytes), Tmp);
+  HResCheck(FBytes.ToDec(Tmp));
 {$ELSE}
   HResCheck(TByteVector.ToDec(PByteVector(FBytes), PByteVector(Tmp)));
 {$ENDIF}
@@ -285,7 +289,7 @@ end;
 class operator ByteArray.Add(const A: ByteArray; const B: TBytes): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.AppendPByte(Pointer(B), Length(B), Result.FBytes);
+  HResCheck(A.FBytes.AppendPByte(Pointer(B), Length(B), Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AppendPByte(PByteVector(A.FBytes),
             Pointer(B), Length(B), PByteVector(Result.FBytes)));
@@ -295,7 +299,7 @@ end;
 class operator ByteArray.Add(const A: TBytes; const B: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(B.FBytes.PrependPByte(Pointer(A), Length(A), Result.FBytes);
+  HResCheck(B.FBytes.PrependPByte(Pointer(A), Length(A), Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.PrependPByte(PByteVector(B.FBytes),
             Pointer(A), Length(A), PByteVector(Result.FBytes)));
@@ -305,7 +309,7 @@ end;
 class operator ByteArray.Add(const A: ByteArray; const B: Byte): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.AppendByte(B, Result.FBytes);
+  HResCheck(A.FBytes.AppendByte(B, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AppendByte(PByteVector(A.FBytes),
             B, PByteVector(Result.FBytes)));
@@ -315,7 +319,7 @@ end;
 class operator ByteArray.Add(const A: Byte; const B: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(B.FBytes.PrependByte(A, Result.FBytes);
+  HResCheck(B.FBytes.PrependByte(A, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.PrependByte(PByteVector(B.FBytes),
             A, PByteVector(Result.FBytes)));
@@ -511,7 +515,8 @@ begin
     L:= 0;
   end;
 {$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromPByte(Result.FBytes, @FBytes.RawData[I], L));
+// todo: uncomment
+//  HResCheck(ByteVectorFromPByte(Result.FBytes, @FBytes.RawData[I], L));
 {$ELSE}
   HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes),
             @TByteVector.GetRawData(PByteVector(Result.FBytes))[I], L));

@@ -167,20 +167,20 @@ function BigNumberFromPCharStub(var A: IBigNumber; P: PByte; L: Integer;
            CharSize: Integer; AllowNegative: Boolean; TwoCompl: Boolean): TF_RESULT; stdcall;
 begin
   LoadNumerics(LibName);
-  Result:= BigNumberFromPCharStub(A, P, L, CharSize, AllowNegative, TwoCompl);
+  Result:= BigNumberFromPChar(A, P, L, CharSize, AllowNegative, TwoCompl);
 end;
 
 function BigNumberFromPByteStub(var A: IBigNumber;
            P: PByte; L: Cardinal; AllowNegative: Boolean): TF_RESULT; stdcall;
 begin
   LoadNumerics(LibName);
-  Result:= BigNumberFromPByteStub(A, P, L, AllowNegative);
+  Result:= BigNumberFromPByte(A, P, L, AllowNegative);
 end;
 
 function BigNumberAllocStub(var A: IBigNumber; ASize: Integer): TF_RESULT; stdcall;
 begin
   LoadNumerics(LibName);
-  Result:= BigNumberAllocError(A, ASize);
+  Result:= BigNumberAlloc(A, ASize);
 end;
 
 initialization

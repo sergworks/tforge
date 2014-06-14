@@ -70,6 +70,7 @@
 			<DCCReference Include="..\..\..\..\Source\Numerics\Units\Engine\arrProcs.pas"/>
 			<DCCReference Include="..\..\..\..\Source\Numerics\Units\Engine\tfNumbers.pas"/>
 			<DCCReference Include="..\..\..\..\Source\Numerics\Units\Shared\tfNumVer.pas"/>
+			<DCCReference Include="..\..\..\..\Source\Shared\Units\Shared\tfUtils.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

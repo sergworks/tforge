@@ -29,16 +29,20 @@ type
     function ToBytes: TBytes;
     function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
 
-    function HashCode: Integer;
+    function GetHashCode: Integer;
+    property HashCode: Integer read GetHashCode;
 
-    class function Compare(const A, B: BigCardinal): Integer; static;
-//    function CompareTo(const B: BigCardinal): Integer; overload; inline;
-    class function Equals(const A, B: BigCardinal): Boolean; static;
-//    function EqualTo(const B: BigCardinal): Boolean; overload; inline;
+    function CompareTo(const B: BigCardinal): Integer; overload;
+    function CompareTo(const B: TLimb): Integer; overload;
+    function CompareTo(const B: TIntLimb): Integer; overload;
+    function CompareTo(const B: TDblLimb): Integer; overload;
+    function CompareTo(const B: TDblIntLimb): Integer; overload;
 
-    class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; static;
-    class function DivRem(const Dividend, Divisor: BigCardinal;
-                          var Remainder: BigCardinal): BigCardinal; overload; static;
+    function EqualsTo(const B: BigCardinal): Boolean; overload;
+//    function EqualsTo(const B: TLimb): Boolean; overload;
+//    function EqualsTo(const B: TIntLimb): Boolean; overload;
+//    function EqualsTo(const B: TDblLimb): Boolean; overload;
+//    function EqualsTo(const B: TDblIntLimb): Boolean; overload;
 
     class operator Explicit(const Value: BigCardinal): TLimb;
     class operator Explicit(const Value: BigCardinal): TIntLimb;
@@ -51,12 +55,12 @@ type
     class operator Explicit(const Value: TBytes): BigCardinal;
     class operator Explicit(const Value: string): BigCardinal;
 
-    class operator Equal(const A, B: BigCardinal): Boolean; inline;
-    class operator NotEqual(const A, B: BigCardinal): Boolean; inline;
-    class operator GreaterThan(const A, B: BigCardinal): Boolean; inline;
-    class operator GreaterThanOrEqual(const A, B: BigCardinal): Boolean; inline;
-    class operator LessThan(const A, B: BigCardinal): Boolean; inline;
-    class operator LessThanOrEqual(const A, B: BigCardinal): Boolean; inline;
+    class operator Equal(const A, B: BigCardinal): Boolean;
+    class operator NotEqual(const A, B: BigCardinal): Boolean;
+    class operator GreaterThan(const A, B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A, B: BigCardinal): Boolean;
+    class operator LessThan(const A, B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A, B: BigCardinal): Boolean;
 
     class operator Add(const A, B: BigCardinal): BigCardinal;
     class operator Subtract(const A, B: BigCardinal): BigCardinal;
@@ -70,70 +74,55 @@ type
     class operator BitwiseAnd(const A, B: BigCardinal): BigCardinal;
     class operator BitwiseOr(const A, B: BigCardinal): BigCardinal;
 
-    function CompareToLimb(const B: TLimb): Integer;
-    function CompareToIntLimb(const B: TIntLimb): Integer;
-    function CompareTo(const B: TLimb): Integer; overload; inline;
-    function CompareTo(const B: TIntLimb): Integer; overload; inline;
+    class operator Equal(const A: BigCardinal; const B: TLimb): Boolean;
+    class operator Equal(const A: TLimb; const B: BigCardinal): Boolean;
+    class operator Equal(const A: BigCardinal; const B: TIntLimb): Boolean;
+    class operator Equal(const A: TIntLimb; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: TLimb): Boolean;
+    class operator NotEqual(const A: TLimb; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: TIntLimb): Boolean;
+    class operator NotEqual(const A: TIntLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: TLimb): Boolean;
+    class operator GreaterThan(const A: TLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: TIntLimb): Boolean;
+    class operator GreaterThan(const A: TIntLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TIntLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TIntLimb; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: TLimb): Boolean;
+    class operator LessThan(const A: TLimb; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: TIntLimb): Boolean;
+    class operator LessThan(const A: TIntLimb; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: TLimb): Boolean;
+    class operator LessThanOrEqual(const A: TLimb; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: TIntLimb): Boolean;
+    class operator LessThanOrEqual(const A: TIntLimb; const B: BigCardinal): Boolean;
 
-    class operator Equal(const A: BigCardinal; const B: TLimb): Boolean; inline;
-    class operator Equal(const A: TLimb; const B: BigCardinal): Boolean; inline;
-    class operator Equal(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
-    class operator Equal(const A: TIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator NotEqual(const A: BigCardinal; const B: TLimb): Boolean; inline;
-    class operator NotEqual(const A: TLimb; const B: BigCardinal): Boolean; inline;
-    class operator NotEqual(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
-    class operator NotEqual(const A: TIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThan(const A: BigCardinal; const B: TLimb): Boolean; inline;
-    class operator GreaterThan(const A: TLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThan(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
-    class operator GreaterThan(const A: TIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThan(const A: BigCardinal; const B: TLimb): Boolean; inline;
-    class operator LessThan(const A: TLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThan(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
-    class operator LessThan(const A: TIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: TLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TIntLimb; const B: BigCardinal): Boolean; inline;
-
-    function CompareToDblLimb(const B: TDblLimb): Integer;
-    function CompareToDblIntLimb(const B: TDblIntLimb): Integer;
-    function CompareTo(const B: TDblLimb): Integer; overload; inline;
-    function CompareTo(const B: TDblIntLimb): Integer; overload; inline;
-
-    class operator Equal(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
-    class operator Equal(const A: TDblLimb; const B: BigCardinal): Boolean; inline;
-    class operator Equal(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
-    class operator Equal(const A: TDblIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator NotEqual(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
-    class operator NotEqual(const A: TDblLimb; const B: BigCardinal): Boolean; inline;
-    class operator NotEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
-    class operator NotEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThan(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
-    class operator GreaterThan(const A: TDblLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThan(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
-    class operator GreaterThan(const A: TDblIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TDblLimb; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThan(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
-    class operator LessThan(const A: TDblLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThan(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
-    class operator LessThan(const A: TDblIntLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TDblLimb; const B: BigCardinal): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean; inline;
-
-    class function DivRem(const Dividend: BigCardinal; Divisor: TLimb;
-                          var Remainder: TLimb): BigCardinal; overload; static;
-    class function DivRem(const Dividend: TLimb; Divisor: BigCardinal;
-                          var Remainder: TLimb): TLimb; overload; static;
+    class operator Equal(const A: BigCardinal; const B: TDblLimb): Boolean;
+    class operator Equal(const A: TDblLimb; const B: BigCardinal): Boolean;
+    class operator Equal(const A: BigCardinal; const B: TDblIntLimb): Boolean;
+    class operator Equal(const A: TDblIntLimb; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: TDblLimb): Boolean;
+    class operator NotEqual(const A: TDblLimb; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean;
+    class operator NotEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: TDblLimb): Boolean;
+    class operator GreaterThan(const A: TDblLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: TDblIntLimb): Boolean;
+    class operator GreaterThan(const A: TDblIntLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TDblLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TDblLimb; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: TDblLimb): Boolean;
+    class operator LessThan(const A: TDblLimb; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: TDblIntLimb): Boolean;
+    class operator LessThan(const A: TDblIntLimb; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: TDblLimb): Boolean;
+    class operator LessThanOrEqual(const A: TDblLimb; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean;
+    class operator LessThanOrEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 
     class operator Add(const A: BigCardinal; const B: TLimb): BigCardinal;
     class operator Add(const A: TLimb; const B: BigCardinal): BigCardinal;
@@ -150,7 +139,6 @@ type
   BigInteger = record
   private
     FNumber: IBigNumber;
-    function GetSign: Integer;
   public
     procedure Free;
 
@@ -160,20 +148,71 @@ type
     function ToBytes: TBytes;
     function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
 
-    function HashCode: Integer;
-
+    function GetSign: Integer;
     property Sign: Integer read GetSign;
 
+    function GetHashCode: Integer;
+    property HashCode: Integer read GetHashCode;
+
+    class function Compare(const A, B: BigCardinal): Integer; overload; static;
+    class function Compare(const A, B: BigInteger): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
+
+    class function Compare(const A: BigCardinal; const B: TLimb): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TIntLimb): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TDblLimb): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TDblIntLimb): Integer; overload; static;
+
+    class function Compare(const A: BigInteger; const B: TLimb): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: TIntLimb): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: TDblLimb): Integer; overload; static;
+    class function Compare(const A: BigInteger; const B: TDblIntLimb): Integer; overload; static;
+
+    function CompareTo(const B: BigInteger): Integer; overload;
+    function CompareTo(const B: BigCardinal): Integer; overload;
+    function CompareTo(const B: TLimb): Integer; overload;
+    function CompareTo(const B: TIntLimb): Integer; overload;
+    function CompareTo(const B: TDblLimb): Integer; overload;
+    function CompareTo(const B: TDblIntLimb): Integer; overload;
+
+    class function Equals(const A, B: BigCardinal): Boolean; overload; static;
+    class function Equals(const A, B: BigInteger): Boolean; overload; static;
+    class function Equals(const A: BigInteger; const B: BigCardinal): Boolean; overload; static;
+    class function Equals(const A: BigCardinal; const B: BigInteger): Boolean; overload; static;
+
+//    class function Equals(const A: BigCardinal; const B: TLimb): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TIntLimb): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TDblLimb): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TDblIntLimb): Boolean; overload; static;
+
+    function EqualsTo(const B: BigInteger): Boolean; overload;
+    function EqualsTo(const B: BigCardinal): Boolean; overload;
+
     class function Abs(const A: BigInteger): BigInteger; static;
-    class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; static;
+    class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; overload; static;
+    class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; overload; static;
+    class function Sqrt(const A: BigCardinal): BigCardinal; overload; static;
+    class function Sqrt(const A: BigInteger): BigInteger; overload; static;
+    class function GCD(const A, B: BigCardinal): BigCardinal; overload; static;
+    class function GCD(const A, B: BigInteger): BigInteger; overload; static;
+    class function GCD(const A: BigInteger; const B: BigCardinal): BigInteger; overload; static;
+    class function GCD(const A: BigCardinal; const B: BigInteger): BigInteger; overload; static;
+    class function EGCD(const A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
+    class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
+    class function ModInverse(const A, Modulo: BigCardinal): BigCardinal; overload; static;
+    class function ModInverse(const A, Modulo: BigInteger): BigInteger; overload; static;
+    class function ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger; overload; static;
+    class function ModInverse(const A: BigCardinal; const Modulo: BigInteger): BigInteger; overload; static;
+
+    class function DivRem(const Dividend, Divisor: BigCardinal;
+                          var Remainder: BigCardinal): BigCardinal; overload; static;
     class function DivRem(const Dividend, Divisor: BigInteger;
                           var Remainder: BigInteger): BigInteger; overload; static;
-
-    class function Sqrt(A: BigInteger): BigInteger; static;
-    class function GCD(A, B: BigInteger): BigInteger; static;
-    class function EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
-    class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
-    class function ModInverse(A, Modulo: BigInteger): BigInteger; static;
+    class function DivRem(const Dividend: BigCardinal; Divisor: TLimb;
+                          var Remainder: TLimb): BigCardinal; overload; static;
+    class function DivRem(const Dividend: TLimb; Divisor: BigCardinal;
+                          var Remainder: TLimb): TLimb; overload; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
@@ -189,33 +228,24 @@ type
     class operator Explicit(const Value: TBytes): BigInteger;
     class operator Explicit(const Value: string): BigInteger;
 
-    class function Compare(const A, B: BigInteger): Integer; overload; static;
-    class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
-    class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
-//    function CompareTo(const B: BigInteger): Integer; overload; inline;
-//    function CompareTo(const B: BigCardinal): Integer; overload; inline;
-    class function Equals(const A, B: BigInteger): Boolean; overload; static;
-    class function Equals(const A: BigInteger; const B: BigCardinal): Boolean; overload; static;
-    class function Equals(const A: BigCardinal; const B: BigInteger): Boolean; overload; static;
-
-    class operator Equal(const A, B: BigInteger): Boolean; inline;
-    class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean; inline;
-    class operator Equal(const A: BigCardinal; const B: BigInteger): Boolean; inline;
-    class operator NotEqual(const A, B: BigInteger): Boolean; inline;
-    class operator NotEqual(const A: BigInteger; const B: BigCardinal): Boolean; inline;
-    class operator NotEqual(const A: BigCardinal; const B: BigInteger): Boolean; inline;
-    class operator GreaterThan(const A, B: BigInteger): Boolean; inline;
-    class operator GreaterThan(const A: BigInteger; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThan(const A: BigCardinal; const B: BigInteger): Boolean; inline;
-    class operator GreaterThanOrEqual(const A, B: BigInteger): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean; inline;
-    class operator LessThan(const A, B: BigInteger): Boolean; inline;
-    class operator LessThan(const A: BigInteger; const B: BigCardinal): Boolean; inline;
-    class operator LessThan(const A: BigCardinal; const B: BigInteger): Boolean; inline;
-    class operator LessThanOrEqual(const A, B: BigInteger): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+    class operator Equal(const A, B: BigInteger): Boolean;
+    class operator Equal(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator Equal(const A: BigCardinal; const B: BigInteger): Boolean;
+    class operator NotEqual(const A, B: BigInteger): Boolean;
+    class operator NotEqual(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
+    class operator GreaterThan(const A, B: BigInteger): Boolean;
+    class operator GreaterThan(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator GreaterThan(const A: BigCardinal; const B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A, B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator GreaterThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean;
+    class operator LessThan(const A, B: BigInteger): Boolean;
+    class operator LessThan(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator LessThan(const A: BigCardinal; const B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A, B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean;
+    class operator LessThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean;
 
     class operator Add(const A, B: BigInteger): BigInteger;
     class operator Subtract(const A, B: BigInteger): BigInteger;
@@ -230,65 +260,55 @@ type
     class operator BitwiseOr(const A, B: BigInteger): BigInteger;
     class operator BitwiseXor(const A, B: BigInteger): BigInteger;
 
-    function CompareToUInt(const B: TLimb): Integer;
-    function CompareToInt(const B: TIntLimb): Integer;
-    function CompareTo(const B: TLimb): Integer; overload; inline;
-    function CompareTo(const B: TIntLimb): Integer; overload; inline;
+    class operator Equal(const A: BigInteger; const B: TLimb): Boolean;
+    class operator Equal(const A: TLimb; const B: BigInteger): Boolean;
+    class operator Equal(const A: BigInteger; const B: TIntLimb): Boolean;
+    class operator Equal(const A: TIntLimb; const B: BigInteger): Boolean;
+    class operator NotEqual(const A: BigInteger; const B: TLimb): Boolean;
+    class operator NotEqual(const A: TLimb; const B: BigInteger): Boolean;
+    class operator NotEqual(const A: BigInteger; const B: TIntLimb): Boolean;
+    class operator NotEqual(const A: TIntLimb; const B: BigInteger): Boolean;
+    class operator GreaterThan(const A: BigInteger; const B: TLimb): Boolean;
+    class operator GreaterThan(const A: TLimb; const B: BigInteger): Boolean;
+    class operator GreaterThan(const A: BigInteger; const B: TIntLimb): Boolean;
+    class operator GreaterThan(const A: TIntLimb; const B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: TLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TLimb; const B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: TIntLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TIntLimb; const B: BigInteger): Boolean;
+    class operator LessThan(const A: BigInteger; const B: TLimb): Boolean;
+    class operator LessThan(const A: TLimb; const B: BigInteger): Boolean;
+    class operator LessThan(const A: BigInteger; const B: TIntLimb): Boolean;
+    class operator LessThan(const A: TIntLimb; const B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A: BigInteger; const B: TLimb): Boolean;
+    class operator LessThanOrEqual(const A: TLimb; const B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A: BigInteger; const B: TIntLimb): Boolean;
+    class operator LessThanOrEqual(const A: TIntLimb; const B: BigInteger): Boolean;
 
-    class operator Equal(const A: BigInteger; const B: TLimb): Boolean; inline;
-    class operator Equal(const A: TLimb; const B: BigInteger): Boolean; inline;
-    class operator Equal(const A: BigInteger; const B: TIntLimb): Boolean; inline;
-    class operator Equal(const A: TIntLimb; const B: BigInteger): Boolean; inline;
-    class operator NotEqual(const A: BigInteger; const B: TLimb): Boolean; inline;
-    class operator NotEqual(const A: TLimb; const B: BigInteger): Boolean; inline;
-    class operator NotEqual(const A: BigInteger; const B: TIntLimb): Boolean; inline;
-    class operator NotEqual(const A: TIntLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThan(const A: BigInteger; const B: TLimb): Boolean; inline;
-    class operator GreaterThan(const A: TLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThan(const A: BigInteger; const B: TIntLimb): Boolean; inline;
-    class operator GreaterThan(const A: TIntLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigInteger; const B: TLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigInteger; const B: TIntLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TIntLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThan(const A: BigInteger; const B: TLimb): Boolean; inline;
-    class operator LessThan(const A: TLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThan(const A: BigInteger; const B: TIntLimb): Boolean; inline;
-    class operator LessThan(const A: TIntLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigInteger; const B: TLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigInteger; const B: TIntLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TIntLimb; const B: BigInteger): Boolean; inline;
-
-    function CompareToDoubleUInt(const B: TDblLimb): Integer;
-    function CompareToDoubleInt(const B: TDblIntLimb): Integer;
-    function CompareTo(const B: TDblLimb): Integer; overload; inline;
-    function CompareTo(const B: TDblIntLimb): Integer; overload; inline;
-
-    class operator Equal(const A: BigInteger; const B: TDblLimb): Boolean; inline;
-    class operator Equal(const A: TDblLimb; const B: BigInteger): Boolean; inline;
-    class operator Equal(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
-    class operator Equal(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
-    class operator NotEqual(const A: BigInteger; const B: TDblLimb): Boolean; inline;
-    class operator NotEqual(const A: TDblLimb; const B: BigInteger): Boolean; inline;
-    class operator NotEqual(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
-    class operator NotEqual(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThan(const A: BigInteger; const B: TDblLimb): Boolean; inline;
-    class operator GreaterThan(const A: TDblLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThan(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
-    class operator GreaterThan(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigInteger; const B: TDblLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TDblLimb; const B: BigInteger): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
-    class operator GreaterThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThan(const A: BigInteger; const B: TDblLimb): Boolean; inline;
-    class operator LessThan(const A: TDblLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThan(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
-    class operator LessThan(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigInteger; const B: TDblLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TDblLimb; const B: BigInteger): Boolean; inline;
-    class operator LessThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
-    class operator LessThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean; inline;
+    class operator Equal(const A: BigInteger; const B: TDblLimb): Boolean;
+    class operator Equal(const A: TDblLimb; const B: BigInteger): Boolean;
+    class operator Equal(const A: BigInteger; const B: TDblIntLimb): Boolean;
+    class operator Equal(const A: TDblIntLimb; const B: BigInteger): Boolean;
+    class operator NotEqual(const A: BigInteger; const B: TDblLimb): Boolean;
+    class operator NotEqual(const A: TDblLimb; const B: BigInteger): Boolean;
+    class operator NotEqual(const A: BigInteger; const B: TDblIntLimb): Boolean;
+    class operator NotEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
+    class operator GreaterThan(const A: BigInteger; const B: TDblLimb): Boolean;
+    class operator GreaterThan(const A: TDblLimb; const B: BigInteger): Boolean;
+    class operator GreaterThan(const A: BigInteger; const B: TDblIntLimb): Boolean;
+    class operator GreaterThan(const A: TDblIntLimb; const B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: TDblLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TDblLimb; const B: BigInteger): Boolean;
+    class operator GreaterThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean;
+    class operator GreaterThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
+    class operator LessThan(const A: BigInteger; const B: TDblLimb): Boolean;
+    class operator LessThan(const A: TDblLimb; const B: BigInteger): Boolean;
+    class operator LessThan(const A: BigInteger; const B: TDblIntLimb): Boolean;
+    class operator LessThan(const A: TDblIntLimb; const B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A: BigInteger; const B: TDblLimb): Boolean;
+    class operator LessThanOrEqual(const A: TDblLimb; const B: BigInteger): Boolean;
+    class operator LessThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean;
+    class operator LessThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
 
 // arithmetic operations on BigInteger & TLimb
     class operator Add(const A: BigInteger; const B: TLimb): BigInteger;
@@ -360,6 +380,202 @@ procedure HResCheck(Value: TF_RESULT); inline;
 begin
   if Value <> TF_S_OK then
     BigNumberError(Value);
+end;
+
+{-----------------------  Compare Inlines ----------------------}
+
+function Compare_BigCard_BigCard(const A, B: BigCardinal): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareNumberU(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Compare_BigInt_BigInt(const A, B: BigInteger): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Compare_BigInt_BigCard(const A: BigInteger; const B: BigCardinal): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Compare_BigCard_BigInt(const A: BigCardinal; const B: BigInteger): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Compare_BigCard_Limb(const A: BigCardinal; const B: TLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToLimbU(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToLimbU(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigCard_IntLimb(const A: BigCardinal; const B: TIntLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToIntLimbU(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToIntLimbU(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigCard_DblLimb(const A: BigCardinal; const B: TDblLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToDblLimbU(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToDblLimbU(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigCard_DblIntLimb(const A: BigCardinal; const B: TDblIntLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToDblIntLimbU(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToDblIntLimbU(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigInt_Limb(const A: BigInteger; const B: TLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToLimb(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToLimb(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigInt_IntLimb(const A: BigInteger; const B: TIntLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToIntLimb(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToIntLimb(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigInt_DblLimb(const A: BigInteger; const B: TDblLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToDblLimb(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToDblLimb(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+function Compare_BigInt_DblIntLimb(const A: BigInteger; const B: TDblIntLimb): Integer; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.CompareToDblIntLimb(B);
+{$ELSE}
+  Result:= TBigNumber.CompareToDblIntLimb(PBigNumber(A.FNumber), B);
+{$ENDIF}
+end;
+
+{------------------------ Equal Inlines -----------------------}
+
+function Equal_BigCard_BigCard(const A, B: BigCardinal): Boolean; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumberU(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbersU(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Equal_BigInt_BigInt(const A, B: BigInteger): Boolean; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Equal_BigInt_BigCard(const A: BigInteger; const B: BigCardinal): Boolean; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Equal_BigCard_BigInt(const A: BigCardinal; const B: BigInteger): Boolean; inline;
+begin
+{$IFDEF TFL_DLL}
+  Result:= A.FNumber.EqualsNumber(B.FNumber);
+{$ELSE}
+  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
+                      PBigNumber(B.FNumber));
+{$ENDIF}
+end;
+
+function Equal_BigCard_Limb(const A: BigCardinal; const B: TLimb): Boolean; inline;
+begin
+  Result:= Compare_BigCard_Limb(A, B) = 0;
+end;
+
+function Equal_BigCard_IntLimb(const A: BigCardinal; const B: TIntLimb): Boolean; inline;
+begin
+  Result:= Compare_BigCard_IntLimb(A, B) = 0;
+end;
+
+function Equal_BigCard_DblLimb(const A: BigCardinal; const B: TDblLimb): Boolean; inline;
+begin
+  Result:= Compare_BigCard_DblLimb(A, B) = 0;
+end;
+
+function Equal_BigCard_DblIntLimb(const A: BigCardinal; const B: TDblIntLimb): Boolean; inline;
+begin
+  Result:= Compare_BigCard_DblIntLimb(A, B) = 0;
+end;
+
+function Equal_BigInt_Limb(const A: BigInteger; const B: TLimb): Boolean; inline;
+begin
+  Result:= Compare_BigInt_Limb(A, B) = 0;
+end;
+
+function Equal_BigInt_IntLimb(const A: BigInteger; const B: TIntLimb): Boolean; inline;
+begin
+  Result:= Compare_BigInt_IntLimb(A, B) = 0;
+end;
+
+function Equal_BigInt_DblLimb(const A: BigInteger; const B: TDblLimb): Boolean; inline;
+begin
+  Result:= Compare_BigInt_DblLimb(A, B) = 0;
+end;
+
+function Equal_BigInt_DblIntLimb(const A: BigInteger; const B: TDblIntLimb): Boolean; inline;
+begin
+  Result:= Compare_BigInt_DblIntLimb(A, B) = 0;
 end;
 
 { BigCardinal }
@@ -471,49 +687,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigCardinal.Compare(const A, B: BigCardinal): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.CompareNumberU(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-
-{
-function BigCardinal.CompareTo(const B: BigCardinal): Integer;
-begin
-  Result:= Compare(Self, B);
-end;
-}
-
-class function BigCardinal.Equals(const A, B: BigCardinal): Boolean;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.EqualsNumberU(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.EqualNumbersU(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-{
-function BigCardinal.EqualTo(const B: BigCardinal): Boolean;
-begin
-  Result:= Equal(Self, B);
-end;
-}
-class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Base.FNumber.PowU(Value, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.PowU(PBigNumber(Base.FNumber), Value,
-                       PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-function BigCardinal.HashCode: Integer;
+function BigCardinal.GetHashCode: Integer;
 begin
 {$IFDEF TFL_DLL}
   Result:= FNumber.GetHashCode;
@@ -522,34 +696,44 @@ begin
 {$ENDIF}
 end;
 
+function BigCardinal.CompareTo(const B: BigCardinal): Integer;
+begin
+  Result:= Compare_BigCard_BigCard(Self, B);
+end;
+
+function BigCardinal.EqualsTo(const B: BigCardinal): Boolean;
+begin
+  Result:= Equal_BigCard_BigCard(Self, B);
+end;
+
 class operator BigCardinal.Equal(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Equals(A, B);
+  Result:= Equal_BigCard_BigCard(A, B);
 end;
 
 class operator BigCardinal.NotEqual(const A, B: BigCardinal): Boolean;
 begin
-  Result:= not Equals(A, B);
+  Result:= not Equal_BigCard_BigCard(A, B);
 end;
 
 class operator BigCardinal.GreaterThan(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) > 0;
+  Result:= Compare_BigCard_BigCard(A, B) > 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) >= 0;
+  Result:= Compare_BigCard_BigCard(A, B) >= 0;
 end;
 
 class operator BigCardinal.LessThan(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) < 0;
+  Result:= Compare_BigCard_BigCard(A, B) < 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A, B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) <= 0;
+  Result:= Compare_BigCard_BigCard(A, B) <= 0;
 end;
 
 class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
@@ -757,335 +941,264 @@ begin
 {$ENDIF}
 end;
 
-class function BigCardinal.DivRem(const Dividend, Divisor: BigCardinal;
-                                  var Remainder: BigCardinal): BigCardinal;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Dividend.FNumber.DivRemNumberU(Divisor.FNumber,
-            Result.FNumber, Remainder.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(Dividend.FNumber),
-            PBigNumber(Divisor.FNumber), PBigNumber(Result.FNumber),
-            PBigNumber(Remainder.FNumber)));
-{$ENDIF}
-end;
-
 function BigCardinal.CompareTo(const B: TLimb): Integer;
 begin
-  Result:= CompareToLimb(B);
+  Result:= Compare_BigCard_Limb(Self, B);
 end;
 
 function BigCardinal.CompareTo(const B: TIntLimb): Integer;
 begin
-  Result:= CompareToIntLimb(B);
+  Result:= Compare_BigCard_IntLimb(Self, B);
 end;
 
 function BigCardinal.CompareTo(const B: TDblLimb): Integer;
 begin
-  Result:= CompareToDblLimb(B);
+  Result:= Compare_BigCard_DblLimb(Self, B);
 end;
 
 function BigCardinal.CompareTo(const B: TDblIntLimb): Integer;
 begin
-  Result:= CompareToDblIntLimb(B);
-end;
-
-function BigCardinal.CompareToDblIntLimb(const B: TDblIntLimb): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToDblIntLimbU(B);
-{$ELSE}
-  Result:= TBigNumber.CompareToDblIntLimbU(PBigNumber(FNumber), B);
-{$ENDIF}
-end;
-
-function BigCardinal.CompareToDblLimb(const B: TDblLimb): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToDblLimbU(B);
-{$ELSE}
-  Result:= TBigNumber.CompareToDblLimbU(PBigNumber(FNumber), B);
-{$ENDIF}
-end;
-
-function BigCardinal.CompareToLimb(const B: TLimb): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToLimbU(B);
-{$ELSE}
-  Result:= TBigNumber.CompareToLimbU(PBigNumber(FNumber), B);
-{$ENDIF}
-end;
-
-function BigCardinal.CompareToIntLimb(const B: TIntLimb): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToIntLimbU(B);
-{$ELSE}
-  Result:= TBigNumber.CompareToIntLimbU(PBigNumber(FNumber), B);
-{$ENDIF}
+  Result:= Compare_BigCard_DblIntLimb(Self, B);
 end;
 
 class operator BigCardinal.Equal(const A: BigCardinal; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToLimb(B) = 0;
+  Result:= Equal_BigCard_Limb(A, B);
 end;
 
 class operator BigCardinal.Equal(const A: TLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToLimb(A) = 0;
+  Result:= Equal_BigCard_Limb(B, A);
 end;
 
 class operator BigCardinal.Equal(const A: BigCardinal; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToIntLimb(B) = 0;
+  Result:= Equal_BigCard_IntLimb(A, B);
 end;
 
 class operator BigCardinal.Equal(const A: TIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToIntLimb(A) = 0;
+  Result:= Equal_BigCard_IntLimb(B, A);
 end;
 
 class operator BigCardinal.NotEqual(const A: BigCardinal; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToLimb(B) <> 0;
+  Result:= not Equal_BigCard_Limb(A, B);
 end;
 
 class operator BigCardinal.NotEqual(const A: TLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToLimb(A) <> 0;
+  Result:= not Equal_BigCard_Limb(B, A);
 end;
 
 class operator BigCardinal.NotEqual(const A: BigCardinal; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToIntLimb(B) <> 0;
+  Result:= not Equal_BigCard_IntLimb(A, B);
 end;
 
 class operator BigCardinal.NotEqual(const A: TIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToIntLimb(A) <> 0;
+  Result:= not Equal_BigCard_IntLimb(B, A);
 end;
 
 class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToLimb(B) > 0;
+  Result:= Compare_BigCard_Limb(A, B) > 0;
 end;
 
 class operator BigCardinal.GreaterThan(const A: TLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToLimb(A) < 0;
+  Result:= Compare_BigCard_Limb(B, A) < 0;
 end;
 
 class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToIntLimb(B) > 0;
+  Result:= Compare_BigCard_IntLimb(A, B) > 0;
 end;
 
 class operator BigCardinal.GreaterThan(const A: TIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToIntLimb(A) < 0;
+  Result:= Compare_BigCard_IntLimb(B, A) < 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToLimb(B) >= 0;
+  Result:= Compare_BigCard_Limb(A, B) >= 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: TLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToLimb(A) <= 0;
+  Result:= Compare_BigCard_Limb(B, A) <= 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToIntLimb(B) >= 0;
+  Result:= Compare_BigCard_IntLimb(A, B) >= 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: TIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToIntLimb(A) <= 0;
+  Result:= Compare_BigCard_IntLimb(B, A) <= 0;
 end;
 
 class operator BigCardinal.LessThan(const A: BigCardinal; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToLimb(B) < 0;
+  Result:= Compare_BigCard_Limb(A, B) < 0;
 end;
 
 class operator BigCardinal.LessThan(const A: TLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToLimb(A) > 0;
+  Result:= Compare_BigCard_Limb(B, A) > 0;
 end;
 
 class operator BigCardinal.LessThan(const A: BigCardinal; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToIntLimb(B) < 0;
+  Result:= Compare_BigCard_IntLimb(A, B) < 0;
 end;
 
 class operator BigCardinal.LessThan(const A: TIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToIntLimb(A) > 0;
+  Result:= Compare_BigCard_IntLimb(B, A) > 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToLimb(B) <= 0;
+  Result:= Compare_BigCard_Limb(A, B) <= 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: TLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToLimb(A) >= 0;
+  Result:= Compare_BigCard_Limb(B, A) >= 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToIntLimb(B) <= 0;
+  Result:= Compare_BigCard_IntLimb(A, B) <= 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: TIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToIntLimb(A) >= 0;
+  Result:= Compare_BigCard_IntLimb(B, A) >= 0;
 end;
 
 class operator BigCardinal.Equal(const A: BigCardinal; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDblLimb(B) = 0;
+  Result:= Equal_BigCard_DblLimb(A, B);
 end;
 
 class operator BigCardinal.Equal(const A: TDblLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblLimb(A) = 0;
+  Result:= Equal_BigCard_DblLimb(B, A);
 end;
 
 class operator BigCardinal.Equal(const A: BigCardinal; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDblIntLimb(B) = 0;
+  Result:= Equal_BigCard_DblIntLimb(A, B);
 end;
 
 class operator BigCardinal.Equal(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblIntLimb(A) = 0;
+  Result:= Equal_BigCard_DblIntLimb(B, A);
 end;
 
 class operator BigCardinal.NotEqual(const A: BigCardinal; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDblLimb(B) <> 0;
+  Result:= not Equal_BigCard_DblLimb(A, B);
 end;
 
 class operator BigCardinal.NotEqual(const A: TDblLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblLimb(A) <> 0;
+  Result:= not Equal_BigCard_DblLimb(B, A);
 end;
 
 class operator BigCardinal.NotEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDblIntLimb(B) <> 0;
+  Result:= not Equal_BigCard_DblIntLimb(A, B);
 end;
 
 class operator BigCardinal.NotEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblIntLimb(A) <> 0;
+  Result:= not Equal_BigCard_DblIntLimb(B, A);
 end;
 
 class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDblLimb(B) > 0;
+  Result:= Compare_BigCard_DblLimb(A, B) > 0;
 end;
 
 class operator BigCardinal.GreaterThan(const A: TDblLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblLimb(A) < 0;
+  Result:= Compare_BigCard_DblLimb(B, A) < 0;
 end;
 
 class operator BigCardinal.GreaterThan(const A: BigCardinal; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDblIntLimb(B) > 0;
+  Result:= Compare_BigCard_DblIntLimb(A, B) > 0;
 end;
 
 class operator BigCardinal.GreaterThan(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblIntLimb(A) < 0;
+  Result:= Compare_BigCard_DblIntLimb(B, A) < 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDblLimb(B) >= 0;
+  Result:= Compare_BigCard_DblLimb(A, B) >= 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: TDblLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblLimb(A) <= 0;
+  Result:= Compare_BigCard_DblLimb(B, A) <= 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDblIntLimb(B) >= 0;
+  Result:= Compare_BigCard_DblIntLimb(A, B) >= 0;
 end;
 
 class operator BigCardinal.GreaterThanOrEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblIntLimb(A) <= 0;
+  Result:= Compare_BigCard_DblIntLimb(B, A) <= 0;
 end;
 
 class operator BigCardinal.LessThan(const A: BigCardinal; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDblLimb(B) < 0;
+  Result:= Compare_BigCard_DblLimb(A, B) < 0;
 end;
 
 class operator BigCardinal.LessThan(const A: TDblLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblLimb(A) > 0;
+  Result:= Compare_BigCard_DblLimb(B, A) > 0;
 end;
 
 class operator BigCardinal.LessThan(const A: BigCardinal; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDblIntLimb(B) < 0;
+  Result:= Compare_BigCard_DblIntLimb(A, B) < 0;
 end;
 
 class operator BigCardinal.LessThan(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblIntLimb(A) > 0;
+  Result:= Compare_BigCard_DblIntLimb(B, A) > 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDblLimb(B) <= 0;
+  Result:= Compare_BigCard_DblLimb(A, B) <= 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: TDblLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblLimb(A) >= 0;
+  Result:= Compare_BigCard_DblLimb(B, A) >= 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: BigCardinal; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDblIntLimb(B) <= 0;
+  Result:= Compare_BigCard_DblIntLimb(A, B) <= 0;
 end;
 
 class operator BigCardinal.LessThanOrEqual(const A: TDblIntLimb; const B: BigCardinal): Boolean;
 begin
-  Result:= B.CompareToDblIntLimb(A) >= 0;
-end;
-
-class function BigCardinal.DivRem(const Dividend: BigCardinal;
-               Divisor: TLimb; var Remainder: TLimb): BigCardinal;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Dividend.FNumber.DivRemLimbU(Divisor, Result.FNumber, Remainder));
-{$ELSE}
-  HResCheck(TBigNumber.DivRemLimbU(PBigNumber(Dividend.FNumber), Divisor,
-            PBigNumber(Result.FNumber), Remainder));
-{$ENDIF}
-end;
-
-class function BigCardinal.DivRem(const Dividend: TLimb;
-               Divisor: BigCardinal; var Remainder: TLimb): TLimb;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder));
-{$ELSE}
-  HResCheck(TBigNumber.DivRemLimbU2(PBigNumber(Divisor.FNumber), Dividend,
-            Result, Remainder));
-{$ENDIF}
+  Result:= Compare_BigCard_DblIntLimb(B, A) >= 0;
 end;
 
 class operator BigCardinal.Add(const A: BigCardinal; const B: TLimb): BigCardinal;
@@ -1335,6 +1448,175 @@ begin
 {$ENDIF}
 end;
 
+function BigInteger.GetSign: Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.GetSign;
+{$ELSE}
+  Result:= TBigNumber.GetSign(PBigNumber(FNumber));
+{$ENDIF}
+end;
+
+function BigInteger.GetHashCode: Integer;
+begin
+{$IFDEF TFL_DLL}
+  Result:= FNumber.GetHashCode;
+{$ELSE}
+  Result:= TBigNumber.GetHashCode(PBigNumber(FNumber));
+{$ENDIF}
+end;
+
+
+class function BigInteger.Compare(const A, B: BigCardinal): Integer;
+begin
+  Result:= Compare_BigCard_BigCard(A, B);
+end;
+
+class function BigInteger.Compare(const A, B: BigInteger): Integer;
+begin
+  Result:= Compare_BigInt_BigInt(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigInteger; const B: BigCardinal): Integer;
+begin
+  Result:= Compare_BigInt_BigCard(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigCardinal; const B: BigInteger): Integer;
+begin
+  Result:= Compare_BigCard_BigInt(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigCardinal; const B: TLimb): Integer;
+begin
+  Result:= Compare_BigCard_Limb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigCardinal; const B: TIntLimb): Integer;
+begin
+  Result:= Compare_BigCard_IntLimb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigCardinal; const B: TDblLimb): Integer;
+begin
+  Result:= Compare_BigCard_DblLimb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigCardinal; const B: TDblIntLimb): Integer;
+begin
+  Result:= Compare_BigCard_DblIntLimb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigInteger; const B: TLimb): Integer;
+begin
+  Result:= Compare_BigInt_Limb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigInteger; const B: TIntLimb): Integer;
+begin
+  Result:= Compare_BigInt_IntLimb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigInteger; const B: TDblLimb): Integer;
+begin
+  Result:= Compare_BigInt_DblLimb(A, B);
+end;
+
+class function BigInteger.Compare(const A: BigInteger; const B: TDblIntLimb): Integer;
+begin
+  Result:= Compare_BigInt_DblIntLimb(A, B);
+end;
+
+function BigInteger.CompareTo(const B: TLimb): Integer;
+begin
+  Result:= Compare_BigInt_Limb(Self, B);
+end;
+
+function BigInteger.CompareTo(const B: TIntLimb): Integer;
+begin
+  Result:= Compare_BigInt_IntLimb(Self, B);
+end;
+
+function BigInteger.CompareTo(const B: TDblLimb): Integer;
+begin
+  Result:= Compare_BigInt_DblLimb(Self, B);
+end;
+
+function BigInteger.CompareTo(const B: TDblIntLimb): Integer;
+begin
+  Result:= Compare_BigInt_DblIntLimb(Self, B);
+end;
+
+function BigInteger.CompareTo(const B: BigInteger): Integer;
+begin
+  Result:= Compare_BigInt_BigInt(Self, B);
+end;
+
+function BigInteger.CompareTo(const B: BigCardinal): Integer;
+begin
+  Result:= Compare_BigInt_BigCard(Self, B);
+end;
+
+
+class function BigInteger.Equals(const A, B: BigCardinal): Boolean;
+begin
+  Result:= Equal_BigCard_BigCard(A, B);
+end;
+
+class function BigInteger.Equals(const A, B: BigInteger): Boolean;
+begin
+  Result:= Equal_BigInt_BigInt(A, B);
+end;
+
+class function BigInteger.Equals(const A: BigInteger; const B: BigCardinal): Boolean;
+begin
+  Result:= Equal_BigInt_BigCard(A, B);
+end;
+
+class function BigInteger.Equals(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= Equal_BigCard_BigInt(A, B);
+end;
+
+function BigInteger.EqualsTo(const B: BigInteger): Boolean;
+begin
+  Result:= Equal_BigInt_BigInt(Self, B);
+end;
+
+function BigInteger.EqualsTo(const B: BigCardinal): Boolean;
+begin
+  Result:= Equal_BigInt_BigCard(Self, B);
+end;
+
+class function BigInteger.Abs(const A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.AbsNumber(Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.AbsNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Base.FNumber.PowU(Value, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.PowU(PBigNumber(Base.FNumber), Value,
+                       PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.Pow(const Base: BigInteger; Value: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Base.FNumber.Pow(Value, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.Pow(PBigNumber(Base.FNumber), Value,
+                       PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
 class operator BigInteger.BitwiseAnd(const A, B: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_DLL}
@@ -1362,86 +1644,6 @@ begin
 {$ELSE}
   HResCheck(TBigNumber.XorNumbers(PBigNumber(A.FNumber),
                        PBigNumber(B.FNumber), PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class function BigInteger.Compare(const A, B: BigInteger): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.CompareNumber(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-
-class function BigInteger.Compare(const A: BigInteger; const B: BigCardinal): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.CompareNumber(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-
-class function BigInteger.Compare(const A: BigCardinal; const B: BigInteger): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.CompareNumber(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-{
-function BigInteger.CompareTo(const B: BigCardinal): Integer;
-begin
-  Result:= Compare(Self, B);
-end;
-
-function BigInteger.CompareTo(const B: BigInteger): Integer;
-begin
-  Result:= Compare(Self, B);
-end;
-}
-
-class function BigInteger.Equals(const A, B: BigInteger): Boolean;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.EqualsNumber(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-
-class function BigInteger.Equals(const A: BigInteger; const B: BigCardinal): Boolean;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.EqualsNumber(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-
-class function BigInteger.Equals(const A: BigCardinal; const B: BigInteger): Boolean;
-begin
-{$IFDEF TFL_DLL}
-  Result:= A.FNumber.EqualsNumber(B.FNumber);
-{$ELSE}
-  Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
-                      PBigNumber(B.FNumber));
-{$ENDIF}
-end;
-
-function BigInteger.GetSign: Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.GetSign;
-{$ELSE}
-  Result:= TBigNumber.GetSign(PBigNumber(FNumber));
 {$ENDIF}
 end;
 
@@ -1518,104 +1720,94 @@ begin
             Pointer(Value), Length(Value), True));
 end;
 
-class function BigInteger.Pow(const Base: BigInteger; Value: Cardinal): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(Base.FNumber.Pow(Value, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.Pow(PBigNumber(Base.FNumber), Value,
-                       PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
 class operator BigInteger.Equal(const A, B: BigInteger): Boolean;
 begin
-  Result:= Equals(A, B);
-end;
-
-class operator BigInteger.Equal(const A: BigCardinal; const B: BigInteger): Boolean;
-begin
-  Result:= Equals(A, B);
+  Result:= Equal_BigInt_BigInt(A, B);
 end;
 
 class operator BigInteger.Equal(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Equals(A, B);
+  Result:= Equal_BigInt_BigCard(A, B);
+end;
+
+class operator BigInteger.Equal(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= Equal_BigCard_BigInt(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A, B: BigInteger): Boolean;
 begin
-  Result:= not Equals(A, B);
-end;
-
-class operator BigInteger.NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
-begin
-  Result:= not Equals(A, B);
+  Result:= not Equal_BigInt_BigInt(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= not Equals(A, B);
+  Result:= not Equal_BigInt_BigCard(A, B);
+end;
+
+class operator BigInteger.NotEqual(const A: BigCardinal; const B: BigInteger): Boolean;
+begin
+  Result:= not Equal_BigCard_BigInt(A, B);
 end;
 
 class operator BigInteger.GreaterThan(const A, B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) > 0;
+  Result:= Compare_BigInt_BigInt(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) > 0;
+  Result:= Compare_BigInt_BigCard(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) > 0;
+  Result:= Compare_BigCard_BigInt(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A, B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) >= 0;
+  Result:= Compare_BigInt_BigInt(A, B) >= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) >= 0;
+  Result:= Compare_BigInt_BigCard(A, B) >= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) >= 0;
+  Result:= Compare_BigCard_BigInt(A, B) >= 0;
 end;
 
 class operator BigInteger.LessThan(const A, B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) < 0;
+  Result:= Compare_BigInt_BigInt(A, B) < 0;
 end;
 
 class operator BigInteger.LessThan(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) < 0;
+  Result:= Compare_BigInt_BigCard(A, B) < 0;
 end;
 
 class operator BigInteger.LessThan(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) < 0;
+  Result:= Compare_BigCard_BigInt(A, B) < 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A, B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) <= 0;
+  Result:= Compare_BigInt_BigInt(A, B) <= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: BigCardinal): Boolean;
 begin
-  Result:= Compare(A, B) <= 0;
+  Result:= Compare_BigInt_BigCard(A, B) <= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: BigCardinal; const B: BigInteger): Boolean;
 begin
-  Result:= Compare(A, B) <= 0;
+  Result:= Compare_BigCard_BigInt(A, B) <= 0;
 end;
 
 class operator BigInteger.LeftShift(const A: BigInteger; Shift: Cardinal): BigInteger;
@@ -1679,15 +1871,6 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.Abs(const A: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.AbsNumber(Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.AbsNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
 class operator BigInteger.Add(const A, B: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_DLL}
@@ -1747,6 +1930,19 @@ begin
 end;
 
 
+class function BigInteger.DivRem(const Dividend, Divisor: BigCardinal;
+                                  var Remainder: BigCardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Dividend.FNumber.DivRemNumberU(Divisor.FNumber,
+            Result.FNumber, Remainder.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(Dividend.FNumber),
+            PBigNumber(Divisor.FNumber), PBigNumber(Result.FNumber),
+            PBigNumber(Remainder.FNumber)));
+{$ENDIF}
+end;
+
 class function BigInteger.DivRem(const Dividend, Divisor: BigInteger;
                var Remainder: BigInteger): BigInteger;
 begin
@@ -1757,6 +1953,96 @@ begin
   HResCheck(TBigNumber.DivRemNumbers(PBigNumber(Dividend.FNumber),
             PBigNumber(Divisor.FNumber), PBigNumber(Result.FNumber),
             PBigNumber(Remainder.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.DivRem(const Dividend: BigCardinal;
+               Divisor: TLimb; var Remainder: TLimb): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Dividend.FNumber.DivRemLimbU(Divisor, Result.FNumber, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimbU(PBigNumber(Dividend.FNumber), Divisor,
+            PBigNumber(Result.FNumber), Remainder));
+{$ENDIF}
+end;
+
+class function BigInteger.DivRem(const Dividend: TLimb;
+               Divisor: BigCardinal; var Remainder: TLimb): TLimb;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder));
+{$ELSE}
+  HResCheck(TBigNumber.DivRemLimbU2(PBigNumber(Divisor.FNumber), Dividend,
+            Result, Remainder));
+{$ENDIF}
+end;
+
+class function BigInteger.Sqrt(const A: BigCardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.Sqrt(const A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.GCD(const A, B: BigCardinal): BigCardinal;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.GCD(const A, B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.GCD(const A: BigInteger; const B: BigCardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.GCD(const A: BigCardinal; const B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.EGCD(const A, B: BigInteger; var X, Y: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.EGCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+      PBigNumber(Result.FNumber), PBigNumber(X.FNumber), PBigNumber(Y.FNumber)));
 {$ENDIF}
 end;
 
@@ -1773,7 +2059,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.ModInverse(A, Modulo: BigInteger): BigInteger;
+class function BigInteger.ModInverse(const A, Modulo: BigCardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
@@ -1783,339 +2069,274 @@ begin
 {$ENDIF}
 end;
 
-function BigInteger.CompareTo(const B: TLimb): Integer;
-begin
-  Result:= CompareToUInt(B);
-end;
-
-function BigInteger.CompareTo(const B: TIntLimb): Integer;
-begin
-  Result:= CompareToInt(B);
-end;
-
-function BigInteger.CompareToUInt(const B: TLimb): Integer;
+class function BigInteger.ModInverse(const A, Modulo: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToLimb(B);
+  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 {$ELSE}
-  Result:= TBigNumber.CompareToLimb(PBigNumber(FNumber), B);
+  HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
+            PBigNumber(Modulo.FNumber), PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
 
-function BigInteger.CompareToInt(const B: TIntLimb): Integer;
+class function BigInteger.ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger;
 begin
 {$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToIntLimb(B);
+  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 {$ELSE}
-  Result:= TBigNumber.CompareToIntLimb(PBigNumber(FNumber), B);
+  HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
+            PBigNumber(Modulo.FNumber), PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.ModInverse(const A: BigCardinal; const Modulo: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
+            PBigNumber(Modulo.FNumber), PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
 
 class operator BigInteger.Equal(const A: BigInteger; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToUInt(B) = 0;
+  Result:= Equal_BigInt_Limb(A, B);
 end;
 
 class operator BigInteger.Equal(const A: TLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToUInt(A) = 0;
+  Result:= Equal_BigInt_Limb(B, A);
 end;
 
 class operator BigInteger.Equal(const A: BigInteger; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToInt(B) = 0;
+  Result:= Equal_BigInt_IntLimb(A, B);
 end;
 
 class operator BigInteger.Equal(const A: TIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToInt(A) = 0;
+  Result:= Equal_BigInt_IntLimb(B, A);
 end;
 
 class operator BigInteger.NotEqual(const A: BigInteger; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToUInt(B) <> 0;
+  Result:= not Equal_BigInt_Limb(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: TLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToUInt(A) <> 0;
+  Result:= not Equal_BigInt_Limb(B, A);
 end;
 
 class operator BigInteger.NotEqual(const A: BigInteger; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToInt(B) <> 0;
+  Result:= not Equal_BigInt_IntLimb(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: TIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToInt(A) <> 0;
+  Result:= not Equal_BigInt_IntLimb(B, A);
 end;
 
 class operator BigInteger.GreaterThan(const A: BigInteger; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToUInt(B) > 0;
+  Result:= Compare_BigInt_Limb(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: TLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToUInt(A) < 0;
+  Result:= Compare_BigInt_Limb(B, A) < 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: BigInteger; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToInt(B) > 0;
+  Result:= Compare_BigInt_IntLimb(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: TIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToInt(A) < 0;
+  Result:= Compare_BigInt_IntLimb(B, A) < 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToUInt(B) >= 0;
+  Result:= Compare_BigInt_Limb(A, B) >= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: TLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToUInt(A) <= 0;
+  Result:= Compare_BigInt_Limb(B, A) <= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToInt(B) >= 0;
+  Result:= Compare_BigInt_IntLimb(A, B) >= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: TIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToInt(A) <= 0;
+  Result:= Compare_BigInt_IntLimb(B, A) <= 0;
 end;
 
 class operator BigInteger.LessThan(const A: BigInteger; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToUInt(B) < 0;
+  Result:= Compare_BigInt_Limb(A, B) < 0;
 end;
 
 class operator BigInteger.LessThan(const A: TLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToUInt(A) > 0;
+  Result:= Compare_BigInt_Limb(B, A) > 0;
 end;
 
 class operator BigInteger.LessThan(const A: BigInteger; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToInt(B) < 0;
+  Result:= Compare_BigInt_IntLimb(A, B) < 0;
 end;
 
 class operator BigInteger.LessThan(const A: TIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToInt(A) > 0;
+  Result:= Compare_BigInt_IntLimb(B, A) > 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: TLimb): Boolean;
 begin
-  Result:= A.CompareToUInt(B) <= 0;
+  Result:= Compare_BigInt_Limb(A, B) <= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: TLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToUInt(A) >= 0;
+  Result:= Compare_BigInt_Limb(B, A) >= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: TIntLimb): Boolean;
 begin
-  Result:= A.CompareToInt(B) <= 0;
+  Result:= Compare_BigInt_IntLimb(A, B) <= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: TIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToInt(A) >= 0;
-end;
-
-
-function BigInteger.CompareToDoubleUInt(const B: TDblLimb): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToDblLimb(B);
-{$ELSE}
-  Result:= TBigNumber.CompareToDblLimb(PBigNumber(FNumber), B);
-{$ENDIF}
-end;
-
-function BigInteger.CompareToDoubleInt(const B: TDblIntLimb): Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.CompareToDblIntLimb(B);
-{$ELSE}
-  Result:= TBigNumber.CompareToDblIntLimb(PBigNumber(FNumber), B);
-{$ENDIF}
-end;
-
-function BigInteger.CompareTo(const B: TDblLimb): Integer;
-begin
-  Result:= CompareToDoubleUInt(B);
-end;
-
-function BigInteger.CompareTo(const B: TDblIntLimb): Integer;
-begin
-  Result:= CompareToDoubleInt(B);
+  Result:= Compare_BigInt_IntLimb(B, A) >= 0;
 end;
 
 class operator BigInteger.Equal(const A: BigInteger; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleUInt(B) = 0;
+  Result:= Equal_BigInt_DblLimb(A, B);
 end;
 
 class operator BigInteger.Equal(const A: TDblLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleUInt(A) = 0;
+  Result:= Equal_BigInt_DblLimb(B, A);
 end;
 
 class operator BigInteger.Equal(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleInt(B) = 0;
-end;
-
-class function BigInteger.GCD(A, B: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
-            PBigNumber(Result.FNumber)));
-{$ENDIF}
-end;
-
-class function BigInteger.EGCD(A, B: BigInteger; var X, Y: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.EGCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
-      PBigNumber(Result.FNumber), PBigNumber(X.FNumber), PBigNumber(Y.FNumber)));
-{$ENDIF}
+  Result:= Equal_BigInt_DblIntLimb(A, B);
 end;
 
 class operator BigInteger.Equal(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleInt(A) = 0;
+  Result:= Equal_BigInt_DblIntLimb(B, A);
 end;
 
 class operator BigInteger.NotEqual(const A: BigInteger; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleUInt(B) <> 0;
+  Result:= not Equal_BigInt_DblLimb(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: TDblLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleUInt(A) <> 0;
+  Result:= not Equal_BigInt_DblLimb(B, A);
 end;
 
 class operator BigInteger.NotEqual(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleInt(B) <> 0;
+  Result:= not Equal_BigInt_DblIntLimb(A, B);
 end;
 
 class operator BigInteger.NotEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleInt(A) <> 0;
+  Result:= not Equal_BigInt_DblIntLimb(B, A);
 end;
 
 class operator BigInteger.GreaterThan(const A: BigInteger; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleUInt(B) > 0;
+  Result:= Compare_BigInt_DblLimb(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: TDblLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleUInt(A) < 0;
+  Result:= Compare_BigInt_DblLimb(B, A) < 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleInt(B) > 0;
+  Result:= Compare_BigInt_DblIntLimb(A, B) > 0;
 end;
 
 class operator BigInteger.GreaterThan(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleInt(A) < 0;
+  Result:= Compare_BigInt_DblIntLimb(B, A) < 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleUInt(B) >= 0;
+  Result:= Compare_BigInt_DblLimb(A, B) >= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: TDblLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleUInt(A) <= 0;
+  Result:= Compare_BigInt_DblLimb(B, A) <= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleInt(B) >= 0;
+  Result:= Compare_BigInt_DblIntLimb(A, B) >= 0;
 end;
 
 class operator BigInteger.GreaterThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleInt(A) <= 0;
-end;
-
-function BigInteger.HashCode: Integer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= FNumber.GetHashCode;
-{$ELSE}
-  Result:= TBigNumber.GetHashCode(PBigNumber(FNumber));
-{$ENDIF}
+  Result:= Compare_BigInt_DblIntLimb(B, A) <= 0;
 end;
 
 class operator BigInteger.LessThan(const A: BigInteger; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleUInt(B) < 0;
+  Result:= Compare_BigInt_DblLimb(A, B) < 0;
 end;
 
 class operator BigInteger.LessThan(const A: TDblLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleUInt(A) > 0;
+  Result:= Compare_BigInt_DblLimb(B, A) > 0;
 end;
 
 class operator BigInteger.LessThan(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleInt(B) < 0;
+  Result:= Compare_BigInt_DblIntLimb(A, B) < 0;
 end;
 
 class operator BigInteger.LessThan(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleInt(A) > 0;
+  Result:= Compare_BigInt_DblIntLimb(B, A) > 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: TDblLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleUInt(B) <= 0;
+  Result:= Compare_BigInt_DblLimb(A, B) <= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: TDblLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleUInt(A) >= 0;
+  Result:= Compare_BigInt_DblLimb(B, A) >= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: BigInteger; const B: TDblIntLimb): Boolean;
 begin
-  Result:= A.CompareToDoubleInt(B) <= 0;
+  Result:= Compare_BigInt_DblIntLimb(A, B) <= 0;
 end;
 
 class operator BigInteger.LessThanOrEqual(const A: TDblIntLimb; const B: BigInteger): Boolean;
 begin
-  Result:= B.CompareToDoubleInt(A) >= 0;
-end;
-
-class function BigInteger.Sqrt(A: BigInteger): BigInteger;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
-{$ELSE}
-  HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
-{$ENDIF}
+  Result:= Compare_BigInt_DblIntLimb(B, A) >= 0;
 end;
 
 

@@ -55,7 +55,7 @@ end;
 
 function Compare_BigCardinal(Inst: Pointer; const Left, Right: BigCardinal): Integer;
 begin
-  Result:= BigCardinal.Compare(Left, Right);
+  Result:= BigInteger.Compare(Left, Right);
 end;
 
 function Compare_BigInteger(Inst: Pointer; const Left, Right: BigInteger): Integer;
@@ -65,12 +65,12 @@ end;
 
 function Equals_BigCardinal(Inst: Pointer; const Left, Right: BigCardinal): Boolean;
 begin
-  Result:= BigCardinal.Equals(Left, Right);
+  Result:= BigInteger.Equals(Left, Right);
 end;
 
 function GetHashCode_BigCardinal(Inst: Pointer; const Value: BigCardinal): Integer;
 begin
-  Result:= Value.HashCode;
+  Result:= Value.GetHashCode;
 end;
 
 function Equals_BigInteger(Inst: Pointer; const Left, Right: BigInteger): Boolean;
@@ -80,7 +80,7 @@ end;
 
 function GetHashCode_BigInteger(Inst: Pointer; const Value: BigInteger): Integer;
 begin
-  Result:= Value.HashCode;
+  Result:= Value.GetHashCode;
 end;
 
 const
@@ -139,12 +139,12 @@ const
 
 function GetBigCardinalComparer: IComparer<BigCardinal>;
 begin
-  Pointer(Result):= @Comparer_BigCardinal_Instance;
+  Result:= IComparer<BigCardinal>(@Comparer_BigCardinal_Instance);
 end;
 
 function GetBigIntegerComparer: IComparer<BigInteger>;
 begin
-  Pointer(Result):= @Comparer_BigInteger_Instance;
+  Result:= IComparer<BigInteger>(@Comparer_BigInteger_Instance);
 end;
 
 function GetBigCardinalEqualityComparer: IEqualityComparer<BigCardinal>;

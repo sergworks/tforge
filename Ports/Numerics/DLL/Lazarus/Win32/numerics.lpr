@@ -2,7 +2,7 @@ library numerics;
 
 {$I TFL.inc}
 
-uses tfLimbs, tfTypes, tfRecords, arrProcs, tfNumbers, tfNumVer;
+uses tfLimbs, tfTypes, tfUtils, tfRecords, arrProcs, tfNumbers, tfNumVer;
 
 function GetNumericsVersion(var Version: LongWord): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -18,7 +18,8 @@ exports
   BigNumberFromDblLimb,
   BigNumberFromDblIntLimb,
   BigNumberFromPChar,
-  BigNumberFromPByte;
+  BigNumberFromPByte,
+  BigNumberAlloc;
 
 begin
 end.
