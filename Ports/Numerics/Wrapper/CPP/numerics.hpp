@@ -44,6 +44,11 @@ class IBigNumber {
     virtual LongWord __stdcall AddRef() = 0;
     virtual LongWord __stdcall Release() = 0;
 
+    virtual TF_RESULT __stdcall ClearMem() = 0;
+    virtual Integer __stdcall GetHashCode() = 0;
+    virtual Integer __stdcall GetLen() = 0;
+    virtual Byte* __stdcall GetRawData() = 0;
+
     virtual bool __stdcall GetIsEven() = 0;
     virtual bool __stdcall GetIsOne() = 0;
     virtual bool __stdcall GetIsPowerOfTwo() = 0;
@@ -53,6 +58,8 @@ class IBigNumber {
 
     virtual LongInt __stdcall CompareNumber(IBigNumber* Num) = 0;
     virtual LongInt __stdcall CompareNumberU(IBigNumber* Num) = 0;
+    virtual bool __stdcall EqualsNumber(IBigNumber* Num) = 0;
+    virtual bool __stdcall EqualsNumberU(IBigNumber* Num) = 0;
 
     virtual TF_RESULT __stdcall AddNumber(IBigNumber* Num, IBigNumber** Res) = 0;
     virtual TF_RESULT __stdcall AddNumberU(IBigNumber* Num, IBigNumber** Res) = 0;

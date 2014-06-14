@@ -11,8 +11,9 @@ typedef TF_RESULT(__stdcall *PBigNumberFromInt32)(IBigNumber**, Integer);
 typedef TF_RESULT(__stdcall *PBigNumberFromInt64)(IBigNumber**, Int64);
 typedef TF_RESULT(__stdcall *PBigNumberFromPChar)(IBigNumber**, Byte*, Integer, Integer, bool, bool);
 typedef TF_RESULT(__stdcall *PBigNumberFromPByte)(IBigNumber**, Byte*, Integer, bool);
+typedef TF_RESULT(__stdcall *PBigNumberAlloc)(IBigNumber**, Integer);
 
-const LongWord NumericsVersion = 55;
+const LongWord NumericsVersion = 57;
 const string LibName = "numerics32.dll";
 //const string LibName = "numerics64.dll";
 
@@ -23,14 +24,16 @@ TF_RESULT __stdcall BigNumberFromInt32Stub(IBigNumber** A, Integer Value);
 TF_RESULT __stdcall BigNumberFromInt64Stub(IBigNumber** A, Int64 Value);
 TF_RESULT __stdcall BigNumberFromPCharStub(IBigNumber**, Byte*, Integer, Integer, bool, bool);
 TF_RESULT __stdcall BigNumberFromPByteStub(IBigNumber**, Byte*, Integer, bool);
+TF_RESULT __stdcall BigNumberAllocStub(IBigNumber**, Integer);
 
-PGetNumericsVersion GetNumericsVersion = (PGetNumericsVersion)&GetNumericsVersionStub;
+PGetNumericsVersion  GetNumericsVersion  = (PGetNumericsVersion)&GetNumericsVersionStub;
 PBigNumberFromUInt32 BigNumberFromUInt32 = (PBigNumberFromUInt32)&BigNumberFromUInt32Stub;
 PBigNumberFromUInt64 BigNumberFromUInt64 = (PBigNumberFromUInt64)&BigNumberFromInt64Stub;
-PBigNumberFromInt32 BigNumberFromInt32 = (PBigNumberFromInt32)&BigNumberFromInt32Stub;
-PBigNumberFromInt64 BigNumberFromInt64 = (PBigNumberFromInt64)&BigNumberFromInt64Stub;
-PBigNumberFromPChar BigNumberFromPChar = (PBigNumberFromPChar)&BigNumberFromPCharStub;
-PBigNumberFromPByte BigNumberFromPByte = (PBigNumberFromPByte)&BigNumberFromPByteStub;
+PBigNumberFromInt32  BigNumberFromInt32  = (PBigNumberFromInt32)&BigNumberFromInt32Stub;
+PBigNumberFromInt64  BigNumberFromInt64  = (PBigNumberFromInt64)&BigNumberFromInt64Stub;
+PBigNumberFromPChar  BigNumberFromPChar  = (PBigNumberFromPChar)&BigNumberFromPCharStub;
+PBigNumberFromPByte  BigNumberFromPByte  = (PBigNumberFromPByte)&BigNumberFromPByteStub;
+PBigNumberAlloc      BigNumberAlloc      = (PBigNumberAlloc)&BigNumberAllocStub;
 
 TF_RESULT __stdcall GetNumericsVersionStub(LongWord& Version)
 {
@@ -75,6 +78,12 @@ TF_RESULT __stdcall BigNumberFromPByteStub(IBigNumber** A, Byte* Value, Integer 
     return BigNumberFromPByte(A, Value, L, AllowNegative);
 }
 
+TF_RESULT __stdcall BigNumberAllocStub(IBigNumber** A, Integer L)
+{
+    LoadNumerics();
+    return BigNumberAlloc(A, L);
+}
+
 TF_RESULT __stdcall GetNumericsVersionError(LongWord& Version)
 {
     return TF_E_LOADERROR;
@@ -97,6 +106,11 @@ TF_RESULT __stdcall BigNumberFromPCharError(IBigNumber** A, Byte* Value, Integer
 }
 
 TF_RESULT __stdcall BigNumberFromPByteError(IBigNumber** A, Byte* Value, Integer L, bool AllowNegative)
+{
+    return TF_E_LOADERROR;
+}
+
+TF_RESULT __stdcall BigNumberAllocError(IBigNumber** A, Integer L)
 {
     return TF_E_LOADERROR;
 }
@@ -125,11 +139,13 @@ LongWord Version;
         BigNumberFromInt64 = (PBigNumberFromInt64)GetProcAddress(LibHandle, "BigNumberFromDblIntLimb");
         BigNumberFromPChar = (PBigNumberFromPChar)GetProcAddress(LibHandle, "BigNumberFromPChar");
         BigNumberFromPByte = (PBigNumberFromPByte)GetProcAddress(LibHandle, "BigNumberFromPByte");
+        BigNumberAlloc = (PBigNumberAlloc)GetProcAddress(LibHandle, "BigNumberAlloc");
 
         if ((GetNumericsVersion != NULL) &&
             (BigNumberFromUInt32 != NULL) && (BigNumberFromUInt64 != NULL) &&
             (BigNumberFromInt32 != NULL) && (BigNumberFromInt64 != NULL) &&
-            (BigNumberFromPChar != NULL) && (BigNumberFromPByte != NULL))
+            (BigNumberFromPChar != NULL) && (BigNumberFromPByte != NULL) &&
+            (BigNumberAlloc != NULL))
         {
             if ((GetNumericsVersion(Version) == TF_S_OK) && (Version == NumericsVersion))
             {
@@ -146,6 +162,7 @@ LongWord Version;
     BigNumberFromInt64 = (PBigNumberFromInt64)&BigNumberFrom64Error;
     BigNumberFromPChar = BigNumberFromPCharError;
     BigNumberFromPByte = BigNumberFromPByteError;
+    BigNumberAlloc = BigNumberAllocError;
     return TF_E_LOADERROR;
 }
 

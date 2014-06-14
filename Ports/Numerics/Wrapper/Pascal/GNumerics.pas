@@ -3,11 +3,11 @@
 { *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
-unit tfGNumerics;
+unit GNumerics;
 
 interface
 
-uses tfNumerics, Generics.Defaults, Generics.Collections;
+uses Numerics, Generics.Defaults, Generics.Collections;
 
 function GetBigCardinalComparer: IComparer<BigCardinal>;
 function GetBigIntegerComparer: IComparer<BigInteger>;

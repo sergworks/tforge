@@ -32,6 +32,29 @@ type
     function GetHashCode: Integer;
     property HashCode: Integer read GetHashCode;
 
+    class function Compare(const A, B: BigCardinal): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TLimb): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TIntLimb): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TDblLimb): Integer; overload; static;
+    class function Compare(const A: BigCardinal; const B: TDblIntLimb): Integer; overload; static;
+
+    class function Equals(const A, B: BigCardinal): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TLimb): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TIntLimb): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TDblLimb): Boolean; overload; static;
+//    class function Equals(const A: BigCardinal; const B: TDblIntLimb): Boolean; overload; static;
+
+    class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; overload; static;
+    class function Sqrt(const A: BigCardinal): BigCardinal; overload; static;
+    class function GCD(const A, B: BigCardinal): BigCardinal; overload; static;
+    class function ModInverse(const A, Modulo: BigCardinal): BigCardinal; overload; static;
+    class function DivRem(const Dividend, Divisor: BigCardinal;
+                          var Remainder: BigCardinal): BigCardinal; overload; static;
+    class function DivRem(const Dividend: BigCardinal; Divisor: TLimb;
+                          var Remainder: TLimb): BigCardinal; overload; static;
+    class function DivRem(const Dividend: TLimb; Divisor: BigCardinal;
+                          var Remainder: TLimb): TLimb; overload; static;
+
     function CompareTo(const B: BigCardinal): Integer; overload;
     function CompareTo(const B: TLimb): Integer; overload;
     function CompareTo(const B: TIntLimb): Integer; overload;
@@ -154,15 +177,9 @@ type
     function GetHashCode: Integer;
     property HashCode: Integer read GetHashCode;
 
-    class function Compare(const A, B: BigCardinal): Integer; overload; static;
     class function Compare(const A, B: BigInteger): Integer; overload; static;
     class function Compare(const A: BigInteger; const B: BigCardinal): Integer; overload; static;
     class function Compare(const A: BigCardinal; const B: BigInteger): Integer; overload; static;
-
-    class function Compare(const A: BigCardinal; const B: TLimb): Integer; overload; static;
-    class function Compare(const A: BigCardinal; const B: TIntLimb): Integer; overload; static;
-    class function Compare(const A: BigCardinal; const B: TDblLimb): Integer; overload; static;
-    class function Compare(const A: BigCardinal; const B: TDblIntLimb): Integer; overload; static;
 
     class function Compare(const A: BigInteger; const B: TLimb): Integer; overload; static;
     class function Compare(const A: BigInteger; const B: TIntLimb): Integer; overload; static;
@@ -176,43 +193,27 @@ type
     function CompareTo(const B: TDblLimb): Integer; overload;
     function CompareTo(const B: TDblIntLimb): Integer; overload;
 
-    class function Equals(const A, B: BigCardinal): Boolean; overload; static;
     class function Equals(const A, B: BigInteger): Boolean; overload; static;
     class function Equals(const A: BigInteger; const B: BigCardinal): Boolean; overload; static;
     class function Equals(const A: BigCardinal; const B: BigInteger): Boolean; overload; static;
-
-//    class function Equals(const A: BigCardinal; const B: TLimb): Boolean; overload; static;
-//    class function Equals(const A: BigCardinal; const B: TIntLimb): Boolean; overload; static;
-//    class function Equals(const A: BigCardinal; const B: TDblLimb): Boolean; overload; static;
-//    class function Equals(const A: BigCardinal; const B: TDblIntLimb): Boolean; overload; static;
 
     function EqualsTo(const B: BigInteger): Boolean; overload;
     function EqualsTo(const B: BigCardinal): Boolean; overload;
 
     class function Abs(const A: BigInteger): BigInteger; static;
-    class function Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal; overload; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; overload; static;
-    class function Sqrt(const A: BigCardinal): BigCardinal; overload; static;
     class function Sqrt(const A: BigInteger): BigInteger; overload; static;
-    class function GCD(const A, B: BigCardinal): BigCardinal; overload; static;
     class function GCD(const A, B: BigInteger): BigInteger; overload; static;
     class function GCD(const A: BigInteger; const B: BigCardinal): BigInteger; overload; static;
     class function GCD(const A: BigCardinal; const B: BigInteger): BigInteger; overload; static;
     class function EGCD(const A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
     class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
-    class function ModInverse(const A, Modulo: BigCardinal): BigCardinal; overload; static;
     class function ModInverse(const A, Modulo: BigInteger): BigInteger; overload; static;
     class function ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger; overload; static;
     class function ModInverse(const A: BigCardinal; const Modulo: BigInteger): BigInteger; overload; static;
 
-    class function DivRem(const Dividend, Divisor: BigCardinal;
-                          var Remainder: BigCardinal): BigCardinal; overload; static;
     class function DivRem(const Dividend, Divisor: BigInteger;
                           var Remainder: BigInteger): BigInteger; overload; static;
-    class function DivRem(const Dividend: BigCardinal; Divisor: TLimb;
-                          var Remainder: TLimb): BigCardinal; overload; static;
-    class function DivRem(const Dividend: TLimb; Divisor: BigCardinal;
-                          var Remainder: TLimb): TLimb; overload; static;
 
     class operator Implicit(const Value: BigCardinal): BigInteger; inline;
     class operator Explicit(const Value: BigInteger): BigCardinal; inline;
@@ -1467,7 +1468,7 @@ begin
 end;
 
 
-class function BigInteger.Compare(const A, B: BigCardinal): Integer;
+class function BigCardinal.Compare(const A, B: BigCardinal): Integer;
 begin
   Result:= Compare_BigCard_BigCard(A, B);
 end;
@@ -1487,22 +1488,22 @@ begin
   Result:= Compare_BigCard_BigInt(A, B);
 end;
 
-class function BigInteger.Compare(const A: BigCardinal; const B: TLimb): Integer;
+class function BigCardinal.Compare(const A: BigCardinal; const B: TLimb): Integer;
 begin
   Result:= Compare_BigCard_Limb(A, B);
 end;
 
-class function BigInteger.Compare(const A: BigCardinal; const B: TIntLimb): Integer;
+class function BigCardinal.Compare(const A: BigCardinal; const B: TIntLimb): Integer;
 begin
   Result:= Compare_BigCard_IntLimb(A, B);
 end;
 
-class function BigInteger.Compare(const A: BigCardinal; const B: TDblLimb): Integer;
+class function BigCardinal.Compare(const A: BigCardinal; const B: TDblLimb): Integer;
 begin
   Result:= Compare_BigCard_DblLimb(A, B);
 end;
 
-class function BigInteger.Compare(const A: BigCardinal; const B: TDblIntLimb): Integer;
+class function BigCardinal.Compare(const A: BigCardinal; const B: TDblIntLimb): Integer;
 begin
   Result:= Compare_BigCard_DblIntLimb(A, B);
 end;
@@ -1558,7 +1559,7 @@ begin
 end;
 
 
-class function BigInteger.Equals(const A, B: BigCardinal): Boolean;
+class function BigCardinal.Equals(const A, B: BigCardinal): Boolean;
 begin
   Result:= Equal_BigCard_BigCard(A, B);
 end;
@@ -1597,7 +1598,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
+class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(Base.FNumber.PowU(Value, Result.FNumber));
@@ -1930,7 +1931,7 @@ begin
 end;
 
 
-class function BigInteger.DivRem(const Dividend, Divisor: BigCardinal;
+class function BigCardinal.DivRem(const Dividend, Divisor: BigCardinal;
                                   var Remainder: BigCardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
@@ -1956,7 +1957,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.DivRem(const Dividend: BigCardinal;
+class function BigCardinal.DivRem(const Dividend: BigCardinal;
                Divisor: TLimb; var Remainder: TLimb): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
@@ -1967,7 +1968,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.DivRem(const Dividend: TLimb;
+class function BigCardinal.DivRem(const Dividend: TLimb;
                Divisor: BigCardinal; var Remainder: TLimb): TLimb;
 begin
 {$IFDEF TFL_DLL}
@@ -1978,7 +1979,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.Sqrt(const A: BigCardinal): BigCardinal;
+class function BigCardinal.Sqrt(const A: BigCardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
@@ -1996,7 +1997,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.GCD(const A, B: BigCardinal): BigCardinal;
+class function BigCardinal.GCD(const A, B: BigCardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
@@ -2059,7 +2060,7 @@ begin
 {$ENDIF}
 end;
 
-class function BigInteger.ModInverse(const A, Modulo: BigCardinal): BigCardinal;
+class function BigCardinal.ModInverse(const A, Modulo: BigCardinal): BigCardinal;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
