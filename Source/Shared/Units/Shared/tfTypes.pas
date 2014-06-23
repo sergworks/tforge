@@ -53,7 +53,14 @@ type
     function GetRawData: PByte;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AssignBytes(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CopyBytes(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CopyBytes1(var R: IBytes; I: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CopyBytes2(var R: IBytes; I, L: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function RemoveBytes1(var R: IBytes; I: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function RemoveBytes2(var R: IBytes; I, L: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function ConcatBytes(const B: IBytes; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function InsertBytes(Index: Cardinal; const B: IBytes; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EqualBytes(const B: IBytes): Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AddBytes(const B: IBytes; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -63,11 +70,11 @@ type
     function XorBytes(const B: IBytes; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AppendByte(B: Byte; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PrependByte(B: Byte; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function InsertByte(Index: Cardinal; B: Byte; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EqualToByte(B: Byte): Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AppendPByte(P: PByte; L: Cardinal; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PrependPByte(P: PByte; L: Cardinal; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function InsertPByte(Index: Cardinal; P: PByte; L: Cardinal; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EqualToPByte(P: PByte; L: Integer): Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function ToDec(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
