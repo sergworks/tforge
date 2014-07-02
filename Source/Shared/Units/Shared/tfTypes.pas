@@ -32,7 +32,7 @@ const
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
   TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading tforge dll
                                               // = Crypto codes =
-  TF_E_INVALIDKEY   = TF_RESULT($A0001001);   // Invalid crypto key
+//  TF_E_INVALIDKEY   = TF_RESULT($A0001001);   // Invalid crypto key
 
 {$IFDEF FPC}
 type
@@ -178,12 +178,52 @@ type
   end;
 
   IBlockCipherAlgorithm = interface(IForge)
-    function ImportKey(Key: PByte; KeySize: LongWord; AlgID: Integer): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure ExpandKey(Encryption: Boolean);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DeleteKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ImportKey(Key: PByte; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
+
+  ICipherKey = interface(IForge)
+    function DuplicateKey(var Key: ICipherKey): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetKeyParam(Param: LongWord; Data: PByte; DataLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DeriveKey(HashAlg: IHashAlgorithm; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+  ICipher = interface(ICipherKey)
+    function Encrypt(Data: PByte; var DataSize: LongWord;
+             BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decrypt(Data: PByte; var DataSize: LongWord;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+const
+// IBlockCipherAlgorithm.ImportKey Flags
+  TF_KEY_ENCRYPT = $80000000;
+  TF_KEY_DECRYPT = $00000000;
+
+// ICipherKey.SetKeyParam Params
+  TF_KP_KEY     = 1;
+  TF_KP_MODE    = 2;
+  TF_KP_PADDING = 3;
+
+// Cipher Key Mode
+  TF_KEYMODE_ECB = 0;
+  TF_KEYMODE_CBC = 1;
+  TF_KEYMODE_CTR = 2;
+
+  TF_KEYMODE_MAX = TF_KEYMODE_CTR;
+
+// Cipher Key Padding
+  TF_PADDING_NONE = 0;
+  TF_PADDING_ZERO = 1;    // XX 00 00 00 00
+  TF_PADDING_ANSI = 2;    // XX 00 00 00 04
+  TF_PADDING_ISO  = 3;    // XX ?? ?? ?? 04
+  TF_PADDING_PKSC = 4;    // XX 04 04 04 04
+  TF_PADDING_IEC  = 5;    // XX 80 00 00 00
+
+  TF_PADDING_MAX = TF_PADDING_IEC;
 
 { Hash helper types }
 type

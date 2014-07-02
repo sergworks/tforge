@@ -23,11 +23,15 @@ type
     function Len: Integer;
     function RawData: PByte;
 
+    class function Allocate(ASize: Cardinal): ByteArray; static;
     class function FromBitString(const S: string; ABitLen: Integer): ByteArray; static;
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
+    class function FromHex(const S: string): ByteArray; static;
+
     function ToText: string;
     function ToString: string;
+    function ToHex: string;
 
     function Copy: ByteArray; overload;
     function Copy(I: Cardinal): ByteArray; overload;
@@ -235,6 +239,15 @@ begin
 {$ENDIF}
 end;
 
+class function ByteArray.Allocate(ASize: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorAlloc(Result.FBytes, ASize));
+{$ELSE}
+  HResCheck(ByteVectorAlloc(PByteVector(Result.FBytes), ASize));
+{$ENDIF}
+end;
+
 class function ByteArray.FromBitString(const S: string; ABitLen: Integer): ByteArray;
 var
   Ch: Char;
@@ -247,9 +260,9 @@ begin
     raise Exception.Create('Wrong string length');
 
 {$IFDEF TFL_DLL}
-  HResCheck(ByteVectorAlloc(Result.FBytes, Length(S) div 7));
+  HResCheck(ByteVectorAlloc(Result.FBytes, Length(S) div ABitLen));
 {$ELSE}
-  HResCheck(ByteVectorAlloc(PByteVector(Result.FBytes), Length(S) div 7));
+  HResCheck(ByteVectorAlloc(PByteVector(Result.FBytes), Length(S) div ABitLen));
 {$ENDIF}
 
 //  SetLength(Result.FBytes, Length(S) div 7);
@@ -269,6 +282,16 @@ begin
       Tmp:= 0;
     end;
   end;
+end;
+
+class function ByteArray.FromHex(const S: string): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPCharHex(Result.FBytes, Pointer(S), Length(S), SizeOf(Char)));
+{$ELSE}
+  HResCheck(ByteVectorFromPCharHex(PByteVector(Result.FBytes),
+                                   Pointer(S), Length(S), SizeOf(Char)));
+{$ENDIF}
 end;
 
 class function ByteArray.FromAnsi(const S: RawByteString): ByteArray;
@@ -291,6 +314,40 @@ begin
 {$ELSE}
   HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S8), Length(S8)));
 {$ENDIF}
+end;
+
+function ByteArray.ToHex: string;
+const
+  ASCII_0 = Ord('0');
+  ASCII_A = Ord('A');
+
+var
+  L: Integer;
+  P: PByte;
+  B: Byte;
+  PS: PChar;
+
+begin
+  L:= Len;
+  SetLength(Result, 2 * L);
+  P:= RawData;
+  PS:= PChar(Result);
+  while L > 0 do begin
+    B:= P^ shr 4;
+    if B < 10 then
+      PS^:= Char(B + ASCII_0)
+    else
+      PS^:= Char(B - 10 + ASCII_A);
+    Inc(PS);
+    B:= P^ and $0F;
+    if B < 10 then
+      PS^:= Char(B + ASCII_0)
+    else
+      PS^:= Char(B - 10 + ASCII_A);
+    Inc(PS);
+    Inc(P);
+    Dec(L);
+  end;
 end;
 
 function ByteArray.ToString: string;

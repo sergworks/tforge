@@ -592,7 +592,7 @@ begin
 {$IFDEF TFL_DLL}
   BytesUsed:= FNumber.GetSize;
 {$ELSE}
-  BytesUsed:= PBigNumber(FNumber).FUsed;
+  BytesUsed:= TBigNumber.GetSize(PBigNumber(FNumber));
 {$ENDIF}
 // log(256) approximated from above by 41/17
   L:= (BytesUsed * 41) div 17 + 1;
@@ -1328,7 +1328,8 @@ begin
 {$IFDEF TFL_DLL}
   BytesUsed:= FNumber.GetSize;
 {$ELSE}
-  BytesUsed:= PBigNumber(FNumber).FUsed;
+  BytesUsed:= TBigNumber.GetSize(PBigNumber(FNumber));
+//  BytesUsed:= PBigNumber(FNumber).FUsed;
 {$ENDIF}
 // log(256) approximated from above by 41/17
   L:= (BytesUsed * 41) div 17 + 1;

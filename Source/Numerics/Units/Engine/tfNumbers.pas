@@ -4281,6 +4281,7 @@ begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
   if Result = TF_S_OK then begin
     PDblLimb(@Tmp.FLimbs)^:= Value;
+    if Tmp.FLimbs[1] <> 0 then Tmp.FUsed:= 2;
     if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
@@ -4335,6 +4336,7 @@ begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
   if Result = TF_S_OK then begin
     PDblLimb(@Tmp.FLimbs)^:= Abs(Value);
+    if Tmp.FLimbs[1] <> 0 then Tmp.FUsed:= 2;
     if Value < 0 then Tmp.FSign:= -1;
     if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
