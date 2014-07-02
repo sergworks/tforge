@@ -492,7 +492,7 @@ function LoadNumerics(const Name: string = ''): TF_RESULT;
 implementation
 
 const
-  NumericsVersion = 57;
+  NumericsVersion = 58;
 
 type
   TGetNumericsVersion = function(var Version: LongWord): TF_RESULT; stdcall;

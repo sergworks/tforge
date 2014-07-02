@@ -13,7 +13,7 @@ typedef TF_RESULT(__stdcall *PBigNumberFromPChar)(IBigNumber**, Byte*, Integer, 
 typedef TF_RESULT(__stdcall *PBigNumberFromPByte)(IBigNumber**, Byte*, Integer, bool);
 typedef TF_RESULT(__stdcall *PBigNumberAlloc)(IBigNumber**, Integer);
 
-const LongWord NumericsVersion = 57;
+const LongWord NumericsVersion = 58;
 const string LibName = "numerics32.dll";
 //const string LibName = "numerics64.dll";
 
