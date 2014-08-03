@@ -44,7 +44,7 @@ class IBigNumber {
     virtual LongWord __stdcall AddRef() = 0;
     virtual LongWord __stdcall Release() = 0;
 
-    virtual TF_RESULT __stdcall ClearMem() = 0;
+//    virtual TF_RESULT __stdcall ClearMem() = 0;
     virtual Integer __stdcall GetHashCode() = 0;
     virtual Integer __stdcall GetLen() = 0;
     virtual Byte* __stdcall GetRawData() = 0;

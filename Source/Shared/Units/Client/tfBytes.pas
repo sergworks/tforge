@@ -19,30 +19,42 @@ type
     function GetByte(Index: Integer): Byte;
     procedure SetByte(Index: Integer; const Value: Byte);
   public
-    function HashCode: Integer;
-    function Len: Integer;
-    function RawData: PByte;
+    function IsAssigned: Boolean;
+    procedure Free;
+
+    function GetEnumerator: IBytesEnumerator;
+    function GetHashCode: Integer;
+    property HashCode: Integer read GetHashCode;
+
+    function GetLen: Integer;
+    procedure SetLen(Value: Integer);
+    function GetRawData: PByte;
+
+    property Len: Integer read GetLen write SetLen;
+    property RawData: PByte read GetRawData;
 
     class function Allocate(ASize: Cardinal): ByteArray; static;
-    class function FromBitString(const S: string; ABitLen: Integer): ByteArray; static;
+    class function ReAllocate(ASize: Cardinal): ByteArray; static;
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
-    class function FromHex(const S: string): ByteArray; static;
+    class function ParseHex(const S: string): ByteArray; static;
+    class function TryParseHex(const S: string; var R: ByteArray): Boolean; static;
+    class function ParseBitString(const S: string; ABitLen: Integer): ByteArray; static;
 
     function ToText: string;
     function ToString: string;
     function ToHex: string;
 
-    function Copy: ByteArray; overload;
-    function Copy(I: Cardinal): ByteArray; overload;
-    function Copy(I, L: Cardinal): ByteArray; overload;
+    class function Copy(const A: ByteArray): ByteArray; overload; static;
+    class function Copy(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
+    class function Copy(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
 
-    function Insert(I: Cardinal; B: Byte): ByteArray; overload;
-    function Insert(I: Cardinal; B: ByteArray): ByteArray; overload;
-    function Insert(I: Cardinal; B: TBytes): ByteArray; overload;
+    class function Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray; overload; static;
+    class function Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray; overload; static;
+    class function Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray; overload; static;
 
-    function Remove(I: Cardinal): ByteArray; overload;
-    function Remove(I, L: Cardinal): ByteArray; overload;
+    class function Remove(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
+    class function Remove(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
 
     class function AddBytes(const A, B: ByteArray): ByteArray; static;
     class function SubBytes(const A, B: ByteArray): ByteArray; static;
@@ -114,7 +126,16 @@ begin
     raise EArgumentOutOfRangeException.CreateResFmt(@SIndexOutOfRange, [Index]);
 end;
 
-function ByteArray.HashCode: Integer;
+function ByteArray.GetEnumerator: IBytesEnumerator;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(FBytes.GetEnumerator(Result));
+{$ELSE}
+  HResCheck(TByteVector.GetEnum(PByteVector(FBytes), PByteVectorEnum(Result)));
+{$ENDIF}
+end;
+
+function ByteArray.GetHashCode: Integer;
 begin
 {$IFDEF TFL_DLL}
   Result:= FBytes.GetHashCode;
@@ -123,7 +144,7 @@ begin
 {$ENDIF}
 end;
 
-function ByteArray.Len: Integer;
+function ByteArray.GetLen: Integer;
 begin
 {$IFDEF TFL_DLL}
   Result:= FBytes.GetLen;
@@ -132,7 +153,16 @@ begin
 {$ENDIF}
 end;
 
-function ByteArray.RawData: PByte;
+procedure ByteArray.SetLen(Value: Integer);
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(FBytes.SetLen(Value));
+{$ELSE}
+  HResCheck(TByteVector.SetLen(PByteVector(FBytes), Value));
+{$ENDIF}
+end;
+
+function ByteArray.GetRawData: PByte;
 begin
 {$IFDEF TFL_DLL}
   Result:= FBytes.GetRawData;
@@ -172,51 +202,56 @@ begin
 {$ENDIF}
 end;
 
-function ByteArray.Insert(I: Cardinal; B: Byte): ByteArray;
+class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.InsertByte(I, B, Result.FBytes));
+  HResCheck(A.FBytes.InsertByte(I, B, Result.FBytes));
 {$ELSE}
-  HResCheck(TByteVector.InsertByte(PByteVector(FBytes), I, B, PByteVector(Result.FBytes)));
+  HResCheck(TByteVector.InsertByte(PByteVector(A.FBytes), I, B, PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
 
-function ByteArray.Insert(I: Cardinal; B: ByteArray): ByteArray;
+class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
+  HResCheck(A.FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
 {$ELSE}
-  HResCheck(TByteVector.InsertBytes(PByteVector(FBytes), I, PByteVector(B.FBytes),
+  HResCheck(TByteVector.InsertBytes(PByteVector(A.FBytes), I, PByteVector(B.FBytes),
                                     PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
 
-function ByteArray.Insert(I: Cardinal; B: TBytes): ByteArray;
+class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
+  HResCheck(A.FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
 {$ELSE}
-  HResCheck(TByteVector.InsertPByte(PByteVector(FBytes), I, Pointer(B), Length(B),
+  HResCheck(TByteVector.InsertPByte(PByteVector(A.FBytes), I, Pointer(B), Length(B),
                         PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
 
-function ByteArray.Remove(I: Cardinal): ByteArray;
+function ByteArray.IsAssigned: Boolean;
+begin
+  Result:= FBytes <> nil;
+end;
+
+class function ByteArray.Remove(const A: ByteArray; I: Cardinal): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.RemoveBytes1(Result.FBytes), I);
+  HResCheck(A.FBytes.RemoveBytes1(Result.FBytes), I);
 {$ELSE}
-  HResCheck(TByteVector.RemoveBytes1(PByteVector(FBytes),
+  HResCheck(TByteVector.RemoveBytes1(PByteVector(A.FBytes),
                                      PByteVector(Result.FBytes), I));
 {$ENDIF}
 end;
 
-function ByteArray.Remove(I, L: Cardinal): ByteArray;
+class function ByteArray.Remove(const A: ByteArray; I, L: Cardinal): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.RemoveBytes2(Result.FBytes, I, L));
+  HResCheck(A.FBytes.RemoveBytes2(Result.FBytes, I, L));
 {$ELSE}
-  HResCheck(TByteVector.RemoveBytes2(PByteVector(FBytes),
+  HResCheck(TByteVector.RemoveBytes2(PByteVector(A.FBytes),
                         PByteVector(Result.FBytes), I, L));
 {$ENDIF}
 end;
@@ -248,7 +283,16 @@ begin
 {$ENDIF}
 end;
 
-class function ByteArray.FromBitString(const S: string; ABitLen: Integer): ByteArray;
+class function ByteArray.ReAllocate(ASize: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorReAlloc(Result.FBytes, ASize));
+{$ELSE}
+  HResCheck(ByteVectorReAlloc(PByteVector(Result.FBytes), ASize));
+{$ENDIF}
+end;
+
+class function ByteArray.ParseBitString(const S: string; ABitLen: Integer): ByteArray;
 var
   Ch: Char;
   I: Integer;
@@ -284,7 +328,7 @@ begin
   end;
 end;
 
-class function ByteArray.FromHex(const S: string): ByteArray;
+class function ByteArray.ParseHex(const S: string): ByteArray;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(ByteVectorFromPCharHex(Result.FBytes, Pointer(S), Length(S), SizeOf(Char)));
@@ -292,6 +336,11 @@ begin
   HResCheck(ByteVectorFromPCharHex(PByteVector(Result.FBytes),
                                    Pointer(S), Length(S), SizeOf(Char)));
 {$ENDIF}
+end;
+
+procedure ByteArray.Free;
+begin
+  FBytes:= nil;
 end;
 
 class function ByteArray.FromAnsi(const S: RawByteString): ByteArray;
@@ -328,9 +377,9 @@ var
   PS: PChar;
 
 begin
-  L:= Len;
+  L:= GetLen;
   SetLength(Result, 2 * L);
-  P:= RawData;
+  P:= GetRawData;
   PS:= PChar(Result);
   while L > 0 do begin
     B:= P^ shr 4;
@@ -359,7 +408,7 @@ var
 
 begin
   Result:= '';
-  L:= Len;
+  L:= GetLen;
   if L = 0 then Exit;
 {$IFDEF TFL_DLL}
   HResCheck(FBytes.ToDec(Tmp));
@@ -393,9 +442,21 @@ begin
   else begin
     L:= FBytes.GetLen;
     SetLength(S8, L);
-    Move(FBytes, Pointer(S8)^, L);
+    Move(FBytes.GetRawData^, Pointer(S8)^, L);
     Result:= string(S8);
   end;
+end;
+
+class function ByteArray.TryParseHex(const S: string; var R: ByteArray): Boolean;
+begin
+  Result:= (
+{$IFDEF TFL_DLL}
+    ByteVectorFromPCharHex(R.FBytes, Pointer(S), Length(S), SizeOf(Char))
+{$ELSE}
+    ByteVectorFromPCharHex(PByteVector(R.FBytes),
+                                   Pointer(S), Length(S), SizeOf(Char))
+{$ENDIF}
+      = TF_S_OK);
 end;
 
 class operator ByteArray.Add(const A, B: ByteArray): ByteArray;
@@ -618,32 +679,32 @@ begin
 {$ENDIF}
 end;
 
-function ByteArray.Copy: ByteArray;
+class function ByteArray.Copy(const A: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.CopyBytes(Result.FBytes));
+  HResCheck(A.FBytes.CopyBytes(Result.FBytes));
 {$ELSE}
-  HResCheck(TByteVector.CopyBytes(PByteVector(FBytes),
+  HResCheck(TByteVector.CopyBytes(PByteVector(A.FBytes),
                                   PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
 
-function ByteArray.Copy(I: Cardinal): ByteArray;
+class function ByteArray.Copy(const A: ByteArray; I: Cardinal): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.CopyBytes1(Result.FBytes), I);
+  HResCheck(A.FBytes.CopyBytes1(Result.FBytes), I);
 {$ELSE}
-  HResCheck(TByteVector.CopyBytes1(PByteVector(FBytes),
+  HResCheck(TByteVector.CopyBytes1(PByteVector(A.FBytes),
                                    PByteVector(Result.FBytes), I));
 {$ENDIF}
 end;
 
-function ByteArray.Copy(I, L: Cardinal): ByteArray;
+class function ByteArray.Copy(const A: ByteArray; I, L: Cardinal): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(FBytes.CopyBytes2(Result.FBytes, I, L));
+  HResCheck(A.FBytes.CopyBytes2(Result.FBytes, I, L));
 {$ELSE}
-  HResCheck(TByteVector.CopyBytes2(PByteVector(FBytes),
+  HResCheck(TByteVector.CopyBytes2(PByteVector(A.FBytes),
                                    PByteVector(Result.FBytes), I, L));
 {$ENDIF}
 end;

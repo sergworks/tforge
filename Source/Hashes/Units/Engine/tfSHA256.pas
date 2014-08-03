@@ -11,12 +11,6 @@ interface
 
 uses tfTypes;
 
-function GetSHA256Algorithm(var Alg: IHashAlgorithm): TF_RESULT;
-
-implementation
-
-uses tfRecords;
-
 type
   PSHA256Alg = ^TSHA256Alg;
   TSHA256Alg = record
@@ -33,38 +27,56 @@ type
 
     procedure Compress;
   public
-    procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetHashSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    class function Release(Inst: PSHA256Alg): Integer; stdcall; static;
+    class procedure Init(Inst: PSHA256Alg);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Update(Inst: PSHA256Alg; Data: PByte; DataSize: LongWord);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Done(Inst: PSHA256Alg; PDigest: PSHA256Digest);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class procedure Purge(Inst: PCRC32Alg);  -- redirected to Init
+//         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetDigestSize(Inst: PSHA256Alg): LongInt;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetBlockSize(Inst: PSHA256Alg): LongInt;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function Duplicate(Inst: PSHA256Alg; var DupInst: PSHA256Alg): TF_RESULT;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 end;
 
+function GetSHA256Algorithm(var Inst: PSHA256Alg): TF_RESULT;
+
+implementation
+
+uses tfRecords;
+
 const
-  SHA256VTable: array[0..8] of Pointer = (
+  SHA256VTable: array[0..9] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
-   @TtfRecord.Release,
-   nil,
+   @TSHA256Alg.Release,
+
    @TSHA256Alg.Init,
    @TSHA256Alg.Update,
    @TSHA256Alg.Done,
-   @TSHA256Alg.GetHashSize,
-   @TSHA256Alg.Purge
+   @TSHA256Alg.Init,
+   @TSHA256Alg.GetDigestSize,
+   @TSHA256Alg.GetBlockSize,
+   @TSHA256Alg.Duplicate
    );
 
-function GetSHA256Algorithm(var Alg: IHashAlgorithm): TF_RESULT;
+function GetSHA256Algorithm(var Inst: PSHA256Alg): TF_RESULT;
 var
   P: PSHA256Alg;
 
 begin
-  Alg:= nil;
   try
     New(P);
     P^.FVTable:= @SHA256VTable;
     P^.FRefCount:= 1;
-    FillChar(P^.FData, SizeOf(P^.FData), 0);
-    Pointer(Alg):= P;
+    TSHA256Alg.Init(P);
+    if Inst <> nil then TtfRecord.Release(Inst);
+    Inst:= P;
     Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
@@ -560,75 +572,88 @@ begin
   FillChar(FData.Block, SizeOf(FData.Block), 0);
 end;
 
-procedure TSHA256Alg.Init;
+class function TSHA256Alg.Release(Inst: PSHA256Alg): Integer;
 begin
-  FData.Value[0]:= $6a09e667;
-  FData.Value[1]:= $bb67ae85;
-  FData.Value[2]:= $3c6ef372;
-  FData.Value[3]:= $a54ff53a;
-  FData.Value[4]:= $510e527f;
-  FData.Value[5]:= $9b05688c;
-  FData.Value[6]:= $1f83d9ab;
-  FData.Value[7]:= $5be0cd19;
-
-  FillChar(FData.Block, SizeOf(FData.Block), 0);
-  FData.Count:= 0;
+  Init(Inst);
+  Result:= TtfRecord.Release(Inst);
 end;
 
-procedure TSHA256Alg.Update(Data: Pointer; DataSize: LongWord);
+class procedure TSHA256Alg.Init(Inst: PSHA256Alg);
+begin
+  Inst.FData.Value[0]:= $6a09e667;
+  Inst.FData.Value[1]:= $bb67ae85;
+  Inst.FData.Value[2]:= $3c6ef372;
+  Inst.FData.Value[3]:= $a54ff53a;
+  Inst.FData.Value[4]:= $510e527f;
+  Inst.FData.Value[5]:= $9b05688c;
+  Inst.FData.Value[6]:= $1f83d9ab;
+  Inst.FData.Value[7]:= $5be0cd19;
+
+  FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
+  Inst.FData.Count:= 0;
+end;
+
+class procedure TSHA256Alg.Update(Inst: PSHA256Alg; Data: PByte; DataSize: LongWord);
 var
   Cnt, Ofs: LongWord;
 
 begin
   while DataSize > 0 do begin
-    Ofs:= LongWord(FData.Count) and $3F;
+    Ofs:= LongWord(Inst.FData.Count) and $3F;
     Cnt:= $40 - Ofs;
     if Cnt > DataSize then Cnt:= DataSize;
-    Move(Data^, PByte(@FData.Block)[Ofs], Cnt);
-    if (Cnt + Ofs = $40) then Compress;
-    Inc(FData.Count, Cnt);
+    Move(Data^, PByte(@Inst.FData.Block)[Ofs], Cnt);
+    if (Cnt + Ofs = $40) then Inst.Compress;
+    Inc(Inst.FData.Count, Cnt);
     Dec(DataSize, Cnt);
-    Inc(PByte(Data), Cnt);
+    Inc(Data, Cnt);
   end;
 end;
 
-procedure TSHA256Alg.Done(PDigest: Pointer);
+class procedure TSHA256Alg.Done(Inst: PSHA256Alg; PDigest: PSHA256Digest);
 var
   Ofs: LongWord;
 
 begin
-  Ofs:= LongWord(FData.Count) and $3F;
-  FData.Block[Ofs]:= $80;
+  Ofs:= LongWord(Inst.FData.Count) and $3F;
+  Inst.FData.Block[Ofs]:= $80;
   if Ofs >= 56 then
-    Compress;
+    Inst.Compress;
 
-  FData.Count:= FData.Count shl 3;
-  PLongWord(@FData.Block[56])^:= Swap32(LongWord(FData.Count shr 32));
-  PLongWord(@FData.Block[60])^:= Swap32(LongWord(FData.Count));
-  Compress;
+  Inst.FData.Count:= Inst.FData.Count shl 3;
+  PLongWord(@Inst.FData.Block[56])^:= Swap32(LongWord(Inst.FData.Count shr 32));
+  PLongWord(@Inst.FData.Block[60])^:= Swap32(LongWord(Inst.FData.Count));
+  Inst.Compress;
 
-  FData.Value[0]:= Swap32(FData.Value[0]);
-  FData.Value[1]:= Swap32(FData.Value[1]);
-  FData.Value[2]:= Swap32(FData.Value[2]);
-  FData.Value[3]:= Swap32(FData.Value[3]);
-  FData.Value[4]:= Swap32(FData.Value[4]);
-  FData.Value[5]:= Swap32(FData.Value[5]);
-  FData.Value[6]:= Swap32(FData.Value[6]);
-  FData.Value[7]:= Swap32(FData.Value[7]);
+  Inst.FData.Value[0]:= Swap32(Inst.FData.Value[0]);
+  Inst.FData.Value[1]:= Swap32(Inst.FData.Value[1]);
+  Inst.FData.Value[2]:= Swap32(Inst.FData.Value[2]);
+  Inst.FData.Value[3]:= Swap32(Inst.FData.Value[3]);
+  Inst.FData.Value[4]:= Swap32(Inst.FData.Value[4]);
+  Inst.FData.Value[5]:= Swap32(Inst.FData.Value[5]);
+  Inst.FData.Value[6]:= Swap32(Inst.FData.Value[6]);
+  Inst.FData.Value[7]:= Swap32(Inst.FData.Value[7]);
 
-  Move(FData.Value, PDigest^, SizeOf(TSHA256Digest));
+  Move(Inst.FData.Value, PDigest^, SizeOf(TSHA256Digest));
 
-  FillChar(FData, SizeOf(FData), 0);
+  Init(Inst);
 end;
 
-function TSHA256Alg.GetHashSize: LongInt;
+class function TSHA256Alg.GetDigestSize(Inst: PSHA256Alg): LongInt;
 begin
   Result:= SizeOf(TSHA256Digest);
 end;
 
-procedure TSHA256Alg.Purge;
+class function TSHA256Alg.GetBlockSize(Inst: PSHA256Alg): LongInt;
 begin
-  FillChar(FData, SizeOf(FData), 0);
+  Result:= 64;
+end;
+
+class function TSHA256Alg.Duplicate(Inst: PSHA256Alg; var DupInst: PSHA256Alg): TF_RESULT;
+begin
+  Result:= GetSHA256Algorithm(DupInst);
+  if Result = TF_S_OK then
+    DupInst.FData:= Inst.FData;
 end;
 
 end.

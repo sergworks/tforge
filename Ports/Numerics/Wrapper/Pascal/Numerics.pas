@@ -64,7 +64,7 @@ type
 
 type
   IBigNumber = interface
-    function ClearMem: TF_RESULT; stdcall;
+//    function ClearMem: TF_RESULT; stdcall;
 
     function GetHashCode: Integer; stdcall;
     function GetLen: Integer; stdcall;

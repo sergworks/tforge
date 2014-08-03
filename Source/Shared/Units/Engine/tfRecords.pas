@@ -25,12 +25,15 @@ type
   PtfSingleton = ^TtfSingleton;
   TtfSingleton = record
     FVTable: PPointer;
-    FRefCount: Integer;
+//    FRefCount: Integer;
 //    class function QueryIntf(Inst: Pointer; const IID: TGUID;
 //                             out Obj): TF_RESULT; stdcall; static;
     class function AddRef(Inst: Pointer): Integer; stdcall; static;
     class function Release(Inst: Pointer): Integer; stdcall; static;
   end;
+
+function tfIncrement(var Value: Integer): Integer;
+function tfDecrement(var Value: Integer): Integer;
 
 implementation
 
@@ -46,7 +49,7 @@ end;
            FRefCount = -1 is reserved for read-only constants
 }
 
-{$IFDEF xxCPU386}
+{$IFDEF CPU386}
 function InterlockedAdd(var Addend: Integer; Increment: Integer): Integer;
 asm
       MOV   ECX,EAX
@@ -55,67 +58,56 @@ asm
       ADD   EAX,EDX
 end;
 
-function InterlockedIncrement(var Addend: Integer): Integer;
+function tfIncrement(var Value: Integer): Integer;
 asm
       MOV   EDX,1
       JMP   InterlockedAdd
 end;
 
-function InterlockedDecrement(var Addend: Integer): Integer;
+function tfDecrement(var Value: Integer): Integer;
 asm
       MOV   EDX,-1
       JMP   InterlockedAdd
 end;
 
-class function TtfRecord.Addref(Inst: Pointer): Integer;
-begin
-// we need this check because FRefCount = -1 is allowed
-  if PtfRecord(Inst).FRefCount > 0 then
-    Result:= InterlockedIncrement(PtfRecord(Inst).FRefCount)
-  else
-    Result:= PtfRecord(Inst).FRefCount;
-end;
-
-class function TtfRecord.Release(Inst: Pointer): Integer;
-begin
-// we need this check because FRefCount = -1 is allowed
-  if PtfRecord(Inst).FRefCount > 0 then begin
-    Result:= InterlockedDecrement(PtfRecord(Inst).FRefCount);
-    if Result = 0 then begin
-      if PtfRecord(Inst).FVTable[3] <> nil then
-        TClearMemProc(PtfRecord(Inst).FVTable[3])(Inst);
-      FreeMem(Inst);
-    end;
-  end
-  else
-    Result:= PtfRecord(Inst).FRefCount;
-end;
-
 {$ELSE}
-class function TtfRecord.Addref(Inst: Pointer): Integer;
+function tfIncrement(var Value: Integer): Integer;
 begin
-// we need this check because FRefCount = -1 is allowed
-  if PtfRecord(Inst).FRefCount > 0 then
-    Inc(PtfRecord(Inst).FRefCount);
-  Result:= PtfRecord(Inst).FRefCount;
+  Result:= Value + 1;
+  Value:= Result;
 end;
 
-class function TtfRecord.Release(Inst: Pointer): Integer;
-begin
-// we need this check because FRefCount = -1 is allowed
-  if PtfRecord(Inst).FRefCount > 0 then begin
-    Dec(PtfRecord(Inst).FRefCount);
-    Result:= PtfRecord(Inst).FRefCount;
-    if Result = 0 then begin
-      if PtfRecord(Inst).FVTable[3] <> nil then
-        TClearMemProc(PtfRecord(Inst).FVTable[3])(Inst);
-      FreeMem(Inst);
-    end;
-  end
-  else
-    Result:= PtfRecord(Inst).FRefCount;
+function tfDecrement(var Value: Integer): Integer;
+asm
+  Result:= Value - 1;
+  Value:= Result;
 end;
 {$ENDIF}
+
+class function TtfRecord.Addref(Inst: Pointer): Integer;
+begin
+// we need this check because FRefCount = -1 is allowed
+  if PtfRecord(Inst).FRefCount > 0 then
+    Result:= tfIncrement(PtfRecord(Inst).FRefCount)
+  else
+    Result:= PtfRecord(Inst).FRefCount;
+end;
+
+class function TtfRecord.Release(Inst: Pointer): Integer;
+begin
+// we need this check because FRefCount = -1 is allowed
+  if PtfRecord(Inst).FRefCount > 0 then begin
+    Result:= tfDecrement(PtfRecord(Inst).FRefCount);
+    if Result = 0 then
+//     begin
+//      if PtfRecord(Inst).FVTable[3] <> nil then
+//        TClearMemProc(PtfRecord(Inst).FVTable[3])(Inst);
+      FreeMem(Inst);
+//    end;
+  end
+  else
+    Result:= PtfRecord(Inst).FRefCount;
+end;
 
 { TtfSingleton }
 {

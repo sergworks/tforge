@@ -40,16 +40,19 @@ type
 {$ENDIF}
 
 type
-  TClearMemProc = function(Inst: Pointer): TF_RESULT; stdcall;
-
-  IForge = interface
-    function ClearMem: TF_RESULT; stdcall;
+  IBytesEnumerator = interface(IInterface)
+    function GetCurrent: Byte;
+    function MoveNext: Boolean;
+    procedure Reset;
+    property Current: Byte read GetCurrent;
   end;
 
-type
-  IBytes = interface(IForge)
+  IBytes = interface(IInterface)
+    function GetEnum(var R: IBytesEnumerator): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function GetHashCode: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetLen: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetLen(Value: Integer): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetRawData: PByte;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function AssignBytes(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -80,8 +83,27 @@ type
     function ToDec(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+(*
+  IBytesServer = interface(IInterface)
+    function Allocate(var A: IBytes; ASize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function ReAllocate(var A: IBytes; ASize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function FromPByte(var A: IBytes; P: PByte; L: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function FromPCharHex(var A: IBytes; P: PByte; L: Cardinal; CharSize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function FromByte(var A: IBytes; Value: Byte): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+*)
+
 type
-  IBigNumber = interface(IForge)
+  IBigNumber = interface(IInterface)
     function GetHashCode: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetLen: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetRawData: PByte;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -169,22 +191,47 @@ type
     function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  IHashAlgorithm = interface(IForge)
+  IHashAlgorithm = interface(IInterface)
     procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetHashSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetDigestSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  IBlockCipherAlgorithm = interface(IForge)
+  THashGetter = function(var A: IHashAlgorithm): TF_RESULT;
+                {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+  IHashServer = interface(IInterface)
+    function GetByName(Name: Pointer; CharSize: Integer; var Alg: IHashAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetByIndex(Index: Integer; var Alg: IHashAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetCount: Integer;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function RegisterHash(Name: Pointer; Getter: THashGetter;
+          var Index: Integer; CharSize: Integer): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetHMAC(var HMACAlg: IHashAlgorithm; Key: Pointer; KeySize: Cardinal;
+          const HashAlg: IHashAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DeriveKey(HashName: Pointer; CharSize: Integer; const Password, Salt: IBytes;
+          Rounds, DKLen: Integer; var Key: IBytes): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+  IBlockCipherAlgorithm = interface(IInterface)
     function ImportKey(Key: PByte; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  ICipherKey = interface(IForge)
+  ICipherKey = interface(IInterface)
     function DuplicateKey(var Key: ICipherKey): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SetKeyParam(Param: LongWord; Data: PByte; DataLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DeriveKey(HashAlg: IHashAlgorithm; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -205,24 +252,27 @@ const
 
 // ICipherKey.SetKeyParam Params
   TF_KP_KEY     = 1;
-  TF_KP_MODE    = 2;
-  TF_KP_PADDING = 3;
+  TF_KP_IV      = 2;
+  TF_KP_MODE    = 3;
+  TF_KP_PADDING = 4;
 
 // Cipher Key Mode
-  TF_KEYMODE_ECB = 0;
-  TF_KEYMODE_CBC = 1;
-  TF_KEYMODE_CTR = 2;
+  TF_KEYMODE_ECB = 1;
+  TF_KEYMODE_CBC = 2;
+  TF_KEYMODE_CTR = 3;
 
+  TF_KEYMODE_MIN = TF_KEYMODE_ECB;
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
 
 // Cipher Key Padding
-  TF_PADDING_NONE = 0;
-  TF_PADDING_ZERO = 1;    // XX 00 00 00 00
-  TF_PADDING_ANSI = 2;    // XX 00 00 00 04
-  TF_PADDING_ISO  = 3;    // XX ?? ?? ?? 04
+  TF_PADDING_NONE = 1;
+  TF_PADDING_ZERO = 2;    // XX 00 00 00 00
+  TF_PADDING_ANSI = 3;    // XX 00 00 00 04
+//  TF_PADDING_ISO  = 4;    // XX ?? ?? ?? 04
   TF_PADDING_PKSC = 4;    // XX 04 04 04 04
   TF_PADDING_IEC  = 5;    // XX 80 00 00 00
 
+  TF_PADDING_MIN = TF_PADDING_NONE;
   TF_PADDING_MAX = TF_PADDING_IEC;
 
 { Hash helper types }

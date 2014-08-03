@@ -329,11 +329,11 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..74] of Pointer = (
+  BigNumVTable: array[0..73] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
-   nil,
+//   nil,
 
    @TBigNumber.GetHashCode,
    @TBigNumber.GetLen,
@@ -3128,7 +3128,7 @@ begin
     Limb:= Limb shr 8;
   end;
   if L = 0 then L:= 1;
-  Result:= JenkinsOneHash(Inst.FLimbs, L);
+  Result:= TJenkinsOne.Hash(Inst.FLimbs, L);
   if Inst.FSign < 0 then Result:= - Result;
 end;
 

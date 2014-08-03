@@ -4,7 +4,7 @@
 			<MainSource>DLogDemo.dpr</MainSource>
 			<ProjectVersion>12.3</ProjectVersion>
 			<Base>True</Base>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<Platform>Win32</Platform>
 			<AppType>Console</AppType>
 			<FrameworkType>None</FrameworkType>

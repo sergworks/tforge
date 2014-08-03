@@ -33,6 +33,9 @@ contains
   tfCRC32 in '..\..\Units\Engine\tfCRC32.pas',
   tfJenkinsOne in '..\..\Units\Engine\tfJenkinsOne.pas',
   tfMD5 in '..\..\Units\Engine\tfMD5.pas',
-  tfSHA256 in '..\..\Units\Engine\tfSHA256.pas';
+  tfSHA256 in '..\..\Units\Engine\tfSHA256.pas',
+  tfHashes in '..\..\Units\Client\tfHashes.pas',
+  tfHashServ in '..\..\Units\Engine\tfHashServ.pas',
+  tfHMAC in '..\..\Units\Engine\tfHMAC.pas';
 
 end.

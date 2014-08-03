@@ -60,6 +60,9 @@
 			<DCCReference Include="..\..\Units\Engine\tfJenkinsOne.pas"/>
 			<DCCReference Include="..\..\Units\Engine\tfMD5.pas"/>
 			<DCCReference Include="..\..\Units\Engine\tfSHA256.pas"/>
+			<DCCReference Include="..\..\Units\Client\tfHashes.pas"/>
+			<DCCReference Include="..\..\Units\Engine\tfHashServ.pas"/>
+			<DCCReference Include="..\..\Units\Engine\tfHMAC.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

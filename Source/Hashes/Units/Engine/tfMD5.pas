@@ -11,12 +11,6 @@ interface
 
 uses tfTypes;
 
-function GetMD5Algorithm(var Alg: IHashAlgorithm): TF_RESULT;
-
-implementation
-
-uses tfRecords;
-
 type
   PMD5Alg = ^TMD5Alg;
   TMD5Alg = record
@@ -33,38 +27,56 @@ type
 
     procedure Compress;
   public
-    procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetHashSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    class function Release(Inst: PMD5Alg): Integer; stdcall; static;
+    class procedure Init(Inst: PMD5Alg);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Update(Inst: PMD5Alg; Data: PByte; DataSize: LongWord);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Done(Inst: PMD5Alg; PDigest: PMD5Digest);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class procedure Purge(Inst: PMD5Alg);  -- redirected to Init
+//         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetDigestSize(Inst: PMD5Alg): LongInt;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetBlockSize(Inst: PMD5Alg): LongInt;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function Duplicate(Inst: PMD5Alg; var DupInst: PMD5Alg): TF_RESULT;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-const
-  MD5VTable: array[0..8] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TtfRecord.Release,
-   nil,
-   @TMD5Alg.Init,
-   @TMD5Alg.Update,
-   @TMD5Alg.Done,
-   @TMD5Alg.GetHashSize,
-   @TMD5Alg.Purge
-   );
+function GetMD5Algorithm(var Inst: PMD5Alg): TF_RESULT;
 
-function GetMD5Algorithm(var Alg: IHashAlgorithm): TF_RESULT;
+implementation
+
+uses tfRecords;
+
+const
+  MD5VTable: array[0..9] of Pointer = (
+    @TtfRecord.QueryIntf,
+    @TtfRecord.Addref,
+    @TMD5Alg.Release,
+
+    @TMD5Alg.Init,
+    @TMD5Alg.Update,
+    @TMD5Alg.Done,
+    @TMD5Alg.Init,
+    @TMD5Alg.GetDigestSize,
+    @TMD5Alg.GetBlockSize,
+    @TMD5Alg.Duplicate
+  );
+
+function GetMD5Algorithm(var Inst: PMD5Alg): TF_RESULT;
 var
   P: PMD5Alg;
 
 begin
-  Alg:= nil;
   try
     New(P);
     P^.FVTable:= @MD5VTable;
     P^.FRefCount:= 1;
-    FillChar(P^.FData, SizeOf(P^.FData), 0);
-    Pointer(Alg):= P;
+    TMD5Alg.Init(P);
+    if Inst <> nil then TtfRecord.Release(Inst);
+    Inst:= P;
     Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
@@ -183,68 +195,81 @@ begin
   FillChar(Block, SizeOf(Block), 0);
 end;
 
-procedure TMD5Alg.Init;
+class function TMD5Alg.Release(Inst: PMD5Alg): Integer;
 begin
-  FData.Digest.A:= $67452301;   // load magic initialization constants
-  FData.Digest.B:= $EFCDAB89;
-  FData.Digest.C:= $98BADCFE;
-  FData.Digest.D:= $10325476;
-
-  FillChar(FData.Block, SizeOf(FData.Block), 0);
-  FData.Count:= 0;
+  Init(Inst);
+  Result:= TtfRecord.Release(Inst);
 end;
 
-procedure TMD5Alg.Update(Data: Pointer; DataSize: LongWord);
+class procedure TMD5Alg.Init(Inst: PMD5Alg);
+begin
+  Inst.FData.Digest.A:= $67452301;   // load magic initialization constants
+  Inst.FData.Digest.B:= $EFCDAB89;
+  Inst.FData.Digest.C:= $98BADCFE;
+  Inst.FData.Digest.D:= $10325476;
+
+  FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
+  Inst.FData.Count:= 0;
+end;
+
+class procedure TMD5Alg.Update(Inst: PMD5Alg; Data: PByte; DataSize: LongWord);
 var
   Cnt, Ofs: LongWord;
 
 begin
   while DataSize > 0 do begin
-    Ofs:= LongWord(FData.Count) and $3F;
+    Ofs:= LongWord(Inst.FData.Count) and $3F;
     Cnt:= $40 - Ofs;
     if Cnt > DataSize then Cnt:= DataSize;
-    Move(Data^, PByte(@FData.Block)[Ofs], Cnt);
-    if (Cnt + Ofs = $40) then Compress;
-    Inc(FData.Count, Cnt);
+    Move(Data^, PByte(@Inst.FData.Block)[Ofs], Cnt);
+    if (Cnt + Ofs = $40) then Inst.Compress;
+    Inc(Inst.FData.Count, Cnt);
     Dec(DataSize, Cnt);
-    Inc(PByte(Data), Cnt);
+    Inc(Data, Cnt);
   end;
 end;
-
+(*
 function Swap32(Value: LongWord): LongWord;
 begin
   Result:= ((Value and $FF) shl 24) or ((Value and $FF00) shl 8) or
            ((Value and $FF0000) shr 8) or ((Value and $FF000000) shr 24);
 end;
-
-procedure TMD5Alg.Done(PDigest: Pointer);
+*)
+class procedure TMD5Alg.Done(Inst: PMD5Alg; PDigest: PMD5Digest);
 var
   Ofs: Integer;
 
 begin
-  Ofs:= LongWord(FData.Count) and $3F;
-  FData.Block[Ofs]:= $80;
+  Ofs:= LongWord(Inst.FData.Count) and $3F;
+  Inst.FData.Block[Ofs]:= $80;
   if Ofs >= 56 then
-    Compress;
+    Inst.Compress;
 
-  FData.Count:= FData.Count shl 3;
-  PLongWord(@FData.Block[56])^:= LongWord(FData.Count);
-  PLongWord(@FData.Block[60])^:= LongWord(FData.Count shr 32);
-  Compress;
+  Inst.FData.Count:= Inst.FData.Count shl 3;
+  PLongWord(@Inst.FData.Block[56])^:= LongWord(Inst.FData.Count);
+  PLongWord(@Inst.FData.Block[60])^:= LongWord(Inst.FData.Count shr 32);
+  Inst.Compress;
 
-  Move(FData.Digest, PDigest^, SizeOf(TMD5Digest));
+  Move(Inst.FData.Digest, PDigest^, SizeOf(TMD5Digest));
 
-  FillChar(FData, SizeOf(FData), 0);
+  Init(Inst);
 end;
 
-function TMD5Alg.GetHashSize: LongInt;
+class function TMD5Alg.GetDigestSize(Inst: PMD5Alg): LongInt;
 begin
   Result:= SizeOf(TMD5Digest);
 end;
 
-procedure TMD5Alg.Purge;
+class function TMD5Alg.GetBlockSize(Inst: PMD5Alg): LongInt;
 begin
-  FillChar(FData, SizeOf(FData), 0);
+  Result:= 64;
+end;
+
+class function TMD5Alg.Duplicate(Inst: PMD5Alg; var DupInst: PMD5Alg): TF_RESULT;
+begin
+  Result:= GetMD5Algorithm(DupInst);
+  if Result = TF_S_OK then
+    DupInst.FData:= Inst.FData;
 end;
 
 end.

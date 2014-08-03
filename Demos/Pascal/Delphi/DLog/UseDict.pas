@@ -26,13 +26,16 @@ begin
 // todo: BigInteger
   Factor:= BigInteger.ModInverse(Base, Modulo);
   Assert((Base * Factor) mod Modulo = 1, 'ModInverse');
+  Assert(Factor < Modulo, 'ModInverse');
   HashTable:= TBigIntegerDictionary<Integer>.Create;
   try
     Acc:= Value;
+//writeln(DateTimeToStr(now));
     for I:= 0 to HashTableSize - 1 do begin
       HashTable.Add(Acc, I);
       Acc:= (Acc * Factor) mod Modulo;
     end;
+//writeln(DateTimeToStr(now));
 // todo: BigInteger
     Factor:= BigInteger.ModPow(Base, HashTableSize, Modulo);
     Acc:= 1;
@@ -40,6 +43,7 @@ begin
       if HashTable.ContainsKey(Acc) then begin
         Result:= I;
         Result:= HashTable[Acc] + Result * HashTableSize;
+//writeln(DateTimeToStr(now));
         Exit;
       end;
       Acc:= (Acc * Factor) mod Modulo;

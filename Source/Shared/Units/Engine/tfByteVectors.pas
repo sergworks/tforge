@@ -15,6 +15,8 @@ uses tfTypes, SysUtils;
 
 // called ByteVector to avoid name conflict with SysUtils.TByteArray
 type
+  PByteVectorEnum = ^TByteVectorEnum;
+
   PByteVector = ^TByteVector;
   PPByteVector = ^PByteVector;
   TByteVector = record
@@ -36,9 +38,13 @@ type
 
     class function AllocVector(var A: PByteVector; NBytes: Cardinal): TF_RESULT; static;
 
+    class function GetEnum(Inst: PByteVector; var AEnum: PByteVectorEnum): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetHashCode(Inst: PByteVector): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetLen(A: PByteVector): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SetLen(A: PByteVector; L: Integer): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRawData(A: PByteVector): PByte;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -93,7 +99,26 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
+// for .. in iteration support
+  TByteVectorEnum = record
+  private
+    FVTable: Pointer;
+    FRefCount: Integer;
+    FVector: PByteVector;
+    FIndex: Integer;
+  public
+    class function Release(Inst: PByteVectorEnum): Integer; stdcall; static;
+    class function Init(var Inst: PByteVectorEnum; AVector: PByteVector): TF_RESULT; static;
+    class function GetCurrent(Inst: PByteVectorEnum): Byte; static;
+    class function MoveNext(Inst: PByteVectorEnum): Boolean; static;
+    class procedure Reset(Inst: PByteVectorEnum); static;
+  end;
+
+
 function ByteVectorAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+function ByteVectorReAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function ByteVectorFromPByte(var A: PByteVector; P: PByte; L: Cardinal): TF_RESULT;
@@ -106,19 +131,23 @@ function ByteVectorFromPCharHex(var A: PByteVector; P: PByte;
 function ByteVectorFromByte(var A: PByteVector; Value: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+
 implementation
 
 uses tfRecords, tfUtils;
 
 const
-  ByteVecVTable: array[0..27] of Pointer = (
+  ByteVecVTable: array[0..28] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
-   nil,
+//   nil,
+
+   @TByteVector.GetEnum,
 
    @TByteVector.GetHashCode,
    @TByteVector.GetLen,
+   @TByteVector.SetLen,
    @TByteVector.GetRawData,
 
    @TByteVector.AssignBytes,
@@ -149,6 +178,16 @@ const
    );
 
 const
+  ByteVecEnumVTable: array[0..5] of Pointer = (
+   @TtfRecord.QueryIntf,
+   @TtfRecord.Addref,
+   @TByteVectorEnum.Release,
+   @TByteVectorEnum.GetCurrent,
+   @TByteVectorEnum.MoveNext,
+   @TByteVectorEnum.Reset
+   );
+
+const
   ZeroVector: TByteVector = (
     FVTable: @ByteVecVTable;
     FRefCount: -1;
@@ -168,7 +207,7 @@ const
   MaxCapacity = $01000000;
 
 class function TByteVector.AllocVector(var A: PByteVector;
-                                       NBytes: Cardinal): TF_RESULT;
+        NBytes: Cardinal): TF_RESULT;
 var
   BytesRequired: Cardinal;
 
@@ -190,7 +229,6 @@ begin
     A^.FRefCount:= 1;
     A^.FCapacity:= BytesRequired - ByteVecPrefixSize;
     A^.FUsed:= NBytes;
-//    A^.FData[0]:= 0;
     Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
@@ -202,9 +240,42 @@ begin
   Result:= A.FUsed;
 end;
 
+class function TByteVector.SetLen(A: PByteVector; L: Integer): TF_RESULT;
+//var
+//  Tmp: PByteVector;
+
+begin
+  if Cardinal(L) <= Cardinal(A.FCapacity) then begin
+    A.FUsed:= L;
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+{    Result:= AllocVector(Tmp, L);
+    if Result = TF_S_OK then begin
+      Move(A.FData, Tmp.FData, A.FUsed);
+      TtfRecord.Release(A);
+      A:= Tmp;
+    end;
+  end;  }
+end;
+
+class function TByteVector.GetEnum(Inst: PByteVector;
+                                   var AEnum: PByteVectorEnum): TF_RESULT;
+var
+  Tmp: PByteVectorEnum;
+
+begin
+  Result:= TByteVectorEnum.Init(Tmp, Inst);
+  if Result = TF_S_OK then begin
+    if AEnum <> nil then TByteVectorEnum.Release(AEnum);
+    AEnum:= Tmp;
+  end;
+end;
+
 class function TByteVector.GetHashCode(Inst: PByteVector): Integer;
 begin
-  Result:= JenkinsOneHash(Inst.FData, Inst.FUsed);
+  Result:= TJenkinsOne.Hash(Inst.FData, Inst.FUsed);
 end;
 
 class function TByteVector.ConcatBytes(A, B: PByteVector;
@@ -610,12 +681,13 @@ var
   Tmp: PByteVector;
 
 begin
+  UsedA:= A.FUsed;
+
   if L >= MaxCapacity then
     Result:= TF_E_NOMEMORY
-  else begin
-    UsedA:= A.FUsed;
+  else
     Result:= AllocVector(Tmp, UsedA + L);
-  end;
+
   if Result <> TF_S_OK then Exit;
 
   PA:= @Tmp.FData;
@@ -636,12 +708,13 @@ var
   PTmp: PByte;
 
 begin
+  UsedA:= A.FUsed;
+
   if L >= MaxCapacity then
     Result:= TF_E_NOMEMORY
-  else begin
-    UsedA:= A.FUsed;
+  else
     Result:= AllocVector(Tmp, UsedA + L);
-  end;
+
   if Result <> TF_S_OK then Exit;
 
   if Index > UsedA then Index:= UsedA;
@@ -681,8 +754,8 @@ begin
     CompareMem(@A.FData, P, L);
 end;
 
+
 function ByteVectorAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
-  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 var
   Tmp: PByteVector;
 
@@ -694,8 +767,26 @@ begin
   end;
 end;
 
+function ByteVectorReAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
+var
+  Tmp: PByteVector;
+  L: Cardinal;
+
+begin
+  Result:= TByteVector.AllocVector(Tmp, ASize);
+  if Result = TF_S_OK then begin
+    if A <> nil then begin
+      L:= A.FUsed;
+      if L > ASize then L:= ASize;
+      Move(A.FData, Tmp.FData, L);
+      TtfRecord.Release(A);
+    end;
+    A:= Tmp;
+  end;
+end;
+
 function ByteVectorFromPByte(var A: PByteVector; P: PByte;
-           L: Cardinal): TF_RESULT; {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+           L: Cardinal): TF_RESULT;
 var
   Tmp: PByteVector;
 
@@ -746,7 +837,7 @@ begin
 end;
 
 function ByteVectorFromPCharHex(var A: PByteVector; P: PByte;
-         L: Cardinal; CharSize: Cardinal): TF_RESULT; {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+         L: Cardinal; CharSize: Cardinal): TF_RESULT;
 var
   Tmp: PByteVector;
   B, Nibble: Byte;
@@ -793,7 +884,6 @@ begin
 end;
 
 function ByteVectorFromByte(var A: PByteVector; Value: Byte): TF_RESULT;
-  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 var
   Tmp: PByteVector;
 
@@ -804,6 +894,60 @@ begin
     if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
+end;
+
+
+{ TByteVectorEnum }
+
+class function TByteVectorEnum.Release(Inst: PByteVectorEnum): Integer;
+begin
+// we need this check because FRefCount = -1 is allowed
+  if Inst.FRefCount > 0 then begin
+    Result:= tfDecrement(Inst.FRefCount);
+    if Result = 0 then begin
+      IBytes(Inst.FVector)._Release;
+      FreeMem(Inst);
+    end;
+  end
+  else
+    Result:= Inst.FRefCount;
+end;
+
+class function TByteVectorEnum.Init(var Inst: PByteVectorEnum;
+  AVector: PByteVector): TF_RESULT;
+var
+  BytesRequired: Cardinal;
+
+begin
+  BytesRequired:= (SizeOf(TByteVectorEnum) + 7) and not 7;
+  try
+    GetMem(Inst, BytesRequired);
+    Inst^.FVTable:= @ByteVecEnumVTable;
+    Inst^.FRefCount:= 1;
+    IBytes(AVector)._Addref;
+    Inst^.FVector:= AVector;
+    Inst^.FIndex:= -1;
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
+class function TByteVectorEnum.GetCurrent(Inst: PByteVectorEnum): Byte;
+begin
+  Result:= Inst.FVector.FData[Inst.FIndex];
+end;
+
+class function TByteVectorEnum.MoveNext(Inst: PByteVectorEnum): Boolean;
+begin
+  Result:= Inst.FIndex + 1 < Inst.FVector.FUsed;
+  if Result then
+    Inc(Inst.FIndex);
+end;
+
+class procedure TByteVectorEnum.Reset(Inst: PByteVectorEnum);
+begin
+  Inst.FIndex:= -1;
 end;
 
 end.

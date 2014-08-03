@@ -43,13 +43,13 @@ begin
   Writeln;
   Writeln('Using Sorted List...');
   SaveTime:= Now;
-  DL:= UseDict.DLog(Value, Base, Modulo);
+  DL:= UseList.DLog(Value, Base, Modulo);
   TimeElapsed:= Round((Now - SaveTime) * 24 * 60 * 60 * 1000);
   Writeln('DLog = ', DL, ', Time: ', TimeElapsed, ' ms');
 end;
 
 begin
-  ReportMemoryLeaksOnShutdown:= True;
+//  ReportMemoryLeaksOnShutdown:= True;
   try
     Solve;
   except

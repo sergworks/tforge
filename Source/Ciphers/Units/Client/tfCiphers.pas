@@ -10,21 +10,54 @@ interface
 {$I TFL.inc}
 
 uses
-  SysUtils, tfTypes, tfExceptions, {$IFDEF TFL_DLL}tfImport{$ELSE}tfAES{$ENDIF};
-
-function GetBlockCipherAlgorithm(const AlgName: string): IBlockCipherAlgorithm;
+  SysUtils, tfTypes, tfBytes, tfConsts, tfExceptions,
+  {$IFDEF TFL_DLL}tfImport{$ELSE}tfAES{$ENDIF};
 
 type
-  BlockCipherAlgorithm = record
+  TBlockCipherAlgorithm = record
   private
     FAlgorithm: IBlockCipherAlgorithm;
+  public const
+    Count = 1;  // number of algorithms supported
   public
-    constructor Create(Alg: IBlockCipherAlgorithm);
     procedure Free;
-    function ImportKey(Key: PByte; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure ImportKey(Key: PByte; KeyLen: LongWord; Encrypt: Boolean);
+    procedure DestroyKey;
+    procedure EncryptBlock(Data: PByte);
+    procedure DecryptBlock(Data: PByte);
+
+    class function AES: TBlockCipherAlgorithm; static;
+    class function GetInterface(const AlgName: string): IBlockCipherAlgorithm; static;
+    class function Get(const AlgName: string): TBlockCipherAlgorithm; static;
+    class function Name(Index: Cardinal): string; static;
+  end;
+
+  TCipher = record
+  private
+    FCipher: ICipher;
+  public const
+    Count = 1;  // number of ciphers supported
+  public
+    procedure Free;
+    function IsAssigned: Boolean;
+    procedure ImportKey(Key: PByte; KeyLen: LongWord; Encrypt: Boolean;
+                        AIV: Pointer = nil; AIVLen: LongWord = 0;
+                        AKeyMode: LongWord = 0; APadding: LongWord = 0); overload;
+    procedure ImportKey(Key: ByteArray; Encrypt: Boolean;
+                        AIV: Pointer = nil; AIVLen: LongWord = 0;
+                        AKeyMode: LongWord = 0; APadding: LongWord = 0); overload;
+    procedure DestroyKey;
+// todo: procedure DeriveKey();
+    procedure Encrypt(var Data; var DataSize: LongWord;
+                      BufSize: LongWord; Last: Boolean);
+    procedure Decrypt(var Data; var DataSize: LongWord;
+                      Last: Boolean);
+
+    function DecryptBytes(const Data: ByteArray): ByteArray;
+    class function AES: TCipher; static;
+    class function GetInterface(const AName: string): ICipher; static;
+    class function Get(const AName: string): TCipher; static;
+    class function Name(Index: Cardinal): string; static;
   end;
 
 (*
@@ -123,6 +156,43 @@ begin
     CipherError(Value);
 end;
 
+{ BlockCipherAlgorithm }
+
+class function TBlockCipherAlgorithm.AES: TBlockCipherAlgorithm;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(GetAESAlgorithm(Result.FAlgorithm))
+{$ELSE}
+  HResCheck(GetAESAlgorithm(PAESAlgorithm(Result.FAlgorithm)));
+{$ENDIF}
+end;
+
+procedure TBlockCipherAlgorithm.ImportKey(Key: PByte; KeyLen: LongWord; Encrypt: Boolean);
+begin
+  if Encrypt then KeyLen:= KeyLen or TF_KEY_ENCRYPT;
+  HResCheck(FAlgorithm.ImportKey(Key, KeyLen));
+end;
+
+procedure TBlockCipherAlgorithm.DestroyKey;
+begin
+  FAlgorithm.DestroyKey;
+end;
+
+procedure TBlockCipherAlgorithm.EncryptBlock(Data: PByte);
+begin
+  FAlgorithm.EncryptBlock(Data);
+end;
+
+procedure TBlockCipherAlgorithm.Free;
+begin
+  FAlgorithm:= nil;
+end;
+
+procedure TBlockCipherAlgorithm.DecryptBlock(Data: PByte);
+begin
+  FAlgorithm.DecryptBlock(Data);
+end;
+
 type
   TAlgGetter = function(var A: IBlockCipherAlgorithm): TF_RESULT;
 
@@ -135,19 +205,20 @@ type
   end;
 
 const
-  TF_ALG_AES = $1001;
+  TF_ALG_AES = $2001;
 
 {$IFDEF TFL_DLL}
 // todo:
 {$ELSE}
 const
-  BlockCipherAlgs: array[0..0] of TAlgRec = (
+  BlockCipherAlgs: array[0 .. TBlockCipherAlgorithm.Count - 1] of TAlgRec = (
     (Name: 'AES'; ID: TF_ALG_AES; Getter: @GetAESAlgorithm)
   );
 
 {$ENDIF}
 
-function GetBlockCipherAlgorithm(const AlgName: string): IBlockCipherAlgorithm;
+class function TBlockCipherAlgorithm.GetInterface(
+      const AlgName: string): IBlockCipherAlgorithm;
 var
   AlgRec: TAlgRec;
   LName: string;
@@ -159,40 +230,143 @@ begin
     if LName = AlgRec.Name then begin
       HResCheck(TAlgGetter(AlgRec.Getter)(Tmp));
       Result:= Tmp;
+      Exit;
     end;
   end;
 end;
 
-{ BlockCipherAlgorithm }
-
-constructor BlockCipherAlgorithm.Create(Alg: IBlockCipherAlgorithm);
+class function TBlockCipherAlgorithm.Get(
+      const AlgName: string): TBlockCipherAlgorithm;
 begin
-  FAlgorithm:= Alg;
+  Result.FAlgorithm:= GetInterface(AlgName);
 end;
 
-procedure BlockCipherAlgorithm.DecryptBlock(Data: PByte);
+class function TBlockCipherAlgorithm.Name(Index: Cardinal): string;
 begin
-  FAlgorithm.DecryptBlock(Data);
+  if Index >= TBlockCipherAlgorithm.Count then
+    raise ERangeError.CreateResFmt(@SIndexOutOfRange, [Index]);
+  Result:= BlockCipherAlgs[Index].Name;
 end;
 
-procedure BlockCipherAlgorithm.DestroyKey;
+{ TCipher }
+
+procedure TCipher.Free;
 begin
-  FAlgorithm.DestroyKey;
+  FCipher:= nil;
 end;
 
-procedure BlockCipherAlgorithm.EncryptBlock(Data: PByte);
+function TCipher.IsAssigned: Boolean;
 begin
-
+  Result:= FCipher <> nil;
 end;
 
-procedure BlockCipherAlgorithm.Free;
+class function TCipher.AES: TCipher;
 begin
-
+{$IFDEF TFL_DLL}
+  HResCheck(GetAESCipher(Result.FCipher))
+{$ELSE}
+  HResCheck(GetAESCipher(PAESCipher(Result.FCipher)));
+{$ENDIF}
 end;
 
-function BlockCipherAlgorithm.ImportKey(Key: PByte; Flags: LongWord): TF_RESULT;
+procedure TCipher.ImportKey(Key: PByte; KeyLen: LongWord; Encrypt: Boolean;
+                            AIV: Pointer; AIVLen: LongWord;
+                            AKeyMode, APadding: LongWord);
 begin
+  if AIV <> nil then
+    HResCheck(FCipher.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+  if AKeyMode <> 0 then
+    HResCheck(FCipher.SetKeyParam(TF_KP_MODE, @AKeyMode, SizeOf(AKeyMode)));
+  if APadding <> 0 then
+    HResCheck(FCipher.SetKeyParam(TF_KP_PADDING, @APadding, SizeOf(APadding)));
 
+  HResCheck(FCipher.SetKeyParam(TF_KP_KEY, Key, KeyLen shl 3));
+end;
+
+procedure TCipher.ImportKey(Key: ByteArray; Encrypt: Boolean; AIV: Pointer;
+                            AIVLen, AKeyMode, APadding: LongWord);
+begin
+  ImportKey(Key.RawData, Key.Len, Encrypt, AIV, AIVLen, AKeyMode, APadding);
+end;
+
+procedure TCipher.DestroyKey;
+begin
+  FCipher.DestroyKey;
+end;
+
+procedure TCipher.Encrypt(var Data; var DataSize: LongWord;
+  BufSize: LongWord; Last: Boolean);
+begin
+  HResCheck(FCipher.Encrypt(@Data, DataSize, BufSize, Last));
+end;
+
+procedure TCipher.Decrypt(var Data; var DataSize: LongWord; Last: Boolean);
+begin
+  HResCheck(FCipher.Decrypt(@Data, DataSize, Last));
+end;
+
+function TCipher.DecryptBytes(const Data: ByteArray): ByteArray;
+var
+  L: LongWord;
+
+begin
+  L:= Data.Len;
+  Result:= ByteArray.Copy(Data);
+  Decrypt(Result.RawData^, L, True);
+  Result.Len:= L;
+end;
+
+type
+  TCipherGetter = function(var A: ICipher): TF_RESULT;
+
+type
+  PCipherRec = ^TCipherRec;
+  TCipherRec = record
+    Name: string;
+    ID: Integer;
+    Getter: Pointer;
+  end;
+
+//const
+//  TF_CIPHER_AES = $3001;
+
+{$IFDEF TFL_DLL}
+// todo:
+{$ELSE}
+const
+  Ciphers: array[0 .. TCipher.Count - 1] of TCipherRec = (
+    (Name: 'AES'; ID: TF_ALG_AES; Getter: @GetAESCipher)
+  );
+
+{$ENDIF}
+
+class function TCipher.GetInterface(const AName: string): ICipher;
+var
+  Rec: TCipherRec;
+  LName: string;
+  Tmp: ICipher;
+
+begin
+  LName:= UpperCase(AName);
+  for Rec in Ciphers do begin
+    if LName = Rec.Name then begin
+      HResCheck(TCipherGetter(Rec.Getter)(Tmp));
+      Result:= Tmp;
+      Exit;
+    end;
+  end;
+end;
+
+class function TCipher.Get(const AName: string): TCipher;
+begin
+  Result.FCipher:= GetInterface(AName);
+end;
+
+class function TCipher.Name(Index: Cardinal): string;
+begin
+  if Index >= TCipher.Count then
+    raise ERangeError.CreateResFmt(@SIndexOutOfRange, [Index]);
+  Result:= Ciphers[Index].Name;
 end;
 
 end.
