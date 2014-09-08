@@ -83,6 +83,9 @@ function arrSelfMulLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
 procedure arrNormDivMod(Dividend, Divisor, Quotient: PLimb;
                         DndLen, DsrLen: TLimb);
+procedure arrNormMod(Dividend, Divisor: PLimb;
+                        DndLen, DsrLen: TLimb);
+
 function arrDivModLimb(A, Q: PLimb; L, D: TLimb): TLimb;
 function arrSelfDivModLimb(A: PLimb; L: Cardinal; D: TLimb): TLimb;
 
@@ -2092,6 +2095,159 @@ begin
     Dec(LoopCount);
   until LoopCount = 0;
 
+end;
+
+// normalized division (Divisor[DsrLen-1] and $80000000 <> 0)
+// in:  Dividend: Dividend;
+//      Divisor: Divisor;
+//      DndLen: Dividend Length
+//      DsrLen: Divisor Length
+// out: Dividend:= Dividend mod Divisor
+procedure arrNormMod(Dividend, Divisor: PLimb;
+                        DndLen, DsrLen: TLimb);
+var
+  Tmp: TLimbVector;
+  PDnd, PDsr: PLimb;
+  QGuess, RGuess: TLimbVector;
+  LoopCount, Count: Integer;
+  TmpLimb, Carry: TLimb;
+  CarryIn, CarryOut: Boolean;
+
+begin
+  Assert(DndLen > DsrLen);
+  Assert(DsrLen >= 2);
+
+  LoopCount:= DndLen - DsrLen;
+
+{$IFDEF TFL_POINTERMATH}
+  PDnd:= Dividend + DndLen;
+  PDsr:= Divisor + DsrLen;
+{$ELSE}
+  PDnd:= Dividend;
+  Inc(PDnd, DndLen);
+  PDsr:= Divisor;
+  Inc(PDsr, DsrLen);
+{$ENDIF}
+
+  repeat
+    Dec(PDnd);    // PDnd points to (current) senior dividend/remainder limb
+    Dec(PDsr);    // PDns points to senior divisor limb
+    Assert(PDnd^ <= PDsr^);
+
+// Делим число, составленное из двух старших цифр делимого на старшую цифру
+//   делителя; это даст нам оценку очередной цифры частного QGuess
+
+    if PDnd^ < PDsr^ then begin
+{$IFDEF TFL_POINTERMATH}
+      Tmp.Lo:= (PDnd - 1)^;
+{$ELSE}
+      Tmp.Lo:= GetLimb(PDnd, -1);
+{$ENDIF}
+      Tmp.Hi:= PDnd^;
+      QGuess.Lo:= Tmp.Value div PDsr^;
+      QGuess.Hi:= 0;
+      RGuess.Lo:= Tmp.Value mod PDsr^;
+      RGuess.Hi:= 0;
+    end
+    else begin
+      QGuess.Lo:= 0;
+      QGuess.Hi:= 1;
+{$IFDEF TFL_POINTERMATH}
+      RGuess.Lo:= (PDnd - 1)^;
+{$ELSE}
+      RGuess.Lo:= GetLimb(PDnd, -1);
+{$ENDIF}
+      RGuess.Hi:= 0;
+    end;
+
+// Для точного значения цифры частного Q имеем
+//   QGuess - 2 <= Q <= QGuess;
+//   улучшаем оценку
+
+    repeat
+      if (QGuess.Hi = 0) then begin
+//   yмножаем вторую по старшинству цифру делителя на QGuess
+{$IFDEF TFL_POINTERMATH}
+        Tmp.Value:= (PDsr - 1)^ * QGuess.Value;
+        if (Tmp.Hi < RGuess.Lo) then Break;
+        if (Tmp.Hi = RGuess.Lo) and
+           (Tmp.Lo <= (PDnd - 2)^) then Break;
+{$ELSE}
+        Tmp.Value:= GetLimb(PDsr, -1) * QGuess.Value;
+        if (Tmp.Hi < RGuess.Lo) then Break;
+        if (Tmp.Hi = RGuess.Lo) and
+           (Tmp.Lo <= GetLimb(PDnd, -2)) then Break;
+{$ENDIF}
+        Dec(QGuess.Lo);
+      end
+      else begin
+        QGuess.Lo:= TLimbInfo.MaxLimb;
+        QGuess.Hi:= 0;
+      end;
+      RGuess.Value:= RGuess.Value + PDsr^;
+    until RGuess.Hi <> 0;
+
+// Здесь имеем QGuess - 1 <= Q <= QGuess;
+// Вычитаем из делимого умноженный на QGuess делитель
+
+    Count:= DsrLen;
+{$IFDEF TFL_POINTERMATH}
+    PDnd:= PDnd - Count;
+{$ELSE}
+    PDnd:= PDnd;
+    Dec(PDnd, Count);
+{$ENDIF}
+    PDsr:= Divisor;
+    Carry:= 0;
+    repeat
+      Tmp.Value:= PDsr^ * QGuess.Value + Carry;
+      Carry:= Tmp.Hi;
+      TmpLimb:= PDnd^ - Tmp.Lo;
+      if (TmpLimb > PDnd^) then Inc(Carry);
+      PDnd^:= TmpLimb;
+      Inc(PDnd);
+      Inc(PDsr);
+      Dec(Count);
+    until Count = 0;
+
+    TmpLimb:= PDnd^ - Carry;
+    if (TmpLimb > PDnd^) then begin
+// если мы попали сюда значит QGuess = Q + 1;
+// прибавляем делитель
+      Count:= DsrLen;
+{$IFDEF TFL_POINTERMATH}
+      PDnd:= PDnd - Count;
+{$ELSE}
+      PDnd:= PDnd;
+      Dec(PDnd, Count);
+{$ENDIF}
+      PDsr:= Divisor;
+      CarryIn:= False;
+
+      repeat
+        TmpLimb:= PDnd^ + PDsr^;
+        CarryOut:= TmpLimb < PDnd^;
+        Inc(PDsr);
+        if CarryIn then begin
+          Inc(TmpLimb);
+          CarryOut:= CarryOut or (TmpLimb = 0);
+        end;
+        CarryIn:= CarryOut;
+        PDnd^:= TmpLimb;
+        Inc(PDnd);
+        Dec(Count);
+      until Count = 0;
+
+      Assert(CarryIn);
+
+      Dec(QGuess.Lo);
+    end;
+
+// Возможно этот лимб больше не нужен и обнулять его необязательно
+    PDnd^:= 0;
+
+    Dec(LoopCount);
+  until LoopCount = 0;
 end;
 
 end.

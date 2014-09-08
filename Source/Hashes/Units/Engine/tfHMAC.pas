@@ -38,7 +38,7 @@ type
     FKey: PByteVector;
   public
     class function Release(Inst: PHMACAlg): Integer; stdcall; static;
-    class procedure Init(Inst: PHMACAlg);
+    class procedure Init(Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PHMACAlg; Data: Pointer; DataSize: LongWord);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -48,14 +48,17 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetDigestSize(Inst: PHMACAlg): LongInt;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PHMACAlg): LongInt;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function GetBlockSize(Inst: PHMACAlg): LongInt;
+//          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PHMACAlg; var DupInst: PHMACAlg): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PBKDF2(Inst: PHMACAlg;
+          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
+          Rounds, dkLen: LongWord; Key: Pointer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-function GetHMACAlgorithm(var Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal;
-         const HashAlg: IHashAlgorithm): TF_RESULT;
+function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHashAlgorithm): TF_RESULT;
 
 implementation
 
@@ -72,17 +75,15 @@ const
    @THMACAlg.Done,
    @THMACAlg.Purge,
    @THMACAlg.GetDigestSize,
-   @THMACAlg.GetBlockSize,
-   @THMACAlg.Duplicate
+//   @THMACAlg.GetBlockSize,
+   @THMACAlg.Duplicate,
+   @THMACAlg.PBKDF2
    );
 
-function GetHMACAlgorithm(var Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal;
-                          const HashAlg: IHashAlgorithm): TF_RESULT;
+function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHashAlgorithm): TF_RESULT;
 var
   P: PHMACAlg;
-  BlockSize, DigestSize: Integer;
-  I: Integer;
-  InnerP: PByte;
+  BlockSize: Integer;
 
 begin
   BlockSize:= HashAlg.GetBlockSize;
@@ -97,44 +98,14 @@ begin
     P^.FRefCount:= 1;
     P^.FKey:= nil;
     P^.FHash:= HashAlg;
-
-    DigestSize:= HashAlg.GetDigestSize;
-
     Result:= ByteVectorAlloc(P^.FKey, BlockSize);
-    if Result <> TF_S_OK then Exit;
-
-    FillChar(P^.FKey.FData, BlockSize, 0);
-    if KeySize > BlockSize then begin
-      HashAlg.Init;
-      HashAlg.Update(Key, KeySize);
-      HashAlg.Done(@Inst.FKey.FData);
-      KeySize:= DigestSize;
-    end
-    else begin
-      Move(Key^, P^.FKey.FData, KeySize);
+    if Result = TF_S_OK then begin
+      if Inst <> nil then THMACAlg.Release(Inst);
+      Inst:= P;
     end;
-
-    InnerP:= @P^.FKey.FData;
-//    OuterP:= @P^.FOuterKey.FData;
-//    Move(InnerP^, OuterP^, BlockSize);
-
-    for I:= 0 to BlockSize - 1 do begin
-      InnerP^:= InnerP^ xor THMACAlg.IPad;
-//      OuterP^:= OuterP^ xor OPad;
-      Inc(InnerP);
-//      Inc(OuterP);
-    end;
-
-    HashAlg.Init;
-    HashAlg.Update(@P^.FKey.FData, BlockSize);
-
-    if Inst <> nil then THMACAlg.Release(Inst);
-    Inst:= P;
-    Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
   end;
-
 end;
 
 { THMACAlg }
@@ -148,9 +119,39 @@ begin
   Result:= TtfRecord.Release(Inst);
 end;
 
-class procedure THMACAlg.Init(Inst: PHMACAlg);
+class procedure THMACAlg.Init(Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal);
+var
+  BlockSize, DigestSize: Integer;
+  I: Integer;
+  InnerP: PByte;
+
 begin
-// stub
+  BlockSize:= Inst.FHash.GetBlockSize;
+  DigestSize:= Inst.FHash.GetDigestSize;
+  FillChar(Inst.FKey.FData, BlockSize, 0);
+  if KeySize > BlockSize then begin
+    Inst.FHash.Init;
+    Inst.FHash.Update(Key, KeySize);
+    Inst.FHash.Done(@Inst.FKey.FData);
+    KeySize:= DigestSize;
+  end
+  else begin
+    Move(Key^, Inst.FKey.FData, KeySize);
+  end;
+
+  InnerP:= @Inst.FKey.FData;
+//    OuterP:= @P^.FOuterKey.FData;
+//    Move(InnerP^, OuterP^, BlockSize);
+
+  for I:= 0 to BlockSize - 1 do begin
+    InnerP^:= InnerP^ xor THMACAlg.IPad;
+//      OuterP^:= OuterP^ xor OPad;
+    Inc(InnerP);
+//      Inc(OuterP);
+  end;
+
+  Inst.FHash.Init;
+  Inst.FHash.Update(@Inst.FKey.FData, BlockSize);
 end;
 
 class procedure THMACAlg.Update(Inst: PHMACAlg; Data: Pointer; DataSize: LongWord);
@@ -205,20 +206,156 @@ begin
   end;
 end;
 
+{
 class function THMACAlg.GetBlockSize(Inst: PHMACAlg): LongInt;
 begin
   Result:= 0;
 end;
+}
 
 class function THMACAlg.GetDigestSize(Inst: PHMACAlg): LongInt;
 begin
-  Result:= Inst.FHash.GetBlockSize;
+  Result:= Inst.FHash.GetDigestSize;
 end;
 
 class procedure THMACAlg.Purge(Inst: PHMACAlg);
 begin
   FillChar(Inst.FKey.FData, Inst.FKey.FUsed, 0);
   Inst.FHash.Purge;
+end;
+
+const
+  BigEndianOne = $01000000;
+
+function BigEndianInc(Value: LongWord): LongWord; inline;
+begin
+  Result:= Value + BigEndianOne;
+  if Result shr 24 = 0 then begin
+    Result:= Result + $00010000;
+    if Result shr 16 = 0 then begin
+      Result:= Result + $00000100;
+      if Result shr 8 = 0 then begin
+        Result:= Result + $00000001;
+      end;
+    end;
+  end;
+end;
+
+class function THMACAlg.PBKDF2(Inst: PHMACAlg; Password: Pointer;
+  PassLen: LongWord; Salt: Pointer; SaltLen, Rounds, dkLen: LongWord;
+  Key: Pointer): TF_RESULT;
+
+const
+  MAX_DIGEST_SIZE = 128;   // = 1024 bits
+
+var
+  hLen: Integer;
+  Digest: array[0 .. MAX_DIGEST_SIZE - 1] of Byte;
+  Tmp: PByteVector;
+  Count, L, N, LRounds: LongWord;
+  PData, P1, P2: PByte;
+
+
+begin
+  hLen:= Inst.FHash.GetDigestSize;
+  if (hLen > MAX_DIGEST_SIZE) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  Tmp:= nil;
+  Result:= ByteVectorAlloc(Tmp, dkLen);
+  if Result <> TF_S_OK then Exit;
+  FillChar(Tmp.FData, dkLen, 0);
+  PData:= @Tmp.FData;
+  N:= dkLen div hLen;
+  Count:= BigEndianOne;
+  while N > 0 do begin    // process full hLen blocks
+    LRounds:= Rounds;
+    if LRounds > 0 then begin
+      Init(Inst, PassWord, PassLen);
+      Update(Inst, Salt, SaltLen);
+      Update(Inst, @Count, SizeOf(Count));
+      Done(Inst, @Digest);
+      P1:= @PData;
+      P2:= @Digest;
+      L:= hLen shr 2;
+      while L > 0 do begin
+        PLongWord(P1)^:= PLongWord(P1)^ xor PLongWord(P2)^;
+        Inc(PLongWord(P1));
+        Inc(PLongWord(P2));
+        Dec(L);
+      end;
+      L:= hLen and 3;
+      while L > 0 do begin
+        P1^:= P1^ xor P2^;
+        Inc(P1);
+        Inc(P2);
+        Dec(L);
+      end;
+      Dec(LRounds);
+      while LRounds > 0 do begin
+        Init(Inst, PassWord, PassLen);
+        Update(Inst, @Digest, hLen);
+        Update(Inst, @Count, SizeOf(Count));
+        Done(Inst, @Digest);
+        P1:= @PData;
+        P2:= @Digest;
+        L:= hLen shr 2;
+        while L > 0 do begin
+          PLongWord(P1)^:= PLongWord(P1)^ xor PLongWord(P2)^;
+          Inc(PLongWord(P1));
+          Inc(PLongWord(P2));
+          Dec(L);
+       end;
+        L:= hLen and 3;
+        while L > 0 do begin
+          P1^:= P1^ xor P2^;
+          Inc(P1);
+          Inc(P2);
+          Dec(L);
+        end;
+        Dec(LRounds);
+      end;
+    end;
+    Count:= BigEndianInc(Count);
+    Dec(N);
+  end;
+  N:= dkLen mod hLen;
+  if N > 0 then begin    // process last incomplete block
+    LRounds:= Rounds;
+    if LRounds > 0 then begin
+      Init(Inst, PassWord, PassLen);
+      Update(Inst, Salt, SaltLen);
+      Update(Inst, @Count, SizeOf(Count));
+      Done(Inst, @Digest);
+      P1:= @PData;
+      P2:= @Digest;
+      L:= N;
+      while L > 0 do begin
+        P1^:= P1^ xor P2^;
+        Inc(P1);
+        Inc(P2);
+        Dec(L);
+      end;
+      Dec(LRounds);
+      while LRounds > 0 do begin
+        Init(Inst, PassWord, PassLen);
+        Update(Inst, @Digest, hLen);
+        Update(Inst, @Count, SizeOf(Count));
+        Done(Inst, @Digest);
+        P1:= @PData;
+        P2:= @Digest;
+        L:= N;
+        while L > 0 do begin
+          P1^:= P1^ xor P2^;
+          Inc(P1);
+          Inc(P2);
+          Dec(L);
+        end;
+        Dec(LRounds);
+      end;
+    end;
+  end;
 end;
 
 end.

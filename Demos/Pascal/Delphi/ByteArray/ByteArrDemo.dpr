@@ -52,6 +52,10 @@ begin
 // bitwise 'xor':
   Writeln('A2 xor A3 = ', (A2 xor A3).ToString);
 
+// fluent coding
+  Writeln(ByteArray.FromText('ABCDEFGHIJ').Insert(3,
+    ByteArray.FromText(' 123 ')).Reverse.ToText);
+
 end;
 
 begin

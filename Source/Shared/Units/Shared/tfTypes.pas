@@ -62,6 +62,8 @@ type
     function RemoveBytes1(var R: IBytes; I: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function RemoveBytes2(var R: IBytes; I, L: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+    function ReverseBytes(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function ConcatBytes(const B: IBytes; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function InsertBytes(Index: Cardinal; const B: IBytes; var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EqualBytes(const B: IBytes): Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -191,6 +193,16 @@ type
     function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+const
+                           // Cryptographic Hash Algorithms
+  TF_ALG_MD5       = $1001;
+  TF_ALG_SHA1      = $1002;
+  TF_ALG_SHA256    = $1003;
+                           // Non-cryptographic Hash Algorithms
+  TF_ALG_CRC32     = $1101;
+  TF_ALG_JENKINS_1 = $1102;
+
+type
   IHashAlgorithm = interface(IInterface)
     procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -204,7 +216,22 @@ type
   THashGetter = function(var A: IHashAlgorithm): TF_RESULT;
                 {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+  IHMACAlgorithm = interface(IInterface)
+    procedure Init(Key: Pointer; KeySize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetDigestSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DeriveKey(HashAlg: IHashAlgorithm; const Password, Salt: IBytes;
+          Rounds, DKLen: Integer; var Key: IBytes): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
   IHashServer = interface(IInterface)
+    function GetByAlgID(AlgID: LongInt; var Alg: IHashAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetByName(Name: Pointer; CharSize: Integer; var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetByIndex(Index: Integer; var Alg: IHashAlgorithm): TF_RESULT;
@@ -213,14 +240,15 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function RegisterHash(Name: Pointer; Getter: THashGetter;
-          var Index: Integer; CharSize: Integer): TF_RESULT;
+    function RegisterHash(Name: Pointer; CharSize: Integer; Getter: THashGetter;
+          var Index: Integer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetHMAC(var HMACAlg: IHashAlgorithm; Key: Pointer; KeySize: Cardinal;
+    function GetHMAC(var HMACAlg: IHMACAlgorithm;
           const HashAlg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DeriveKey(HashName: Pointer; CharSize: Integer; const Password, Salt: IBytes;
-          Rounds, DKLen: Integer; var Key: IBytes): TF_RESULT;
+    function PBKDF1(HashAlg: IHashAlgorithm;
+          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
+          Rounds, dkLen: LongWord; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -277,13 +305,17 @@ const
 
 { Hash helper types }
 type
-  PSHA256Digest = ^TSHA256Digest;
-  TSHA256Digest = array[0..7] of LongWord;
-
+                                  // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;
   TMD5Digest = record
     A, B, C, D: LongWord;
   end;
+                                  // 160-bit SHA256 digest
+  PSHA1Digest = ^TSHA1Digest;
+  TSHA1Digest = array[0..4] of LongWord;
+                                  // 256-bit SHA256 digest
+  PSHA256Digest = ^TSHA256Digest;
+  TSHA256Digest = array[0..7] of LongWord;
 
 implementation
 

@@ -13,7 +13,7 @@ interface
 
 uses tfTypes, SysUtils;
 
-// called ByteVector to avoid name conflict with SysUtils.TByteArray
+// named ByteVector to avoid name conflict with SysUtils.TByteArray
 type
   PByteVectorEnum = ^TByteVectorEnum;
 
@@ -60,6 +60,9 @@ type
     class function RemoveBytes1(A: PByteVector; var R: PByteVector; I: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function RemoveBytes2(A: PByteVector; var R: PByteVector; I, L: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ReverseBytes(A: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function ConcatBytes(A, B: PByteVector; var R: PByteVector): TF_RESULT;
@@ -137,11 +140,10 @@ implementation
 uses tfRecords, tfUtils;
 
 const
-  ByteVecVTable: array[0..28] of Pointer = (
+  ByteVecVTable: array[0..29] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
-//   nil,
 
    @TByteVector.GetEnum,
 
@@ -156,6 +158,7 @@ const
    @TByteVector.CopyBytes2,
    @TByteVector.RemoveBytes1,
    @TByteVector.RemoveBytes2,
+   @TByteVector.ReverseBytes,
    @TByteVector.ConcatBytes,
    @TByteVector.InsertBytes,
    @TByteVector.EqualBytes,
@@ -216,11 +219,11 @@ begin
     Result:= TF_E_NOMEMORY;
     Exit;
   end;
-{  if NBytes = 0 then begin
-    A:= @ByteVecEmpty;
+  if NBytes = 0 then begin
+    A:= @ZeroVector;
     Result:= TF_S_OK;
     Exit;
-  end; }
+  end;
   BytesRequired:= NBytes + ByteVecPrefixSize;
   BytesRequired:= (BytesRequired + 7) and not 7;
   try
@@ -305,6 +308,30 @@ end;
 class function TByteVector.CopyBytes(A: PByteVector; var R: PByteVector): TF_RESULT;
 begin
   Result:= ByteVectorFromPByte(R, @A.FData, A.FUsed);
+end;
+
+class function TByteVector.ReverseBytes(A: PByteVector; var R: PByteVector): TF_RESULT;
+var
+  LUsed: Integer;
+  Tmp: PByteVector;
+  PA, PTmp: PByte;
+
+begin
+  LUsed:= A.FUsed;
+  Result:= TByteVector.AllocVector(Tmp, LUsed);
+  if Result = TF_S_OK then begin
+    PA:= @A.FData;
+    PTmp:= @Tmp.FData;
+    Inc(PA, LUsed);
+    while LUsed > 0 do begin
+      Dec(PA);
+      PTmp^:= PA^;
+      Inc(PTmp);
+      Dec(LUsed);
+    end;
+    if R <> nil then TtfRecord.Release(R);
+    R:= Tmp;
+  end;
 end;
 
 class function TByteVector.CopyBytes1(A: PByteVector; var R: PByteVector;
@@ -791,6 +818,7 @@ var
   Tmp: PByteVector;
 
 begin
+// not needed now after TByteVector.AllocVector(Tmp, 0) sets Tmp:= @ZeroVector;
   if L = 0 then begin
     if A <> nil then TtfRecord.Release(A);
     A:= @ZeroVector;
@@ -800,7 +828,7 @@ begin
   Result:= TByteVector.AllocVector(Tmp, L);
   if Result = TF_S_OK then begin
     Move(P^, Tmp.FData, L);
-    Tmp.FUsed:= L;
+//    Tmp.FUsed:= L;
     if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;

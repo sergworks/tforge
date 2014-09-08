@@ -63,6 +63,7 @@
 			<DCCReference Include="..\..\Units\Client\tfHashes.pas"/>
 			<DCCReference Include="..\..\Units\Engine\tfHashServ.pas"/>
 			<DCCReference Include="..\..\Units\Engine\tfHMAC.pas"/>
+			<DCCReference Include="..\..\Units\Engine\tfSHA1.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

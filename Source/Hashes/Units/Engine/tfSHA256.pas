@@ -16,7 +16,7 @@ type
   TSHA256Alg = record
   private type
     TData = record
-      Value: TSHA256Digest;
+      Digest: TSHA256Digest;
       Block: array[0..63] of Byte;
       Count: UInt64;                 // number of bytes processed
     end;
@@ -75,7 +75,7 @@ begin
     P^.FVTable:= @SHA256VTable;
     P^.FRefCount:= 1;
     TSHA256Alg.Init(P);
-    if Inst <> nil then TtfRecord.Release(Inst);
+    if Inst <> nil then TSHA256Alg.Release(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except
@@ -98,8 +98,8 @@ var
   I: LongWord;
 
 begin
-  a:= FData.Value[0]; b:= FData.Value[1]; c:= FData.Value[2]; d:= FData.Value[3];
-  e:= FData.Value[4]; f:= FData.Value[5]; g:= FData.Value[6]; h:= FData.Value[7];
+  a:= FData.Digest[0]; b:= FData.Digest[1]; c:= FData.Digest[2]; d:= FData.Digest[3];
+  e:= FData.Digest[4]; f:= FData.Digest[5]; g:= FData.Digest[6]; h:= FData.Digest[7];
   Move(FData.Block, W, SizeOf(FData.Block));
 
   for I:= 0 to 15 do
@@ -559,14 +559,14 @@ begin
   a:= t1 + t2;
   e:= e + t1;
 
-  FData.Value[0]:= FData.Value[0] + a;
-  FData.Value[1]:= FData.Value[1] + b;
-  FData.Value[2]:= FData.Value[2] + c;
-  FData.Value[3]:= FData.Value[3] + d;
-  FData.Value[4]:= FData.Value[4] + e;
-  FData.Value[5]:= FData.Value[5] + f;
-  FData.Value[6]:= FData.Value[6] + g;
-  FData.Value[7]:= FData.Value[7] + h;
+  FData.Digest[0]:= FData.Digest[0] + a;
+  FData.Digest[1]:= FData.Digest[1] + b;
+  FData.Digest[2]:= FData.Digest[2] + c;
+  FData.Digest[3]:= FData.Digest[3] + d;
+  FData.Digest[4]:= FData.Digest[4] + e;
+  FData.Digest[5]:= FData.Digest[5] + f;
+  FData.Digest[6]:= FData.Digest[6] + g;
+  FData.Digest[7]:= FData.Digest[7] + h;
 
   FillChar(W, SizeOf(W), 0);
   FillChar(FData.Block, SizeOf(FData.Block), 0);
@@ -580,14 +580,14 @@ end;
 
 class procedure TSHA256Alg.Init(Inst: PSHA256Alg);
 begin
-  Inst.FData.Value[0]:= $6a09e667;
-  Inst.FData.Value[1]:= $bb67ae85;
-  Inst.FData.Value[2]:= $3c6ef372;
-  Inst.FData.Value[3]:= $a54ff53a;
-  Inst.FData.Value[4]:= $510e527f;
-  Inst.FData.Value[5]:= $9b05688c;
-  Inst.FData.Value[6]:= $1f83d9ab;
-  Inst.FData.Value[7]:= $5be0cd19;
+  Inst.FData.Digest[0]:= $6a09e667;
+  Inst.FData.Digest[1]:= $bb67ae85;
+  Inst.FData.Digest[2]:= $3c6ef372;
+  Inst.FData.Digest[3]:= $a54ff53a;
+  Inst.FData.Digest[4]:= $510e527f;
+  Inst.FData.Digest[5]:= $9b05688c;
+  Inst.FData.Digest[6]:= $1f83d9ab;
+  Inst.FData.Digest[7]:= $5be0cd19;
 
   FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
   Inst.FData.Count:= 0;
@@ -625,16 +625,16 @@ begin
   PLongWord(@Inst.FData.Block[60])^:= Swap32(LongWord(Inst.FData.Count));
   Inst.Compress;
 
-  Inst.FData.Value[0]:= Swap32(Inst.FData.Value[0]);
-  Inst.FData.Value[1]:= Swap32(Inst.FData.Value[1]);
-  Inst.FData.Value[2]:= Swap32(Inst.FData.Value[2]);
-  Inst.FData.Value[3]:= Swap32(Inst.FData.Value[3]);
-  Inst.FData.Value[4]:= Swap32(Inst.FData.Value[4]);
-  Inst.FData.Value[5]:= Swap32(Inst.FData.Value[5]);
-  Inst.FData.Value[6]:= Swap32(Inst.FData.Value[6]);
-  Inst.FData.Value[7]:= Swap32(Inst.FData.Value[7]);
+  Inst.FData.Digest[0]:= Swap32(Inst.FData.Digest[0]);
+  Inst.FData.Digest[1]:= Swap32(Inst.FData.Digest[1]);
+  Inst.FData.Digest[2]:= Swap32(Inst.FData.Digest[2]);
+  Inst.FData.Digest[3]:= Swap32(Inst.FData.Digest[3]);
+  Inst.FData.Digest[4]:= Swap32(Inst.FData.Digest[4]);
+  Inst.FData.Digest[5]:= Swap32(Inst.FData.Digest[5]);
+  Inst.FData.Digest[6]:= Swap32(Inst.FData.Digest[6]);
+  Inst.FData.Digest[7]:= Swap32(Inst.FData.Digest[7]);
 
-  Move(Inst.FData.Value, PDigest^, SizeOf(TSHA256Digest));
+  Move(Inst.FData.Digest, PDigest^, SizeOf(TSHA256Digest));
 
   Init(Inst);
 end;

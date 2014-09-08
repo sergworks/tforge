@@ -32,6 +32,7 @@ begin
     Acc:= Value;
 //writeln(DateTimeToStr(now));
     for I:= 0 to HashTableSize - 1 do begin
+if I < 5 then writeln(Acc.ToString);
       HashTable.Add(Acc, I);
       Acc:= (Acc * Factor) mod Modulo;
     end;
@@ -40,6 +41,7 @@ begin
     Factor:= BigInteger.ModPow(Base, HashTableSize, Modulo);
     Acc:= 1;
     for I:= 0 to HashTableSize - 1 do begin   // 2^20 - 1
+if I < 5 then writeln(Acc.ToString);
       if HashTable.ContainsKey(Acc) then begin
         Result:= I;
         Result:= HashTable[Acc] + Result * HashTableSize;

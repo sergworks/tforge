@@ -67,7 +67,7 @@ begin
     P^.FVTable:= @VTable;
     P^.FRefCount:= 1;
     P^.FValue:= 0;
-    if Inst <> nil then TtfRecord.Release(Inst);
+    if Inst <> nil then TJenkinsOneAlg.Release(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except

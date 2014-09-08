@@ -75,7 +75,7 @@ begin
     P^.FVTable:= @MD5VTable;
     P^.FRefCount:= 1;
     TMD5Alg.Init(P);
-    if Inst <> nil then TtfRecord.Release(Inst);
+    if Inst <> nil then TMD5Alg.Release(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except
@@ -228,13 +228,7 @@ begin
     Inc(Data, Cnt);
   end;
 end;
-(*
-function Swap32(Value: LongWord): LongWord;
-begin
-  Result:= ((Value and $FF) shl 24) or ((Value and $FF00) shl 8) or
-           ((Value and $FF0000) shr 8) or ((Value and $FF000000) shr 24);
-end;
-*)
+
 class procedure TMD5Alg.Done(Inst: PMD5Alg; PDigest: PMD5Digest);
 var
   Ofs: Integer;

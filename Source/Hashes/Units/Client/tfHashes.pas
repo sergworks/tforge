@@ -14,44 +14,47 @@ uses SysUtils, Classes, tfTypes, tfBytes, tfConsts, tfExceptions,
 
 type
   THash = record
+    class var FServer: IHashServer;
   private
     FAlgorithm: IHashAlgorithm;
-    class function Get(const HashName: string): THash; static;
   public
-    constructor Create(const AAlgorithm: IHashAlgorithm);
+    constructor Create(const HashAlg: IHashAlgorithm);
     procedure Free;
     function IsAssigned: Boolean;
 
     procedure Init; inline;
     procedure Update(const Data; DataSize: LongWord); inline;
     procedure Done(var Digest); inline;
-    function DigestSize: LongInt; inline;
     procedure Purge; inline;
+    function DigestSize: LongInt; inline;
+    function BlockSize: LongInt; inline;
+
     function Digest: ByteArray;
     function Copy: THash;
 
     class function CRC32: THash; static;
-//    class function JenkinsOne: THash; static;
+    class function JenkinsOne: THash; static;
     class function MD5: THash; static;
+    class function SHA1: THash; static;
     class function SHA256: THash; static;
 
-    class function GetInterface(const HashName: string): IHashAlgorithm; static;
-    class function Algorithm(Index: Integer): string; static;
+    class function ByName(const HashName: string): THash; static;
+    class function ByAlgID(AlgID: Integer): THash; static;
+    class function HashName(Index: Integer): string; static;
     class function Count: Integer; static;
 
-    class function HashMemory(const HashName: string;
-                   const Memory; MemorySize: LongWord): THash; static;
-    class function HashBytes(const HashName: string;
-                   const Bytes: ByteArray): THash; static;
-    class function HashStream(const HashName: string;
-                   Stream: TStream; BufSize: Integer = 0): THash; static;
-    class function HashFile(const HashName: string;
-                   const AFileName: string; BufSize: Integer = 0): THash; static;
+    class operator Explicit(const Name: string): THash;
+    class operator Explicit(AlgID: Integer): THash;
 
-    class function DeriveKey(const HashName: string;
-                   const Password, Salt: ByteArray;
-                   Rounds, DKLen: Integer): ByteArray; static;
-    class property GetHash[const HashName: string]: THash read Get; default;
+    function UpdateData(const Data; DataSize: LongWord): THash;
+    function UpdateBytes(const Bytes: ByteArray): THash;
+    function UpdateStream(Stream: TStream; BufSize: Integer = 0): THash;
+    function UpdateFile(const AFileName: string; BufSize: Integer = 0): THash;
+
+    class function DeriveKey(const Hash: THash; const Password, Salt: ByteArray;
+                       Rounds, DKLen: Integer): ByteArray; static;
+
+    property Algorithm: IHashAlgorithm read FAlgorithm;
   end;
 
 type
@@ -72,116 +75,9 @@ end;
 
 { THash }
 
-type
-  THashAlgGetter = function(var A: IHashAlgorithm): TF_RESULT;
-
-class function THash.Algorithm(Index: Integer): string;
+constructor THash.Create(const HashAlg: IHashAlgorithm);
 begin
-
-end;
-
-function THash.Copy: THash;
-begin
-
-end;
-
-class function THash.Count: Integer;
-var
-  Inst: IHashServer;
-
-begin
-  HResCheck(GetHashServer(Inst));
-  Result:= Inst.GetCount;
-end;
-
-class function THash.CRC32: THash;
-begin
-  Result:= Get('CRC32');
-end;
-
-class function THash.MD5: THash;
-begin
-  Result:= Get('MD5');
-end;
-
-class function THash.SHA256: THash;
-begin
-  Result:= Get('SHA256');
-end;
-(*
-type
-  GetAlgFunc = function(var Alg: IHashAlgorithm): TF_RESULT;
-
-  TAlgData = record
-    Name: string;
-    Getter: GetAlgFunc;
-  end;
-
-const
-  AlgList: array[0..2] of TAlgData = (
-    (Name: 'CRC32'; Getter: GetCRC32Algorithm),
-    (Name: 'MD5'; Getter: GetMD5Algorithm),
-    (Name: 'SHA256'; Getter: GetSHA256Algorithm)
-  );
-
-class function HashAlg.Get(const AName: string): IHashAlgorithm;
-var
-  UName: string;
-  I: Integer;
-
-
-begin
-  Result:= nil;
-  UName:= UpperCase(AName);
-  I:= 0;
-  while I < Length(AlgList) do begin
-    if AlgList[I].Name = UName then begin
-      if AlgList[I].Getter(Result) <> TF_S_OK then OutOfMemoryError;
-      Exit;
-    end;
-    Inc(I);
-  end;
-  raise ENotSupportedException.CreateResFmt(@SAlgNotSupported, [AName]);
-end;
-
-class function HashAlg.Name(Index: Integer): string;
-begin
-  Result:= '';
-  if (Index >= 0) and (Index < Length(AlgList)) then
-    Result:= AlgList[Index].Name
-  else
-    raise EArgumentOutOfRangeException.CreateResFmt(@SIndexOutOfRange, [Index]);
-end;
-
-class function HashAlg.Count: Integer;
-begin
-  Result:= Length(AlgList);
-end;
-*)
-constructor THash.Create(const AAlgorithm: IHashAlgorithm);
-begin
-
-end;
-
-class function THash.DeriveKey(const HashName: string; const Password,
-  Salt: ByteArray; Rounds, DKLen: Integer): ByteArray;
-begin
-
-end;
-
-function THash.Digest: ByteArray;
-begin
-
-end;
-
-function THash.DigestSize: LongInt;
-begin
-
-end;
-
-procedure THash.Done(var Digest);
-begin
-
+  FAlgorithm:= HashAlg;
 end;
 
 procedure THash.Free;
@@ -189,42 +85,9 @@ begin
   FAlgorithm:= nil;
 end;
 
-class function THash.Get(const HashName: string): THash;
-var
-  Inst: IHashServer;
-
+function THash.IsAssigned: Boolean;
 begin
-  HResCheck(GetHashServer(Inst));
-  HResCheck(Inst.GetByName(Pointer(HashName), SizeOf(Char), Result.FAlgorithm));
-end;
-
-class function THash.GetInterface(const HashName: string): IHashAlgorithm;
-begin
-
-end;
-
-class function THash.HashBytes(const HashName: string;
-  const Bytes: ByteArray): THash;
-begin
-
-end;
-
-class function THash.HashFile(const HashName, AFileName: string;
-  BufSize: Integer): THash;
-begin
-
-end;
-
-class function THash.HashMemory(const HashName: string; const Memory;
-  MemorySize: LongWord): THash;
-begin
-
-end;
-
-class function THash.HashStream(const HashName: string; Stream: TStream;
-  BufSize: Integer): THash;
-begin
-
+  Result:= FAlgorithm <> nil;
 end;
 
 procedure THash.Init;
@@ -232,9 +95,24 @@ begin
   FAlgorithm.Init;
 end;
 
-function THash.IsAssigned: Boolean;
+procedure THash.Update(const Data; DataSize: LongWord);
 begin
-  Result:= FAlgorithm <> nil;
+  FAlgorithm.Update(@Data, DataSize);
+end;
+
+procedure THash.Done(var Digest);
+begin
+  FAlgorithm.Done(@Digest);
+end;
+
+class operator THash.Explicit(const Name: string): THash;
+begin
+  Result:= ByName(Name);
+end;
+
+class operator THash.Explicit(AlgID: Integer): THash;
+begin
+  Result:= ByAlgID(AlgID);
 end;
 
 procedure THash.Purge;
@@ -242,9 +120,121 @@ begin
   FAlgorithm.Purge;
 end;
 
-procedure THash.Update(const Data; DataSize: LongWord);
+function THash.DigestSize: LongInt;
+begin
+  Result:= FAlgorithm.GetDigestSize;
+end;
+
+function THash.BlockSize: LongInt;
+begin
+  Result:= FAlgorithm.GetBlockSize;
+end;
+
+
+function THash.Digest: ByteArray;
+begin
+  Result:= ByteArray.Allocate(DigestSize);
+  FAlgorithm.Done(Result.GetRawData);
+end;
+
+function THash.Copy: THash;
+begin
+  HResCheck(FAlgorithm.Duplicate(Result.FAlgorithm));
+end;
+
+class function THash.Count: Integer;
+begin
+//  HResCheck(GetHashServer(Inst));
+  Result:= FServer.GetCount;
+end;
+
+class function THash.CRC32: THash;
+begin
+//  Result:= Get('CRC32');
+  Result:= ByAlgID(TF_ALG_CRC32);
+end;
+
+class function THash.MD5: THash;
+begin
+//  Result:= Get('MD5');
+  Result:= ByAlgID(TF_ALG_MD5);
+end;
+
+class function THash.SHA1: THash;
+begin
+  Result:= ByAlgID(TF_ALG_SHA1);
+end;
+
+class function THash.SHA256: THash;
+begin
+//  Result:= Get('SHA256');
+  Result:= ByAlgID(TF_ALG_SHA256);
+end;
+
+class function THash.DeriveKey(const Hash: THash; const Password,
+  Salt: ByteArray; Rounds, DKLen: Integer): ByteArray;
+begin
+  // todo
+end;
+
+class function THash.ByName(const HashName: string): THash;
+begin
+//  HResCheck(GetHashServer(Inst));
+  HResCheck(FServer.GetByName(Pointer(HashName), SizeOf(Char), Result.FAlgorithm));
+end;
+
+class function THash.ByAlgID(AlgID: Integer): THash;
+begin
+  HResCheck(FServer.GetByAlgID(AlgID, Result.FAlgorithm));
+end;
+
+class function THash.HashName(Index: Integer): string;
+var
+  Bytes: IBytes;
+  I, L: Integer;
+  P: PByte;
+
+begin
+  HResCheck(FServer.GetName(Index, Bytes));
+  L:= Bytes.GetLen;
+  P:= Bytes.GetRawData;
+  SetLength(Result, L);
+  for I:= 1 to L do begin
+    Result[I]:= Char(P^);
+    Inc(P);
+  end;
+end;
+
+function THash.UpdateData(const Data; DataSize: LongWord): THash;
+begin
+  FAlgorithm.Update(@Data, DataSize);
+  Result.FAlgorithm:= FAlgorithm;
+end;
+
+function THash.UpdateFile(const AFileName: string; BufSize: Integer): THash;
 begin
 
 end;
 
+function THash.UpdateStream(Stream: TStream; BufSize: Integer): THash;
+begin
+
+end;
+
+function THash.UpdateBytes(const Bytes: ByteArray): THash;
+begin
+  Result:= UpdateData(Bytes.RawData^, Bytes.Len);
+end;
+
+
+class function THash.JenkinsOne: THash;
+begin
+
+end;
+
+{$IFNDEF TFL_DLL}
+initialization
+  GetHashServer(THash.FServer);
+
+{$ENDIF}
 end.
