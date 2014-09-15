@@ -73,7 +73,6 @@ type
     class function OrBytes(const A, B: ByteArray): ByteArray; static;
     class function XorBytes(const A, B: ByteArray): ByteArray; static;
 
-    class operator Explicit(const Value: ByteArray): Pointer;
     class operator Explicit(const Value: Byte): ByteArray;
     class operator Implicit(const Value: ByteArray): TBytes;
     class operator Implicit(const Value: TBytes): ByteArray;
@@ -84,11 +83,11 @@ type
     class operator Equal(const A: ByteArray; const B: Byte): Boolean;
     class operator Equal(const A: Byte; const B: ByteArray): Boolean;
 
-    class operator NotEqual(const A, B: ByteArray): Boolean; inline;
-    class operator NotEqual(const A: ByteArray; const B: TBytes): Boolean; inline;
-    class operator NotEqual(const A: TBytes; const B: ByteArray): Boolean; inline;
-    class operator NotEqual(const A: ByteArray; const B: Byte): Boolean; inline;
-    class operator NotEqual(const A: Byte; const B: ByteArray): Boolean; inline;
+    class operator NotEqual(const A, B: ByteArray): Boolean;
+    class operator NotEqual(const A: ByteArray; const B: TBytes): Boolean;
+    class operator NotEqual(const A: TBytes; const B: ByteArray): Boolean;
+    class operator NotEqual(const A: ByteArray; const B: Byte): Boolean;
+    class operator NotEqual(const A: Byte; const B: ByteArray): Boolean;
 
     class operator Add(const A, B: ByteArray): ByteArray;
     class operator Add(const A: ByteArray; const B: TBytes): ByteArray;
@@ -108,31 +107,42 @@ type
 
 implementation
 
+type
+  PByteArrayRec = ^TByteArrayRec;
+  PPByteArrayRec = ^PByteArrayRec;
+  TByteArrayRec = record
+    FVTable: Pointer;
+    FRefCount: Integer;
+    FCapacity: Integer;         // number of bytes allocated
+    FUsed: Integer;             // number of bytes used
+    FData: array[0..0] of Byte;
+  end;
+
 procedure ByteArrayError(ACode: TF_RESULT; const Msg: string = '');
 begin
   raise EByteArrayError.Create(ACode, Msg);
 end;
 
-procedure HResCheck(Value: TF_RESULT); inline;
+procedure HResCheck(ACode: TF_RESULT); inline;
 begin
-  if Value <> TF_S_OK then
-    ByteArrayError(Value);
+  if ACode <> TF_S_OK then
+    raise EByteArrayError.Create(ACode, '');
 end;
 
 { ByteArray }
 
 function ByteArray.GetByte(Index: Integer): Byte;
 begin
-  if Cardinal(Index) < Cardinal(FBytes.GetLen) then
-    Result:= FBytes.GetRawData[Index]
+  if Cardinal(Index) < Cardinal(GetLen) then
+    Result:= GetRawData[Index]
   else
     raise EArgumentOutOfRangeException.CreateResFmt(@SIndexOutOfRange, [Index]);
 end;
 
 procedure ByteArray.SetByte(Index: Integer; const Value: Byte);
 begin
-  if Cardinal(Index) < Cardinal(FBytes.GetLen) then
-    FBytes.GetRawData[Index]:= Value
+  if Cardinal(Index) < Cardinal(GetLen) then
+    GetRawData[Index]:= Value
   else
     raise EArgumentOutOfRangeException.CreateResFmt(@SIndexOutOfRange, [Index]);
 end;
@@ -149,8 +159,8 @@ end;
 
 function ByteArray.GetEnumerator: IBytesEnumerator;
 begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.GetEnumerator(Result));
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.GetEnum(Result));
 {$ELSE}
   HResCheck(TByteVector.GetEnum(PByteVector(FBytes), PByteVectorEnum(Result)));
 {$ENDIF}
@@ -158,7 +168,7 @@ end;
 
 function ByteArray.GetHashCode: Integer;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= FBytes.GetHashCode;
 {$ELSE}
   Result:= TByteVector.GetHashCode(PByteVector(FBytes));
@@ -167,16 +177,20 @@ end;
 
 function ByteArray.GetLen: Integer;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_HACK}
+  Result:= PPByteArrayRec(@Self)^^.FUsed;
+{$ELSE}
+{$IFDEF TFL_INTFCALL}
   Result:= FBytes.GetLen;
 {$ELSE}
   Result:= TByteVector.GetLen(PByteVector(FBytes));
+{$ENDIF}
 {$ENDIF}
 end;
 
 procedure ByteArray.SetLen(Value: Integer);
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.SetLen(Value));
 {$ELSE}
   HResCheck(TByteVector.SetLen(PByteVector(FBytes), Value));
@@ -185,177 +199,14 @@ end;
 
 function ByteArray.GetRawData: PByte;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_HACK}
+  Result:= @PPByteArrayRec(@Self)^^.FData;
+{$ELSE}
+{$IFDEF TFL_INTFCALL}
   Result:= FBytes.GetRawData;
 {$ELSE}
   Result:= TByteVector.GetRawData(PByteVector(FBytes));
 {$ENDIF}
-end;
-
-class operator ByteArray.Implicit(const Value: ByteArray): TBytes;
-var
-  L: Integer;
-
-begin
-  Result:= nil;
-
-{$IFDEF TFL_DLL}
-  L:= Value.FBytes.GetLen;
-  if L > 0 then begin
-    SetLength(Result, L);
-    Move(Value.FBytes.GetRawData^, Pointer(Result)^, L);
-  end;
-{$ELSE}
-  L:= TByteVector.GetLen(PByteVector(Value.FBytes));
-  if L > 0 then begin
-    SetLength(Result, L);
-    Move(TByteVector.GetRawData(PByteVector(Value.FBytes))^, Pointer(Result)^, L);
-  end;
-{$ENDIF}
-end;
-
-class operator ByteArray.Implicit(const Value: TBytes): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(Value), Length(Value)));
-{$ELSE}
-  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(Value), Length(Value)));
-{$ENDIF}
-end;
-
-class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.InsertByte(I, B, Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertByte(PByteVector(A.FBytes), I, B, PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertBytes(PByteVector(A.FBytes), I, PByteVector(B.FBytes),
-                                    PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertPByte(PByteVector(A.FBytes), I, Pointer(B), Length(B),
-                        PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-function ByteArray.Insert(I: Cardinal; B: Byte): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.InsertByte(I, B, Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertByte(PByteVector(FBytes), I, B, PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-function ByteArray.Insert(I: Cardinal; B: ByteArray): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertBytes(PByteVector(FBytes), I, PByteVector(B.FBytes),
-                                    PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-function ByteArray.Insert(I: Cardinal; B: TBytes): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertPByte(PByteVector(FBytes), I, Pointer(B), Length(B),
-                        PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-class function ByteArray.Remove(const A: ByteArray; I: Cardinal): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.RemoveBytes1(Result.FBytes), I);
-{$ELSE}
-  HResCheck(TByteVector.RemoveBytes1(PByteVector(A.FBytes),
-                                     PByteVector(Result.FBytes), I));
-{$ENDIF}
-end;
-
-class function ByteArray.Remove(const A: ByteArray; I, L: Cardinal): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.RemoveBytes2(Result.FBytes, I, L));
-{$ELSE}
-  HResCheck(TByteVector.RemoveBytes2(PByteVector(A.FBytes),
-                        PByteVector(Result.FBytes), I, L));
-{$ENDIF}
-end;
-
-function ByteArray.Remove(I: Cardinal): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.RemoveBytes1(Result.FBytes), I);
-{$ELSE}
-  HResCheck(TByteVector.RemoveBytes1(PByteVector(FBytes),
-                                     PByteVector(Result.FBytes), I));
-{$ENDIF}
-end;
-
-function ByteArray.Remove(I, L: Cardinal): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.RemoveBytes2(Result.FBytes, I, L));
-{$ELSE}
-  HResCheck(TByteVector.RemoveBytes2(PByteVector(FBytes),
-                        PByteVector(Result.FBytes), I, L));
-{$ENDIF}
-end;
-
-class function ByteArray.Reverse(const A: ByteArray): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(A.FBytes.ReverseBytes(Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.ReverseBytes(PByteVector(A.FBytes),
-                                     PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-function ByteArray.Reverse: ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(FBytes.ReverseBytes(Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.ReverseBytes(PByteVector(FBytes),
-                                     PByteVector(Result.FBytes)));
-{$ENDIF}
-end;
-
-class operator ByteArray.Explicit(const Value: Byte): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromByte(Result.FBytes, Value));
-{$ELSE}
-  HResCheck(ByteVectorFromByte(PByteVector(Result.FBytes), Value));
-{$ENDIF}
-end;
-
-class operator ByteArray.Explicit(const Value: ByteArray): Pointer;
-begin
-{$IFDEF TFL_DLL}
-  Result:= Value.FBytes.GetRawData;
-{$ELSE}
-  Result:= TByteVector.GetRawData(PByteVector(Value.FBytes));
 {$ENDIF}
 end;
 
@@ -375,6 +226,50 @@ begin
 {$ELSE}
   HResCheck(ByteVectorReAlloc(PByteVector(Result.FBytes), ASize));
 {$ENDIF}
+end;
+
+class function ByteArray.FromText(const S: string): ByteArray;
+var
+  S8: UTF8String;
+
+begin
+  S8:= UTF8String(S);
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S8), Length(S8)));
+{$ELSE}
+  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S8), Length(S8)));
+{$ENDIF}
+end;
+
+class function ByteArray.FromAnsi(const S: RawByteString): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S), Length(S)));
+{$ELSE}
+  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S), Length(S)));
+{$ENDIF}
+end;
+
+class function ByteArray.ParseHex(const S: string): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPCharHex(Result.FBytes, Pointer(S), Length(S), SizeOf(Char)));
+{$ELSE}
+  HResCheck(ByteVectorFromPCharHex(PByteVector(Result.FBytes),
+                                   Pointer(S), Length(S), SizeOf(Char)));
+{$ENDIF}
+end;
+
+class function ByteArray.TryParseHex(const S: string; var R: ByteArray): Boolean;
+begin
+  Result:= (
+{$IFDEF TFL_DLL}
+    ByteVectorFromPCharHex(R.FBytes, Pointer(S), Length(S), SizeOf(Char))
+{$ELSE}
+    ByteVectorFromPCharHex(PByteVector(R.FBytes),
+                                   Pointer(S), Length(S), SizeOf(Char))
+{$ENDIF}
+      = TF_S_OK);
 end;
 
 class function ByteArray.ParseBitString(const S: string; ABitLen: Integer): ByteArray;
@@ -413,35 +308,168 @@ begin
   end;
 end;
 
-class function ByteArray.ParseHex(const S: string): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromPCharHex(Result.FBytes, Pointer(S), Length(S), SizeOf(Char)));
-{$ELSE}
-  HResCheck(ByteVectorFromPCharHex(PByteVector(Result.FBytes),
-                                   Pointer(S), Length(S), SizeOf(Char)));
-{$ENDIF}
-end;
-
-class function ByteArray.FromAnsi(const S: RawByteString): ByteArray;
-begin
-{$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S), Length(S)));
-{$ELSE}
-  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S), Length(S)));
-{$ENDIF}
-end;
-
-class function ByteArray.FromText(const S: string): ByteArray;
+class operator ByteArray.Implicit(const Value: ByteArray): TBytes;
 var
-  S8: UTF8String;
+  L: Integer;
 
 begin
-  S8:= UTF8String(S);
-{$IFDEF TFL_DLL}
-  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S8), Length(S8)));
+  Result:= nil;
+{$IFDEF TFL_HACK}
+  L:= PPByteArrayRec(@Value)^^.FUsed;
+  if L > 0 then begin
+    SetLength(Result, L);
+    Move(PPByteArrayRec(@Value)^^.FData, Pointer(Result)^, L);
+  end;
 {$ELSE}
-  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S8), Length(S8)));
+{$IFDEF TFL_INTFCALL}
+  L:= Value.FBytes.GetLen;
+  if L > 0 then begin
+    SetLength(Result, L);
+    Move(Value.FBytes.GetRawData^, Pointer(Result)^, L);
+  end;
+{$ELSE}
+  L:= TByteVector.GetLen(PByteVector(Value.FBytes));
+  if L > 0 then begin
+    SetLength(Result, L);
+    Move(TByteVector.GetRawData(PByteVector(Value.FBytes))^, Pointer(Result)^, L);
+  end;
+{$ENDIF}
+{$ENDIF}
+end;
+
+class operator ByteArray.Implicit(const Value: TBytes): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(Value), Length(Value)));
+{$ELSE}
+  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(Value), Length(Value)));
+{$ENDIF}
+end;
+
+class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.InsertByte(I, B, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertByte(PByteVector(A.FBytes), I, B, PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertBytes(PByteVector(A.FBytes), I, PByteVector(B.FBytes),
+                                    PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertPByte(PByteVector(A.FBytes), I, Pointer(B), Length(B),
+                        PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+function ByteArray.Insert(I: Cardinal; B: Byte): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.InsertByte(I, B, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertByte(PByteVector(FBytes), I, B, PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+function ByteArray.Insert(I: Cardinal; B: ByteArray): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertBytes(PByteVector(FBytes), I, PByteVector(B.FBytes),
+                                    PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+function ByteArray.Insert(I: Cardinal; B: TBytes): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertPByte(PByteVector(FBytes), I, Pointer(B), Length(B),
+                        PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class function ByteArray.Remove(const A: ByteArray; I: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.RemoveBytes1(Result.FBytes), I);
+{$ELSE}
+  HResCheck(TByteVector.RemoveBytes1(PByteVector(A.FBytes),
+                                     PByteVector(Result.FBytes), I));
+{$ENDIF}
+end;
+
+class function ByteArray.Remove(const A: ByteArray; I, L: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.RemoveBytes2(Result.FBytes, I, L));
+{$ELSE}
+  HResCheck(TByteVector.RemoveBytes2(PByteVector(A.FBytes),
+                        PByteVector(Result.FBytes), I, L));
+{$ENDIF}
+end;
+
+function ByteArray.Remove(I: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.RemoveBytes1(Result.FBytes), I);
+{$ELSE}
+  HResCheck(TByteVector.RemoveBytes1(PByteVector(FBytes),
+                                     PByteVector(Result.FBytes), I));
+{$ENDIF}
+end;
+
+function ByteArray.Remove(I, L: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.RemoveBytes2(Result.FBytes, I, L));
+{$ELSE}
+  HResCheck(TByteVector.RemoveBytes2(PByteVector(FBytes),
+                        PByteVector(Result.FBytes), I, L));
+{$ENDIF}
+end;
+
+class function ByteArray.Reverse(const A: ByteArray): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.ReverseBytes(Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ReverseBytes(PByteVector(A.FBytes),
+                                     PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+function ByteArray.Reverse: ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.ReverseBytes(Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ReverseBytes(PByteVector(FBytes),
+                                     PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class operator ByteArray.Explicit(const Value: Byte): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromByte(Result.FBytes, Value));
+{$ELSE}
+  HResCheck(ByteVectorFromByte(PByteVector(Result.FBytes), Value));
 {$ENDIF}
 end;
 
@@ -490,7 +518,7 @@ begin
   Result:= '';
   L:= GetLen;
   if L = 0 then Exit;
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.ToDec(Tmp));
 {$ELSE}
   HResCheck(TByteVector.ToDec(PByteVector(FBytes), PByteVector(Tmp)));
@@ -527,21 +555,9 @@ begin
   end;
 end;
 
-class function ByteArray.TryParseHex(const S: string; var R: ByteArray): Boolean;
-begin
-  Result:= (
-{$IFDEF TFL_DLL}
-    ByteVectorFromPCharHex(R.FBytes, Pointer(S), Length(S), SizeOf(Char))
-{$ELSE}
-    ByteVectorFromPCharHex(PByteVector(R.FBytes),
-                                   Pointer(S), Length(S), SizeOf(Char))
-{$ENDIF}
-      = TF_S_OK);
-end;
-
 class operator ByteArray.Add(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.ConcatBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.ConcatBytes(PByteVector(A.FBytes),
@@ -551,7 +567,7 @@ end;
 
 class operator ByteArray.Add(const A: ByteArray; const B: TBytes): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.AppendPByte(Pointer(B), Length(B), Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AppendPByte(PByteVector(A.FBytes),
@@ -561,7 +577,7 @@ end;
 
 class operator ByteArray.Add(const A: TBytes; const B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FBytes.InsertPByte(0, Pointer(A), Length(A), Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.InsertPByte(PByteVector(B.FBytes), 0,
@@ -571,7 +587,7 @@ end;
 
 class operator ByteArray.Add(const A: ByteArray; const B: Byte): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.AppendByte(B, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AppendByte(PByteVector(A.FBytes),
@@ -581,7 +597,7 @@ end;
 
 class operator ByteArray.Add(const A: Byte; const B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FBytes.InsertByte(0, A, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.InsertByte(PByteVector(B.FBytes), 0,
@@ -591,7 +607,7 @@ end;
 
 class function ByteArray.AddBytes(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.AddBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AddBytes(PByteVector(A.FBytes),
@@ -601,7 +617,7 @@ end;
 
 class function ByteArray.SubBytes(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.SubBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.SubBytes(PByteVector(A.FBytes),
@@ -611,7 +627,7 @@ end;
 
 class function ByteArray.AndBytes(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.AndBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AndBytes(PByteVector(A.FBytes),
@@ -621,7 +637,7 @@ end;
 
 class function ByteArray.OrBytes(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.OrBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.OrBytes(PByteVector(A.FBytes),
@@ -631,7 +647,7 @@ end;
 
 class function ByteArray.XorBytes(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.XorBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.XorBytes(PByteVector(A.FBytes),
@@ -641,7 +657,7 @@ end;
 
 class operator ByteArray.BitwiseAnd(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.AndBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.AndBytes(PByteVector(A.FBytes),
@@ -651,7 +667,7 @@ end;
 
 class operator ByteArray.BitwiseOr(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.OrBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.OrBytes(PByteVector(A.FBytes),
@@ -661,7 +677,7 @@ end;
 
 class operator ByteArray.BitwiseXor(const A, B: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.XorBytes(B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.XorBytes(PByteVector(A.FBytes),
@@ -671,7 +687,7 @@ end;
 
 class operator ByteArray.Equal(const A, B: ByteArray): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FBytes.EqualBytes(B.FBytes);
 {$ELSE}
   Result:= TByteVector.EqualBytes(PByteVector(A.FBytes), PByteVector(B.FBytes));
@@ -680,7 +696,7 @@ end;
 
 class operator ByteArray.Equal(const A: ByteArray; const B: TBytes): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FBytes.EqualToPByte(Pointer(B), Length(B));
 {$ELSE}
   Result:= TByteVector.EqualToPByte(PByteVector(A.FBytes), Pointer(B), Length(B));
@@ -689,7 +705,7 @@ end;
 
 class operator ByteArray.Equal(const A: TBytes; const B: ByteArray): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= B.FBytes.EqualToPByte(Pointer(A), Length(A));
 {$ELSE}
   Result:= TByteVector.EqualToPByte(PByteVector(B.FBytes), Pointer(A), Length(A));
@@ -698,7 +714,7 @@ end;
 
 class operator ByteArray.Equal(const A: ByteArray; const B: Byte): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FBytes.EqualToByte(B);
 {$ELSE}
   Result:= TByteVector.EqualToByte(PByteVector(A.FBytes), B);
@@ -707,7 +723,7 @@ end;
 
 class operator ByteArray.Equal(const A: Byte; const B: ByteArray): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= B.FBytes.EqualToByte(A);
 {$ELSE}
   Result:= TByteVector.EqualToByte(PByteVector(B.FBytes), A);
@@ -716,7 +732,7 @@ end;
 
 class operator ByteArray.NotEqual(const A, B: ByteArray): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= not A.FBytes.EqualBytes(B.FBytes);
 {$ELSE}
   Result:= not TByteVector.EqualBytes(PByteVector(A.FBytes), PByteVector(B.FBytes));
@@ -725,7 +741,7 @@ end;
 
 class operator ByteArray.NotEqual(const A: ByteArray; const B: TBytes): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= not A.FBytes.EqualToPByte(Pointer(B), Length(B));
 {$ELSE}
   Result:= not TByteVector.EqualToPByte(PByteVector(A.FBytes), Pointer(B), Length(B));
@@ -734,7 +750,7 @@ end;
 
 class operator ByteArray.NotEqual(const A: TBytes; const B: ByteArray): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= not B.FBytes.EqualToPByte(Pointer(A), Length(A));
 {$ELSE}
   Result:= not TByteVector.EqualToPByte(PByteVector(B.FBytes), Pointer(A), Length(A));
@@ -743,7 +759,7 @@ end;
 
 class operator ByteArray.NotEqual(const A: ByteArray; const B: Byte): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= not A.FBytes.EqualToByte(B);
 {$ELSE}
   Result:= not TByteVector.EqualToByte(PByteVector(A.FBytes), B);
@@ -752,7 +768,7 @@ end;
 
 class operator ByteArray.NotEqual(const A: Byte; const B: ByteArray): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= not B.FBytes.EqualToByte(A);
 {$ELSE}
   Result:= not TByteVector.EqualToByte(PByteVector(B.FBytes), A);
@@ -761,7 +777,7 @@ end;
 
 class function ByteArray.Copy(const A: ByteArray): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.CopyBytes(Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.CopyBytes(PByteVector(A.FBytes),
@@ -771,7 +787,7 @@ end;
 
 class function ByteArray.Copy(const A: ByteArray; I: Cardinal): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.CopyBytes1(Result.FBytes), I);
 {$ELSE}
   HResCheck(TByteVector.CopyBytes1(PByteVector(A.FBytes),
@@ -781,7 +797,7 @@ end;
 
 class function ByteArray.Copy(const A: ByteArray; I, L: Cardinal): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FBytes.CopyBytes2(Result.FBytes, I, L));
 {$ELSE}
   HResCheck(TByteVector.CopyBytes2(PByteVector(A.FBytes),
@@ -791,7 +807,7 @@ end;
 
 function ByteArray.Copy: ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.CopyBytes(Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.CopyBytes(PByteVector(FBytes),
@@ -801,7 +817,7 @@ end;
 
 function ByteArray.Copy(I: Cardinal): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.CopyBytes1(Result.FBytes), I);
 {$ELSE}
   HResCheck(TByteVector.CopyBytes1(PByteVector(FBytes),
@@ -811,7 +827,7 @@ end;
 
 function ByteArray.Copy(I, L: Cardinal): ByteArray;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.CopyBytes2(Result.FBytes, I, L));
 {$ELSE}
   HResCheck(TByteVector.CopyBytes2(PByteVector(FBytes),

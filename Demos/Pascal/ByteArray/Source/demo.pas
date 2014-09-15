@@ -1,9 +1,17 @@
-program ByteArrDemo;
+unit Demo;
 
-{$APPTYPE CONSOLE}
+{$IFDEF FPC}
+{$mode delphi}
+{$ENDIF}
+
+interface
 
 uses
-  SysUtils, tfBytes;
+  Classes, SysUtils, tfBytes;
+
+procedure RunDemo;
+
+implementation
 
 procedure RunDemo;
 var
@@ -16,9 +24,18 @@ var
 begin
 // initialization examples
   A1:= ByteArray(1);
+{$IFDEF FPC}
+// FPC 2.6 does not support array constructors
+  A2:= ByteArray.Allocate(3);
+  A2[0]:= 2;
+  A2[1]:= 3;
+  A2[2]:= 4;
+{$ELSE}
   A2:= TBytes.Create(2, 3, 4);
-  Writeln('A1 = ', A1.ToString);
-  Writeln('A2 = ', A2.ToString);
+{$ENDIF}
+
+  Writeln('A1 = ', A1.ToString, ';  Hash: ', IntToHex(A1.HashCode, 8), ';  Len: ', A1.Len);
+  Writeln('A2 = ', A2.ToString, ';  Hash: ', IntToHex(A2.HashCode, 8), ';  Len: ', A2.Len);
 
 // concatenation
   A3:= A1 + A2;
@@ -39,7 +56,7 @@ begin
   Writeln('Sum of elements = ', Sum);
 
 // fast access to array elements:
-  P:= PByte(A3);
+  P:= A3.RawData;
   L:= A3.Len;
   Sum:= 0;
   while (L > 0) do begin
@@ -58,13 +75,5 @@ begin
 
 end;
 
-begin
-  ReportMemoryLeaksOnShutdown:= True;
-  try
-    RunDemo;
-  except
-    on E: Exception do
-      Writeln(E.ClassName, ': ', E.Message);
-  end;
-  Readln;
 end.
+

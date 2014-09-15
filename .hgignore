@@ -24,3 +24,5 @@ dunit.ini
 *.lps
 *.layout
 *.depend
+*.rst
+*.save

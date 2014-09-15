@@ -78,7 +78,7 @@ begin
 end;
 
 function tfDecrement(var Value: Integer): Integer;
-asm
+begin
   Result:= Value - 1;
   Value:= Result;
 end;

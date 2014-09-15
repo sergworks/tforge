@@ -37,6 +37,14 @@ const
 {$IFDEF FPC}
 type
   TBytes = array of Byte;
+
+{$IF FPC_VERSION = 2}
+  {$IF FPC_RELEASE <= 6}
+type
+  RawByteString = AnsiString;
+  {$IFEND}
+{$IFEND}
+
 {$ENDIF}
 
 type
@@ -307,9 +315,10 @@ const
 type
                                   // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;
-  TMD5Digest = record
+  TMD5Digest = array[0..3] of LongWord;
+{  TMD5Digest = record
     A, B, C, D: LongWord;
-  end;
+  end;}
                                   // 160-bit SHA256 digest
   PSHA1Digest = ^TSHA1Digest;
   TSHA1Digest = array[0..4] of LongWord;

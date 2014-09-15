@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2013         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
 {$IFDEF FPC}
@@ -45,8 +45,16 @@
   {$ENDIF}
 {$ENDIF}
 
+{$IFNDEF TFL_INTFCALL}
+  {$IFDEF TFL_DLL}
+    {$DEFINE TFL_INTFCALL}
+  {$ENDIF}
+{$ENDIF}
+
+{$DEFINE TFL_HACK}
+
 // Enable logging
-{$DEFINE TFL_LOG}
+{.$DEFINE TFL_LOG}
 
 // -----------------------------------------------------
 

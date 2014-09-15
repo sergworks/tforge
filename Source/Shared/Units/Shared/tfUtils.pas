@@ -5,6 +5,8 @@
 
 unit tfUtils;
 
+{$I TFL.inc}
+
 interface
 
 const CRC32Table: array[0..255] of LongWord = (
