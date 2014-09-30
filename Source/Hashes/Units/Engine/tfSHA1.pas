@@ -27,7 +27,7 @@ type
 
     procedure Compress;
   public
-    class function Release(Inst: PSHA1Alg): Integer; stdcall; static;
+//    class function Release(Inst: PSHA1Alg): Integer; stdcall; static;
     class procedure Init(Inst: PSHA1Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PSHA1Alg; Data: PByte; DataSize: LongWord);
@@ -54,7 +54,8 @@ const
   SHA1VTable: array[0..9] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfRecord.Addref,
-    @TSHA1Alg.Release,
+    @HashAlgRelease,
+//    @TSHA1Alg.Release,
 
     @TSHA1Alg.Init,
     @TSHA1Alg.Update,
@@ -75,7 +76,8 @@ begin
     P^.FVTable:= @SHA1VTable;
     P^.FRefCount:= 1;
     TSHA1Alg.Init(P);
-    if Inst <> nil then TSHA1Alg.Release(Inst);
+//    if Inst <> nil then TSHA1Alg.Release(Inst);
+    if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except
@@ -99,11 +101,7 @@ var
   I: LongWord;
 
 begin
-//  Index:= 0;
-//  dcpFillChar(W, SizeOf(W), 0);
-
   Move(FData.Block, W, SizeOf(FData.Block));
-//  Move(HashBuffer,W,Sizeof(HashBuffer));
 
   for I:= 0 to 15 do
     W[I]:= Swap32(W[I]);
@@ -289,12 +287,9 @@ begin
   FillChar(W, SizeOf(W), 0);
   FillChar(FData.Block, SizeOf(FData.Block), 0);
 end;
-
+{
 class function TSHA1Alg.Release(Inst: PSHA1Alg): Integer;
 begin
-//  Init(Inst);
-//  Result:= TtfRecord.Release(Inst);
-
   if Inst.FRefCount > 0 then begin
     Result:= tfDecrement(Inst.FRefCount);
     if Result = 0 then begin
@@ -304,9 +299,8 @@ begin
   end
   else
     Result:= Inst.FRefCount;
-
 end;
-
+}
 class procedure TSHA1Alg.Init(Inst: PSHA1Alg);
 begin
   Inst.FData.Digest[0]:= $67452301;

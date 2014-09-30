@@ -19,7 +19,7 @@ type
     FRefCount: Integer;
     FValue: LongWord;
   public
-    class function Release(Inst: PJenkinsOneAlg): Integer; stdcall; static;
+//    class function Release(Inst: PJenkinsOneAlg): Integer; stdcall; static;
     class procedure Init(Inst: PJenkinsOneAlg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PJenkinsOneAlg; Data: PByte; DataSize: LongWord);
@@ -46,7 +46,7 @@ const
   VTable: array[0..9] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfRecord.Addref,
-    @TJenkinsOneAlg.Release,
+    @HashAlgRelease,
 
     @TJenkinsOneAlg.Init,
     @TJenkinsOneAlg.Update,
@@ -67,7 +67,7 @@ begin
     P^.FVTable:= @VTable;
     P^.FRefCount:= 1;
     P^.FValue:= 0;
-    if Inst <> nil then TJenkinsOneAlg.Release(Inst);
+    if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except
@@ -76,12 +76,6 @@ begin
 end;
 
 { TJenkinsOneAlg }
-
-class function TJenkinsOneAlg.Release(Inst: PJenkinsOneAlg): Integer;
-begin
-  Inst.FValue:= 0;
-  Result:= TtfRecord.Release(Inst);
-end;
 
 class procedure TJenkinsOneAlg.Init(Inst: PJenkinsOneAlg);
 begin

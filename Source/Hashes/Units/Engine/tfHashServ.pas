@@ -46,9 +46,9 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetCount(Inst: PHashServer): Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function RegisterHash(Inst: PHashServer; Name: Pointer; CharSize: Integer;
-          Getter: THashGetter; var Index: Integer): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function RegisterHash(Inst: PHashServer; Name: Pointer; CharSize: Integer;
+//          Getter: THashGetter; var Index: Integer): TF_RESULT;
+//          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
 //          Key: Pointer; KeySize: Cardinal;
           const HashAlg: IHashAlgorithm): TF_RESULT;
@@ -60,7 +60,7 @@ type
   end;
 
 const
-  VTable: array[0..10] of Pointer = (
+  VTable: array[0..9] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfSingleton.Addref,
     @TtfSingleton.Release,
@@ -70,9 +70,9 @@ const
     @THashServer.GetByIndex,
     @THashServer.GetName,
     @THashServer.GetCount,
-    @THashServer.RegisterHash,
     @THashServer.GetHMAC,
     @THashServer.PBKDF1
+//    @THashServer.RegisterHash,
   );
 
 var
@@ -82,6 +82,8 @@ const
   MD5_LITERAL: UTF8String = 'MD5';
   SHA1_LITERAL: UTF8String = 'SHA1';
   SHA256_LITERAL: UTF8String = 'SHA256';
+  CRC32_LITERAL: UTF8String = 'CRC32';
+  JENKINSONE_LITERAL: UTF8String = 'JENKINSONE';
 
 procedure AddTableItem(const AName: RawByteString; AGetter: Pointer);
 var
@@ -105,6 +107,8 @@ begin
   AddTableItem(MD5_LITERAL, @GetMD5Algorithm);
   AddTableItem(SHA1_LITERAL, @GetSHA1Algorithm);
   AddTableItem(SHA256_LITERAL, @GetSHA256Algorithm);
+  AddTableItem(CRC32_LITERAL, @GetCRC32Algorithm);
+  AddTableItem(JENKINSONE_LITERAL, @GetJenkinsOneAlgorithm);
 end;
 
 function GetHashServer(var A: IHashServer): TF_RESULT;
@@ -169,11 +173,12 @@ const
   MAX_DIGEST_SIZE = 128;   // = 1024 bits
 
 var
-  hLen: Integer;
+  hLen: LongWord;
   Digest: array[0 .. MAX_DIGEST_SIZE - 1] of Byte;
 
 begin
   hLen:= HashAlg.GetDigestSize;
+  if dkLen = 0 then dkLen:= hLen;
   if (hLen < dkLen) or (hLen > MAX_DIGEST_SIZE) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -238,7 +243,7 @@ var
   I: Integer;
 
 begin
-  if Cardinal(Index) >= Length(Instance.FAlgTable) then
+  if Cardinal(Index) >= Cardinal(Length(Instance.FAlgTable)) then
     Result:= TF_E_INVALIDARG
   else begin
     P:= @Inst.FAlgTable[Index].Name;
@@ -258,11 +263,11 @@ begin
     end;
   end;
 end;
-
+{
 class function THashServer.RegisterHash(Inst: PHashServer; Name: Pointer;
   CharSize: Integer; Getter: THashGetter; var Index: Integer): TF_RESULT;
 begin
 // todo:
 end;
-
+}
 end.

@@ -183,8 +183,8 @@ class function THMACAlg.Duplicate(Inst: PHMACAlg; var DupInst: PHMACAlg): TF_RES
 var
   P: PHMACAlg;
   BlockSize, DigestSize: Integer;
-  I: Integer;
-  InnerP: PByte;
+//  I: Integer;
+//  InnerP: PByte;
 
 begin
   try
@@ -249,7 +249,7 @@ const
   MAX_DIGEST_SIZE = 128;   // = 1024 bits
 
 var
-  hLen: Integer;
+  hLen: LongWord;
   Digest: array[0 .. MAX_DIGEST_SIZE - 1] of Byte;
   Tmp: PByteVector;
   Count, L, N, LRounds: LongWord;

@@ -51,8 +51,8 @@ type
     function UpdateStream(Stream: TStream; BufSize: Integer = 0): THash;
     function UpdateFile(const AFileName: string; BufSize: Integer = 0): THash;
 
-    class function DeriveKey(const Hash: THash; const Password, Salt: ByteArray;
-                       Rounds, DKLen: Integer): ByteArray; static;
+    function DeriveKey(const Password, Salt: ByteArray;
+                       Rounds, DKLen: Integer): ByteArray;
 
     property Algorithm: IHashAlgorithm read FAlgorithm;
   end;
@@ -171,10 +171,13 @@ begin
   Result:= ByAlgID(TF_ALG_SHA256);
 end;
 
-class function THash.DeriveKey(const Hash: THash; const Password,
-  Salt: ByteArray; Rounds, DKLen: Integer): ByteArray;
+function THash.DeriveKey(const Password, Salt: ByteArray;
+                         Rounds, DKLen: Integer): ByteArray;
 begin
-  // todo
+  HResCheck(FServer.PBKDF1(FAlgorithm,
+                           Password.GetRawData, Password.GetLen,
+                           Salt.GetRawData, Salt.GetLen,
+                           Rounds, DKLen, IBytes(Result)));
 end;
 
 class function THash.ByName(const HashName: string): THash;

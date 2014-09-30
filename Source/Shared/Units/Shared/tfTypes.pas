@@ -34,7 +34,11 @@ const
                                               // = Crypto codes =
 //  TF_E_INVALIDKEY   = TF_RESULT($A0001001);   // Invalid crypto key
 
-{$IFDEF FPC}
+{$IFNDEF FPC}
+const
+  FPC_VERSION = 2;
+  FPC_RELEASE = 6;
+{$ELSE}
 type
   TBytes = array of Byte;
 
@@ -248,9 +252,6 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function RegisterHash(Name: Pointer; CharSize: Integer; Getter: THashGetter;
-          var Index: Integer): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetHMAC(var HMACAlg: IHMACAlgorithm;
           const HashAlg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -258,6 +259,9 @@ type
           Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
           Rounds, dkLen: LongWord; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function RegisterHash(Name: Pointer; CharSize: Integer; Getter: THashGetter;
+//          var Index: Integer): TF_RESULT;
+//          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IBlockCipherAlgorithm = interface(IInterface)
@@ -316,9 +320,6 @@ type
                                   // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;
   TMD5Digest = array[0..3] of LongWord;
-{  TMD5Digest = record
-    A, B, C, D: LongWord;
-  end;}
                                   // 160-bit SHA256 digest
   PSHA1Digest = ^TSHA1Digest;
   TSHA1Digest = array[0..4] of LongWord;

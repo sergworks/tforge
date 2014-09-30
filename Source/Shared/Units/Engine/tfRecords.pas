@@ -35,6 +35,8 @@ type
 function tfIncrement(var Value: Integer): Integer;
 function tfDecrement(var Value: Integer): Integer;
 
+function HashAlgRelease(Inst: Pointer): Integer; stdcall;
+
 implementation
 
 class function TtfRecord.QueryIntf(Inst: Pointer; const IID: TGUID;
@@ -104,6 +106,31 @@ begin
 //        TClearMemProc(PtfRecord(Inst).FVTable[3])(Inst);
       FreeMem(Inst);
 //    end;
+  end
+  else
+    Result:= PtfRecord(Inst).FRefCount;
+end;
+
+// release with purging sensitive information for hash algorithms
+function HashAlgRelease(Inst: Pointer): Integer;
+type
+  TVTable = array[0..9] of Pointer;
+  PVTable = ^TVTable;
+  PPVTable = ^PVTable;
+
+  TPurgeProc = procedure(Inst: Pointer);
+               {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+var
+  PurgeProc: Pointer;
+
+begin
+  if PtfRecord(Inst).FRefCount > 0 then begin
+    Result:= tfDecrement(PtfRecord(Inst).FRefCount);
+    if Result = 0 then begin
+      PurgeProc:= PPVTable(Inst)^^[6];  // 6 is 'Purge' index
+      TPurgeProc(PurgeProc)(Inst);
+      FreeMem(Inst);
+    end;
   end
   else
     Result:= PtfRecord(Inst).FRefCount;

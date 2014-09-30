@@ -27,7 +27,6 @@ type
 
     procedure Compress;
   public
-    class function Release(Inst: PSHA256Alg): Integer; stdcall; static;
     class procedure Init(Inst: PSHA256Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PSHA256Alg; Data: PByte; DataSize: LongWord);
@@ -52,18 +51,18 @@ uses tfRecords;
 
 const
   SHA256VTable: array[0..9] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TSHA256Alg.Release,
+    @TtfRecord.QueryIntf,
+    @TtfRecord.Addref,
+    @HashAlgRelease,
 
-   @TSHA256Alg.Init,
-   @TSHA256Alg.Update,
-   @TSHA256Alg.Done,
-   @TSHA256Alg.Init,
-   @TSHA256Alg.GetDigestSize,
-   @TSHA256Alg.GetBlockSize,
-   @TSHA256Alg.Duplicate
-   );
+    @TSHA256Alg.Init,
+    @TSHA256Alg.Update,
+    @TSHA256Alg.Done,
+    @TSHA256Alg.Init,
+    @TSHA256Alg.GetDigestSize,
+    @TSHA256Alg.GetBlockSize,
+    @TSHA256Alg.Duplicate
+  );
 
 function GetSHA256Algorithm(var Inst: PSHA256Alg): TF_RESULT;
 var
@@ -75,7 +74,8 @@ begin
     P^.FVTable:= @SHA256VTable;
     P^.FRefCount:= 1;
     TSHA256Alg.Init(P);
-    if Inst <> nil then TSHA256Alg.Release(Inst);
+    if Inst <> nil then HashAlgRelease(Inst);
+//    if Inst <> nil then TSHA256Alg.Release(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except
@@ -570,12 +570,6 @@ begin
 
   FillChar(W, SizeOf(W), 0);
   FillChar(FData.Block, SizeOf(FData.Block), 0);
-end;
-
-class function TSHA256Alg.Release(Inst: PSHA256Alg): Integer;
-begin
-  Init(Inst);
-  Result:= TtfRecord.Release(Inst);
 end;
 
 class procedure TSHA256Alg.Init(Inst: PSHA256Alg);

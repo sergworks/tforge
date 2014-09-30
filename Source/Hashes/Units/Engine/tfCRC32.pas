@@ -19,7 +19,7 @@ type
     FRefCount: Integer;
     FValue: LongWord;
   public
-    class function Release(Inst: PCRC32Alg): Integer; stdcall; static;
+//    class function Release(Inst: PCRC32Alg): Integer; stdcall; static;
     class procedure Init(Inst: PCRC32Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PCRC32Alg; Data: PByte; DataSize: LongWord);
@@ -49,7 +49,8 @@ const
   VTable: array[0..9] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfRecord.Addref,
-    @TCRC32Alg.Release,
+    @HashAlgRelease,
+//    @TCRC32Alg.Release,
 
     @TCRC32Alg.Init,
     @TCRC32Alg.Update,
@@ -70,18 +71,12 @@ begin
     P^.FVTable:= @VTable;
     P^.FRefCount:= 1;
     P^.FValue:= CRC32_INIT_VALUE;
-    if Inst <> nil then TCRC32Alg.Release(Inst);
+    if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
   end;
-end;
-
-class function TCRC32Alg.Release(Inst: PCRC32Alg): Integer;
-begin
-  Inst.FValue:= CRC32_INIT_VALUE;
-  Result:= TtfRecord.Release(Inst);
 end;
 
 class procedure TCRC32Alg.Init(Inst: PCRC32Alg);
