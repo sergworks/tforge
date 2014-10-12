@@ -1,12 +1,12 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{1F68044D-432B-4DC4-A502-1137EF670783}</ProjectGuid>
-			<MainSource>numerics.dpr</MainSource>
+			<ProjectGuid>{D63F2970-3482-4C79-A564-FB36D148CFDD}</ProjectGuid>
+			<MainSource>HashFile.dpr</MainSource>
 			<ProjectVersion>12.3</ProjectVersion>
 			<Base>True</Base>
-			<Config Condition="'$(Config)'==''">DebugLimb32</Config>
+			<Config Condition="'$(Config)'==''">Debug</Config>
 			<Platform>Win32</Platform>
-			<AppType>Library</AppType>
+			<AppType>Console</AppType>
 			<FrameworkType>None</FrameworkType>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
@@ -18,41 +18,27 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="'$(Config)'=='DebugLimb32' or '$(Cfg_3)'!=''">
-			<Cfg_3>true</Cfg_3>
-			<CfgParent>Cfg_1</CfgParent>
-			<Cfg_1>true</Cfg_1>
-			<Base>true</Base>
-		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
 			<Cfg_2>true</Cfg_2>
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DllSuffix>32</DllSuffix>
-			<DCC_UnitSearchPath>C:\Projects\TForge\tforge\Source\Include;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-			<DCC_Define>TFL_DLL;$(DCC_Define)</DCC_Define>
-			<DCC_DcuOutput>.\$(Config)\$(Platform)</DCC_DcuOutput>
-			<DCC_E>false</DCC_E>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
+			<DCC_DcuOutput>.\$(Config)\$(Platform)</DCC_DcuOutput>
+			<DCC_UnitSearchPath>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
 			<DCC_ExeOutput>.\$(Config)\$(Platform)</DCC_ExeOutput>
-			<DCC_S>false</DCC_S>
-			<GenDll>true</GenDll>
 			<DCC_N>false</DCC_N>
-			<DCC_F>false</DCC_F>
+			<DCC_S>false</DCC_S>
 			<DCC_K>false</DCC_K>
+			<DCC_E>false</DCC_E>
+			<DCC_F>false</DCC_F>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_3)'!=''">
-			<DCC_Define>LIMB32;$(DCC_Define)</DCC_Define>
-			<DCC_ExeOutput>C:\Projects\TForge\bin\Limb32\</DCC_ExeOutput>
-			<DCC_DcuOutput>C:\Projects\TForge\bin\Limb32\</DCC_DcuOutput>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -61,23 +47,12 @@
 			<DCC_DebugInformation>false</DCC_DebugInformation>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="numerics.dpr">
+			<DelphiCompile Include="HashFile.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="..\..\..\..\Source\TForge\Shared\tfLimbs.pas"/>
-			<DCCReference Include="..\..\..\..\Source\TForge\Shared\tfTypes.pas"/>
-			<DCCReference Include="..\..\..\..\Source\TForge\Engine\tfRecords.pas"/>
-			<DCCReference Include="..\..\..\..\Source\Numerics\Units\Engine\arrProcs.pas"/>
-			<DCCReference Include="..\..\..\..\Source\Numerics\Units\Engine\tfNumbers.pas"/>
-			<DCCReference Include="..\..\..\..\Source\Numerics\Units\Shared\tfNumVer.pas"/>
-			<DCCReference Include="..\..\..\..\Source\TForge\Shared\tfUtils.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
-			</BuildConfiguration>
-			<BuildConfiguration Include="DebugLimb32">
-				<Key>Cfg_3</Key>
-				<CfgParent>Cfg_1</CfgParent>
 			</BuildConfiguration>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
@@ -122,7 +97,7 @@
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Source>
-						<Source Name="MainSource">numerics.dpr</Source>
+						<Source Name="MainSource">HashFile.dpr</Source>
 					</Source>
 				</Delphi.Personality>
 				<Platforms>

@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="THashes"/>
+    <AutoUpdate Value="Manually"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <IncludeFiles Value="C:\Projects\TForge\tforge\Source\Include\"/>
+        <OtherUnitFiles Value="..\..\Source\THashes\Engine;..\..\Source\THashes\Client"/>
+        <UnitOutputDirectory Value="C:\bin\TForge\FPC\$(TargetCPU)-$(TargetOS)\"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="9">
+      <Item1>
+        <Filename Value="..\..\Source\THashes\Engine\tfCRC32.pas"/>
+        <UnitName Value="tfCRC32"/>
+      </Item1>
+      <Item2>
+        <Filename Value="..\..\Source\THashes\Engine\tfHashServ.pas"/>
+        <UnitName Value="tfHashServ"/>
+      </Item2>
+      <Item3>
+        <Filename Value="..\..\Source\THashes\Engine\tfHMAC.pas"/>
+        <UnitName Value="tfHMAC"/>
+      </Item3>
+      <Item4>
+        <Filename Value="..\..\Source\THashes\Engine\tfJenkinsOne.pas"/>
+        <UnitName Value="tfJenkinsOne"/>
+      </Item4>
+      <Item5>
+        <Filename Value="..\..\Source\THashes\Engine\tfMD5.pas"/>
+        <UnitName Value="tfMD5"/>
+      </Item5>
+      <Item6>
+        <Filename Value="..\..\Source\THashes\Engine\tfSHA1.pas"/>
+        <UnitName Value="tfSHA1"/>
+      </Item6>
+      <Item7>
+        <Filename Value="..\..\Source\THashes\Engine\tfSHA256.pas"/>
+        <UnitName Value="tfSHA256"/>
+      </Item7>
+      <Item8>
+        <Filename Value="..\..\Source\THashes\Client\tfHashes.pas"/>
+        <UnitName Value="tfHashes"/>
+      </Item8>
+      <Item9>
+        <Filename Value="..\..\Source\Include\TFL.inc"/>
+        <Type Value="Include"/>
+      </Item9>
+    </Files>
+    <Type Value="RunTimeOnly"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="TForge"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

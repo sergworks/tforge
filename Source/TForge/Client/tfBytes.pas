@@ -73,7 +73,13 @@ type
     class function OrBytes(const A, B: ByteArray): ByteArray; static;
     class function XorBytes(const A, B: ByteArray): ByteArray; static;
 
+    class operator Explicit(const Value: ByteArray): Byte;
+    class operator Explicit(const Value: ByteArray): Word;
+    class operator Explicit(const Value: ByteArray): LongWord;
+    class operator Explicit(const Value: ByteArray): UInt64;
+
     class operator Explicit(const Value: Byte): ByteArray;
+
     class operator Implicit(const Value: ByteArray): TBytes;
     class operator Implicit(const Value: TBytes): ByteArray;
 
@@ -462,6 +468,62 @@ begin
   HResCheck(TByteVector.ReverseBytes(PByteVector(FBytes),
                                      PByteVector(Result.FBytes)));
 {$ENDIF}
+end;
+
+class operator ByteArray.Explicit(const Value: ByteArray): Byte;
+begin
+  if Value.GetLen = 1 then
+    Result:= PByte(Value.GetRawData)^
+  else
+    ByteArrayError(TF_E_INVALIDARG);
+end;
+
+class operator ByteArray.Explicit(const Value: ByteArray): Word;
+var
+  L: LongWord;
+
+begin
+  L:= Value.GetLen;
+  if L = 1 then begin
+    Result:= 0;
+    WordRec(Result).Lo:= PByte(Value.GetRawData)^;
+  end
+  else if L = 2 then
+    Result:= PWord(Value.GetRawData)^
+  else
+    ByteArrayError(TF_E_INVALIDARG);
+end;
+
+class operator ByteArray.Explicit(const Value: ByteArray): LongWord;
+var
+  L: LongWord;
+
+begin
+  L:= Value.GetLen;
+  if L < SizeOf(LongWord) then begin
+    Result:= 0;
+    Move(Value.GetRawData^, Result, L);
+  end
+  else if L = SizeOf(LongWord) then
+    Result:= PLongWord(Value.GetRawData)^
+  else
+    ByteArrayError(TF_E_INVALIDARG);
+end;
+
+class operator ByteArray.Explicit(const Value: ByteArray): UInt64;
+var
+  L: LongWord;
+
+begin
+  L:= Value.GetLen;
+  if L < SizeOf(UInt64) then begin
+    Result:= 0;
+    Move(Value.GetRawData^, Result, L);
+  end
+  else if L = SizeOf(UInt64) then
+    Result:= PUInt64(Value.GetRawData)^
+  else
+    ByteArrayError(TF_E_INVALIDARG);
 end;
 
 class operator ByteArray.Explicit(const Value: Byte): ByteArray;

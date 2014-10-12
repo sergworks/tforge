@@ -9,8 +9,8 @@
       <PathDelim Value="\"/>
       <SearchPaths>
         <IncludeFiles Value="C:\Projects\TForge\tforge\Source\Include\"/>
-        <OtherUnitFiles Value="..\..\Units\Engine;..\..\Units\Shared;..\..\Units\Client"/>
-        <UnitOutputDirectory Value="c:\Bin\TForge\TForge\FPC\Win64"/>
+        <OtherUnitFiles Value="..\..\Source\TForge\Shared;..\..\Source\TForge\Engine;..\..\Source\TForge\Client"/>
+        <UnitOutputDirectory Value="C:\bin\TForge\FPC\$(TargetCPU)-$(TargetOS)\"/>
       </SearchPaths>
       <Other>
         <CompilerMessages>
@@ -21,39 +21,39 @@
     </CompilerOptions>
     <Files Count="9">
       <Item1>
-        <Filename Value="..\..\Units\Engine\tfByteVectors.pas"/>
-        <UnitName Value="tfByteVectors"/>
+        <Filename Value="..\..\Source\TForge\Shared\tfLimbs.pas"/>
+        <UnitName Value="tfLimbs"/>
       </Item1>
       <Item2>
-        <Filename Value="..\..\Units\Engine\tfRecords.pas"/>
-        <UnitName Value="tfRecords"/>
+        <Filename Value="..\..\Source\TForge\Shared\tfTypes.pas"/>
+        <UnitName Value="tfTypes"/>
       </Item2>
       <Item3>
-        <Filename Value="..\..\Units\Shared\tfLimbs.pas"/>
-        <UnitName Value="tfLimbs"/>
+        <Filename Value="..\..\Source\TForge\Shared\tfUtils.pas"/>
+        <UnitName Value="tfUtils"/>
       </Item3>
       <Item4>
-        <Filename Value="..\..\Units\Shared\tfTypes.pas"/>
-        <UnitName Value="tfTypes"/>
+        <Filename Value="..\..\Source\TForge\Engine\tfByteVectors.pas"/>
+        <UnitName Value="tfByteVectors"/>
       </Item4>
       <Item5>
-        <Filename Value="..\..\Units\Shared\tfUtils.pas"/>
-        <UnitName Value="tfUtils"/>
+        <Filename Value="..\..\Source\TForge\Engine\tfRecords.pas"/>
+        <UnitName Value="tfRecords"/>
       </Item5>
       <Item6>
-        <Filename Value="..\..\Units\Client\tfBytes.pas"/>
+        <Filename Value="..\..\Source\TForge\Client\tfBytes.pas"/>
         <UnitName Value="tfBytes"/>
       </Item6>
       <Item7>
-        <Filename Value="..\..\Units\Client\tfConsts.pas"/>
+        <Filename Value="..\..\Source\TForge\Client\tfConsts.pas"/>
         <UnitName Value="tfConsts"/>
       </Item7>
       <Item8>
-        <Filename Value="..\..\Units\Client\tfExceptions.pas"/>
+        <Filename Value="..\..\Source\TForge\Client\tfExceptions.pas"/>
         <UnitName Value="tfExceptions"/>
       </Item8>
       <Item9>
-        <Filename Value="..\..\..\Include\TFL.inc"/>
+        <Filename Value="..\..\Source\Include\TFL.inc"/>
         <Type Value="Include"/>
       </Item9>
     </Files>

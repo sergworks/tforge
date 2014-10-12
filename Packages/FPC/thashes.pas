@@ -2,13 +2,12 @@
   This source is only used to compile and install the package.
  }
 
-unit TForge;
+unit THashes;
 
 interface
 
 uses
-  tfByteVectors, tfRecords, tfLimbs, tfTypes, tfUtils, tfBytes, tfConsts, 
-  tfExceptions;
+  tfCRC32, tfHashServ, tfHMAC, tfJenkinsOne, tfMD5, tfSHA1, tfSHA256, tfHashes;
 
 implementation
 

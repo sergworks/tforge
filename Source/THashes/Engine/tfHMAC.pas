@@ -4,16 +4,6 @@
 { * ------------------------------------------------------- * }
 { *  documentation: RFC2104                                 * }
 { * ------------------------------------------------------- * }
-{ *  !! warning:                                            * }
-{ *    THMACAlg implements the same IHashAlgorithm          * }
-{ *      interface as MD5, SHA256, etc,                     * }
-{ *      but THMACAlg.Init method is just a stub,           * }
-{ *      so you can't reinitialize a THMACAlg instance.     * }
-{ *    That means for example that you should not pass      * }
-{ *      a reference to THMACAlg instance                   * }
-{ *      as a parameter to THash.HMAC(),                    * }
-{ *        i.e. you should not generate HMAC                * }
-{ *        using another HMAC as inner hash function.       * }
 { *********************************************************** }
 
 unit tfHMAC;
@@ -54,7 +44,7 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PBKDF2(Inst: PHMACAlg;
           Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
-          Rounds, dkLen: LongWord; Key: Pointer): TF_RESULT;
+          Rounds, dkLen: LongWord; var Key: PByteVector): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -96,8 +86,9 @@ begin
     New(P);
     P^.FVTable:= @HMACVTable;
     P^.FRefCount:= 1;
-    P^.FKey:= nil;
     P^.FHash:= HashAlg;
+    HashAlg._AddRef;
+    P^.FKey:= nil;
     Result:= ByteVectorAlloc(P^.FKey, BlockSize);
     if Result = TF_S_OK then begin
       if Inst <> nil then THMACAlg.Release(Inst);
@@ -121,19 +112,19 @@ end;
 
 class procedure THMACAlg.Init(Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal);
 var
-  BlockSize, DigestSize: Integer;
+  BlockSize: Integer;
   I: Integer;
   InnerP: PByte;
 
 begin
   BlockSize:= Inst.FHash.GetBlockSize;
-  DigestSize:= Inst.FHash.GetDigestSize;
+//  DigestSize:= Inst.FHash.GetDigestSize;
   FillChar(Inst.FKey.FData, BlockSize, 0);
-  if KeySize > BlockSize then begin
+  if Integer(KeySize) > BlockSize then begin
     Inst.FHash.Init;
     Inst.FHash.Update(Key, KeySize);
     Inst.FHash.Done(@Inst.FKey.FData);
-    KeySize:= DigestSize;
+//    KeySize:= DigestSize;
   end
   else begin
     Move(Key^, Inst.FKey.FData, KeySize);
@@ -182,7 +173,7 @@ end;
 class function THMACAlg.Duplicate(Inst: PHMACAlg; var DupInst: PHMACAlg): TF_RESULT;
 var
   P: PHMACAlg;
-  BlockSize, DigestSize: Integer;
+//  BlockSize, DigestSize: Integer;
 //  I: Integer;
 //  InnerP: PByte;
 
@@ -221,7 +212,7 @@ end;
 class procedure THMACAlg.Purge(Inst: PHMACAlg);
 begin
   FillChar(Inst.FKey.FData, Inst.FKey.FUsed, 0);
-  Inst.FHash.Purge;
+  Inst.FHash.Burn;
 end;
 
 const
@@ -243,7 +234,7 @@ end;
 
 class function THMACAlg.PBKDF2(Inst: PHMACAlg; Password: Pointer;
   PassLen: LongWord; Salt: Pointer; SaltLen, Rounds, dkLen: LongWord;
-  Key: Pointer): TF_RESULT;
+  var Key: PByteVector): TF_RESULT;
 
 const
   MAX_DIGEST_SIZE = 128;   // = 1024 bits
@@ -271,12 +262,12 @@ begin
   Count:= BigEndianOne;
   while N > 0 do begin    // process full hLen blocks
     LRounds:= Rounds;
+    P1:= PData;
     if LRounds > 0 then begin
       Init(Inst, PassWord, PassLen);
       Update(Inst, Salt, SaltLen);
       Update(Inst, @Count, SizeOf(Count));
       Done(Inst, @Digest);
-      P1:= @PData;
       P2:= @Digest;
       L:= hLen shr 2;
       while L > 0 do begin
@@ -296,9 +287,8 @@ begin
       while LRounds > 0 do begin
         Init(Inst, PassWord, PassLen);
         Update(Inst, @Digest, hLen);
-        Update(Inst, @Count, SizeOf(Count));
         Done(Inst, @Digest);
-        P1:= @PData;
+        P1:= PData;
         P2:= @Digest;
         L:= hLen shr 2;
         while L > 0 do begin
@@ -306,7 +296,7 @@ begin
           Inc(PLongWord(P1));
           Inc(PLongWord(P2));
           Dec(L);
-       end;
+        end;
         L:= hLen and 3;
         while L > 0 do begin
           P1^:= P1^ xor P2^;
@@ -317,6 +307,7 @@ begin
         Dec(LRounds);
       end;
     end;
+    PData:= P1;
     Count:= BigEndianInc(Count);
     Dec(N);
   end;
@@ -328,7 +319,7 @@ begin
       Update(Inst, Salt, SaltLen);
       Update(Inst, @Count, SizeOf(Count));
       Done(Inst, @Digest);
-      P1:= @PData;
+      P1:= PData;
       P2:= @Digest;
       L:= N;
       while L > 0 do begin
@@ -341,9 +332,8 @@ begin
       while LRounds > 0 do begin
         Init(Inst, PassWord, PassLen);
         Update(Inst, @Digest, hLen);
-        Update(Inst, @Count, SizeOf(Count));
         Done(Inst, @Digest);
-        P1:= @PData;
+        P1:= PData;
         P2:= @Digest;
         L:= N;
         while L > 0 do begin
@@ -356,6 +346,8 @@ begin
       end;
     end;
   end;
+  if Key <> nil then TtfRecord.Release(Key);
+  Key:= Tmp;
 end;
 
 end.

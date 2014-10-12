@@ -8,13 +8,13 @@ library numerics;
 {$I TFL.inc}
 
 uses
-  tfLimbs in '..\..\..\..\Source\Shared\Units\Shared\tfLimbs.pas',
-  tfTypes in '..\..\..\..\Source\Shared\Units\Shared\tfTypes.pas',
-  tfRecords in '..\..\..\..\Source\Shared\Units\Engine\tfRecords.pas',
+  tfLimbs in '..\..\..\..\Source\TForge\Shared\tfLimbs.pas',
+  tfTypes in '..\..\..\..\Source\TForge\Shared\tfTypes.pas',
+  tfRecords in '..\..\..\..\Source\TForge\Engine\tfRecords.pas',
   arrProcs in '..\..\..\..\Source\Numerics\Units\Engine\arrProcs.pas',
   tfNumbers in '..\..\..\..\Source\Numerics\Units\Engine\tfNumbers.pas',
   tfNumVer in '..\..\..\..\Source\Numerics\Units\Shared\tfNumVer.pas',
-  tfUtils in '..\..\..\..\Source\Shared\Units\Shared\tfUtils.pas';
+  tfUtils in '..\..\..\..\Source\TForge\Shared\tfUtils.pas';
 
 function GetNumericsVersion(var Version: LongWord): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

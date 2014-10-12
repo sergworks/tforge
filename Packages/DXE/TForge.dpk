@@ -29,13 +29,13 @@ requires
   rtl;
 
 contains
-  tfRecords in '..\..\Units\Engine\tfRecords.pas',
-  tfLimbs in '..\..\Units\Shared\tfLimbs.pas',
-  tfTypes in '..\..\Units\Shared\tfTypes.pas',
-  tfUtils in '..\..\Units\Shared\tfUtils.pas',
-  tfByteVectors in '..\..\Units\Engine\tfByteVectors.pas',
-  tfConsts in '..\..\Units\Client\tfConsts.pas',
-  tfExceptions in '..\..\Units\Client\tfExceptions.pas',
-  tfBytes in '..\..\Units\Client\tfBytes.pas';
+  tfRecords in '..\..\Source\TForge\Engine\tfRecords.pas',
+  tfLimbs in '..\..\Source\TForge\Shared\tfLimbs.pas',
+  tfTypes in '..\..\Source\TForge\Shared\tfTypes.pas',
+  tfUtils in '..\..\Source\TForge\Shared\tfUtils.pas',
+  tfByteVectors in '..\..\Source\TForge\Engine\tfByteVectors.pas',
+  tfConsts in '..\..\Source\TForge\Client\tfConsts.pas',
+  tfExceptions in '..\..\Source\TForge\Client\tfExceptions.pas',
+  tfBytes in '..\..\Source\TForge\Client\tfBytes.pas';
 
 end.

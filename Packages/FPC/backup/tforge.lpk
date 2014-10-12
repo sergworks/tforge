@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="TForge"/>
+    <AutoUpdate Value="Manually"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <IncludeFiles Value="C:\Projects\TForge\tforge\Source\Include\"/>
+        <OtherUnitFiles Value="..\..\Units\Engine;..\..\Units\Shared;..\..\Units\Client;..\..\Source\Shared\Units\Engine"/>
+        <UnitOutputDirectory Value="c:\Bin\TForge\FPC\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="9">
+      <Item1>
+        <Filename Value="..\..\Source\Shared\Units\Engine\tfRecords.pas"/>
+        <UnitName Value="tfRecords"/>
+      </Item1>
+      <Item2>
+        <Filename Value="..\..\Source\Shared\Units\Shared\tfLimbs.pas"/>
+        <UnitName Value="tfLimbs"/>
+      </Item2>
+      <Item3>
+        <Filename Value="..\..\Source\Shared\Units\Shared\tfTypes.pas"/>
+        <UnitName Value="tfTypes"/>
+      </Item3>
+      <Item4>
+        <Filename Value="..\..\Source\Shared\Units\Shared\tfUtils.pas"/>
+        <UnitName Value="tfUtils"/>
+      </Item4>
+      <Item5>
+        <Filename Value="..\..\Source\Shared\Units\Client\tfBytes.pas"/>
+        <UnitName Value="tfBytes"/>
+      </Item5>
+      <Item6>
+        <Filename Value="..\..\Source\Shared\Units\Client\tfConsts.pas"/>
+        <UnitName Value="tfConsts"/>
+      </Item6>
+      <Item7>
+        <Filename Value="..\..\Source\Shared\Units\Client\tfExceptions.pas"/>
+        <UnitName Value="tfExceptions"/>
+      </Item7>
+      <Item8>
+        <Filename Value="..\..\Source\Include\TFL.inc"/>
+        <Type Value="Include"/>
+      </Item8>
+      <Item9>
+        <Filename Value="..\..\Source\Shared\Units\Engine\tfByteVectors.pas"/>
+        <UnitName Value="tfByteVectors"/>
+      </Item9>
+    </Files>
+    <Type Value="RunTimeOnly"/>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

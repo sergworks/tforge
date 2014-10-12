@@ -30,13 +30,13 @@ requires
   TForge;
 
 contains
-  tfCRC32 in '..\..\Units\Engine\tfCRC32.pas',
-  tfJenkinsOne in '..\..\Units\Engine\tfJenkinsOne.pas',
-  tfMD5 in '..\..\Units\Engine\tfMD5.pas',
-  tfSHA256 in '..\..\Units\Engine\tfSHA256.pas',
-  tfHashes in '..\..\Units\Client\tfHashes.pas',
-  tfHashServ in '..\..\Units\Engine\tfHashServ.pas',
-  tfHMAC in '..\..\Units\Engine\tfHMAC.pas',
-  tfSHA1 in '..\..\Units\Engine\tfSHA1.pas';
+  tfCRC32 in '..\..\Source\THashes\Engine\tfCRC32.pas',
+  tfJenkinsOne in '..\..\Source\THashes\Engine\tfJenkinsOne.pas',
+  tfMD5 in '..\..\Source\THashes\Engine\tfMD5.pas',
+  tfSHA256 in '..\..\Source\THashes\Engine\tfSHA256.pas',
+  tfHashes in '..\..\Source\THashes\Client\tfHashes.pas',
+  tfHashServ in '..\..\Source\THashes\Engine\tfHashServ.pas',
+  tfHMAC in '..\..\Source\THashes\Engine\tfHMAC.pas',
+  tfSHA1 in '..\..\Source\THashes\Engine\tfSHA1.pas';
 
 end.

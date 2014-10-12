@@ -41,7 +41,7 @@ const
 {$ELSE}
 type
   TBytes = array of Byte;
-
+  PUInt64 = ^UInt64;
 {$IF FPC_VERSION = 2}
   {$IF FPC_RELEASE <= 6}
 type
@@ -211,15 +211,15 @@ const
   TF_ALG_SHA1      = $1002;
   TF_ALG_SHA256    = $1003;
                            // Non-cryptographic Hash Algorithms
-  TF_ALG_CRC32     = $1101;
-  TF_ALG_JENKINS_1 = $1102;
+  TF_ALG_CRC32     = $1801;
+  TF_ALG_JENKINS_1 = $1802;
 
 type
   IHashAlgorithm = interface(IInterface)
     procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetDigestSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -232,11 +232,12 @@ type
     procedure Init(Key: Pointer; KeySize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Purge;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetDigestSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DeriveKey(HashAlg: IHashAlgorithm; const Password, Salt: IBytes;
+    function Duplicate(var Inst: IHMACAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function PBKDF2(Password: Pointer; PassLen: LongWord;
+          Salt: Pointer; SaltLen: LongWord;
           Rounds, DKLen: Integer; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
@@ -256,7 +257,8 @@ type
           const HashAlg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PBKDF1(HashAlg: IHashAlgorithm;
-          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
+          Password: Pointer; PassLen: LongWord;
+          Salt: Pointer; SaltLen: LongWord;
           Rounds, dkLen: LongWord; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function RegisterHash(Name: Pointer; CharSize: Integer; Getter: THashGetter;
