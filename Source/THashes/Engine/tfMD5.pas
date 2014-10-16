@@ -7,6 +7,14 @@ unit tfMD5;
 
 {$I TFL.inc}
 
+{$IFDEF TFL_CPU386_WIN32}
+  {$DEFINE CPU386_WIN32}
+{$ENDIF}
+
+{$IFDEF TFL_CPU386_WIN64}
+  {.$DEFINE CPU386_WIN64}
+{$ENDIF}
+
 interface
 
 uses tfTypes;
@@ -16,9 +24,9 @@ type
   TMD5Alg = record
   private type
     TData = record
-      Digest: TMD5Digest;
-      Block: array[0..63] of Byte;   // 512-bit message block
-      Count: UInt64;                 // number of bytes processed
+      State: TMD5Digest;
+      Block: array[0..63] of Byte;    // 512-bit message block
+      Count: UInt64;                  // number of bytes processed
     end;
   private
     FVTable: Pointer;
@@ -27,15 +35,12 @@ type
 
     procedure Compress;
   public
-//    class function Release(Inst: PMD5Alg): Integer; stdcall; static;
     class procedure Init(Inst: PMD5Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PMD5Alg; Data: PByte; DataSize: LongWord);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PMD5Alg; PDigest: PMD5Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class procedure Purge(Inst: PMD5Alg);  -- redirected to Init
-//         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetDigestSize(Inst: PMD5Alg): LongInt;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PMD5Alg): LongInt;
@@ -55,7 +60,6 @@ const
     @TtfRecord.QueryIntf,
     @TtfRecord.Addref,
     @HashAlgRelease,
-//    @TMD5Alg.Release,
 
     @TMD5Alg.Init,
     @TMD5Alg.Update,
@@ -76,7 +80,6 @@ begin
     P^.FVTable:= @MD5VTable;
     P^.FRefCount:= 1;
     TMD5Alg.Init(P);
-//    if Inst <> nil then TMD5Alg.Release(Inst);
     if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
@@ -85,6 +88,765 @@ begin
   end;
 end;
 
+{$IFDEF CPU386_WIN32}
+procedure TMD5Alg.Compress;
+asm
+        PUSH  ESI
+        PUSH  EDI
+        PUSH  EBX
+
+        LEA   EDI,[EAX].TMD5Alg.FData.Block
+
+        MOV   EAX,[EDI - 16]      // A:= FData.State[0];
+        MOV   EBX,[EDI - 12]      // B:= FData.State[1];
+        MOV   ECX,[EDI - 8]       // C:= FData.State[2];
+        MOV   EDX,[EDI - 4]       // D:= FData.State[3];
+
+// function FF(A, B, C, D, X, S: LongWord): LongWord; inline;
+// begin
+//  Result:= A + ((B and (C xor D)) xor D) + X;
+//  Result:= Rol32(Result, S) + B;
+// end;
+
+//  A:= FF(A, B, C, D, Block[ 0] + $D76AA478,  7);  { 1 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI]
+        XOR   ESI,EDX
+        AND   ESI,EBX
+        XOR   ESI,EDX
+        LEA   EAX,[EAX + ESI + $D76AA478]
+        ROL   EAX,7
+        ADD   EAX,EBX
+
+//  D:= FF(D, A, B, C, Block[ 1] + $E8C7B756, 12);  { 2 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 4]
+        XOR   ESI,ECX
+        AND   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EDX,[EDX + ESI + $E8C7B756]
+        ROL   EDX,12
+        ADD   EDX,EAX
+
+//  C:= FF(C, D, A, B, Block[ 2] + $242070DB, 17);  { 3 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 8]
+        XOR   ESI,EBX
+        AND   ESI,EDX
+        XOR   ESI,EBX
+        LEA   ECX,[ECX + ESI + $242070DB]
+        ROL   ECX,17
+        ADD   ECX,EDX
+
+//  B:= FF(B, C, D, A, Block[ 3] + $C1BDCEEE, 22);  { 4 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 12]
+        XOR   ESI,EAX
+        AND   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EBX,[EBX + ESI + $C1BDCEEE]
+        ROL   EBX,22
+        ADD   EBX,ECX
+
+//  A:= FF(A, B, C, D, Block[ 4] + $F57C0FAF,  7);  { 5 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 16]
+        XOR   ESI,EDX
+        AND   ESI,EBX
+        XOR   ESI,EDX
+        LEA   EAX,[EAX + ESI + $F57C0FAF]
+        ROL   EAX,7
+        ADD   EAX,EBX
+
+//  D:= FF(D, A, B, C, Block[ 5] + $4787C62A, 12);  { 6 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 20]
+        XOR   ESI,ECX
+        AND   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EDX,[EDX + ESI + $4787C62A]
+        ROL   EDX,12
+        ADD   EDX,EAX
+
+//  C:= FF(C, D, A, B, Block[ 6] + $A8304613, 17);  { 7 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 24]
+        XOR   ESI,EBX
+        AND   ESI,EDX
+        XOR   ESI,EBX
+        LEA   ECX,[ECX + ESI + $A8304613]
+        ROL   ECX,17
+        ADD   ECX,EDX
+
+//  B:= FF(B, C, D, A, Block[ 7] + $FD469501, 22);  { 8 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 28]
+        XOR   ESI,EAX
+        AND   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EBX,[EBX + ESI + $FD469501]
+        ROL   EBX,22
+        ADD   EBX,ECX
+
+//  A:= FF(A, B, C, D, Block[ 8] + $698098D8,  7);  { 9 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 32]
+        XOR   ESI,EDX
+        AND   ESI,EBX
+        XOR   ESI,EDX
+        LEA   EAX,[EAX + ESI + $698098D8]
+        ROL   EAX,7
+        ADD   EAX,EBX
+
+//  D:= FF(D, A, B, C, Block[ 9] + $8B44F7AF, 12);  { 10 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 36]
+        XOR   ESI,ECX
+        AND   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EDX,[EDX + ESI + $8B44F7AF]
+        ROL   EDX,12
+        ADD   EDX,EAX
+
+//  C:= FF(C, D, A, B, Block[10] + $FFFF5BB1, 17);  { 11 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 40]
+        XOR   ESI,EBX
+        AND   ESI,EDX
+        XOR   ESI,EBX
+        LEA   ECX,[ECX + ESI + $FFFF5BB1]
+        ROL   ECX,17
+        ADD   ECX,EDX
+
+//  B:= FF(B, C, D, A, Block[11] + $895CD7BE, 22);  { 12 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 44]
+        XOR   ESI,EAX
+        AND   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EBX,[EBX + ESI + $895CD7BE]
+        ROL   EBX,22
+        ADD   EBX,ECX
+
+//  A:= FF(A, B, C, D, Block[12] + $6B901122,  7);  { 13 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 48]
+        XOR   ESI,EDX
+        AND   ESI,EBX
+        XOR   ESI,EDX
+        LEA   EAX,[EAX + ESI + $6B901122]
+        ROL   EAX,7
+        ADD   EAX,EBX
+
+//  D:= FF(D, A, B, C, Block[13] + $FD987193, 12);  { 14 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 52]
+        XOR   ESI,ECX
+        AND   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EDX,[EDX + ESI + $FD987193]
+        ROL   EDX,12
+        ADD   EDX,EAX
+
+//  C:= FF(C, D, A, B, Block[14] + $A679438E, 17);  { 15 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 56]
+        XOR   ESI,EBX
+        AND   ESI,EDX
+        XOR   ESI,EBX
+        LEA   ECX,[ECX + ESI + $A679438E]
+        ROL   ECX,17
+        ADD   ECX,EDX
+
+//  B:= FF(B, C, D, A, Block[15] + $49B40821, 22);  { 16 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 60]
+        XOR   ESI,EAX
+        AND   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EBX,[EBX + ESI + $49B40821]
+        ROL   EBX,22
+        ADD   EBX,ECX
+
+//function GG(A, B, C, D, X, S: LongWord): LongWord; inline;
+//begin
+//  Result:= A + ((D and (B xor C)) xor C) + X;
+//  Result:= Rol32(Result, S) + B;
+//end;
+
+//  A:= GG(A, B, C, D, Block[ 1] + $F61E2562,  5);  { 17 }
+
+        MOV   ESI,EBX
+        ADD   EAX,[EDI + 4]
+        XOR   ESI,ECX
+        AND   ESI,EDX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $F61E2562]
+        ROL   EAX,5
+        ADD   EAX,EBX
+
+//  D:= GG(D, A, B, C, Block[ 6] + $C040B340,  9);  { 18 }
+
+        MOV   ESI,EAX
+        ADD   EDX,[EDI + 24]
+        XOR   ESI,EBX
+        AND   ESI,ECX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $C040B340]
+        ROL   EDX,9
+        ADD   EDX,EAX
+
+//  C:= GG(C, D, A, B, Block[11] + $265E5A51, 14);  { 19 }
+
+        MOV   ESI,EDX
+        ADD   ECX,[EDI + 44]
+        XOR   ESI,EAX
+        AND   ESI,EBX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $265E5A51]
+        ROL   ECX,14
+        ADD   ECX,EDX
+
+//  B:= GG(B, C, D, A, Block[ 0] + $E9B6C7AA, 20);  { 20 }
+
+        MOV   ESI,ECX
+        ADD   EBX,[EDI]
+        XOR   ESI,EDX
+        AND   ESI,EAX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $E9B6C7AA]
+        ROL   EBX,20
+        ADD   EBX,ECX
+
+//  A:= GG(A, B, C, D, Block[ 5] + $D62F105D,  5);  { 21 }
+
+        MOV   ESI,EBX
+        ADD   EAX,[EDI + 20]
+        XOR   ESI,ECX
+        AND   ESI,EDX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $D62F105D]
+        ROL   EAX,5
+        ADD   EAX,EBX
+
+//  D:= GG(D, A, B, C, Block[10] + $02441453,  9);  { 22 }
+
+        MOV   ESI,EAX
+        ADD   EDX,[EDI + 40]
+        XOR   ESI,EBX
+        AND   ESI,ECX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $02441453]
+        ROL   EDX,9
+        ADD   EDX,EAX
+
+//  C:= GG(C, D, A, B, Block[15] + $D8A1E681, 14);  { 23 }
+
+        MOV   ESI,EDX
+        ADD   ECX,[EDI + 60]
+        XOR   ESI,EAX
+        AND   ESI,EBX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $D8A1E681]
+        ROL   ECX,14
+        ADD   ECX,EDX
+
+//  B:= GG(B, C, D, A, Block[ 4] + $E7D3FBC8, 20);  { 24 }
+
+        MOV   ESI,ECX
+        ADD   EBX,[EDI + 16]
+        XOR   ESI,EDX
+        AND   ESI,EAX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $E7D3FBC8]
+        ROL   EBX,20
+        ADD   EBX,ECX
+
+//  A:= GG(A, B, C, D, Block[ 9] + $21E1CDE6,  5);  { 25 }
+
+        MOV   ESI,EBX
+        ADD   EAX,[EDI + 36]
+        XOR   ESI,ECX
+        AND   ESI,EDX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $21E1CDE6]
+        ROL   EAX,5
+        ADD   EAX,EBX
+
+//  D:= GG(D, A, B, C, Block[14] + $C33707D6,  9);  { 26 }
+
+        MOV   ESI,EAX
+        ADD   EDX,[EDI + 56]
+        XOR   ESI,EBX
+        AND   ESI,ECX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $C33707D6]
+        ROL   EDX,9
+        ADD   EDX,EAX
+
+//  C:= GG(C, D, A, B, Block[ 3] + $F4D50D87, 14);  { 27 }
+
+        MOV   ESI,EDX
+        ADD   ECX,[EDI + 12]
+        XOR   ESI,EAX
+        AND   ESI,EBX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $F4D50D87]
+        ROL   ECX,14
+        ADD   ECX,EDX
+
+//  B:= GG(B, C, D, A, Block[ 8] + $455A14ED, 20);  { 28 }
+
+        MOV   ESI,ECX
+        ADD   EBX,[EDI + 32]
+        XOR   ESI,EDX
+        AND   ESI,EAX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $455A14ED]
+        ROL   EBX,20
+        ADD   EBX,ECX
+
+//  A:= GG(A, B, C, D, Block[13] + $A9E3E905,  5);  { 29 }
+
+        MOV   ESI,EBX
+        ADD   EAX,[EDI + 52]
+        XOR   ESI,ECX
+        AND   ESI,EDX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $A9E3E905]
+        ROL   EAX,5
+        ADD   EAX,EBX
+
+//  D:= GG(D, A, B, C, Block[ 2] + $FCEFA3F8,  9);  { 30 }
+
+        MOV   ESI,EAX
+        ADD   EDX,[EDI + 8]
+        XOR   ESI,EBX
+        AND   ESI,ECX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $FCEFA3F8]
+        ROL   EDX,9
+        ADD   EDX,EAX
+
+//  C:= GG(C, D, A, B, Block[ 7] + $676F02D9, 14);  { 31 }
+
+        MOV   ESI,EDX
+        ADD   ECX,[EDI + 28]
+        XOR   ESI,EAX
+        AND   ESI,EBX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $676F02D9]
+        ROL   ECX,14
+        ADD   ECX,EDX
+
+//  B:= GG(B, C, D, A, Block[12] + $8D2A4C8A, 20);  { 32 }
+
+        MOV   ESI,ECX
+        ADD   EBX,[EDI + 48]
+        XOR   ESI,EDX
+        AND   ESI,EAX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $8D2A4C8A]
+        ROL   EBX,20
+        ADD   EBX,ECX
+
+//function HH(A, B, C, D, X, S: LongWord): LongWord; inline;
+//begin
+//  Result:= A + (B xor C xor D) + X;
+//  Result:= Rol32(Result, S) + B;
+//end;
+
+//  A:= HH(A, B, C, D, Block[ 5] + $FFFA3942,  4);  { 33 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 20]
+        XOR   ESI,EDX
+        XOR   ESI,EBX
+        LEA   EAX,[EAX + ESI + $FFFA3942]
+        ROL   EAX,4
+        ADD   EAX,EBX
+
+//  D:= HH(D, A, B, C, Block[ 8] + $8771F681, 11);  { 34 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 32]
+        XOR   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EDX,[EDX + ESI + $8771F681]
+        ROL   EDX,11
+        ADD   EDX,EAX
+
+//  C:= HH(C, D, A, B, Block[11] + $6D9D6122, 16);  { 35 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 44]
+        XOR   ESI,EBX
+        XOR   ESI,EDX
+        LEA   ECX,[ECX + ESI + $6D9D6122]
+        ROL   ECX,16
+        ADD   ECX,EDX
+
+//  B:= HH(B, C, D, A, Block[14] + $FDE5380C, 23);  { 36 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 56]
+        XOR   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EBX,[EBX + ESI + $FDE5380C]
+        ROL   EBX,23
+        ADD   EBX,ECX
+
+//  A:= HH(A, B, C, D, Block[ 1] + $A4BEEA44,  4);  { 37 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 4]
+        XOR   ESI,EDX
+        XOR   ESI,EBX
+        LEA   EAX,[EAX + ESI + $A4BEEA44]
+        ROL   EAX,4
+        ADD   EAX,EBX
+
+//  D:= HH(D, A, B, C, Block[ 4] + $4BDECFA9, 11);  { 38 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 16]
+        XOR   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EDX,[EDX + ESI + $4BDECFA9]
+        ROL   EDX,11
+        ADD   EDX,EAX
+
+//  C:= HH(C, D, A, B, Block[ 7] + $F6BB4B60, 16);  { 39 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 28]
+        XOR   ESI,EBX
+        XOR   ESI,EDX
+        LEA   ECX,[ECX + ESI + $F6BB4B60]
+        ROL   ECX,16
+        ADD   ECX,EDX
+
+//  B:= HH(B, C, D, A, Block[10] + $BEBFBC70, 23);  { 40 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 40]
+        XOR   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EBX,[EBX + ESI + $BEBFBC70]
+        ROL   EBX,23
+        ADD   EBX,ECX
+
+//  A:= HH(A, B, C, D, Block[13] + $289B7EC6,  4);  { 41 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 52]
+        XOR   ESI,EDX
+        XOR   ESI,EBX
+        LEA   EAX,[EAX + ESI + $289B7EC6]
+        ROL   EAX,4
+        ADD   EAX,EBX
+
+//  D:= HH(D, A, B, C, Block[ 0] + $EAA127FA, 11);  { 42 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI]
+        XOR   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EDX,[EDX + ESI + $EAA127FA]
+        ROL   EDX,11
+        ADD   EDX,EAX
+
+//  C:= HH(C, D, A, B, Block[ 3] + $D4EF3085, 16);  { 43 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 12]
+        XOR   ESI,EBX
+        XOR   ESI,EDX
+        LEA   ECX,[ECX + ESI + $D4EF3085]
+        ROL   ECX,16
+        ADD   ECX,EDX
+
+//  B:= HH(B, C, D, A, Block[ 6] + $04881D05, 23);  { 44 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 24]
+        XOR   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EBX,[EBX + ESI + $04881D05]
+        ROL   EBX,23
+        ADD   EBX,ECX
+
+//  A:= HH(A, B, C, D, Block[ 9] + $D9D4D039,  4);  { 45 }
+
+        MOV   ESI,ECX
+        ADD   EAX,[EDI + 36]
+        XOR   ESI,EDX
+        XOR   ESI,EBX
+        LEA   EAX,[EAX + ESI + $D9D4D039]
+        ROL   EAX,4
+        ADD   EAX,EBX
+
+//  D:= HH(D, A, B, C, Block[12] + $E6DB99E5, 11);  { 46 }
+
+        MOV   ESI,EBX
+        ADD   EDX,[EDI + 48]
+        XOR   ESI,ECX
+        XOR   ESI,EAX
+        LEA   EDX,[EDX + ESI + $E6DB99E5]
+        ROL   EDX,11
+        ADD   EDX,EAX
+
+//  C:= HH(C, D, A, B, Block[15] + $1FA27CF8, 16);  { 47 }
+
+        MOV   ESI,EAX
+        ADD   ECX,[EDI + 60]
+        XOR   ESI,EBX
+        XOR   ESI,EDX
+        LEA   ECX,[ECX + ESI + $1FA27CF8]
+        ROL   ECX,16
+        ADD   ECX,EDX
+
+//  B:= HH(B, C, D, A, Block[ 2] + $C4AC5665, 23);  { 48 }
+
+        MOV   ESI,EDX
+        ADD   EBX,[EDI + 8]
+        XOR   ESI,EAX
+        XOR   ESI,ECX
+        LEA   EBX,[EBX + ESI + $C4AC5665]
+        ROL   EBX,23
+        ADD   EBX,ECX
+
+//function II(A, B, C, D, X, S: LongWord): LongWord; inline;
+//begin
+//  Result:= A + (C xor (B or not D)) + X;
+//  Result:= Rol32(Result, S) + B;
+//end;
+
+//  A:= II(A, B, C, D, Block[ 0] + $F4292244,  6);  { 49 }
+
+        MOV   ESI,EDX
+        NOT   ESI
+        ADD   EAX,[EDI]
+        OR    ESI,EBX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $F4292244]
+        ROL   EAX,6
+        ADD   EAX,EBX
+
+//  D:= II(D, A, B, C, Block[ 7] + $432AFF97, 10);  { 50 }
+
+        MOV   ESI,ECX
+        NOT   ESI
+        ADD   EDX,[EDI + 28]
+        OR    ESI,EAX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $432AFF97]
+        ROL   EDX,10
+        ADD   EDX,EAX
+
+//  C:= II(C, D, A, B, Block[14] + $AB9423A7, 15);  { 51 }
+
+        MOV   ESI,EBX
+        NOT   ESI
+        ADD   ECX,[EDI + 56]
+        OR    ESI,EDX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $AB9423A7]
+        ROL   ECX,15
+        ADD   ECX,EDX
+
+//  B:= II(B, C, D, A, Block[ 5] + $FC93A039, 21);  { 52 }
+
+        MOV   ESI,EAX
+        NOT   ESI
+        ADD   EBX,[EDI + 20]
+        OR    ESI,ECX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $FC93A039]
+        ROL   EBX,21
+        ADD   EBX,ECX
+
+//  A:= II(A, B, C, D, Block[12] + $655B59C3,  6);  { 53 }
+
+        MOV   ESI,EDX
+        NOT   ESI
+        ADD   EAX,[EDI + 48]
+        OR    ESI,EBX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $655B59C3]
+        ROL   EAX,6
+        ADD   EAX,EBX
+
+//  D:= II(D, A, B, C, Block[ 3] + $8F0CCC92, 10);  { 54 }
+
+        MOV   ESI,ECX
+        NOT   ESI
+        ADD   EDX,[EDI + 12]
+        OR    ESI,EAX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $8F0CCC92]
+        ROL   EDX,10
+        ADD   EDX,EAX
+
+//  C:= II(C, D, A, B, Block[10] + $FFEFF47D, 15);  { 55 }
+
+        MOV   ESI,EBX
+        NOT   ESI
+        ADD   ECX,[EDI + 40]
+        OR    ESI,EDX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $FFEFF47D]
+        ROL   ECX,15
+        ADD   ECX,EDX
+
+//  B:= II(B, C, D, A, Block[ 1] + $85845DD1, 21);  { 56 }
+
+        MOV   ESI,EAX
+        NOT   ESI
+        ADD   EBX,[EDI + 4]
+        OR    ESI,ECX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $85845DD1]
+        ROL   EBX,21
+        ADD   EBX,ECX
+
+//  A:= II(A, B, C, D, Block[ 8] + $6FA87E4F,  6);  { 57 }
+
+        MOV   ESI,EDX
+        NOT   ESI
+        ADD   EAX,[EDI + 32]
+        OR    ESI,EBX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $6FA87E4F]
+        ROL   EAX,6
+        ADD   EAX,EBX
+
+//  D:= II(D, A, B, C, Block[15] + $FE2CE6E0, 10);  { 58 }
+
+        MOV   ESI,ECX
+        NOT   ESI
+        ADD   EDX,[EDI + 60]
+        OR    ESI,EAX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $FE2CE6E0]
+        ROL   EDX,10
+        ADD   EDX,EAX
+
+//  C:= II(C, D, A, B, Block[ 6] + $A3014314, 15);  { 59 }
+
+        MOV   ESI,EBX
+        NOT   ESI
+        ADD   ECX,[EDI + 24]
+        OR    ESI,EDX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $A3014314]
+        ROL   ECX,15
+        ADD   ECX,EDX
+
+//  B:= II(B, C, D, A, Block[13] + $4E0811A1, 21);  { 60 }
+
+        MOV   ESI,EAX
+        NOT   ESI
+        ADD   EBX,[EDI + 52]
+        OR    ESI,ECX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $4E0811A1]
+        ROL   EBX,21
+        ADD   EBX,ECX
+
+//  A:= II(A, B, C, D, Block[ 4] + $F7537E82,  6);  { 61 }
+
+        MOV   ESI,EDX
+        NOT   ESI
+        ADD   EAX,[EDI + 16]
+        OR    ESI,EBX
+        XOR   ESI,ECX
+        LEA   EAX,[EAX + ESI + $F7537E82]
+        ROL   EAX,6
+        ADD   EAX,EBX
+
+//  D:= II(D, A, B, C, Block[11] + $BD3AF235, 10);  { 62 }
+
+        MOV   ESI,ECX
+        NOT   ESI
+        ADD   EDX,[EDI + 44]
+        OR    ESI,EAX
+        XOR   ESI,EBX
+        LEA   EDX,[EDX + ESI + $BD3AF235]
+        ROL   EDX,10
+        ADD   EDX,EAX
+
+//  C:= II(C, D, A, B, Block[ 2] + $2AD7D2BB, 15);  { 63 }
+
+        MOV   ESI,EBX
+        NOT   ESI
+        ADD   ECX,[EDI + 8]
+        OR    ESI,EDX
+        XOR   ESI,EAX
+        LEA   ECX,[ECX + ESI + $2AD7D2BB]
+        ROL   ECX,15
+        ADD   ECX,EDX
+
+//  B:= II(B, C, D, A, Block[ 9] + $EB86D391, 21);  { 64 }
+
+        MOV   ESI,EAX
+        NOT   ESI
+        ADD   EBX,[EDI + 36]
+        OR    ESI,ECX
+        XOR   ESI,EDX
+        LEA   EBX,[EBX + ESI + $EB86D391]
+        ROL   EBX,21
+        ADD   EBX,ECX
+
+
+        ADD   [EDI - 16],EAX      // Inc(FData.State[0], A);
+        ADD   [EDI - 12],EBX      // Inc(FData.State[1], B);
+        ADD   [EDI - 8],ECX       // Inc(FData.State[2], C);
+        ADD   [EDI - 4],EDX       // Inc(FData.State[3], D);
+
+                                  //  FillChar(Block, SizeOf(Block), 0);
+        XOR   EAX,EAX
+        MOV   [EDI],EAX
+        MOV   [EDI + 4],EAX
+        MOV   [EDI + 8],EAX
+        MOV   [EDI + 12],EAX
+        MOV   [EDI + 16],EAX
+        MOV   [EDI + 20],EAX
+        MOV   [EDI + 24],EAX
+        MOV   [EDI + 28],EAX
+        MOV   [EDI + 32],EAX
+        MOV   [EDI + 36],EAX
+        MOV   [EDI + 40],EAX
+        MOV   [EDI + 44],EAX
+        MOV   [EDI + 48],EAX
+        MOV   [EDI + 52],EAX
+        MOV   [EDI + 56],EAX
+        MOV   [EDI + 60],EAX
+
+        POP   EBX
+        POP   EDI
+        POP   ESI
+end;
+{$ELSE}
+{$IFDEF CPU386_WIN64}
+// todo:
+{$ELSE}
 function Rol32(Value, Shift: LongWord): LongWord; inline;
 begin
   Result:= (Value shr (32 - Shift)) or (Value shl Shift);
@@ -92,22 +854,32 @@ end;
 
 function FF(A, B, C, D, X, S: LongWord): LongWord; inline;
 begin
-  Result:= Rol32(A + ((B and C) or (not B and D)) + X, S) + B;
+//  Result:= Rol32(A + ((B and C) or (not B and D)) + X, S) + B;
+//  Result:= Rol32(A + ((B and (C xor D)) xor D) + X, S) + B;
+  Result:= A + ((B and (C xor D)) xor D) + X;
+  Result:= Rol32(Result, S) + B;
 end;
 
 function GG(A, B, C, D, X, S: LongWord): LongWord; inline;
 begin
-  Result:= Rol32(A + ((B and D) or (C and not D)) + X, S) + B;
+//  Result:= Rol32(A + ((B and D) or (C and not D)) + X, S) + B;
+//  Result:= Rol32(A + ((D and (B xor C)) xor C) + X, S) + B;
+  Result:= A + ((D and (B xor C)) xor C) + X;
+  Result:= Rol32(Result, S) + B;
 end;
 
 function HH(A, B, C, D, X, S: LongWord): LongWord; inline;
 begin
-  Result:= Rol32(A + (B xor C xor D) + X, S) + B;
+//  Result:= Rol32(A + (B xor C xor D) + X, S) + B;
+  Result:= A + (B xor C xor D) + X;
+  Result:= Rol32(Result, S) + B;
 end;
 
 function II(A, B, C, D, X, S: LongWord): LongWord; inline;
 begin
-  Result:= Rol32(A + (C xor (B or not D)) + X, S) + B;
+//  Result:= Rol32(A + (C xor (B or not D)) + X, S) + B;
+  Result:= A + (C xor (B or not D)) + X;
+  Result:= Rol32(Result, S) + B;
 end;
 
 procedure TMD5Alg.Compress;
@@ -118,10 +890,10 @@ var
 begin
   Move(FData.Block, Block, SizeOf(Block));
 
-  A:= FData.Digest[0];
-  B:= FData.Digest[1];
-  C:= FData.Digest[2];
-  D:= FData.Digest[3];
+  A:= FData.State[0];
+  B:= FData.State[1];
+  C:= FData.State[2];
+  D:= FData.State[3];
                                                      {round 1}
   A:= FF(A, B, C, D, Block[ 0] + $D76AA478,  7);  { 1 }
   D:= FF(D, A, B, C, Block[ 1] + $E8C7B756, 12);  { 2 }
@@ -191,36 +963,24 @@ begin
   C:= II(C, D, A, B, Block[ 2] + $2AD7D2BB, 15);  { 63 }
   B:= II(B, C, D, A, Block[ 9] + $EB86D391, 21);  { 64 }
 
-  Inc(FData.Digest[0], A);
-  Inc(FData.Digest[1], B);
-  Inc(FData.Digest[2], C);
-  Inc(FData.Digest[3], D);
+  Inc(FData.State[0], A);
+  Inc(FData.State[1], B);
+  Inc(FData.State[2], C);
+  Inc(FData.State[3], D);
 
   FillChar(FData.Block, SizeOf(FData.Block), 0);
   FillChar(Block, SizeOf(Block), 0);
 end;
 
-{
-class function TMD5Alg.Release(Inst: PMD5Alg): Integer;
-begin
-  if Inst.FRefCount > 0 then begin
-    Result:= tfDecrement(Inst.FRefCount);
-    if Result = 0 then begin
-      Init(Inst);
-      FreeMem(Inst);
-    end;
-  end
-  else
-    Result:= Inst.FRefCount;
-end;
-}
+{$ENDIF}
+{$ENDIF}
 
 class procedure TMD5Alg.Init(Inst: PMD5Alg);
 begin
-  Inst.FData.Digest[0]:= $67452301;   // load magic initialization constants
-  Inst.FData.Digest[1]:= $EFCDAB89;
-  Inst.FData.Digest[2]:= $98BADCFE;
-  Inst.FData.Digest[3]:= $10325476;
+  Inst.FData.State[0]:= $67452301;   // load magic initialization constants
+  Inst.FData.State[1]:= $EFCDAB89;
+  Inst.FData.State[2]:= $98BADCFE;
+  Inst.FData.State[3]:= $10325476;
 
   FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
   Inst.FData.Count:= 0;
@@ -258,7 +1018,7 @@ begin
   PLongWord(@Inst.FData.Block[60])^:= LongWord(Inst.FData.Count shr 32);
   Inst.Compress;
 
-  Move(Inst.FData.Digest, PDigest^, SizeOf(TMD5Digest));
+  Move(Inst.FData.State, PDigest^, SizeOf(TMD5Digest));
 
   Init(Inst);
 end;

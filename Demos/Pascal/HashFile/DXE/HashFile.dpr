@@ -30,7 +30,7 @@ var
 begin
   MD5:= THash.MD5;
   SHA1:= THash.SHA1;
-  try
+//  try
     Stream:= TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
     try
       repeat
@@ -46,10 +46,10 @@ begin
     end;
     Writeln('MD5:  ', MD5.Digest.ToHex);
     Writeln('SHA1: ', SHA1.Digest.ToHex);
-  finally
-    MD5.Burn;
-    SHA1.Burn;
-  end;
+//  finally
+//    MD5.Burn;
+//    SHA1.Burn;
+//  end;
 end;
 
 procedure SHA1_HMAC_File(const FileName: string; const Key: ByteArray);

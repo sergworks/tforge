@@ -322,12 +322,15 @@ type
                                   // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;
   TMD5Digest = array[0..3] of LongWord;
-                                  // 160-bit SHA256 digest
+                                  // 160-bit SHA1 digest
   PSHA1Digest = ^TSHA1Digest;
   TSHA1Digest = array[0..4] of LongWord;
                                   // 256-bit SHA256 digest
   PSHA256Digest = ^TSHA256Digest;
   TSHA256Digest = array[0..7] of LongWord;
+                                  // 512-bit SHA512 digest
+  PSHA512Digest = ^TSHA512Digest;
+  TSHA512Digest = array[0..7] of UInt64;
 
 implementation
 

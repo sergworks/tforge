@@ -33,8 +33,6 @@ type
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PSHA256Alg; PDigest: PSHA256Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class procedure Purge(Inst: PCRC32Alg);  -- redirected to Init
-//         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetDigestSize(Inst: PSHA256Alg): LongInt;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PSHA256Alg): LongInt;
@@ -75,7 +73,6 @@ begin
     P^.FRefCount:= 1;
     TSHA256Alg.Init(P);
     if Inst <> nil then HashAlgRelease(Inst);
-//    if Inst <> nil then TSHA256Alg.Release(Inst);
     Inst:= P;
     Result:= TF_S_OK;
   except

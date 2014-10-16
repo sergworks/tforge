@@ -37,6 +37,7 @@ contains
   tfHashes in '..\..\Source\THashes\Client\tfHashes.pas',
   tfHashServ in '..\..\Source\THashes\Engine\tfHashServ.pas',
   tfHMAC in '..\..\Source\THashes\Engine\tfHMAC.pas',
-  tfSHA1 in '..\..\Source\THashes\Engine\tfSHA1.pas';
+  tfSHA1 in '..\..\Source\THashes\Engine\tfSHA1.pas',
+  tfSHA512 in '..\..\Source\THashes\Engine\tfSHA512.pas';
 
 end.
