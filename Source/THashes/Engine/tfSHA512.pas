@@ -763,36 +763,83 @@ begin
   FillChar(FData.Block, SizeOf(FData.Block), 0);
 end;
 
-class procedure TSHA512Alg.Done(Inst: PSHA512Alg; PDigest: PSHA256Digest);
+class procedure TSHA512Alg.Init(Inst: PSHA512Alg);
 begin
+  Inst.FData.Digest[0]:= $cbbb9d5dc1059ed8;
+  Inst.FData.Digest[1]:= $629a292a367cd507;
+  Inst.FData.Digest[2]:= $9159015a3070dd17;
+  Inst.FData.Digest[3]:= $152fecd8f70e5939;
+  Inst.FData.Digest[4]:= $67332667ffc00b31;
+  Inst.FData.Digest[5]:= $8eb44a8768581511;
+  Inst.FData.Digest[6]:= $db0c2e0d64f98fa7;
+  Inst.FData.Digest[7]:= $47b5481dbefa4fa4;
 
+  FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
+  Inst.FData.Count:= 0;
+end;
+
+class procedure TSHA512Alg.Update(Inst: PSHA512Alg; Data: PByte; DataSize: LongWord);
+var
+  Cnt, Ofs: LongWord;
+
+begin
+  while DataSize > 0 do begin
+    Ofs:= LongWord(Inst.FData.Count) and $7F;
+    Cnt:= $80 - Ofs;
+    if Cnt > DataSize then Cnt:= DataSize;
+    Move(Data^, PByte(@Inst.FData.Block)[Ofs], Cnt);
+    if (Cnt + Ofs = $80) then Inst.Compress;
+    Inc(Inst.FData.Count, Cnt);
+    Dec(DataSize, Cnt);
+    Inc(Data, Cnt);
+  end;
+end;
+
+class procedure TSHA512Alg.Done(Inst: PSHA512Alg; PDigest: PSHA256Digest);
+var
+  Ofs: LongWord;
+
+begin
+  Ofs:= LongWord(Inst.FData.Count) and $7F;
+  Inst.FData.Block[Ofs]:= $80;
+  if Ofs >= 112 then
+    Inst.Compress;
+
+  Inst.FData.Count:= Inst.FData.Count shl 3;
+  PUInt64(@Inst.FData.Block[112])^:= 0;
+  PUInt64(@Inst.FData.Block[120])^:= Swap64(Inst.FData.Count);
+  Inst.Compress;
+
+  Inst.FData.Digest[0]:= Swap64(Inst.FData.Digest[0]);
+  Inst.FData.Digest[1]:= Swap64(Inst.FData.Digest[1]);
+  Inst.FData.Digest[2]:= Swap64(Inst.FData.Digest[2]);
+  Inst.FData.Digest[3]:= Swap64(Inst.FData.Digest[3]);
+  Inst.FData.Digest[4]:= Swap64(Inst.FData.Digest[4]);
+  Inst.FData.Digest[5]:= Swap64(Inst.FData.Digest[5]);
+  Inst.FData.Digest[6]:= Swap64(Inst.FData.Digest[6]);
+  Inst.FData.Digest[7]:= Swap64(Inst.FData.Digest[7]);
+
+  Move(Inst.FData.Digest, PDigest^, SizeOf(TSHA512Digest));
+
+  Init(Inst);
+end;
+
+class function TSHA512Alg.GetBlockSize(Inst: PSHA512Alg): LongInt;
+begin
+  Result:= 128;
+end;
+
+class function TSHA512Alg.GetDigestSize(Inst: PSHA512Alg): LongInt;
+begin
+  Result:= SizeOf(TSHA256Digest);
 end;
 
 class function TSHA512Alg.Duplicate(Inst: PSHA512Alg;
   var DupInst: PSHA512Alg): TF_RESULT;
 begin
-
-end;
-
-class function TSHA512Alg.GetBlockSize(Inst: PSHA512Alg): LongInt;
-begin
-
-end;
-
-class function TSHA512Alg.GetDigestSize(Inst: PSHA512Alg): LongInt;
-begin
-
-end;
-
-class procedure TSHA512Alg.Init(Inst: PSHA512Alg);
-begin
-
-end;
-
-class procedure TSHA512Alg.Update(Inst: PSHA512Alg; Data: PByte;
-  DataSize: LongWord);
-begin
-
+  Result:= GetSHA512Algorithm(DupInst);
+  if Result = TF_S_OK then
+    DupInst.FData:= Inst.FData;
 end;
 
 end.

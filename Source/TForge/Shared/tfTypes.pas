@@ -210,6 +210,7 @@ const
   TF_ALG_MD5       = $1001;
   TF_ALG_SHA1      = $1002;
   TF_ALG_SHA256    = $1003;
+  TF_ALG_SHA512    = $1004;
                            // Non-cryptographic Hash Algorithms
   TF_ALG_CRC32     = $1801;
   TF_ALG_JENKINS_1 = $1802;

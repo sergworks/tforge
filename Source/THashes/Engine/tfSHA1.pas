@@ -7,6 +7,14 @@ unit tfSHA1;
 
 {$I TFL.inc}
 
+{$IFDEF TFL_CPU386_WIN32}
+  {$DEFINE CPU386_WIN32}
+{$ENDIF}
+
+{$IFDEF TFL_CPU386_WIN64}
+  {.$DEFINE CPU386_WIN64}
+{$ENDIF}
+
 interface
 
 uses tfTypes;
@@ -76,7 +84,6 @@ begin
     P^.FVTable:= @SHA1VTable;
     P^.FRefCount:= 1;
     TSHA1Alg.Init(P);
-//    if Inst <> nil then TSHA1Alg.Release(Inst);
     if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
@@ -84,7 +91,6 @@ begin
     Result:= TF_E_OUTOFMEMORY;
   end;
 end;
-
 
 { TSHA1Alg }
 
@@ -94,189 +100,2162 @@ begin
            ((Value and $FF0000) shr 8) or ((Value and $FF000000) shr 24);
 end;
 
+{$IFDEF CPU386_WIN32}
 procedure TSHA1Alg.Compress;
+asm
+        PUSH    ESI
+        PUSH    EDI
+        PUSH    EBX
+        PUSH    EBP
+        PUSH    EAX       // work register
+
+        LEA     EDI,[EAX].TSHA1Alg.FData.Block    // W:= @FData.Block;
+
+        MOV     EAX,[EDI - 20]      // A:= FData.Digest[0];
+        MOV     EBX,[EDI - 16]      // B:= FData.Digest[1];
+        MOV     ECX,[EDI - 12]      // C:= FData.Digest[2];
+        MOV     EDX,[EDI - 8]       // D:= FData.Digest[3];
+        MOV     EBP,[EDI - 4]       // E:= FData.Digest[4];
+
+                                                    { 0}
+//  W[0]:= Swap32(W[0]);
+//  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[0]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI]
+        BSWAP   ESI
+        MOV     [EDI],ESI
+        ADD     EBP,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        AND     ESI,EBX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $5A827999]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    { 1}
+//  W[1]:= Swap32(W[1]);
+//  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[1]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 4]
+        BSWAP   ESI
+        MOV     [EDI + 4],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        AND     ESI,EAX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $5A827999]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    { 2}
+//  W[2]:= Swap32(W[2]);
+//  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[2]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 8]
+        BSWAP   ESI
+        MOV     [EDI + 8],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        AND     ESI,EBP
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $5A827999]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    { 3}
+//  W[3]:= Swap32(W[3]);
+//  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[3]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 12]
+        BSWAP   ESI
+        MOV     [EDI + 12],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        AND     ESI,EDX
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $5A827999]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    { 4}
+//  W[4]:= Swap32(W[4]);
+//  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[4]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 16]
+        BSWAP   ESI
+        MOV     [EDI + 16],ESI
+        ADD     EAX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        AND     ESI,ECX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $5A827999]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    { 5}
+//  W[5]:= Swap32(W[5]);
+//  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[5]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 20]
+        BSWAP   ESI
+        MOV     [EDI + 20],ESI
+        ADD     EBP,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        AND     ESI,EBX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $5A827999]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    { 6}
+//  W[6]:= Swap32(W[6]);
+//  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[6]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 24]
+        BSWAP   ESI
+        MOV     [EDI + 24],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        AND     ESI,EAX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $5A827999]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    { 7}
+//  W[7]:= Swap32(W[7]);
+//  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[7]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 28]
+        BSWAP   ESI
+        MOV     [EDI + 28],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        AND     ESI,EBP
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $5A827999]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    { 8}
+//  W[8]:= Swap32(W[8]);
+//  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[8]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 32]
+        BSWAP   ESI
+        MOV     [EDI + 32],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        AND     ESI,EDX
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $5A827999]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    { 9}
+//  W[9]:= Swap32(W[9]);
+//  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[9]);
+//  C:= (C shl 30) or (C shr 2);
+                                    { 9}
+        MOV     ESI,[EDI + 36]
+        BSWAP   ESI
+        MOV     [EDI + 36],ESI
+        ADD     EAX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        AND     ESI,ECX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $5A827999]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {10}
+//  W[10]:= Swap32(W[10]);
+//  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[10]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 40]
+        BSWAP   ESI
+        MOV     [EDI + 40],ESI
+        ADD     EBP,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        AND     ESI,EBX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $5A827999]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {11}
+//  W[11]:= Swap32(W[11]);
+//  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[11]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 44]
+        BSWAP   ESI
+        MOV     [EDI + 44],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        AND     ESI,EAX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $5A827999]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {12}
+//  W[12]:= Swap32(W[12]);
+//  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[12]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 48]
+        BSWAP   ESI
+        MOV     [EDI + 48],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        AND     ESI,EBP
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $5A827999]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {13}
+//  W[13]:= Swap32(W[13]);
+//  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[13]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 52]
+        BSWAP   ESI
+        MOV     [EDI + 52],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        AND     ESI,EDX
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $5A827999]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {14}
+//  W[14]:= Swap32(W[14]);
+//  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[14]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 56]
+        BSWAP   ESI
+        MOV     [EDI + 56],ESI
+        ADD     EAX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        AND     ESI,ECX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $5A827999]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {15}
+//  W[15]:= Swap32(W[15]);
+//  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[15]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 60]
+        BSWAP   ESI
+        MOV     [EDI + 60],ESI
+        ADD     EBP,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        AND     ESI,EBX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $5A827999]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+
+                                                    {16}
+//  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+//  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[0]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI]
+        ROL     ESI,1
+        MOV     [EDI],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        AND     ESI,EAX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $5A827999]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {17}
+//  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+//  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[1]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 4]
+        ROL     ESI,1
+        MOV     [EDI + 4],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        AND     ESI,EBP
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $5A827999]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {18}
+//  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+//  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[2]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 8]
+        ROL     ESI,1
+        MOV     [EDI + 8],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        AND     ESI,EDX
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $5A827999]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {19}
+//  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+//  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[3]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 12]
+        ROL     ESI,1
+        MOV     [EDI + 12],ESI
+        ADD     EAX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        AND     ESI,ECX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $5A827999]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {20}
+//  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+//  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[4]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 16]
+        ROL     ESI,1
+        MOV     [EDI + 16],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $6ED9EBA1]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {21}
+//  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+//  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[5]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 20]
+        ROL     ESI,1
+        MOV     [EDI + 20],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $6ED9EBA1]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {22}
+//  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+//  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[6]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 24]
+        ROL     ESI,1
+        MOV     [EDI + 24],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $6ED9EBA1]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {23}
+//  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+//  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[7]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 28]
+        ROL     ESI,1
+        MOV     [EDI + 28],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $6ED9EBA1]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {24}
+//  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+//  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[8]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 20]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 32]
+        ROL     ESI,1
+        MOV     [EDI + 32],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $6ED9EBA1]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {25}
+//  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+//  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[9]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 36]
+        ROL     ESI,1
+        MOV     [EDI + 36],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $6ED9EBA1]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {26}
+//  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+//  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[10]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 40]
+        ROL     ESI,1
+        MOV     [EDI + 40],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $6ED9EBA1]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {27}
+//  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+//  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[11]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 44]
+        ROL     ESI,1
+        MOV     [EDI + 44],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $6ED9EBA1]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {28}
+//  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+//  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[12]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 48]
+        ROL     ESI,1
+        MOV     [EDI + 48],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $6ED9EBA1]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {29}
+//  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+//  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[13]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 52]
+        ROL     ESI,1
+        MOV     [EDI + 52],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $6ED9EBA1]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {30}
+//  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+//  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[14]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 56]
+        ROL     ESI,1
+        MOV     [EDI + 56],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $6ED9EBA1]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {31}
+//  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+//  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[15]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 60]
+        ROL     ESI,1
+        MOV     [EDI + 60],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $6ED9EBA1]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {32}
+//  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+//  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[0]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI]
+        ROL     ESI,1
+        MOV     [EDI],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $6ED9EBA1]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {33}
+//  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+//  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[1]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 4]
+        ROL     ESI,1
+        MOV     [EDI + 4],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $6ED9EBA1]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {34}
+//  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+//  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[2]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 8]
+        ROL     ESI,1
+        MOV     [EDI + 8],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $6ED9EBA1]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {35}
+//  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+//  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[3]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 12]
+        ROL     ESI,1
+        MOV     [EDI + 12],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $6ED9EBA1]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {36}
+//  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+//  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[4]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 16]
+        ROL     ESI,1
+        MOV     [EDI + 16],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $6ED9EBA1]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {37}
+//  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+//  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[5]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 20]
+        ROL     ESI,1
+        MOV     [EDI + 20],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $6ED9EBA1]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {38}
+//  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+//  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[6]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 24]
+        ROL     ESI,1
+        MOV     [EDI + 24],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $6ED9EBA1]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {39}
+//  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+//  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[7]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 28]
+        ROL     ESI,1
+        MOV     [EDI + 28],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $6ED9EBA1]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+
+                                                    {40}
+//  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+//  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[8]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 20]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 32]
+        ROL     ESI,1
+        MOV     [EDI + 32],ESI
+        ADD     EBP,ESI
+        MOV     [ESP],EBX
+        MOV     ESI,EBX
+        AND     [ESP],ECX
+        OR      ESI,ECX
+        AND     ESI,EDX
+        OR      ESI,[ESP]
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $8F1BBCDC]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {41}
+//  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+//  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[9]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 36]
+        ROL     ESI,1
+        MOV     [EDI + 36],ESI
+        ADD     EDX,ESI
+        MOV     [ESP],EAX
+        MOV     ESI,EAX
+        AND     [ESP],EBX
+        OR      ESI,EBX
+        AND     ESI,ECX
+        OR      ESI,[ESP]
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $8F1BBCDC]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {42}
+//  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+//  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[10]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 40]
+        ROL     ESI,1
+        MOV     [EDI + 40],ESI
+        ADD     ECX,ESI
+        MOV     [ESP],EBP
+        MOV     ESI,EBP
+        AND     [ESP],EAX
+        OR      ESI,EAX
+        AND     ESI,EBX
+        OR      ESI,[ESP]
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $8F1BBCDC]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {43}
+//  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+//  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[11]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 44]
+        ROL     ESI,1
+        MOV     [EDI + 44],ESI
+        ADD     EBX,ESI
+        MOV     [ESP],EDX
+        MOV     ESI,EDX
+        AND     [ESP],EBP
+        OR      ESI,EBP
+        AND     ESI,EAX
+        OR      ESI,[ESP]
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $8F1BBCDC]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {44}
+//  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+//  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[12]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 48]
+        ROL     ESI,1
+        MOV     [EDI + 48],ESI
+        ADD     EAX,ESI
+        MOV     [ESP],ECX
+        MOV     ESI,ECX
+        AND     [ESP],EDX
+        OR      ESI,EDX
+        AND     ESI,EBP
+        OR      ESI,[ESP]
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $8F1BBCDC]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {45}
+//  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+//  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[13]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 52]
+        ROL     ESI,1
+        MOV     [EDI + 52],ESI
+        ADD     EBP,ESI
+        MOV     [ESP],EBX
+        MOV     ESI,EBX
+        AND     [ESP],ECX
+        OR      ESI,ECX
+        AND     ESI,EDX
+        OR      ESI,[ESP]
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $8F1BBCDC]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {46}
+//  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+//  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[14]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 56]
+        ROL     ESI,1
+        MOV     [EDI + 56],ESI
+        ADD     EDX,ESI
+        MOV     [ESP],EAX
+        MOV     ESI,EAX
+        AND     [ESP],EBX
+        OR      ESI,EBX
+        AND     ESI,ECX
+        OR      ESI,[ESP]
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $8F1BBCDC]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {47}
+//  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+//  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[15]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 60]
+        ROL     ESI,1
+        MOV     [EDI + 60],ESI
+        ADD     ECX,ESI
+        MOV     [ESP],EBP
+        MOV     ESI,EBP
+        AND     [ESP],EAX
+        OR      ESI,EAX
+        AND     ESI,EBX
+        OR      ESI,[ESP]
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $8F1BBCDC]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {48}
+//  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+//  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[0]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI]
+        ROL     ESI,1
+        MOV     [EDI],ESI
+        ADD     EBX,ESI
+        MOV     [ESP],EDX
+        MOV     ESI,EDX
+        AND     [ESP],EBP
+        OR      ESI,EBP
+        AND     ESI,EAX
+        OR      ESI,[ESP]
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $8F1BBCDC]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {49}
+//  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+//  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[1]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 4]
+        ROL     ESI,1
+        MOV     [EDI + 4],ESI
+        ADD     EAX,ESI
+        MOV     [ESP],ECX
+        MOV     ESI,ECX
+        AND     [ESP],EDX
+        OR      ESI,EDX
+        AND     ESI,EBP
+        OR      ESI,[ESP]
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $8F1BBCDC]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {50}
+//  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+//  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[2]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 8]
+        ROL     ESI,1
+        MOV     [EDI + 8],ESI
+        ADD     EBP,ESI
+        MOV     [ESP],EBX
+        MOV     ESI,EBX
+        AND     [ESP],ECX
+        OR      ESI,ECX
+        AND     ESI,EDX
+        OR      ESI,[ESP]
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $8F1BBCDC]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {51}
+//  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+//  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[3]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 12]
+        ROL     ESI,1
+        MOV     [EDI + 12],ESI
+        ADD     EDX,ESI
+        MOV     [ESP],EAX
+        MOV     ESI,EAX
+        AND     [ESP],EBX
+        OR      ESI,EBX
+        AND     ESI,ECX
+        OR      ESI,[ESP]
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $8F1BBCDC]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {52}
+//  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+//  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[4]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 16]
+        ROL     ESI,1
+        MOV     [EDI + 16],ESI
+        ADD     ECX,ESI
+        MOV     [ESP],EBP
+        MOV     ESI,EBP
+        AND     [ESP],EAX
+        OR      ESI,EAX
+        AND     ESI,EBX
+        OR      ESI,[ESP]
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $8F1BBCDC]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {53}
+//  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+//  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[5]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 20]
+        ROL     ESI,1
+        MOV     [EDI + 20],ESI
+        ADD     EBX,ESI
+        MOV     [ESP],EDX
+        MOV     ESI,EDX
+        AND     [ESP],EBP
+        OR      ESI,EBP
+        AND     ESI,EAX
+        OR      ESI,[ESP]
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $8F1BBCDC]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {54}
+//  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+//  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[6]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 24]
+        ROL     ESI,1
+        MOV     [EDI + 24],ESI
+        ADD     EAX,ESI
+        MOV     [ESP],ECX
+        MOV     ESI,ECX
+        AND     [ESP],EDX
+        OR      ESI,EDX
+        AND     ESI,EBP
+        OR      ESI,[ESP]
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $8F1BBCDC]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {55}
+//  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+//  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[7]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 28]
+        ROL     ESI,1
+        MOV     [EDI + 28],ESI
+        ADD     EBP,ESI
+        MOV     [ESP],EBX
+        MOV     ESI,EBX
+        AND     [ESP],ECX
+        OR      ESI,ECX
+        AND     ESI,EDX
+        OR      ESI,[ESP]
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $8F1BBCDC]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {56}
+//  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+//  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[8]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 20]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 32]
+        ROL     ESI,1
+        MOV     [EDI + 32],ESI
+        ADD     EDX,ESI
+        MOV     [ESP],EAX
+        MOV     ESI,EAX
+        AND     [ESP],EBX
+        OR      ESI,EBX
+        AND     ESI,ECX
+        OR      ESI,[ESP]
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $8F1BBCDC]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {57}
+//  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+//  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[9]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 36]
+        ROL     ESI,1
+        MOV     [EDI + 36],ESI
+        ADD     ECX,ESI
+        MOV     [ESP],EBP
+        MOV     ESI,EBP
+        AND     [ESP],EAX
+        OR      ESI,EAX
+        AND     ESI,EBX
+        OR      ESI,[ESP]
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $8F1BBCDC]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {58}
+//  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+//  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[10]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 40]
+        ROL     ESI,1
+        MOV     [EDI + 40],ESI
+        ADD     EBX,ESI
+        MOV     [ESP],EDX
+        MOV     ESI,EDX
+        AND     [ESP],EBP
+        OR      ESI,EBP
+        AND     ESI,EAX
+        OR      ESI,[ESP]
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $8F1BBCDC]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {59}
+//  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+//  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[11]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 44]
+        ROL     ESI,1
+        MOV     [EDI + 44],ESI
+        ADD     EAX,ESI
+        MOV     [ESP],ECX
+        MOV     ESI,ECX
+        AND     [ESP],EDX
+        OR      ESI,EDX
+        AND     ESI,EBP
+        OR      ESI,[ESP]
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $8F1BBCDC]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {60}
+//  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+//  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[12]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 48]
+        ROL     ESI,1
+        MOV     [EDI + 48],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $CA62C1D6]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {61}
+//  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+//  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[13]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 52]
+        ROL     ESI,1
+        MOV     [EDI + 52],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $CA62C1D6]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {62}
+//  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+//  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[14]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 56]
+        ROL     ESI,1
+        MOV     [EDI + 56],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $CA62C1D6]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {63}
+//  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+//  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[15]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 60]
+        ROL     ESI,1
+        MOV     [EDI + 60],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $CA62C1D6]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {64}
+//  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+//  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[0]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI]
+        ROL     ESI,1
+        MOV     [EDI],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $CA62C1D6]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {65}
+//  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+//  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[1]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 4]
+        ROL     ESI,1
+        MOV     [EDI + 4],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $CA62C1D6]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {66}
+//  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+//  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[2]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 8]
+        ROL     ESI,1
+        MOV     [EDI + 8],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $CA62C1D6]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {67}
+//  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+//  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[3]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 12]
+        ROL     ESI,1
+        MOV     [EDI + 12],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $CA62C1D6]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {68}
+//  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+//  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[4]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 16]
+        ROL     ESI,1
+        MOV     [EDI + 16],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $CA62C1D6]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {69}
+//  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+//  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[5]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 20]
+        ROL     ESI,1
+        MOV     [EDI + 20],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $CA62C1D6]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {70}
+//  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+//  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[6]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 24]
+        ROL     ESI,1
+        MOV     [EDI + 24],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $CA62C1D6]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {71}
+//  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+//  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[7]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 28]
+        ROL     ESI,1
+        MOV     [EDI + 28],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $CA62C1D6]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {72}
+//  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+//  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[8]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 20]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 32]
+        ROL     ESI,1
+        MOV     [EDI + 32],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $CA62C1D6]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {73}
+//  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+//  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[9]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 24]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 36]
+        ROL     ESI,1
+        MOV     [EDI + 36],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $CA62C1D6]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {74}
+//  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+//  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[10]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 8]
+        XOR     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 40]
+        ROL     ESI,1
+        MOV     [EDI + 40],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $CA62C1D6]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+                                                    {75}
+//  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+//  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[11]);
+//  B:= (B shl 30) or (B shr 2);
+
+        MOV     ESI,[EDI + 32]
+        XOR     ESI,[EDI + 12]
+        XOR     ESI,[EDI + 52]
+        XOR     ESI,[EDI + 44]
+        ROL     ESI,1
+        MOV     [EDI + 44],ESI
+        ADD     EBP,ESI
+        MOV     ESI,EBX
+        XOR     ESI,ECX
+        XOR     ESI,EDX
+        ROL     EBX,30
+        LEA     EBP,[EBP + ESI + $CA62C1D6]
+        MOV     ESI,EAX
+        ROL     ESI,5
+        ADD     EBP,ESI
+                                                    {76}
+//  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+//  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[12]);
+//  A:= (A shl 30) or (A shr 2);
+
+        MOV     ESI,[EDI + 36]
+        XOR     ESI,[EDI + 16]
+        XOR     ESI,[EDI + 56]
+        XOR     ESI,[EDI + 48]
+        ROL     ESI,1
+        MOV     [EDI + 48],ESI
+        ADD     EDX,ESI
+        MOV     ESI,EAX
+        XOR     ESI,EBX
+        XOR     ESI,ECX
+        ROL     EAX,30
+        LEA     EDX,[EDX + ESI + $CA62C1D6]
+        MOV     ESI,EBP
+        ROL     ESI,5
+        ADD     EDX,ESI
+                                                    {77}
+//  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+//  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[13]);
+//  E:= (E shl 30) or (E shr 2);
+
+        MOV     ESI,[EDI + 40]
+        XOR     ESI,[EDI + 20]
+        XOR     ESI,[EDI + 60]
+        XOR     ESI,[EDI + 52]
+        ROL     ESI,1
+//        MOV     [EDI + 52],ESI
+        ADD     ECX,ESI
+        MOV     ESI,EBP
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        ROL     EBP,30
+        LEA     ECX,[ECX + ESI + $CA62C1D6]
+        MOV     ESI,EDX
+        ROL     ESI,5
+        ADD     ECX,ESI
+                                                    {78}
+//  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+//  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[14]);
+//  D:= (D shl 30) or (D shr 2);
+
+        MOV     ESI,[EDI + 44]
+        XOR     ESI,[EDI + 24]
+        XOR     ESI,[EDI]
+        XOR     ESI,[EDI + 56]
+        ROL     ESI,1
+//        MOV     [EDI + 56],ESI
+        ADD     EBX,ESI
+        MOV     ESI,EDX
+        XOR     ESI,EBP
+        XOR     ESI,EAX
+        ROL     EDX,30
+        LEA     EBX,[EBX + ESI + $CA62C1D6]
+        MOV     ESI,ECX
+        ROL     ESI,5
+        ADD     EBX,ESI
+                                                    {79}
+//  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+//  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+//  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[15]);
+//  C:= (C shl 30) or (C shr 2);
+
+        MOV     ESI,[EDI + 48]
+        XOR     ESI,[EDI + 28]
+        XOR     ESI,[EDI + 4]
+        XOR     ESI,[EDI + 60]
+        ROL     ESI,1
+//        MOV     [EDI + 60],ESI
+        ADD     EAX,ESI
+        MOV     ESI,ECX
+        XOR     ESI,EDX
+        XOR     ESI,EBP
+        ROL     ECX,30
+        LEA     EAX,[EAX + ESI + $CA62C1D6]
+        MOV     ESI,EBX
+        ROL     ESI,5
+        ADD     EAX,ESI
+
+
+        ADD   [EDI - 20],EAX      // Inc(FData.Digest[0], A);
+        ADD   [EDI - 16],EBX      // Inc(FData.Digest[1], B);
+        ADD   [EDI - 12],ECX      // Inc(FData.Digest[2], C);
+        ADD   [EDI - 8],EDX       // Inc(FData.Digest[3], D);
+        ADD   [EDI - 4],EBP       // Inc(FData.Digest[4], E);
+
+                                  //  FillChar(Block, SizeOf(Block), 0);
+        XOR   EAX,EAX
+        MOV   [ESP],EAX
+        MOV   [EDI],EAX
+        MOV   [EDI + 4],EAX
+        MOV   [EDI + 8],EAX
+        MOV   [EDI + 12],EAX
+        MOV   [EDI + 16],EAX
+        MOV   [EDI + 20],EAX
+        MOV   [EDI + 24],EAX
+        MOV   [EDI + 28],EAX
+        MOV   [EDI + 32],EAX
+        MOV   [EDI + 36],EAX
+        MOV   [EDI + 40],EAX
+        MOV   [EDI + 44],EAX
+        MOV   [EDI + 48],EAX
+        MOV   [EDI + 52],EAX
+        MOV   [EDI + 56],EAX
+        MOV   [EDI + 60],EAX
+
+        POP     EAX
+        POP     EBP
+        POP     EBX
+        POP     EDI
+        POP     ESI
+end;
+{$ELSE}
+{$IFDEF CPU386_WIN64}
+// todo:
+{$ELSE}
+procedure TSHA1Alg.Compress;
+type
+  PLongArray = ^TLongArray;
+  TLongArray = array[0..15] of LongWord;
+
 var
   A, B, C, D, E: LongWord;
-  W: array[0..79] of LongWord;
-  I: LongWord;
+  W: PLongArray;
+  Tmp: LongWord;
 
 begin
-  Move(FData.Block, W, SizeOf(FData.Block));
-
-  for I:= 0 to 15 do
-    W[I]:= Swap32(W[I]);
-  for I:= 16 to 79 do
-    W[I]:= ((W[I-3] xor W[I-8] xor W[I-14] xor W[I-16]) shl 1) or
-           ((W[I-3] xor W[I-8] xor W[I-14] xor W[I-16]) shr 31);
+  W:= @FData.Block;
 
   A:= FData.Digest[0];
   B:= FData.Digest[1];
   C:= FData.Digest[2];
   D:= FData.Digest[3];
   E:= FData.Digest[4];
-
-  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[ 0]);
+                                                    { 0}
+  W[0]:= Swap32(W[0]);
+  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[0]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[ 1]);
+                                                    { 1}
+  W[1]:= Swap32(W[1]);
+  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[1]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[ 2]);
+                                                    { 2}
+  W[2]:= Swap32(W[2]);
+  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[2]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[ 3]);
+                                                    { 3}
+  W[3]:= Swap32(W[3]);
+  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[3]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[ 4]);
+                                                    { 4}
+  W[4]:= Swap32(W[4]);
+  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[4]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[ 5]);
+                                                    { 5}
+  W[5]:= Swap32(W[5]);
+  Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[5]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[ 6]);
+                                                    { 6}
+  W[6]:= Swap32(W[6]);
+  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[6]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[ 7]);
+                                                    { 7}
+  W[7]:= Swap32(W[7]);
+  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[7]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[ 8]);
+                                                    { 8}
+  W[8]:= Swap32(W[8]);
+  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[8]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[ 9]);
+                                                    { 9}
+  W[9]:= Swap32(W[9]);
+  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[9]);
   C:= (C shl 30) or (C shr 2);
+                                                    {10}
+  W[10]:= Swap32(W[10]);
   Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[10]);
   B:= (B shl 30) or (B shr 2);
+                                                    {11}
+  W[11]:= Swap32(W[11]);
   Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[11]);
   A:= (A shl 30) or (A shr 2);
+                                                    {12}
+  W[12]:= Swap32(W[12]);
   Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[12]);
   E:= (E shl 30) or (E shr 2);
+                                                    {13}
+  W[13]:= Swap32(W[13]);
   Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[13]);
   D:= (D shl 30) or (D shr 2);
+                                                    {14}
+  W[14]:= Swap32(W[14]);
   Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[14]);
   C:= (C shl 30) or (C shr 2);
+                                                    {15}
+  W[15]:= Swap32(W[15]);
   Inc(E,((A shl 5) or (A shr 27)) + (D xor (B and (C xor D))) + $5A827999 + W[15]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[16]);
+                                                    {16}
+  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (C xor (A and (B xor C))) + $5A827999 + W[0]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[17]);
+                                                    {17}
+  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (B xor (E and (A xor B))) + $5A827999 + W[1]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[18]);
+                                                    {18}
+  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (A xor (D and (E xor A))) + $5A827999 + W[2]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[19]);
+                                                    {19}
+  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (E xor (C and (D xor E))) + $5A827999 + W[3]);
   C:= (C shl 30) or (C shr 2);
 
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[20]);
+                                                    {20}
+  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[4]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[21]);
+                                                    {21}
+  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[5]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[22]);
+                                                    {22}
+  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[6]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[23]);
+                                                    {23}
+  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[7]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[24]);
+                                                    {24}
+  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[8]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[25]);
+                                                    {25}
+  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[9]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[26]);
+                                                    {26}
+  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[10]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[27]);
+                                                    {27}
+  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[11]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[28]);
+                                                    {28}
+  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[12]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[29]);
+                                                    {29}
+  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[13]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[30]);
+                                                    {30}
+  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[14]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[31]);
+                                                    {31}
+  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[15]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[32]);
+                                                    {32}
+  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[0]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[33]);
+                                                    {33}
+  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[1]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[34]);
+                                                    {34}
+  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[2]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[35]);
+                                                    {35}
+  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $6ED9EBA1 + W[3]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[36]);
+                                                    {36}
+  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $6ED9EBA1 + W[4]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[37]);
+                                                    {37}
+  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $6ED9EBA1 + W[5]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[38]);
+                                                    {38}
+  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $6ED9EBA1 + W[6]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[39]);
+                                                    {39}
+  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $6ED9EBA1 + W[7]);
   C:= (C shl 30) or (C shr 2);
 
-  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[40]);
+                                                    {40}
+  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[8]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[41]);
+                                                    {41}
+  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[9]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[42]);
+                                                    {42}
+  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[10]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[43]);
+                                                    {43}
+  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[11]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[44]);
+                                                    {44}
+  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[12]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[45]);
+                                                    {45}
+  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[13]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[46]);
+                                                    {46}
+  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[14]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[47]);
+                                                    {47}
+  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[15]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[48]);
+                                                    {48}
+  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[0]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[49]);
+                                                    {49}
+  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[1]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[50]);
+                                                    {50}
+  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[2]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[51]);
+                                                    {51}
+  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[3]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[52]);
+                                                    {52}
+  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[4]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[53]);
+                                                    {53}
+  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[5]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[54]);
+                                                    {54}
+  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[6]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[55]);
+                                                    {55}
+  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + ((B and C) or (D and (B or C))) + $8F1BBCDC + W[7]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[56]);
+                                                    {56}
+  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + ((A and B) or (C and (A or B))) + $8F1BBCDC + W[8]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[57]);
+                                                    {57}
+  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + ((E and A) or (B and (E or A))) + $8F1BBCDC + W[9]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[58]);
+                                                    {58}
+  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + ((D and E) or (A and (D or E))) + $8F1BBCDC + W[10]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[59]);
+                                                    {59}
+  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + ((C and D) or (E and (C or D))) + $8F1BBCDC + W[11]);
   C:= (C shl 30) or (C shr 2);
-
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[60]);
+                                                    {60}
+  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[12]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[61]);
+                                                    {61}
+  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[13]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[62]);
+                                                    {62}
+  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[14]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[63]);
+                                                    {63}
+  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[15]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[64]);
+                                                    {64}
+  Tmp:= W[13] xor W[8] xor W[2] xor W[0];
+  W[0]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[0]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[65]);
+                                                    {65}
+  Tmp:= W[14] xor W[9] xor W[3] xor W[1];
+  W[1]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[1]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[66]);
+                                                    {66}
+  Tmp:= W[15] xor W[10] xor W[4] xor W[2];
+  W[2]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[2]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[67]);
+                                                    {67}
+  Tmp:= W[0] xor W[11] xor W[5] xor W[3];
+  W[3]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[3]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[68]);
+                                                    {68}
+  Tmp:= W[1] xor W[12] xor W[6] xor W[4];
+  W[4]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[4]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[69]);
+                                                    {69}
+  Tmp:= W[2] xor W[13] xor W[7] xor W[5];
+  W[5]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[5]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[70]);
+                                                    {70}
+  Tmp:= W[3] xor W[14] xor W[8] xor W[6];
+  W[6]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[6]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[71]);
+                                                    {71}
+  Tmp:= W[4] xor W[15] xor W[9] xor W[7];
+  W[7]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[7]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[72]);
+                                                    {72}
+  Tmp:= W[5] xor W[0] xor W[10] xor W[8];
+  W[8]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[8]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[73]);
+                                                    {73}
+  Tmp:= W[6] xor W[1] xor W[11] xor W[9];
+  W[9]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[9]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[74]);
+                                                    {74}
+  Tmp:= W[7] xor W[2] xor W[12] xor W[10];
+  W[10]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[10]);
   C:= (C shl 30) or (C shr 2);
-  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[75]);
+                                                    {75}
+  Tmp:= W[8] xor W[3] xor W[13] xor W[11];
+  W[11]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(E,((A shl 5) or (A shr 27)) + (B xor C xor D) + $CA62C1D6 + W[11]);
   B:= (B shl 30) or (B shr 2);
-  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[76]);
+                                                    {76}
+  Tmp:= W[9] xor W[4] xor W[14] xor W[12];
+  W[12]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(D,((E shl 5) or (E shr 27)) + (A xor B xor C) + $CA62C1D6 + W[12]);
   A:= (A shl 30) or (A shr 2);
-  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[77]);
+                                                    {77}
+  Tmp:= W[10] xor W[5] xor W[15] xor W[13];
+  W[13]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(C,((D shl 5) or (D shr 27)) + (E xor A xor B) + $CA62C1D6 + W[13]);
   E:= (E shl 30) or (E shr 2);
-  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[78]);
+                                                    {78}
+  Tmp:= W[11] xor W[6] xor W[0] xor W[14];
+  W[14]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(B,((C shl 5) or (C shr 27)) + (D xor E xor A) + $CA62C1D6 + W[14]);
   D:= (D shl 30) or (D shr 2);
-  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[79]);
+                                                    {79}
+  Tmp:= W[12] xor W[7] xor W[1] xor W[15];
+  W[15]:= (Tmp shl 1) or (Tmp shr 31);
+  Inc(A,((B shl 5) or (B shr 27)) + (C xor D xor E) + $CA62C1D6 + W[15]);
   C:= (C shl 30) or (C shr 2);
 
   FData.Digest[0]:= FData.Digest[0] + A;
@@ -284,23 +2263,13 @@ begin
   FData.Digest[2]:= FData.Digest[2] + C;
   FData.Digest[3]:= FData.Digest[3] + D;
   FData.Digest[4]:= FData.Digest[4] + E;
-  FillChar(W, SizeOf(W), 0);
+//  FillChar(W, SizeOf(W), 0);
   FillChar(FData.Block, SizeOf(FData.Block), 0);
 end;
-{
-class function TSHA1Alg.Release(Inst: PSHA1Alg): Integer;
-begin
-  if Inst.FRefCount > 0 then begin
-    Result:= tfDecrement(Inst.FRefCount);
-    if Result = 0 then begin
-      Init(Inst);
-      FreeMem(Inst);
-    end;
-  end
-  else
-    Result:= Inst.FRefCount;
-end;
-}
+
+{$ENDIF}
+{$ENDIF}
+
 class procedure TSHA1Alg.Init(Inst: PSHA1Alg);
 begin
   Inst.FData.Digest[0]:= $67452301;

@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors,
-     tfMD5, tfSHA1, tfSHA256,
+     tfMD5, tfSHA1, tfSHA256, tfSHA512,
      tfCRC32, tfJenkinsOne,
      tfHMAC;
 
@@ -82,6 +82,7 @@ const
   MD5_LITERAL: UTF8String = 'MD5';
   SHA1_LITERAL: UTF8String = 'SHA1';
   SHA256_LITERAL: UTF8String = 'SHA256';
+  SHA512_LITERAL: UTF8String = 'SHA512';
   CRC32_LITERAL: UTF8String = 'CRC32';
   JENKINSONE_LITERAL: UTF8String = 'JENKINSONE';
 
@@ -107,6 +108,7 @@ begin
   AddTableItem(MD5_LITERAL, @GetMD5Algorithm);
   AddTableItem(SHA1_LITERAL, @GetSHA1Algorithm);
   AddTableItem(SHA256_LITERAL, @GetSHA256Algorithm);
+  AddTableItem(SHA512_LITERAL, @GetSHA512Algorithm);
   AddTableItem(CRC32_LITERAL, @GetCRC32Algorithm);
   AddTableItem(JENKINSONE_LITERAL, @GetJenkinsOneAlgorithm);
 end;
@@ -204,6 +206,7 @@ begin
     TF_ALG_MD5: GetMD5Algorithm(PMD5Alg(Alg));
     TF_ALG_SHA1: GetSHA1Algorithm(PSHA1Alg(Alg));
     TF_ALG_SHA256: GetSHA256Algorithm(PSHA256Alg(Alg));
+    TF_ALG_SHA512: GetSHA512Algorithm(PSHA512Alg(Alg));
   else
     case AlgID of
       TF_ALG_CRC32: GetCRC32Algorithm(PCRC32Alg(Alg));
@@ -229,8 +232,7 @@ begin
 end;
 
 class function THashServer.GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
-//        Key: Pointer; KeySize: Cardinal;
-        const HashAlg: IHashAlgorithm): TF_RESULT;
+                                   const HashAlg: IHashAlgorithm): TF_RESULT;
 begin
   Result:= GetHMACAlgorithm(PHMACAlg(HMACAlg), HashAlg);
 end;

@@ -8,7 +8,7 @@ unit tfMD5;
 {$I TFL.inc}
 
 {$IFDEF TFL_CPU386_WIN32}
-  {$DEFINE CPU386_WIN32}
+  {.$DEFINE CPU386_WIN32}
 {$ENDIF}
 
 {$IFDEF TFL_CPU386_WIN64}
@@ -24,7 +24,7 @@ type
   TMD5Alg = record
   private type
     TData = record
-      State: TMD5Digest;
+      Digest: TMD5Digest;
       Block: array[0..63] of Byte;    // 512-bit message block
       Count: UInt64;                  // number of bytes processed
     end;
@@ -97,10 +97,10 @@ asm
 
         LEA   EDI,[EAX].TMD5Alg.FData.Block
 
-        MOV   EAX,[EDI - 16]      // A:= FData.State[0];
-        MOV   EBX,[EDI - 12]      // B:= FData.State[1];
-        MOV   ECX,[EDI - 8]       // C:= FData.State[2];
-        MOV   EDX,[EDI - 4]       // D:= FData.State[3];
+        MOV   EAX,[EDI - 16]      // A:= FData.Digest[0];
+        MOV   EBX,[EDI - 12]      // B:= FData.Digest[1];
+        MOV   ECX,[EDI - 8]       // C:= FData.Digest[2];
+        MOV   EDX,[EDI - 4]       // D:= FData.Digest[3];
 
 // function FF(A, B, C, D, X, S: LongWord): LongWord; inline;
 // begin
@@ -815,10 +815,10 @@ asm
         ADD   EBX,ECX
 
 
-        ADD   [EDI - 16],EAX      // Inc(FData.State[0], A);
-        ADD   [EDI - 12],EBX      // Inc(FData.State[1], B);
-        ADD   [EDI - 8],ECX       // Inc(FData.State[2], C);
-        ADD   [EDI - 4],EDX       // Inc(FData.State[3], D);
+        ADD   [EDI - 16],EAX      // Inc(FData.Digest[0], A);
+        ADD   [EDI - 12],EBX      // Inc(FData.Digest[1], B);
+        ADD   [EDI - 8],ECX       // Inc(FData.Digest[2], C);
+        ADD   [EDI - 4],EDX       // Inc(FData.Digest[3], D);
 
                                   //  FillChar(Block, SizeOf(Block), 0);
         XOR   EAX,EAX
@@ -890,10 +890,10 @@ var
 begin
   Move(FData.Block, Block, SizeOf(Block));
 
-  A:= FData.State[0];
-  B:= FData.State[1];
-  C:= FData.State[2];
-  D:= FData.State[3];
+  A:= FData.Digest[0];
+  B:= FData.Digest[1];
+  C:= FData.Digest[2];
+  D:= FData.Digest[3];
                                                      {round 1}
   A:= FF(A, B, C, D, Block[ 0] + $D76AA478,  7);  { 1 }
   D:= FF(D, A, B, C, Block[ 1] + $E8C7B756, 12);  { 2 }
@@ -963,10 +963,10 @@ begin
   C:= II(C, D, A, B, Block[ 2] + $2AD7D2BB, 15);  { 63 }
   B:= II(B, C, D, A, Block[ 9] + $EB86D391, 21);  { 64 }
 
-  Inc(FData.State[0], A);
-  Inc(FData.State[1], B);
-  Inc(FData.State[2], C);
-  Inc(FData.State[3], D);
+  Inc(FData.Digest[0], A);
+  Inc(FData.Digest[1], B);
+  Inc(FData.Digest[2], C);
+  Inc(FData.Digest[3], D);
 
   FillChar(FData.Block, SizeOf(FData.Block), 0);
   FillChar(Block, SizeOf(Block), 0);
@@ -977,10 +977,10 @@ end;
 
 class procedure TMD5Alg.Init(Inst: PMD5Alg);
 begin
-  Inst.FData.State[0]:= $67452301;   // load magic initialization constants
-  Inst.FData.State[1]:= $EFCDAB89;
-  Inst.FData.State[2]:= $98BADCFE;
-  Inst.FData.State[3]:= $10325476;
+  Inst.FData.Digest[0]:= $67452301;   // load magic initialization constants
+  Inst.FData.Digest[1]:= $EFCDAB89;
+  Inst.FData.Digest[2]:= $98BADCFE;
+  Inst.FData.Digest[3]:= $10325476;
 
   FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
   Inst.FData.Count:= 0;
@@ -1018,7 +1018,7 @@ begin
   PLongWord(@Inst.FData.Block[60])^:= LongWord(Inst.FData.Count shr 32);
   Inst.Compress;
 
-  Move(Inst.FData.State, PDigest^, SizeOf(TMD5Digest));
+  Move(Inst.FData.Digest, PDigest^, SizeOf(TMD5Digest));
 
   Init(Inst);
 end;
