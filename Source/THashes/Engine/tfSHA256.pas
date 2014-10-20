@@ -41,7 +41,31 @@ type
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 end;
 
+type
+  PSHA224Alg = ^TSHA224Alg;
+  TSHA224Alg = record
+  private type
+    TData = record
+      Digest: TSHA256Digest;         // !! 256 bits
+      Block: array[0..63] of Byte;
+      Count: UInt64;                 // number of bytes processed
+    end;
+  private
+    FVTable: Pointer;
+    FRefCount: Integer;
+    FData: TData;
+
+  public
+    class procedure Init(Inst: PSHA224Alg);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Done(Inst: PSHA224Alg; PDigest: PSHA224Digest);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetDigestSize(Inst: PSHA256Alg): LongInt;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+end;
+
 function GetSHA256Algorithm(var Inst: PSHA256Alg): TF_RESULT;
+function GetSHA224Algorithm(var Inst: PSHA224Alg): TF_RESULT;
 
 implementation
 
@@ -62,6 +86,21 @@ const
     @TSHA256Alg.Duplicate
   );
 
+const
+  SHA224VTable: array[0..9] of Pointer = (
+    @TtfRecord.QueryIntf,
+    @TtfRecord.Addref,
+    @HashAlgRelease,
+
+    @TSHA224Alg.Init,
+    @TSHA256Alg.Update,
+    @TSHA224Alg.Done,
+    @TSHA224Alg.Init,
+    @TSHA224Alg.GetDigestSize,
+    @TSHA256Alg.GetBlockSize,
+    @TSHA256Alg.Duplicate
+  );
+
 function GetSHA256Algorithm(var Inst: PSHA256Alg): TF_RESULT;
 var
   P: PSHA256Alg;
@@ -72,6 +111,24 @@ begin
     P^.FVTable:= @SHA256VTable;
     P^.FRefCount:= 1;
     TSHA256Alg.Init(P);
+    if Inst <> nil then HashAlgRelease(Inst);
+    Inst:= P;
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
+function GetSHA224Algorithm(var Inst: PSHA224Alg): TF_RESULT;
+var
+  P: PSHA224Alg;
+
+begin
+  try
+    New(P);
+    P^.FVTable:= @SHA224VTable;
+    P^.FRefCount:= 1;
+    TSHA224Alg.Init(P);
     if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
@@ -645,6 +702,56 @@ begin
   Result:= GetSHA256Algorithm(DupInst);
   if Result = TF_S_OK then
     DupInst.FData:= Inst.FData;
+end;
+
+{ TSHA224Alg }
+
+class procedure TSHA224Alg.Init(Inst: PSHA224Alg);
+begin
+  Inst.FData.Digest[0]:= $c1059ed8;
+  Inst.FData.Digest[1]:= $367cd507;
+  Inst.FData.Digest[2]:= $3070dd17;
+  Inst.FData.Digest[3]:= $f70e5939;
+  Inst.FData.Digest[4]:= $ffc00b31;
+  Inst.FData.Digest[5]:= $68581511;
+  Inst.FData.Digest[6]:= $64f98fa7;
+  Inst.FData.Digest[7]:= $befa4fa4;
+
+  FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
+  Inst.FData.Count:= 0;
+end;
+
+class procedure TSHA224Alg.Done(Inst: PSHA224Alg; PDigest: PSHA224Digest);
+var
+  Ofs: LongWord;
+
+begin
+  Ofs:= LongWord(Inst.FData.Count) and $3F;
+  Inst.FData.Block[Ofs]:= $80;
+  if Ofs >= 56 then
+    PSHA256Alg(Inst).Compress;
+
+  Inst.FData.Count:= Inst.FData.Count shl 3;
+  PLongWord(@Inst.FData.Block[56])^:= Swap32(LongWord(Inst.FData.Count shr 32));
+  PLongWord(@Inst.FData.Block[60])^:= Swap32(LongWord(Inst.FData.Count));
+  PSHA256Alg(Inst).Compress;
+
+  Inst.FData.Digest[0]:= Swap32(Inst.FData.Digest[0]);
+  Inst.FData.Digest[1]:= Swap32(Inst.FData.Digest[1]);
+  Inst.FData.Digest[2]:= Swap32(Inst.FData.Digest[2]);
+  Inst.FData.Digest[3]:= Swap32(Inst.FData.Digest[3]);
+  Inst.FData.Digest[4]:= Swap32(Inst.FData.Digest[4]);
+  Inst.FData.Digest[5]:= Swap32(Inst.FData.Digest[5]);
+  Inst.FData.Digest[6]:= Swap32(Inst.FData.Digest[6]);
+
+  Move(Inst.FData.Digest, PDigest^, SizeOf(TSHA224Digest));
+
+  Init(Inst);
+end;
+
+class function TSHA224Alg.GetDigestSize(Inst: PSHA256Alg): LongInt;
+begin
+  Result:= SizeOf(TSHA224Digest);
 end;
 
 end.

@@ -34,6 +34,7 @@ type
     class function SHA1: THMAC; static;
     class function SHA256: THMAC; static;
     class function SHA512: THMAC; static;
+    class function SHA224: THMAC; static;
     class function SHA384: THMAC; static;
 
     class operator Explicit(const Name: string): THMAC;
@@ -73,11 +74,13 @@ type
     function Copy: THash;
 
     class function CRC32: THash; static;
-    class function JenkinsOne: THash; static;
+    class function Jenkins1: THash; static;
+
     class function MD5: THash; static;
     class function SHA1: THash; static;
     class function SHA256: THash; static;
     class function SHA512: THash; static;
+    class function SHA224: THash; static;
     class function SHA384: THash; static;
 
     class function HashName(Index: Integer): string; static;
@@ -191,9 +194,9 @@ begin
   HResCheck(FServer.GetByAlgID(TF_ALG_CRC32, Result.FAlgorithm));
 end;
 
-class function THash.JenkinsOne: THash;
+class function THash.Jenkins1: THash;
 begin
-  HResCheck(FServer.GetByAlgID(TF_ALG_JENKINS_1, Result.FAlgorithm));
+  HResCheck(FServer.GetByAlgID(TF_ALG_JENKINS1, Result.FAlgorithm));
 end;
 
 class function THash.MD5: THash;
@@ -204,6 +207,11 @@ end;
 class function THash.SHA1: THash;
 begin
   HResCheck(FServer.GetByAlgID(TF_ALG_SHA1, Result.FAlgorithm));
+end;
+
+class function THash.SHA224: THash;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_SHA224, Result.FAlgorithm));
 end;
 
 class function THash.SHA256: THash;
@@ -389,6 +397,15 @@ var
 
 begin
   HResCheck(THash.FServer.GetByAlgID(TF_ALG_SHA1, HashAlgorithm));
+  HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
+end;
+
+class function THMAC.SHA224: THMAC;
+var
+  HashAlgorithm: IHashAlgorithm;
+
+begin
+  HResCheck(THash.FServer.GetByAlgID(TF_ALG_SHA224, HashAlgorithm));
   HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
 end;
 

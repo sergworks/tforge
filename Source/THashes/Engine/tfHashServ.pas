@@ -82,10 +82,11 @@ const
   MD5_LITERAL: UTF8String = 'MD5';
   SHA1_LITERAL: UTF8String = 'SHA1';
   SHA256_LITERAL: UTF8String = 'SHA256';
-  SHA384_LITERAL: UTF8String = 'SHA384';
   SHA512_LITERAL: UTF8String = 'SHA512';
+  SHA224_LITERAL: UTF8String = 'SHA224';
+  SHA384_LITERAL: UTF8String = 'SHA384';
   CRC32_LITERAL: UTF8String = 'CRC32';
-  JENKINSONE_LITERAL: UTF8String = 'JENKINSONE';
+  JENKINS1_LITERAL: UTF8String = 'JENKINS1';
 
 procedure AddTableItem(const AName: RawByteString; AGetter: Pointer);
 var
@@ -110,9 +111,10 @@ begin
   AddTableItem(SHA1_LITERAL, @GetSHA1Algorithm);
   AddTableItem(SHA256_LITERAL, @GetSHA256Algorithm);
   AddTableItem(SHA512_LITERAL, @GetSHA512Algorithm);
+  AddTableItem(SHA224_LITERAL, @GetSHA224Algorithm);
   AddTableItem(SHA384_LITERAL, @GetSHA384Algorithm);
   AddTableItem(CRC32_LITERAL, @GetCRC32Algorithm);
-  AddTableItem(JENKINSONE_LITERAL, @GetJenkinsOneAlgorithm);
+  AddTableItem(JENKINS1_LITERAL, @GetJenkinsOneAlgorithm);
 end;
 
 function GetHashServer(var A: IHashServer): TF_RESULT;
@@ -209,12 +211,12 @@ begin
     TF_ALG_SHA1: GetSHA1Algorithm(PSHA1Alg(Alg));
     TF_ALG_SHA256: GetSHA256Algorithm(PSHA256Alg(Alg));
     TF_ALG_SHA512: GetSHA512Algorithm(PSHA512Alg(Alg));
-// todo    TF_ALG_SHA224: ;
+    TF_ALG_SHA224: GetSHA224Algorithm(PSHA224Alg(Alg));
     TF_ALG_SHA384: GetSHA384Algorithm(PSHA384Alg(Alg));
   else
     case AlgID of
       TF_ALG_CRC32: GetCRC32Algorithm(PCRC32Alg(Alg));
-      TF_ALG_JENKINS_1: GetJenkinsOneAlgorithm(PJenkinsOneAlg(Alg));
+      TF_ALG_JENKINS1: GetJenkinsOneAlgorithm(PJenkinsOneAlg(Alg));
     else
       Result:= TF_E_INVALIDARG;
     end;

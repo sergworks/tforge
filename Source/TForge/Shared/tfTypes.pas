@@ -215,7 +215,7 @@ const
   TF_ALG_SHA384    = $1006;
                            // Non-cryptographic Hash Algorithms
   TF_ALG_CRC32     = $1801;
-  TF_ALG_JENKINS_1 = $1802;
+  TF_ALG_JENKINS1  = $1802;
 
 type
   IHashAlgorithm = interface(IInterface)
@@ -320,7 +320,7 @@ const
   TF_PADDING_MIN = TF_PADDING_NONE;
   TF_PADDING_MAX = TF_PADDING_IEC;
 
-{ Hash helper types }
+{ Hash digest helper types }
 type
                                   // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;
@@ -334,6 +334,9 @@ type
                                   // 512-bit SHA512 digest
   PSHA512Digest = ^TSHA512Digest;
   TSHA512Digest = array[0..7] of UInt64;
+                                  // 224-bit SHA224 digest
+  PSHA224Digest = ^TSHA224Digest;
+  TSHA224Digest = array[0..6] of LongWord;
                                   // 384-bit SHA384 digest
   PSHA384Digest = ^TSHA384Digest;
   TSHA384Digest = array[0..5] of UInt64;

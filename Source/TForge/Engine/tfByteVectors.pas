@@ -278,7 +278,7 @@ end;
 
 class function TByteVector.GetHashCode(Inst: PByteVector): Integer;
 begin
-  Result:= TJenkinsOne.Hash(Inst.FData, Inst.FUsed);
+  Result:= TJenkins1.Hash(Inst.FData, Inst.FUsed);
 end;
 
 class function TByteVector.ConcatBytes(A, B: PByteVector;

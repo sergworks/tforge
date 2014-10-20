@@ -58,7 +58,7 @@ type
   end;
 
 type
-  TJenkinsOne = record
+  TJenkins1 = record
     class function Init: LongWord; inline; static;
     class function Update(const Data; DataSize: Cardinal; State: LongWord): LongWord; static;
     class function Done(State: LongWord): LongWord; inline; static;
@@ -113,12 +113,12 @@ end;
 
 { TJenkinsOne }
 
-class function TJenkinsOne.Init: LongWord;
+class function TJenkins1.Init: LongWord;
 begin
   Result:= 0;
 end;
 
-class function TJenkinsOne.Update(const Data; DataSize: Cardinal;
+class function TJenkins1.Update(const Data; DataSize: Cardinal;
                                   State: LongWord): LongWord;
 var
   PData: PByte;
@@ -135,7 +135,7 @@ begin
   Result:= State;
 end;
 
-class function TJenkinsOne.Done(State: LongWord): LongWord;
+class function TJenkins1.Done(State: LongWord): LongWord;
 begin
   State:= State + (State shl 3);
   State:= State xor (State shr 11);
@@ -143,7 +143,7 @@ begin
   Result:= State;
 end;
 
-class function TJenkinsOne.Hash(const Data; DataSize: Cardinal): LongWord;
+class function TJenkins1.Hash(const Data; DataSize: Cardinal): LongWord;
 var
   PData: PByte;
 
