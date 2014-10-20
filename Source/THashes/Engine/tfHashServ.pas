@@ -82,6 +82,7 @@ const
   MD5_LITERAL: UTF8String = 'MD5';
   SHA1_LITERAL: UTF8String = 'SHA1';
   SHA256_LITERAL: UTF8String = 'SHA256';
+  SHA384_LITERAL: UTF8String = 'SHA384';
   SHA512_LITERAL: UTF8String = 'SHA512';
   CRC32_LITERAL: UTF8String = 'CRC32';
   JENKINSONE_LITERAL: UTF8String = 'JENKINSONE';
@@ -109,6 +110,7 @@ begin
   AddTableItem(SHA1_LITERAL, @GetSHA1Algorithm);
   AddTableItem(SHA256_LITERAL, @GetSHA256Algorithm);
   AddTableItem(SHA512_LITERAL, @GetSHA512Algorithm);
+  AddTableItem(SHA384_LITERAL, @GetSHA384Algorithm);
   AddTableItem(CRC32_LITERAL, @GetCRC32Algorithm);
   AddTableItem(JENKINSONE_LITERAL, @GetJenkinsOneAlgorithm);
 end;
@@ -207,6 +209,8 @@ begin
     TF_ALG_SHA1: GetSHA1Algorithm(PSHA1Alg(Alg));
     TF_ALG_SHA256: GetSHA256Algorithm(PSHA256Alg(Alg));
     TF_ALG_SHA512: GetSHA512Algorithm(PSHA512Alg(Alg));
+// todo    TF_ALG_SHA224: ;
+    TF_ALG_SHA384: GetSHA384Algorithm(PSHA384Alg(Alg));
   else
     case AlgID of
       TF_ALG_CRC32: GetCRC32Algorithm(PCRC32Alg(Alg));

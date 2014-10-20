@@ -31,7 +31,7 @@ type
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PSHA512Alg; Data: PByte; DataSize: LongWord);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Done(Inst: PSHA512Alg; PDigest: PSHA256Digest);
+    class procedure Done(Inst: PSHA512Alg; PDigest: PSHA512Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetDigestSize(Inst: PSHA512Alg): LongInt;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -41,7 +41,31 @@ type
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 end;
 
-function GeTSHA512Algorithm(var Inst: PSHA512Alg): TF_RESULT;
+type
+  PSHA384Alg = ^TSHA384Alg;
+  TSHA384Alg = record
+  private type
+    TData = record
+      Digest: TSHA512Digest;         // !! 512 bits
+      Block: array[0..127] of Byte;
+      Count: UInt64;                 // number of bytes processed
+    end;
+  private
+    FVTable: Pointer;
+    FRefCount: Integer;
+    FData: TData;
+
+  public
+    class procedure Init(Inst: PSHA384Alg);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Done(Inst: PSHA384Alg; PDigest: PSHA384Digest);
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetDigestSize(Inst: PSHA384Alg): LongInt;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+end;
+
+function GetSHA512Algorithm(var Inst: PSHA512Alg): TF_RESULT;
+function GetSHA384Algorithm(var Inst: PSHA384Alg): TF_RESULT;
 
 implementation
 
@@ -62,7 +86,22 @@ const
     @TSHA512Alg.Duplicate
   );
 
-function GeTSHA512Algorithm(var Inst: PSHA512Alg): TF_RESULT;
+const
+  SHA384VTable: array[0..9] of Pointer = (
+    @TtfRecord.QueryIntf,
+    @TtfRecord.Addref,
+    @HashAlgRelease,
+
+    @TSHA384Alg.Init,
+    @TSHA512Alg.Update,
+    @TSHA384Alg.Done,
+    @TSHA384Alg.Init,
+    @TSHA384Alg.GetDigestSize,
+    @TSHA512Alg.GetBlockSize,
+    @TSHA512Alg.Duplicate
+  );
+
+function GetSHA512Algorithm(var Inst: PSHA512Alg): TF_RESULT;
 var
   P: PSHA512Alg;
 
@@ -72,6 +111,24 @@ begin
     P^.FVTable:= @SHA512VTable;
     P^.FRefCount:= 1;
     TSHA512Alg.Init(P);
+    if Inst <> nil then HashAlgRelease(Inst);
+    Inst:= P;
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
+function GetSHA384Algorithm(var Inst: PSHA384Alg): TF_RESULT;
+var
+  P: PSHA384Alg;
+
+begin
+  try
+    New(P);
+    P^.FVTable:= @SHA384VTable;
+    P^.FRefCount:= 1;
+    TSHA384Alg.Init(P);
     if Inst <> nil then HashAlgRelease(Inst);
     Inst:= P;
     Result:= TF_S_OK;
@@ -103,6 +160,7 @@ begin
 
   for I:= 0 to 15 do
     W[I]:= Swap64(W[I]);
+
   for I:= 16 to 79 do
     W[I]:= (((W[I-2] shr 19) or (W[I-2] shl 45)) xor
             ((W[I-2] shr 61) or (W[I-2] shl 3)) xor (W[I-2] shr 6)) + W[I-7] +
@@ -765,14 +823,14 @@ end;
 
 class procedure TSHA512Alg.Init(Inst: PSHA512Alg);
 begin
-  Inst.FData.Digest[0]:= $cbbb9d5dc1059ed8;
-  Inst.FData.Digest[1]:= $629a292a367cd507;
-  Inst.FData.Digest[2]:= $9159015a3070dd17;
-  Inst.FData.Digest[3]:= $152fecd8f70e5939;
-  Inst.FData.Digest[4]:= $67332667ffc00b31;
-  Inst.FData.Digest[5]:= $8eb44a8768581511;
-  Inst.FData.Digest[6]:= $db0c2e0d64f98fa7;
-  Inst.FData.Digest[7]:= $47b5481dbefa4fa4;
+  Inst.FData.Digest[0]:= $6a09e667f3bcc908;
+  Inst.FData.Digest[1]:= $bb67ae8584caa73b;
+  Inst.FData.Digest[2]:= $3c6ef372fe94f82b;
+  Inst.FData.Digest[3]:= $a54ff53a5f1d36f1;
+  Inst.FData.Digest[4]:= $510e527fade682d1;
+  Inst.FData.Digest[5]:= $9b05688c2b3e6c1f;
+  Inst.FData.Digest[6]:= $1f83d9abfb41bd6b;
+  Inst.FData.Digest[7]:= $5be0cd19137e2179;
 
   FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
   Inst.FData.Count:= 0;
@@ -795,7 +853,7 @@ begin
   end;
 end;
 
-class procedure TSHA512Alg.Done(Inst: PSHA512Alg; PDigest: PSHA256Digest);
+class procedure TSHA512Alg.Done(Inst: PSHA512Alg; PDigest: PSHA512Digest);
 var
   Ofs: LongWord;
 
@@ -831,7 +889,7 @@ end;
 
 class function TSHA512Alg.GetDigestSize(Inst: PSHA512Alg): LongInt;
 begin
-  Result:= SizeOf(TSHA256Digest);
+  Result:= SizeOf(TSHA512Digest);
 end;
 
 class function TSHA512Alg.Duplicate(Inst: PSHA512Alg;
@@ -840,6 +898,55 @@ begin
   Result:= GetSHA512Algorithm(DupInst);
   if Result = TF_S_OK then
     DupInst.FData:= Inst.FData;
+end;
+
+{ TSHA384Alg }
+
+class procedure TSHA384Alg.Done(Inst: PSHA384Alg; PDigest: PSHA384Digest);
+var
+  Ofs: LongWord;
+
+begin
+  Ofs:= LongWord(Inst.FData.Count) and $7F;
+  Inst.FData.Block[Ofs]:= $80;
+  if Ofs >= 112 then
+    PSHA512Alg(Inst).Compress;
+
+  Inst.FData.Count:= Inst.FData.Count shl 3;
+  PUInt64(@Inst.FData.Block[112])^:= 0;
+  PUInt64(@Inst.FData.Block[120])^:= Swap64(Inst.FData.Count);
+  PSHA512Alg(Inst).Compress;
+
+  Inst.FData.Digest[0]:= Swap64(Inst.FData.Digest[0]);
+  Inst.FData.Digest[1]:= Swap64(Inst.FData.Digest[1]);
+  Inst.FData.Digest[2]:= Swap64(Inst.FData.Digest[2]);
+  Inst.FData.Digest[3]:= Swap64(Inst.FData.Digest[3]);
+  Inst.FData.Digest[4]:= Swap64(Inst.FData.Digest[4]);
+  Inst.FData.Digest[5]:= Swap64(Inst.FData.Digest[5]);
+
+  Move(Inst.FData.Digest, PDigest^, SizeOf(TSHA384Digest));
+
+  Init(Inst);
+end;
+
+class function TSHA384Alg.GetDigestSize(Inst: PSHA384Alg): LongInt;
+begin
+  Result:= SizeOf(TSHA384Digest);
+end;
+
+class procedure TSHA384Alg.Init(Inst: PSHA384Alg);
+begin
+  Inst.FData.Digest[0]:= $cbbb9d5dc1059ed8;
+  Inst.FData.Digest[1]:= $629a292a367cd507;
+  Inst.FData.Digest[2]:= $9159015a3070dd17;
+  Inst.FData.Digest[3]:= $152fecd8f70e5939;
+  Inst.FData.Digest[4]:= $67332667ffc00b31;
+  Inst.FData.Digest[5]:= $8eb44a8768581511;
+  Inst.FData.Digest[6]:= $db0c2e0d64f98fa7;
+  Inst.FData.Digest[7]:= $47b5481dbefa4fa4;
+
+  FillChar(Inst.FData.Block, SizeOf(Inst.FData.Block), 0);
+  Inst.FData.Count:= 0;
 end;
 
 end.

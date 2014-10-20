@@ -211,6 +211,8 @@ const
   TF_ALG_SHA1      = $1002;
   TF_ALG_SHA256    = $1003;
   TF_ALG_SHA512    = $1004;
+  TF_ALG_SHA224    = $1005;
+  TF_ALG_SHA384    = $1006;
                            // Non-cryptographic Hash Algorithms
   TF_ALG_CRC32     = $1801;
   TF_ALG_JENKINS_1 = $1802;
@@ -332,6 +334,9 @@ type
                                   // 512-bit SHA512 digest
   PSHA512Digest = ^TSHA512Digest;
   TSHA512Digest = array[0..7] of UInt64;
+                                  // 384-bit SHA384 digest
+  PSHA384Digest = ^TSHA384Digest;
+  TSHA384Digest = array[0..5] of UInt64;
 
 implementation
 

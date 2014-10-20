@@ -17,7 +17,6 @@ type
   private
     FAlgorithm: IHMACAlgorithm;
   public
-//    constructor Create(const HMACAlg: IHMACAlgorithm);
     class function Create(const HMACAlg: IHMACAlgorithm): THMAC; static;
     procedure Free;
     function IsAssigned: Boolean;
@@ -34,6 +33,8 @@ type
     class function MD5: THMAC; static;
     class function SHA1: THMAC; static;
     class function SHA256: THMAC; static;
+    class function SHA512: THMAC; static;
+    class function SHA384: THMAC; static;
 
     class operator Explicit(const Name: string): THMAC;
     class operator Explicit(AlgID: Integer): THMAC;
@@ -76,9 +77,9 @@ type
     class function MD5: THash; static;
     class function SHA1: THash; static;
     class function SHA256: THash; static;
+    class function SHA512: THash; static;
+    class function SHA384: THash; static;
 
-//    class function ByName(const HashName: string): THash; static;
-//    class function ByAlgID(AlgID: Integer): THash; static;
     class function HashName(Index: Integer): string; static;
     class function Count: Integer; static;
 
@@ -147,13 +148,11 @@ end;
 class operator THash.Explicit(const Name: string): THash;
 begin
   HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FAlgorithm));
-//  Result:= ByName(Name);
 end;
 
 class operator THash.Explicit(AlgID: Integer): THash;
 begin
   HResCheck(FServer.GetByAlgID(AlgID, Result.FAlgorithm));
-//  Result:= ByAlgID(AlgID);
 end;
 
 procedure THash.Burn;
@@ -171,7 +170,6 @@ begin
   Result:= FAlgorithm.GetBlockSize;
 end;
 
-
 function THash.Digest: ByteArray;
 begin
   Result:= ByteArray.Allocate(DigestSize);
@@ -185,41 +183,42 @@ end;
 
 class function THash.Count: Integer;
 begin
-//  HResCheck(GetHashServer(Inst));
   Result:= FServer.GetCount;
 end;
 
 class function THash.CRC32: THash;
 begin
-//  Result:= Get('CRC32');
-//  Result:= ByAlgID(TF_ALG_CRC32);
   HResCheck(FServer.GetByAlgID(TF_ALG_CRC32, Result.FAlgorithm));
 end;
 
 class function THash.JenkinsOne: THash;
 begin
-//  Result:= ByAlgID(TF_ALG_JENKINS_1);
   HResCheck(FServer.GetByAlgID(TF_ALG_JENKINS_1, Result.FAlgorithm));
 end;
 
 class function THash.MD5: THash;
 begin
-//  Result:= Get('MD5');
-//  Result:= ByAlgID(TF_ALG_MD5);
   HResCheck(FServer.GetByAlgID(TF_ALG_MD5, Result.FAlgorithm));
 end;
 
 class function THash.SHA1: THash;
 begin
-//  Result:= ByAlgID(TF_ALG_SHA1);
   HResCheck(FServer.GetByAlgID(TF_ALG_SHA1, Result.FAlgorithm));
 end;
 
 class function THash.SHA256: THash;
 begin
-//  Result:= Get('SHA256');
-//  Result:= ByAlgID(TF_ALG_SHA256);
   HResCheck(FServer.GetByAlgID(TF_ALG_SHA256, Result.FAlgorithm));
+end;
+
+class function THash.SHA384: THash;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_SHA384, Result.FAlgorithm));
+end;
+
+class function THash.SHA512: THash;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_SHA512, Result.FAlgorithm));
 end;
 
 function THash.DeriveKey(const Password, Salt: ByteArray;
@@ -230,18 +229,7 @@ begin
                            Salt.GetRawData, Salt.GetLen,
                            Rounds, DKLen, IBytes(Result)));
 end;
-{
-class function THash.ByName(const HashName: string): THash;
-begin
-//  HResCheck(GetHashServer(Inst));
-  HResCheck(FServer.GetByName(Pointer(HashName), SizeOf(Char), Result.FAlgorithm));
-end;
 
-class function THash.ByAlgID(AlgID: Integer): THash;
-begin
-  HResCheck(FServer.GetByAlgID(AlgID, Result.FAlgorithm));
-end;
-}
 class function THash.HashName(Index: Integer): string;
 var
   Bytes: IBytes;
@@ -316,12 +304,6 @@ begin
 end;
 
 { THMAC }
-{
-constructor THMAC.Create(const HMACAlg: IHMACAlgorithm);
-begin
-  FAlgorithm:= HMACAlg;
-end;
-}
 
 class function THMAC.Create(const HMACAlg: IHMACAlgorithm): THMAC;
 begin
@@ -416,6 +398,24 @@ var
 
 begin
   HResCheck(THash.FServer.GetByAlgID(TF_ALG_SHA256, HashAlgorithm));
+  HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
+end;
+
+class function THMAC.SHA384: THMAC;
+var
+  HashAlgorithm: IHashAlgorithm;
+
+begin
+  HResCheck(THash.FServer.GetByAlgID(TF_ALG_SHA384, HashAlgorithm));
+  HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
+end;
+
+class function THMAC.SHA512: THMAC;
+var
+  HashAlgorithm: IHashAlgorithm;
+
+begin
+  HResCheck(THash.FServer.GetByAlgID(TF_ALG_SHA512, HashAlgorithm));
   HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
 end;
 
