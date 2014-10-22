@@ -5,6 +5,7 @@
 
 {$IFDEF FPC}
   {$mode delphi}
+  {$asmmode intel}
   {$DEFINE TFL_POINTERMATH}
 {$ENDIF}
 
@@ -58,12 +59,20 @@
 
 // -----------------------------------------------------
 
+{$IFDEF FPC}
+  {$IFDEF CPUX86_64}
+    {$DEFINE CPUX64}
+  {$ENDIF}
+{$ENDIF}
+
 {$IFDEF CPU386}
   {$IFDEF WIN32}
-    {$DEFINE TFL_CPU386_WIN32}
+    {$DEFINE TFL_CPUX86_WIN32}
   {$ENDIF}
+{$ENDIF}
+{$IFDEF CPUX64}
   {$IFDEF WIN64}
-    {$DEFINE TFL_CPU386_WIN64}
+    {$DEFINE TFL_CPUX64_WIN64}
   {$ENDIF}
 {$ENDIF}
 

@@ -34,7 +34,7 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PHMACAlg; PDigest: Pointer);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Purge(Inst: PHMACAlg);
+    class procedure Burn(Inst: PHMACAlg);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetDigestSize(Inst: PHMACAlg): LongInt;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -63,7 +63,7 @@ const
    @THMACAlg.Init,
    @THMACAlg.Update,
    @THMACAlg.Done,
-   @THMACAlg.Purge,
+   @THMACAlg.Burn,
    @THMACAlg.GetDigestSize,
 //   @THMACAlg.GetBlockSize,
    @THMACAlg.Duplicate,
@@ -102,12 +102,31 @@ end;
 { THMACAlg }
 
 class function THMACAlg.Release(Inst: PHMACAlg): Integer;
+type
+  TVTable = array[0..9] of Pointer;
+  PVTable = ^TVTable;
+  PPVTable = ^PVTable;
+
+  TBurnProc = procedure(Inst: Pointer);
+               {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+var
+  BurnProc: Pointer;
+
 begin
-  if Inst.FHash <> nil
-    then Inst.FHash._Release;
-  if Inst.FKey <> nil
-    then IBytes(Inst.FKey)._Release;
-  Result:= TtfRecord.Release(Inst);
+  if PtfRecord(Inst).FRefCount > 0 then begin
+    Result:= tfDecrement(PtfRecord(Inst).FRefCount);
+    if Result = 0 then begin
+      BurnProc:= PPVTable(Inst)^^[6];  // 6 is 'Burn' index
+      TBurnProc(BurnProc)(Inst);
+      if Inst.FHash <> nil
+        then Inst.FHash._Release;
+      if Inst.FKey <> nil
+        then IBytes(Inst.FKey)._Release;
+      FreeMem(Inst);
+    end;
+  end
+  else
+    Result:= PtfRecord(Inst).FRefCount;
 end;
 
 class procedure THMACAlg.Init(Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal);
@@ -209,7 +228,7 @@ begin
   Result:= Inst.FHash.GetDigestSize;
 end;
 
-class procedure THMACAlg.Purge(Inst: PHMACAlg);
+class procedure THMACAlg.Burn(Inst: PHMACAlg);
 begin
   FillChar(Inst.FKey.FData, Inst.FKey.FUsed, 0);
   Inst.FHash.Burn;

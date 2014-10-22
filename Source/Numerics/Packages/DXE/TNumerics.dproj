@@ -24,15 +24,15 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_DcpOutput>$(BDSCOMMONDIR)\Dcp\$(Config)\$(Platform)</DCC_DcpOutput>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<GenPackage>true</GenPackage>
-			<DCC_DcuOutput>$(BDSCOMMONDIR)\TForge\TNumerics</DCC_DcuOutput>
+			<DCC_DcuOutput>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform)</DCC_DcuOutput>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
-			<DCC_UnitSearchPath>$(BDSCOMMONDIR)\TForge\TForge;C:\Projects\TForge\tforge\Source\Include;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>$(BDSCOMMONDIR)\TForge;C:\Projects\TForge\tforge\Source\Include;$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
 			<DCC_E>false</DCC_E>
 			<DCC_S>false</DCC_S>
-			<DCC_DcpOutput>$(BDSCOMMONDIR)\TForge\TNumerics</DCC_DcpOutput>
 			<GenDll>true</GenDll>
 			<DCC_F>false</DCC_F>
 			<DCC_K>false</DCC_K>

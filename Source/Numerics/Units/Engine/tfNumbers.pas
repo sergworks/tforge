@@ -3128,7 +3128,7 @@ begin
     Limb:= Limb shr 8;
   end;
   if L = 0 then L:= 1;
-  Result:= TJenkinsOne.Hash(Inst.FLimbs, L);
+  Result:= TJenkins1.Hash(Inst.FLimbs, L);
   if Inst.FSign < 0 then Result:= - Result;
 end;
 
