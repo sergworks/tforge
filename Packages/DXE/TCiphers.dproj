@@ -56,9 +56,9 @@
 			</DelphiCompile>
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="TForge.dcp"/>
-			<DCCReference Include="THashes.dcp"/>
-			<DCCReference Include="..\..\Source\Ciphers\Units\Engine\tfAES.pas"/>
-			<DCCReference Include="..\..\Source\Ciphers\Units\Client\tfCiphers.pas"/>
+			<DCCReference Include="..\..\Source\TCiphers\Engine\tfAES.pas"/>
+			<DCCReference Include="..\..\Source\TCiphers\Client\tfCiphers.pas"/>
+			<DCCReference Include="..\..\Source\TCiphers\Engine\tfBlockCiphers.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

@@ -85,13 +85,13 @@ type
     FVTable: Pointer;
     FRefCount: Integer;
 {$HINTS ON}
+    FMode: LongWord;
+    FPadding: LongWord;
+    FIVector: TAESAlgorithm.TAESBlock;
 // inherited from TAESAlgorithm
     FExpandedKey: TAESAlgorithm.TExpandedKey;
     FRounds: LongWord;
 
-    FIVector: TAESAlgorithm.TAESBlock;
-    FMode: LongWord;
-    FPadding: LongWord;
     function SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
     function SetMode(Data: Pointer; DataLen: LongWord): TF_RESULT;
     function SetPadding(Data: Pointer; DataLen: LongWord): TF_RESULT;
@@ -109,17 +109,21 @@ type
              Last: Boolean): TF_RESULT; inline;
 
   public
+    class function GetBlockSize(Inst: PAESCipher): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DuplicateKey(Inst: PAESCipher; var Key: PAESCipher): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SetKeyParam(Inst: PAESCipher; Param: LongWord; Data: PByte;
       DataLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DeriveKey(Inst: PAESCipher; HashAlg: IHashAlgorithm;
-      Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DestroyKey(Inst: PAESCipher);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Encrypt(Inst: PAESCipher; Data: PByte; var DataSize: LongWord;
       BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Decrypt(Inst: PAESCipher; Data: PByte; var DataSize: LongWord;
       Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure EncryptBlock(Inst: PAESCipher; Data: PByte);
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure DecryptBlock(Inst: PAESCipher; Data: PByte);
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
@@ -691,17 +695,19 @@ end;
 { TAESCipher }
 
 const
-  AESCipherVTable: array[0..8] of Pointer = (
+  AESCipherVTable: array[0..10] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
-//   nil,
+
    @TAESCipher.DuplicateKey,
    @TAESCipher.SetKeyParam,
-   @TAESCipher.DeriveKey,
    @TAESCipher.DestroyKey,
+   @TAESCipher.GetBlockSize,
    @TAESCipher.Encrypt,
-   @TAESCipher.Decrypt
+   @TAESCipher.Decrypt,
+   @TAESCipher.EncryptBlock,
+   @TAESCipher.DecryptBlock
    );
 
 function GetAESCipher(var A: PAESCipher): TF_RESULT;
@@ -713,7 +719,7 @@ begin
     Tmp^.FVTable:= @AESCipherVTable;
     Tmp^.FRefCount:= 1;
     Tmp^.FMode:= TF_KEYMODE_CBC;
-    Tmp^.FPadding:= TF_PADDING_PKSC;
+    Tmp^.FPadding:= TF_PADDING_DEFAULT;
     if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
@@ -801,31 +807,13 @@ begin
   end;
 end;
 
-class function TAESCipher.Decrypt(Inst: PAESCipher; Data: PByte;
-  var DataSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  case Inst.FMode of
-    TF_KEYMODE_ECB: Result:= Inst.DecryptECB(Data, DataSize, Last);
-    TF_KEYMODE_CBC: Result:= Inst.DecryptCBC(Data, DataSize, Last);
-    TF_KEYMODE_CTR: Result:= Inst.DecryptCTR(Data, DataSize, Last);
-  else
-    Result:= TF_E_UNEXPECTED;
-  end;
-end;
-
-class function TAESCipher.DeriveKey(Inst: PAESCipher; HashAlg: IHashAlgorithm;
-  Flags: LongWord): TF_RESULT;
-begin
-
-end;
-
 class procedure TAESCipher.DestroyKey(Inst: PAESCipher);
 begin
   FillChar(Inst.FExpandedKey, SizeOf(Inst.FExpandedKey)
                             + SizeOf(Inst.FRounds)
                             + SizeOf(Inst.FIVector), 0);
   Inst.FMode:= TF_KEYMODE_CBC;
-  Inst.FPadding:= TF_PADDING_PKSC;
+  Inst.FPadding:= TF_PADDING_DEFAULT;
 end;
 
 class function TAESCipher.Encrypt(Inst: PAESCipher; Data: PByte;
@@ -838,6 +826,23 @@ begin
   else
     Result:= TF_E_UNEXPECTED;
   end;
+end;
+
+class function TAESCipher.Decrypt(Inst: PAESCipher; Data: PByte;
+  var DataSize: LongWord; Last: Boolean): TF_RESULT;
+begin
+  case Inst.FMode of
+    TF_KEYMODE_ECB: Result:= Inst.DecryptECB(Data, DataSize, Last);
+    TF_KEYMODE_CBC: Result:= Inst.DecryptCBC(Data, DataSize, Last);
+    TF_KEYMODE_CTR: Result:= Inst.DecryptCTR(Data, DataSize, Last);
+  else
+    Result:= TF_E_UNEXPECTED;
+  end;
+end;
+
+class procedure TAESCipher.EncryptBlock(Inst: PAESCipher; Data: PByte);
+begin
+// todo;
 end;
 
 function TAESCipher.EncryptECB(Data: PByte; var DataSize: LongWord;
@@ -865,9 +870,9 @@ begin
       end;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + BLOCK_SIZE - 1) and not (BLOCK_SIZE - 1);
       TF_PADDING_ANSI,
-//      TF_PADDING_ISO,
-      TF_PADDING_PKSC,
-      TF_PADDING_IEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
+      TF_PADDING_PKSC7,
+      TF_PADDING_ISO10126,
+      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
     else
       Result:= TF_E_UNEXPECTED;
       Exit;
@@ -912,13 +917,13 @@ begin
       end;
                                             // XX 04 04 04 04
 //      TF_PADDING_ISO,
-      TF_PADDING_PKSC: begin
+      TF_PADDING_PKSC7: begin
         FillChar(Data^, Cnt, Byte(Cnt));
         Dec(Data, LDataSize);
         TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
       end;
                                             // XX 80 00 00 00
-      TF_PADDING_IEC: begin
+      TF_PADDING_ISOIEC: begin
         Data^:= $80;
         Inc(Data);
         FillChar(Data^, Cnt - 1, 0);
@@ -928,6 +933,11 @@ begin
     end;
   end;
   Result:= TF_S_OK;
+end;
+
+class function TAESCipher.GetBlockSize(Inst: PAESCipher): Integer;
+begin
+  Result:= 16;
 end;
 
 function TAESCipher.EncryptCBC(Data: PByte; var DataSize: LongWord;
@@ -955,9 +965,9 @@ begin
       end;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + BLOCK_SIZE - 1) and not (BLOCK_SIZE - 1);
       TF_PADDING_ANSI,
+      TF_PADDING_PKSC7,
 //      TF_PADDING_ISO,
-      TF_PADDING_PKSC,
-      TF_PADDING_IEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
+      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
     else
       Result:= TF_E_UNEXPECTED;
       Exit;
@@ -1006,14 +1016,14 @@ begin
       end;
                                             // XX 04 04 04 04
 //      TF_PADDING_ISO,
-      TF_PADDING_PKSC: begin
+      TF_PADDING_PKSC7: begin
         FillChar(Data^, Cnt, Byte(Cnt));
         Dec(Data, LDataSize);
         Xor128(Data, @FIVector);
         TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
       end;
                                             // XX 80 00 00 00
-      TF_PADDING_IEC: begin
+      TF_PADDING_ISOIEC: begin
         Data^:= $80;
         Inc(Data);
         FillChar(Data^, Cnt - 1, 0);
@@ -1053,9 +1063,9 @@ begin
       end;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + BLOCK_SIZE - 1) and not (BLOCK_SIZE - 1);
       TF_PADDING_ANSI,
+      TF_PADDING_PKSC7,
 //      TF_PADDING_ISO,
-      TF_PADDING_PKSC,
-      TF_PADDING_IEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
+      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
     else
       Result:= TF_E_UNEXPECTED;
       Exit;
@@ -1131,14 +1141,14 @@ begin
         end;
                                               // XX 04 04 04 04
 //        TF_PADDING_ISO,
-        TF_PADDING_PKSC: begin
+        TF_PADDING_PKSC7: begin
           FillChar(Data^, Cnt, Byte(Cnt));
           Dec(Data, LDataSize);
           Xor128(Data, @FIVector);
           TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
         end;
                                               // XX 80 00 00 00
-        TF_PADDING_IEC: begin
+        TF_PADDING_ISOIEC: begin
           Data^:= $80;
           Inc(Data);
           FillChar(Data^, Cnt - 1, 0);
@@ -1171,9 +1181,9 @@ begin
   if Last and (DataSize = 0) then begin
     case FPadding of
       TF_PADDING_ANSI,
+      TF_PADDING_PKSC7,
 //      TF_PADDING_ISO,
-      TF_PADDING_PKSC,
-      TF_PADDING_IEC: begin
+      TF_PADDING_ISOIEC: begin
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1219,7 +1229,7 @@ begin
         end;
       end;       }
                                             // XX 04 04 04 04
-      TF_PADDING_PKSC: begin
+      TF_PADDING_PKSC7: begin
         Dec(Data);
         Cnt:= Data^;
         if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
@@ -1240,7 +1250,7 @@ begin
         end;
       end;
                                             // XX 80 00 00 00
-      TF_PADDING_IEC: begin
+      TF_PADDING_ISOIEC: begin
         Cnt:= BLOCK_SIZE;
         repeat
           Dec(Data);
@@ -1256,6 +1266,11 @@ begin
     end;
   end;
   Result:= TF_S_OK;
+end;
+
+class procedure TAESCipher.DecryptBlock(Inst: PAESCipher; Data: PByte);
+begin
+  // todo:
 end;
 
 function TAESCipher.DecryptCBC(Data: PByte; var DataSize: LongWord;
@@ -1278,8 +1293,8 @@ begin
     case FPadding of
       TF_PADDING_ANSI,
 //      TF_PADDING_ISO,
-      TF_PADDING_PKSC,
-      TF_PADDING_IEC: begin
+      TF_PADDING_PKSC7,
+      TF_PADDING_ISOIEC: begin
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1328,7 +1343,7 @@ begin
         end;
       end;
 }                                            // XX 04 04 04 04
-      TF_PADDING_PKSC: begin
+      TF_PADDING_PKSC7: begin
         Dec(Data);
         Cnt:= Data^;
         if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
@@ -1349,7 +1364,7 @@ begin
         end;
       end;
                                             // XX 80 00 00 00
-      TF_PADDING_IEC: begin
+      TF_PADDING_ISOIEC: begin
         Cnt:= BLOCK_SIZE;
         repeat
           Dec(Data);
@@ -1463,7 +1478,7 @@ begin
         end;
 }
                                               // XX 04 04 04 04
-        TF_PADDING_PKSC: begin
+        TF_PADDING_PKSC7: begin
           Dec(Data);
           Cnt:= Data^;
           if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
@@ -1484,7 +1499,7 @@ begin
           end;
         end;
                                               // XX 80 00 00 00
-        TF_PADDING_IEC: begin
+        TF_PADDING_ISOIEC: begin
           Cnt:= BLOCK_SIZE;
           repeat
             Dec(Data);

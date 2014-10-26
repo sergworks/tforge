@@ -35,14 +35,13 @@ type
 
     procedure Compress;
   public
-//    class function Release(Inst: PSHA1Alg): Integer; stdcall; static;
     class procedure Init(Inst: PSHA1Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Update(Inst: PSHA1Alg; Data: PByte; DataSize: LongWord);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PSHA1Alg; PDigest: PSHA1Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class procedure Purge(Inst: PSHA1Alg);  -- redirected to Init
+//    class procedure Burn(Inst: PSHA1Alg);  -- redirected to Init
 //         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetDigestSize(Inst: PSHA1Alg): LongInt;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -63,7 +62,6 @@ const
     @TtfRecord.QueryIntf,
     @TtfRecord.Addref,
     @HashAlgRelease,
-//    @TSHA1Alg.Release,
 
     @TSHA1Alg.Init,
     @TSHA1Alg.Update,
@@ -3600,8 +3598,8 @@ type
   TLongArray = array[0..15] of LongWord;
 
 var
-  A, B, C, D, E: LongWord;
   W: PLongArray;
+  A, B, C, D, E: LongWord;
   Tmp: LongWord;
 
 begin

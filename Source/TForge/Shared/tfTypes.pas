@@ -279,15 +279,17 @@ type
   ICipherKey = interface(IInterface)
     function DuplicateKey(var Key: ICipherKey): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SetKeyParam(Param: LongWord; Data: PByte; DataLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DeriveKey(HashAlg: IHashAlgorithm; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   ICipher = interface(ICipherKey)
+    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Encrypt(Data: PByte; var DataSize: LongWord;
              BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Decrypt(Data: PByte; var DataSize: LongWord;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 const
@@ -310,15 +312,16 @@ const
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
 
 // Cipher Key Padding
-  TF_PADDING_NONE = 1;
-  TF_PADDING_ZERO = 2;    // XX 00 00 00 00
-  TF_PADDING_ANSI = 3;    // XX 00 00 00 04
-//  TF_PADDING_ISO  = 4;    // XX ?? ?? ?? 04
-  TF_PADDING_PKSC = 4;    // XX 04 04 04 04
-  TF_PADDING_IEC  = 5;    // XX 80 00 00 00
+  TF_PADDING_DEFAULT  = 0;
+  TF_PADDING_NONE     = 1;
+  TF_PADDING_ZERO     = 2;    // XX 00 00 00 00
+  TF_PADDING_ANSI     = 3;    // XX 00 00 00 04
+  TF_PADDING_PKSC7    = 4;    // XX 04 04 04 04
+  TF_PADDING_ISO10126 = 5;    // XX ?? ?? ?? 04
+  TF_PADDING_ISOIEC   = 6;    // XX 80 00 00 00
 
   TF_PADDING_MIN = TF_PADDING_NONE;
-  TF_PADDING_MAX = TF_PADDING_IEC;
+  TF_PADDING_MAX = TF_PADDING_ISOIEC;
 
 { Hash digest helper types }
 type

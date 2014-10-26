@@ -27,11 +27,11 @@ package TCiphers;
 
 requires
   rtl,
-  TForge,
-  THashes;
+  TForge;
 
 contains
-  tfAES in '..\..\Source\Ciphers\Units\Engine\tfAES.pas',
-  tfCiphers in '..\..\Source\Ciphers\Units\Client\tfCiphers.pas';
+  tfAES in '..\..\Source\TCiphers\Engine\tfAES.pas',
+  tfCiphers in '..\..\Source\TCiphers\Client\tfCiphers.pas',
+  tfBlockCiphers in '..\..\Source\TCiphers\Engine\tfBlockCiphers.pas';
 
 end.
