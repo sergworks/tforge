@@ -98,7 +98,7 @@ begin
            ((Value and $FF0000) shr 8) or ((Value and $FF000000) shr 24);
 end;
 
-{$IFDEF CPU386_WIN32}
+{$IFDEF CPUX86_WIN32}
 procedure TSHA1Alg.Compress;
 asm
         PUSH    ESI
@@ -926,12 +926,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 32],ESI
         ADD     EBP,ESI
-        MOV     EDI,EBX
+        MOV     [ESP],EBX
         MOV     ESI,EBX
-        AND     EDI,ECX
+        AND     [ESP],ECX
         OR      ESI,ECX
         AND     ESI,EDX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBX,30
         LEA     EBP,[EBP + ESI + $8F1BBCDC]
         MOV     ESI,EAX
@@ -950,12 +950,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 36],ESI
         ADD     EDX,ESI
-        MOV     EDI,EAX
+        MOV     [ESP],EAX
         MOV     ESI,EAX
-        AND     EDI,EBX
+        AND     [ESP],EBX
         OR      ESI,EBX
         AND     ESI,ECX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EAX,30
         LEA     EDX,[EDX + ESI + $8F1BBCDC]
         MOV     ESI,EBP
@@ -974,12 +974,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 40],ESI
         ADD     ECX,ESI
-        MOV     EDI,EBP
+        MOV     [ESP],EBP
         MOV     ESI,EBP
-        AND     EDI,EAX
+        AND     [ESP],EAX
         OR      ESI,EAX
         AND     ESI,EBX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBP,30
         LEA     ECX,[ECX + ESI + $8F1BBCDC]
         MOV     ESI,EDX
@@ -998,12 +998,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 44],ESI
         ADD     EBX,ESI
-        MOV     EDI,EDX
+        MOV     [ESP],EDX
         MOV     ESI,EDX
-        AND     EDI,EBP
+        AND     [ESP],EBP
         OR      ESI,EBP
         AND     ESI,EAX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EDX,30
         LEA     EBX,[EBX + ESI + $8F1BBCDC]
         MOV     ESI,ECX
@@ -1022,12 +1022,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 48],ESI
         ADD     EAX,ESI
-        MOV     EDI,ECX
+        MOV     [ESP],ECX
         MOV     ESI,ECX
-        AND     EDI,EDX
+        AND     [ESP],EDX
         OR      ESI,EDX
         AND     ESI,EBP
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     ECX,30
         LEA     EAX,[EAX + ESI + $8F1BBCDC]
         MOV     ESI,EBX
@@ -1046,12 +1046,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 52],ESI
         ADD     EBP,ESI
-        MOV     EDI,EBX
+        MOV     [ESP],EBX
         MOV     ESI,EBX
-        AND     EDI,ECX
+        AND     [ESP],ECX
         OR      ESI,ECX
         AND     ESI,EDX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBX,30
         LEA     EBP,[EBP + ESI + $8F1BBCDC]
         MOV     ESI,EAX
@@ -1070,12 +1070,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 56],ESI
         ADD     EDX,ESI
-        MOV     EDI,EAX
+        MOV     [ESP],EAX
         MOV     ESI,EAX
-        AND     EDI,EBX
+        AND     [ESP],EBX
         OR      ESI,EBX
         AND     ESI,ECX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EAX,30
         LEA     EDX,[EDX + ESI + $8F1BBCDC]
         MOV     ESI,EBP
@@ -1094,12 +1094,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 60],ESI
         ADD     ECX,ESI
-        MOV     EDI,EBP
+        MOV     [ESP],EBP
         MOV     ESI,EBP
-        AND     EDI,EAX
+        AND     [ESP],EAX
         OR      ESI,EAX
         AND     ESI,EBX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBP,30
         LEA     ECX,[ECX + ESI + $8F1BBCDC]
         MOV     ESI,EDX
@@ -1118,12 +1118,12 @@ asm
         ROL     ESI,1
         MOV     [EDI],ESI
         ADD     EBX,ESI
-        MOV     EDI,EDX
+        MOV     [ESP],EDX
         MOV     ESI,EDX
-        AND     EDI,EBP
+        AND     [ESP],EBP
         OR      ESI,EBP
         AND     ESI,EAX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EDX,30
         LEA     EBX,[EBX + ESI + $8F1BBCDC]
         MOV     ESI,ECX
@@ -1142,12 +1142,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 4],ESI
         ADD     EAX,ESI
-        MOV     EDI,ECX
+        MOV     [ESP],ECX
         MOV     ESI,ECX
-        AND     EDI,EDX
+        AND     [ESP],EDX
         OR      ESI,EDX
         AND     ESI,EBP
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     ECX,30
         LEA     EAX,[EAX + ESI + $8F1BBCDC]
         MOV     ESI,EBX
@@ -1166,12 +1166,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 8],ESI
         ADD     EBP,ESI
-        MOV     EDI,EBX
+        MOV     [ESP],EBX
         MOV     ESI,EBX
-        AND     EDI,ECX
+        AND     [ESP],ECX
         OR      ESI,ECX
         AND     ESI,EDX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBX,30
         LEA     EBP,[EBP + ESI + $8F1BBCDC]
         MOV     ESI,EAX
@@ -1190,12 +1190,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 12],ESI
         ADD     EDX,ESI
-        MOV     EDI,EAX
+        MOV     [ESP],EAX
         MOV     ESI,EAX
-        AND     EDI,EBX
+        AND     [ESP],EBX
         OR      ESI,EBX
         AND     ESI,ECX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EAX,30
         LEA     EDX,[EDX + ESI + $8F1BBCDC]
         MOV     ESI,EBP
@@ -1214,12 +1214,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 16],ESI
         ADD     ECX,ESI
-        MOV     EDI,EBP
+        MOV     [ESP],EBP
         MOV     ESI,EBP
-        AND     EDI,EAX
+        AND     [ESP],EAX
         OR      ESI,EAX
         AND     ESI,EBX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBP,30
         LEA     ECX,[ECX + ESI + $8F1BBCDC]
         MOV     ESI,EDX
@@ -1238,12 +1238,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 20],ESI
         ADD     EBX,ESI
-        MOV     EDI,EDX
+        MOV     [ESP],EDX
         MOV     ESI,EDX
-        AND     EDI,EBP
+        AND     [ESP],EBP
         OR      ESI,EBP
         AND     ESI,EAX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EDX,30
         LEA     EBX,[EBX + ESI + $8F1BBCDC]
         MOV     ESI,ECX
@@ -1262,12 +1262,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 24],ESI
         ADD     EAX,ESI
-        MOV     EDI,ECX
+        MOV     [ESP],ECX
         MOV     ESI,ECX
-        AND     EDI,EDX
+        AND     [ESP],EDX
         OR      ESI,EDX
         AND     ESI,EBP
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     ECX,30
         LEA     EAX,[EAX + ESI + $8F1BBCDC]
         MOV     ESI,EBX
@@ -1286,12 +1286,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 28],ESI
         ADD     EBP,ESI
-        MOV     EDI,EBX
+        MOV     [ESP],EBX
         MOV     ESI,EBX
-        AND     EDI,ECX
+        AND     [ESP],ECX
         OR      ESI,ECX
         AND     ESI,EDX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBX,30
         LEA     EBP,[EBP + ESI + $8F1BBCDC]
         MOV     ESI,EAX
@@ -1310,12 +1310,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 32],ESI
         ADD     EDX,ESI
-        MOV     EDI,EAX
+        MOV     [ESP],EAX
         MOV     ESI,EAX
-        AND     EDI,EBX
+        AND     [ESP],EBX
         OR      ESI,EBX
         AND     ESI,ECX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EAX,30
         LEA     EDX,[EDX + ESI + $8F1BBCDC]
         MOV     ESI,EBP
@@ -1334,12 +1334,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 36],ESI
         ADD     ECX,ESI
-        MOV     EDI,EBP
+        MOV     [ESP],EBP
         MOV     ESI,EBP
-        AND     EDI,EAX
+        AND     [ESP],EAX
         OR      ESI,EAX
         AND     ESI,EBX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EBP,30
         LEA     ECX,[ECX + ESI + $8F1BBCDC]
         MOV     ESI,EDX
@@ -1358,12 +1358,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 40],ESI
         ADD     EBX,ESI
-        MOV     EDI,EDX
+        MOV     [ESP],EDX
         MOV     ESI,EDX
-        AND     EDI,EBP
+        AND     [ESP],EBP
         OR      ESI,EBP
         AND     ESI,EAX
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     EDX,30
         LEA     EBX,[EBX + ESI + $8F1BBCDC]
         MOV     ESI,ECX
@@ -1382,12 +1382,12 @@ asm
         ROL     ESI,1
         MOV     [EDI + 44],ESI
         ADD     EAX,ESI
-        MOV     EDI,ECX
+        MOV     [ESP],ECX
         MOV     ESI,ECX
-        AND     EDI,EDX
+        AND     [ESP],EDX
         OR      ESI,EDX
         AND     ESI,EBP
-        OR      ESI,EDI
+        OR      ESI,[ESP]
         ROL     ECX,30
         LEA     EAX,[EAX + ESI + $8F1BBCDC]
         MOV     ESI,EBX
@@ -1815,31 +1815,31 @@ asm
         ADD     EAX,ESI
 
 
-        ADD   [EDI - 20],EAX      // Inc(FData.Digest[0], A);
-        ADD   [EDI - 16],EBX      // Inc(FData.Digest[1], B);
-        ADD   [EDI - 12],ECX      // Inc(FData.Digest[2], C);
-        ADD   [EDI - 8],EDX       // Inc(FData.Digest[3], D);
-        ADD   [EDI - 4],EBP       // Inc(FData.Digest[4], E);
+        ADD     [EDI - 20],EAX      // Inc(FData.Digest[0], A);
+        ADD     [EDI - 16],EBX      // Inc(FData.Digest[1], B);
+        ADD     [EDI - 12],ECX      // Inc(FData.Digest[2], C);
+        ADD     [EDI - 8],EDX       // Inc(FData.Digest[3], D);
+        ADD     [EDI - 4],EBP       // Inc(FData.Digest[4], E);
 
                                   //  FillChar(Block, SizeOf(Block), 0);
-        XOR   EAX,EAX
-        MOV   EDI,EAX
-        MOV   [EDI],EAX
-        MOV   [EDI + 4],EAX
-        MOV   [EDI + 8],EAX
-        MOV   [EDI + 12],EAX
-        MOV   [EDI + 16],EAX
-        MOV   [EDI + 20],EAX
-        MOV   [EDI + 24],EAX
-        MOV   [EDI + 28],EAX
-        MOV   [EDI + 32],EAX
-        MOV   [EDI + 36],EAX
-        MOV   [EDI + 40],EAX
-        MOV   [EDI + 44],EAX
-        MOV   [EDI + 48],EAX
-        MOV   [EDI + 52],EAX
-        MOV   [EDI + 56],EAX
-        MOV   [EDI + 60],EAX
+        XOR     EAX,EAX
+//        MOV     [ESP],EAX
+        MOV     [EDI],EAX
+        MOV     [EDI + 4],EAX
+        MOV     [EDI + 8],EAX
+        MOV     [EDI + 12],EAX
+        MOV     [EDI + 16],EAX
+        MOV     [EDI + 20],EAX
+        MOV     [EDI + 24],EAX
+        MOV     [EDI + 28],EAX
+        MOV     [EDI + 32],EAX
+        MOV     [EDI + 36],EAX
+        MOV     [EDI + 40],EAX
+        MOV     [EDI + 44],EAX
+        MOV     [EDI + 48],EAX
+        MOV     [EDI + 52],EAX
+        MOV     [EDI + 56],EAX
+        MOV     [EDI + 60],EAX
 
         POP     EAX
         POP     EBP

@@ -12,7 +12,7 @@ unit tfSHA256;
 {$ENDIF}
 
 {$IFDEF TFL_CPUX64_WIN64}
-  {$DEFINE CPUX64_WIN64}
+  {.$DEFINE CPUX64_WIN64}
 {$ENDIF}
 
 interface
@@ -153,6 +153,8 @@ begin
            ((Value and $FF0000) shr 8) or ((Value and $FF000000) shr 24);
 end;
 
+{$IFNDEF CPUX86_WIN32}
+{$IFNDEF CPUX64_WIN64}
 procedure TSHA256Alg.Compress;
 type
   PLongArray = ^TLongArray;
@@ -855,6 +857,4754 @@ begin
 //  FillChar(W, SizeOf(W), 0);
   FillChar(FData.Block, SizeOf(FData.Block), 0);
 end;
+{$ENDIF}
+{$ENDIF}
+
+{$IFDEF CPUX86_WIN32}
+procedure TSHA256Alg.Compress;
+const
+// SHA256 registers:
+  DigestA = -32;  // [EDI - 32]
+  DigestB = -28;  // [EDI - 28]
+  DigestC = -24;  // [EDI - 24]
+  DigestD = -20;  // [EDI - 20]
+  DigestE = -16;  // [EDI - 16]
+  DigestF = -12;  // [EDI - 12]
+  DigestG = -8;   // [EDI - 8]
+  DigestH = -4;   // [EDI - 4]
+
+  RegA = 28;      // [ESP + 28]
+  RegB = 24;      // [ESP + 24]
+  RegC = 20;      // [ESP + 20]
+  RegD = 16;      // [ESP + 16]
+  RegE = 12;      // [ESP + 12]
+  RegF = 8;       // [ESP + 8]
+  RegG = 4;       // [ESP + 4]
+  RegH = 0;       // [ESP]
+
+  W0  = 0;    W1  = 4;    W2  = 8;    W3  = 12;
+  W4  = 16;   W5  = 20;   W6  = 24;   W7  = 28;
+  W8  = 32;   W9  = 36;   W10 = 40;   W11 = 44;
+  W12 = 48;   W13 = 52;   W14 = 56;   W15 = 60;
+
+asm
+        PUSH    ESI
+        PUSH    EDI
+        PUSH    EBX
+        PUSH    EBP
+
+        LEA     EDI,[EAX].TSHA256Alg.FData.Block    // W:= @FData.Block;
+
+        PUSH    [EDI].DigestA
+        PUSH    [EDI].DigestB
+        PUSH    [EDI].DigestC
+        PUSH    [EDI].DigestD
+        PUSH    [EDI].DigestE
+        PUSH    [EDI].DigestF
+        PUSH    [EDI].DigestG
+        PUSH    [EDI].DigestH
+{
+        SUB     ESP,32
+        MOV     EAX,[EDI].DigestA
+        MOV     [ESP].RegA,EAX
+        MOV     EAX,[EDI].DigestB
+        MOV     [ESP].RegB,EAX
+        MOV     EAX,[EDI].DigestC
+        MOV     [ESP].RegC,EAX
+        MOV     EAX,[EDI].DigestD
+        MOV     [ESP].RegD,EAX
+        MOV     EAX,[EDI].DigestE
+        MOV     [ESP].RegE,EAX
+        MOV     EAX,[EDI].DigestF
+        MOV     [ESP].RegF,EAX
+        MOV     EAX,[EDI].DigestG
+        MOV     [ESP].RegG,EAX
+        MOV     EAX,[EDI].DigestH
+        MOV     [ESP].RegH,EAX
+}
+//  W[0]:= Swap32(W[0]);
+
+        MOV     ESI,[EDI].W0
+        BSWAP   ESI
+        MOV     [EDI].W0,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $428a2f98 + W[0];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$428a2f98
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+
+//  W[1]:= Swap32(W[1]);
+
+        MOV     ESI,[EDI].W1
+        BSWAP   ESI
+        MOV     [EDI].W1,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $71374491 + W[1];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$71374491
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+
+//  W[2]:= Swap32(W[2]);
+
+        MOV     ESI,[EDI].W2
+        BSWAP   ESI
+        MOV     [EDI].W2,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $b5c0fbcf + W[2];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$b5c0fbcf
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+
+//  W[3]:= Swap32(W[3]);
+
+        MOV     ESI,[EDI].W3
+        BSWAP   ESI
+        MOV     [EDI].W3,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $e9b5dba5 + W[3];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$e9b5dba5
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[4]:= Swap32(W[4]);
+
+        MOV     ESI,[EDI].W4
+        BSWAP   ESI
+        MOV     [EDI].W4,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $3956c25b + W[4];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$3956c25b
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[5]:= Swap32(W[5]);
+
+        MOV     ESI,[EDI].W5
+        BSWAP   ESI
+        MOV     [EDI].W5,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $59f111f1 + W[5];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$59f111f1
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[6]:= Swap32(W[6]);
+
+        MOV     ESI,[EDI].W6
+        BSWAP   ESI
+        MOV     [EDI].W6,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $923f82a4 + W[6];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$923f82a4
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[7]:= Swap32(W[7]);
+
+        MOV     ESI,[EDI].W7
+        BSWAP   ESI
+        MOV     [EDI].W7,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $ab1c5ed5 + W[7];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$ab1c5ed5
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[8]:= Swap32(W[8]);
+
+        MOV     ESI,[EDI].W8
+        BSWAP   ESI
+        MOV     [EDI].W8,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $d807aa98 + W[8];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$d807aa98
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[9]:= Swap32(W[9]);
+
+        MOV     ESI,[EDI].W9
+        BSWAP   ESI
+        MOV     [EDI].W9,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $12835b01 + W[9];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$12835b01
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[10]:= Swap32(W[10]);
+
+        MOV     ESI,[EDI].W10
+        BSWAP   ESI
+        MOV     [EDI].W10,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $243185be + W[10];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$243185be
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[11]:= Swap32(W[11]);
+
+        MOV     ESI,[EDI].W11
+        BSWAP   ESI
+        MOV     [EDI].W11,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $550c7dc3 + W[11];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$550c7dc3
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[12]:= Swap32(W[12]);
+
+        MOV     ESI,[EDI].W12
+        BSWAP   ESI
+        MOV     [EDI].W12,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $72be5d74 + W[12];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$72be5d74
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[13]:= Swap32(W[13]);
+
+        MOV     ESI,[EDI].W13
+        BSWAP   ESI
+        MOV     [EDI].W13,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $80deb1fe + W[13];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$80deb1fe
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[14]:= Swap32(W[14]);
+
+        MOV     ESI,[EDI].W14
+        BSWAP   ESI
+        MOV     [EDI].W14,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $9bdc06a7 + W[14];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$9bdc06a7
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[15]:= Swap32(W[15]);
+
+        MOV     ESI,[EDI].W15
+        BSWAP   ESI
+        MOV     [EDI].W15,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $c19bf174 + W[15];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$c19bf174
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[0]:= (((W[14] shr 17) or (W[14] shl 15)) xor
+//          ((W[14] shr 19) or (W[14] shl 13)) xor (W[14] shr 10)) + W[9] +
+//         (((W[1] shr 7) or (W[1] shl 25)) xor
+//          ((W[1] shr 18) or (W[1] shl 14)) xor (W[1] shr 3)) + W[0];
+
+        MOV     ESI,[EDI].W14
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W1
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W9
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W0
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W0,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $e49b69c1 + W[0];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$e49b69c1
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[1]:= (((W[15] shr 17) or (W[15] shl 15)) xor
+//          ((W[15] shr 19) or (W[15] shl 13)) xor (W[15] shr 10)) + W[10] +
+//         (((W[2] shr 7) or (W[2] shl 25)) xor
+//          ((W[2] shr 18) or (W[2] shl 14)) xor (W[2] shr 3)) + W[1];
+
+        MOV     ESI,[EDI].W15
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W2
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W10
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W1
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W1,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $efbe4786 + W[1];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$efbe4786
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[2]:= (((W[0] shr 17) or (W[0] shl 15)) xor
+//          ((W[0] shr 19) or (W[0] shl 13)) xor (W[0] shr 10)) + W[11] +
+//         (((W[3] shr 7) or (W[3] shl 25)) xor
+//          ((W[3] shr 18) or (W[3] shl 14)) xor (W[3] shr 3)) + W[2];
+
+        MOV     ESI,[EDI].W0
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W3
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W11
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W2
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W2,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $0fc19dc6 + W[2];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$0fc19dc6
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[3]:= (((W[1] shr 17) or (W[1] shl 15)) xor
+//          ((W[1] shr 19) or (W[1] shl 13)) xor (W[1] shr 10)) + W[12] +
+//         (((W[4] shr 7) or (W[4] shl 25)) xor
+//          ((W[4] shr 18) or (W[4] shl 14)) xor (W[4] shr 3)) + W[3];
+
+        MOV     ESI,[EDI].W1
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W4
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W12
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W3
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W3,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $240ca1cc + W[3];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$240ca1cc
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[4]:= (((W[2] shr 17) or (W[2] shl 15)) xor
+//          ((W[2] shr 19) or (W[2] shl 13)) xor (W[2] shr 10)) + W[13] +
+//         (((W[5] shr 7) or (W[5] shl 25)) xor
+//          ((W[5] shr 18) or (W[5] shl 14)) xor (W[5] shr 3)) + W[4];
+
+        MOV     ESI,[EDI].W2
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W5
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W13
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W4
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W4,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $2de92c6f + W[4];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$2de92c6f
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[5]:= (((W[3] shr 17) or (W[3] shl 15)) xor
+//          ((W[3] shr 19) or (W[3] shl 13)) xor (W[3] shr 10)) + W[14] +
+//         (((W[6] shr 7) or (W[6] shl 25)) xor
+//          ((W[6] shr 18) or (W[6] shl 14)) xor (W[6] shr 3)) + W[5];
+
+        MOV     ESI,[EDI].W3
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W6
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W14
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W5
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W5,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $4a7484aa + W[5];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$4a7484aa
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[6]:= (((W[4] shr 17) or (W[4] shl 15)) xor
+//          ((W[4] shr 19) or (W[4] shl 13)) xor (W[4] shr 10)) + W[15] +
+//         (((W[7] shr 7) or (W[7] shl 25)) xor
+//          ((W[7] shr 18) or (W[7] shl 14)) xor (W[7] shr 3)) + W[6];
+
+        MOV     ESI,[EDI].W4
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W7
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W15
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W6
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W6,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $5cb0a9dc + W[6];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$5cb0a9dc
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[7]:= (((W[5] shr 17) or (W[5] shl 15)) xor
+//          ((W[5] shr 19) or (W[5] shl 13)) xor (W[5] shr 10)) + W[0] +
+//         (((W[8] shr 7) or (W[8] shl 25)) xor
+//          ((W[8] shr 18) or (W[8] shl 14)) xor (W[8] shr 3)) + W[7];
+
+        MOV     ESI,[EDI].W5
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W8
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W0
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W7
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W7,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $76f988da + W[7];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$76f988da
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[8]:= (((W[6] shr 17) or (W[6] shl 15)) xor
+//          ((W[6] shr 19) or (W[6] shl 13)) xor (W[6] shr 10)) + W[1] +
+//         (((W[9] shr 7) or (W[9] shl 25)) xor
+//          ((W[9] shr 18) or (W[9] shl 14)) xor (W[9] shr 3)) + W[8];
+
+        MOV     ESI,[EDI].W6
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W9
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W1
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W8
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W8,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $983e5152 + W[8];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$983e5152
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[9]:= (((W[7] shr 17) or (W[7] shl 15)) xor
+//          ((W[7] shr 19) or (W[7] shl 13)) xor (W[7] shr 10)) + W[2] +
+//         (((W[10] shr 7) or (W[10] shl 25)) xor
+//          ((W[10] shr 18) or (W[10] shl 14)) xor (W[10] shr 3)) + W[9];
+
+        MOV     ESI,[EDI].W7
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W10
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W2
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W9
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W9,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $a831c66d + W[9];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$a831c66d
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[10]:= (((W[8] shr 17) or (W[8] shl 15)) xor
+//           ((W[8] shr 19) or (W[8] shl 13)) xor (W[8] shr 10)) + W[3] +
+//          (((W[11] shr 7) or (W[11] shl 25)) xor
+//           ((W[11] shr 18) or (W[11] shl 14)) xor (W[11] shr 3)) + W[10];
+
+        MOV     ESI,[EDI].W8
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W11
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W3
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W10
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W10,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $b00327c8 + W[10];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$b00327c8
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[11]:= (((W[9] shr 17) or (W[9] shl 15)) xor
+//           ((W[9] shr 19) or (W[9] shl 13)) xor (W[9] shr 10)) + W[4] +
+//          (((W[12] shr 7) or (W[12] shl 25)) xor
+//           ((W[12] shr 18) or (W[12] shl 14)) xor (W[12] shr 3)) + W[11];
+
+        MOV     ESI,[EDI].W9
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W12
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W4
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W11
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W11,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $bf597fc7 + W[11];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$bf597fc7
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[12]:= (((W[10] shr 17) or (W[10] shl 15)) xor
+//           ((W[10] shr 19) or (W[10] shl 13)) xor (W[10] shr 10)) + W[5] +
+//          (((W[13] shr 7) or (W[13] shl 25)) xor
+//           ((W[13] shr 18) or (W[13] shl 14)) xor (W[13] shr 3)) + W[12];
+
+        MOV     ESI,[EDI].W10
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W13
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W5
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W12
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W12,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $c6e00bf3 + W[12];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$c6e00bf3
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[13]:= (((W[11] shr 17) or (W[11] shl 15)) xor
+//           ((W[11] shr 19) or (W[11] shl 13)) xor (W[11] shr 10)) + W[6] +
+//          (((W[14] shr 7) or (W[14] shl 25)) xor
+//           ((W[14] shr 18) or (W[14] shl 14)) xor (W[14] shr 3)) + W[13];
+
+        MOV     ESI,[EDI].W11
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W14
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W6
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W13
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W13,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $d5a79147 + W[13];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$d5a79147
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[14]:= (((W[12] shr 17) or (W[12] shl 15)) xor
+//           ((W[12] shr 19) or (W[12] shl 13)) xor (W[12] shr 10)) + W[7] +
+//          (((W[15] shr 7) or (W[15] shl 25)) xor
+//           ((W[15] shr 18) or (W[15] shl 14)) xor (W[15] shr 3)) + W[14];
+
+        MOV     ESI,[EDI].W12
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W15
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W7
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W14
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W14,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $06ca6351 + W[14];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$06ca6351
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[15]:= (((W[13] shr 17) or (W[13] shl 15)) xor
+//           ((W[13] shr 19) or (W[13] shl 13)) xor (W[13] shr 10)) + W[8] +
+//          (((W[0] shr 7) or (W[0] shl 25)) xor
+//           ((W[0] shr 18) or (W[0] shl 14)) xor (W[0] shr 3)) + W[15];
+
+        MOV     ESI,[EDI].W13
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W0
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W8
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W15
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W15,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $14292967 + W[15];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$14292967
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[0]:= (((W[14] shr 17) or (W[14] shl 15)) xor
+//          ((W[14] shr 19) or (W[14] shl 13)) xor (W[14] shr 10)) + W[9] +
+//         (((W[1] shr 7) or (W[1] shl 25)) xor
+//          ((W[1] shr 18) or (W[1] shl 14)) xor (W[1] shr 3)) + W[0];
+
+        MOV     ESI,[EDI].W14
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W1
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W9
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W0
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W0,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $27b70a85 + W[0];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$27b70a85
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[1]:= (((W[15] shr 17) or (W[15] shl 15)) xor
+//          ((W[15] shr 19) or (W[15] shl 13)) xor (W[15] shr 10)) + W[10] +
+//         (((W[2] shr 7) or (W[2] shl 25)) xor
+//          ((W[2] shr 18) or (W[2] shl 14)) xor (W[2] shr 3)) + W[1];
+
+        MOV     ESI,[EDI].W15
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W2
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W10
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W1
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W1,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $2e1b2138 + W[1];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$2e1b2138
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[2]:= (((W[0] shr 17) or (W[0] shl 15)) xor
+//          ((W[0] shr 19) or (W[0] shl 13)) xor (W[0] shr 10)) + W[11] +
+//         (((W[3] shr 7) or (W[3] shl 25)) xor
+//          ((W[3] shr 18) or (W[3] shl 14)) xor (W[3] shr 3)) + W[2];
+
+        MOV     ESI,[EDI].W0
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W3
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W11
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W2
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W2,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $4d2c6dfc + W[2];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$4d2c6dfc
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[3]:= (((W[1] shr 17) or (W[1] shl 15)) xor
+//          ((W[1] shr 19) or (W[1] shl 13)) xor (W[1] shr 10)) + W[12] +
+//         (((W[4] shr 7) or (W[4] shl 25)) xor
+//          ((W[4] shr 18) or (W[4] shl 14)) xor (W[4] shr 3)) + W[3];
+
+        MOV     ESI,[EDI].W1
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W4
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W12
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W3
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W3,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $53380d13 + W[3];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$53380d13
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[4]:= (((W[2] shr 17) or (W[2] shl 15)) xor
+//          ((W[2] shr 19) or (W[2] shl 13)) xor (W[2] shr 10)) + W[13] +
+//         (((W[5] shr 7) or (W[5] shl 25)) xor
+//          ((W[5] shr 18) or (W[5] shl 14)) xor (W[5] shr 3)) + W[4];
+
+        MOV     ESI,[EDI].W2
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W5
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W13
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W4
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W4,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $650a7354 + W[4];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$650a7354
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[5]:= (((W[3] shr 17) or (W[3] shl 15)) xor
+//          ((W[3] shr 19) or (W[3] shl 13)) xor (W[3] shr 10)) + W[14] +
+//         (((W[6] shr 7) or (W[6] shl 25)) xor
+//          ((W[6] shr 18) or (W[6] shl 14)) xor (W[6] shr 3)) + W[5];
+
+        MOV     ESI,[EDI].W3
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W6
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W14
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W5
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W5,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $766a0abb + W[5];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$766a0abb
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[6]:= (((W[4] shr 17) or (W[4] shl 15)) xor
+//          ((W[4] shr 19) or (W[4] shl 13)) xor (W[4] shr 10)) + W[15] +
+//         (((W[7] shr 7) or (W[7] shl 25)) xor
+//          ((W[7] shr 18) or (W[7] shl 14)) xor (W[7] shr 3)) + W[6];
+
+        MOV     ESI,[EDI].W4
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W7
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W15
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W6
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W6,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $81c2c92e + W[6];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$81c2c92e
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[7]:= (((W[5] shr 17) or (W[5] shl 15)) xor
+//          ((W[5] shr 19) or (W[5] shl 13)) xor (W[5] shr 10)) + W[0] +
+//         (((W[8] shr 7) or (W[8] shl 25)) xor
+//          ((W[8] shr 18) or (W[8] shl 14)) xor (W[8] shr 3)) + W[7];
+
+        MOV     ESI,[EDI].W5
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W8
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W0
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W7
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W7,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $92722c85 + W[7];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$92722c85
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[8]:= (((W[6] shr 17) or (W[6] shl 15)) xor
+//          ((W[6] shr 19) or (W[6] shl 13)) xor (W[6] shr 10)) + W[1] +
+//         (((W[9] shr 7) or (W[9] shl 25)) xor
+//          ((W[9] shr 18) or (W[9] shl 14)) xor (W[9] shr 3)) + W[8];
+
+        MOV     ESI,[EDI].W6
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W9
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W1
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W8
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W8,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $a2bfe8a1 + W[8];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$a2bfe8a1
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[9]:= (((W[7] shr 17) or (W[7] shl 15)) xor
+//          ((W[7] shr 19) or (W[7] shl 13)) xor (W[7] shr 10)) + W[2] +
+//         (((W[10] shr 7) or (W[10] shl 25)) xor
+//          ((W[10] shr 18) or (W[10] shl 14)) xor (W[10] shr 3)) + W[9];
+
+        MOV     ESI,[EDI].W7
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W10
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W2
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W9
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W9,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $a81a664b + W[9];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$a81a664b
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[10]:= (((W[8] shr 17) or (W[8] shl 15)) xor
+//           ((W[8] shr 19) or (W[8] shl 13)) xor (W[8] shr 10)) + W[3] +
+//          (((W[11] shr 7) or (W[11] shl 25)) xor
+//           ((W[11] shr 18) or (W[11] shl 14)) xor (W[11] shr 3)) + W[10];
+
+        MOV     ESI,[EDI].W8
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W11
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W3
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W10
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W10,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $c24b8b70 + W[10];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$c24b8b70
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[11]:= (((W[9] shr 17) or (W[9] shl 15)) xor
+//           ((W[9] shr 19) or (W[9] shl 13)) xor (W[9] shr 10)) + W[4] +
+//          (((W[12] shr 7) or (W[12] shl 25)) xor
+//           ((W[12] shr 18) or (W[12] shl 14)) xor (W[12] shr 3)) + W[11];
+
+        MOV     ESI,[EDI].W9
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W12
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W4
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W11
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W11,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $c76c51a3 + W[11];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$c76c51a3
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[12]:= (((W[10] shr 17) or (W[10] shl 15)) xor
+//           ((W[10] shr 19) or (W[10] shl 13)) xor (W[10] shr 10)) + W[5] +
+//          (((W[13] shr 7) or (W[13] shl 25)) xor
+//           ((W[13] shr 18) or (W[13] shl 14)) xor (W[13] shr 3)) + W[12];
+
+        MOV     ESI,[EDI].W10
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W13
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W5
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W12
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W12,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $d192e819 + W[12];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$d192e819
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[13]:= (((W[11] shr 17) or (W[11] shl 15)) xor
+//           ((W[11] shr 19) or (W[11] shl 13)) xor (W[11] shr 10)) + W[6] +
+//          (((W[14] shr 7) or (W[14] shl 25)) xor
+//           ((W[14] shr 18) or (W[14] shl 14)) xor (W[14] shr 3)) + W[13];
+
+        MOV     ESI,[EDI].W11
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W14
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W6
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W13
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W13,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $d6990624 + W[13];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$d6990624
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[14]:= (((W[12] shr 17) or (W[12] shl 15)) xor
+//           ((W[12] shr 19) or (W[12] shl 13)) xor (W[12] shr 10)) + W[7] +
+//          (((W[15] shr 7) or (W[15] shl 25)) xor
+//           ((W[15] shr 18) or (W[15] shl 14)) xor (W[15] shr 3)) + W[14];
+
+        MOV     ESI,[EDI].W12
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W15
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W7
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W14
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W14,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $f40e3585 + W[14];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$f40e3585
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[15]:= (((W[13] shr 17) or (W[13] shl 15)) xor
+//           ((W[13] shr 19) or (W[13] shl 13)) xor (W[13] shr 10)) + W[8] +
+//          (((W[0] shr 7) or (W[0] shl 25)) xor
+//           ((W[0] shr 18) or (W[0] shl 14)) xor (W[0] shr 3)) + W[15];
+
+        MOV     ESI,[EDI].W13
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W0
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W8
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W15
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W15,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $106aa070 + W[15];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$106aa070
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[0]:= (((W[14] shr 17) or (W[14] shl 15)) xor
+//           ((W[14] shr 19) or (W[14] shl 13)) xor (W[14] shr 10)) + W[9] +
+//         (((W[1] shr 7) or (W[1] shl 25)) xor
+//          ((W[1] shr 18) or (W[1] shl 14)) xor (W[1] shr 3)) + W[0];
+
+        MOV     ESI,[EDI].W14
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W1
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W9
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W0
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W0,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $19a4c116 + W[0];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$19a4c116
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[1]:= (((W[15] shr 17) or (W[15] shl 15)) xor
+//          ((W[15] shr 19) or (W[15] shl 13)) xor (W[15] shr 10)) + W[10] +
+//         (((W[2] shr 7) or (W[2] shl 25)) xor
+//          ((W[2] shr 18) or (W[2] shl 14)) xor (W[2] shr 3)) + W[1];
+
+        MOV     ESI,[EDI].W15
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W2
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W10
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W1
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W1,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $1e376c08 + W[1];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$1e376c08
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[2]:= (((W[0] shr 17) or (W[0] shl 15)) xor
+//          ((W[0] shr 19) or (W[0] shl 13)) xor (W[0] shr 10)) + W[11] +
+//         (((W[3] shr 7) or (W[3] shl 25)) xor
+//          ((W[3] shr 18) or (W[3] shl 14)) xor (W[3] shr 3)) + W[2];
+
+        MOV     ESI,[EDI].W0
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W3
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W11
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W2
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W2,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $2748774c + W[2];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$2748774c
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[3]:= (((W[1] shr 17) or (W[1] shl 15)) xor
+//          ((W[1] shr 19) or (W[1] shl 13)) xor (W[1] shr 10)) + W[12] +
+//         (((W[4] shr 7) or (W[4] shl 25)) xor
+//          ((W[4] shr 18) or (W[4] shl 14)) xor (W[4] shr 3)) + W[3];
+
+        MOV     ESI,[EDI].W1
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W4
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W12
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W3
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W3,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $34b0bcb5 + W[3];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$34b0bcb5
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[4]:= (((W[2] shr 17) or (W[2] shl 15)) xor
+//          ((W[2] shr 19) or (W[2] shl 13)) xor (W[2] shr 10)) + W[13] +
+//         (((W[5] shr 7) or (W[5] shl 25)) xor
+//          ((W[5] shr 18) or (W[5] shl 14)) xor (W[5] shr 3)) + W[4];
+
+        MOV     ESI,[EDI].W2
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W5
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W13
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W4
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W4,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $391c0cb3 + W[4];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$391c0cb3
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[5]:= (((W[3] shr 17) or (W[3] shl 15)) xor
+//          ((W[3] shr 19) or (W[3] shl 13)) xor (W[3] shr 10)) + W[14] +
+//         (((W[6] shr 7) or (W[6] shl 25)) xor
+//          ((W[6] shr 18) or (W[6] shl 14)) xor (W[6] shr 3)) + W[5];
+
+        MOV     ESI,[EDI].W3
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W6
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W14
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W5
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W5,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $4ed8aa4a + W[5];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$4ed8aa4a
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[6]:= (((W[4] shr 17) or (W[4] shl 15)) xor
+//          ((W[4] shr 19) or (W[4] shl 13)) xor (W[4] shr 10)) + W[15] +
+//         (((W[7] shr 7) or (W[7] shl 25)) xor
+//          ((W[7] shr 18) or (W[7] shl 14)) xor (W[7] shr 3)) + W[6];
+
+        MOV     ESI,[EDI].W4
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W7
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W15
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W6
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W6,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $5b9cca4f + W[6];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$5b9cca4f
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[7]:= (((W[5] shr 17) or (W[5] shl 15)) xor
+//          ((W[5] shr 19) or (W[5] shl 13)) xor (W[5] shr 10)) + W[0] +
+//         (((W[8] shr 7) or (W[8] shl 25)) xor
+//          ((W[8] shr 18) or (W[8] shl 14)) xor (W[8] shr 3)) + W[7];
+
+        MOV     ESI,[EDI].W5
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W8
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W0
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W7
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W7,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $682e6ff3 + W[7];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$682e6ff3
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+//  W[8]:= (((W[6] shr 17) or (W[6] shl 15)) xor
+//          ((W[6] shr 19) or (W[6] shl 13)) xor (W[6] shr 10)) + W[1] +
+//         (((W[9] shr 7) or (W[9] shl 25)) xor
+//          ((W[9] shr 18) or (W[9] shl 14)) xor (W[9] shr 3)) + W[8];
+
+        MOV     ESI,[EDI].W6
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W9
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W1
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W8
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W8,ESI
+
+//  t1:= h + (((e shr 6) or (e shl 26)) xor ((e shr 11) or (e shl 21)) xor
+//      ((e shr 25) or (e shl 7))) + ((e and f) xor (not e and g)) + $748f82ee + W[8];
+
+        MOV     EAX,[ESP].RegE
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegF
+        NOT     EAX
+        AND     EAX,[ESP].RegG
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$748f82ee
+        ADD     EBX,[ESP].RegH
+
+//  t2:= (((a shr 2) or (a shl 30)) xor ((a shr 13) or (a shl 19)) xor
+//      ((a shr 22) xor (a shl 10))) + ((a and b) xor (a and c) xor (b and c));
+
+        MOV     EAX,[ESP].RegA
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegB
+        MOV     EBP,[ESP].RegC
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  h:= t1 + t2;
+//  d:= d + t1;
+
+        ADD     [ESP].RegD,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegH,EAX
+
+//  W[9]:= (((W[7] shr 17) or (W[7] shl 15)) xor
+//          ((W[7] shr 19) or (W[7] shl 13)) xor (W[7] shr 10)) + W[2] +
+//         (((W[10] shr 7) or (W[10] shl 25)) xor
+//          ((W[10] shr 18) or (W[10] shl 14)) xor (W[10] shr 3)) + W[9];
+
+        MOV     ESI,[EDI].W7
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W10
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W2
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W9
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W9,ESI
+
+//  t1:= g + (((d shr 6) or (d shl 26)) xor ((d shr 11) or (d shl 21)) xor
+//      ((d shr 25) or (d shl 7))) + ((d and e) xor (not d and f)) + $78a5636f + W[9];
+
+        MOV     EAX,[ESP].RegD
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegE
+        NOT     EAX
+        AND     EAX,[ESP].RegF
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$78a5636f
+        ADD     EBX,[ESP].RegG
+
+//  t2:= (((h shr 2) or (h shl 30)) xor ((h shr 13) or (h shl 19)) xor
+//      ((h shr 22) xor (h shl 10))) + ((h and a) xor (h and b) xor (a and b));
+
+        MOV     EAX,[ESP].RegH
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegA
+        MOV     EBP,[ESP].RegB
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  g:= t1 + t2;
+//  c:= c + t1;
+
+        ADD     [ESP].RegC,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegG,EAX
+
+//  W[10]:= (((W[8] shr 17) or (W[8] shl 15)) xor
+//           ((W[8] shr 19) or (W[8] shl 13)) xor (W[8] shr 10)) + W[3] +
+//          (((W[11] shr 7) or (W[11] shl 25)) xor
+//           ((W[11] shr 18) or (W[11] shl 14)) xor (W[11] shr 3)) + W[10];
+
+        MOV     ESI,[EDI].W8
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W11
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W3
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W10
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W10,ESI
+
+//  t1:= f + (((c shr 6) or (c shl 26)) xor ((c shr 11) or (c shl 21)) xor
+//      ((c shr 25) or (c shl 7))) + ((c and d) xor (not c and e)) + $84c87814 + W[10];
+
+        MOV     EAX,[ESP].RegC
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegD
+        NOT     EAX
+        AND     EAX,[ESP].RegE
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$84c87814
+        ADD     EBX,[ESP].RegF
+
+//  t2:= (((g shr 2) or (g shl 30)) xor ((g shr 13) or (g shl 19)) xor
+//      ((g shr 22) xor (g shl 10))) + ((g and h) xor (g and a) xor (h and a));
+
+        MOV     EAX,[ESP].RegG
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegH
+        MOV     EBP,[ESP].RegA
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  f:= t1 + t2;
+//  b:= b + t1;
+
+        ADD     [ESP].RegB,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegF,EAX
+
+//  W[11]:= (((W[9] shr 17) or (W[9] shl 15)) xor
+//           ((W[9] shr 19) or (W[9] shl 13)) xor (W[9] shr 10)) + W[4] +
+//          (((W[12] shr 7) or (W[12] shl 25)) xor
+//           ((W[12] shr 18) or (W[12] shl 14)) xor (W[12] shr 3)) + W[11];
+
+        MOV     ESI,[EDI].W9
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W12
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W4
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W11
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W11,ESI
+
+//  t1:= e + (((b shr 6) or (b shl 26)) xor ((b shr 11) or (b shl 21)) xor
+//      ((b shr 25) or (b shl 7))) + ((b and c) xor (not b and d)) + $8cc70208 + W[11];
+
+        MOV     EAX,[ESP].RegB
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegC
+        NOT     EAX
+        AND     EAX,[ESP].RegD
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$8cc70208
+        ADD     EBX,[ESP].RegE
+
+//  t2:= (((f shr 2) or (f shl 30)) xor ((f shr 13) or (f shl 19)) xor
+//      ((f shr 22) xor (f shl 10))) + ((f and g) xor (f and h) xor (g and h));
+
+        MOV     EAX,[ESP].RegF
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegG
+        MOV     EBP,[ESP].RegH
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  e:= t1 + t2;
+//  a:= a + t1;
+
+        ADD     [ESP].RegA,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegE,EAX
+
+//  W[12]:= (((W[10] shr 17) or (W[10] shl 15)) xor
+//           ((W[10] shr 19) or (W[10] shl 13)) xor (W[10] shr 10)) + W[5] +
+//          (((W[13] shr 7) or (W[13] shl 25)) xor
+//           ((W[13] shr 18) or (W[13] shl 14)) xor (W[13] shr 3)) + W[12];
+
+        MOV     ESI,[EDI].W10
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W13
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W5
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W12
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W12,ESI
+
+//  t1:= d + (((a shr 6) or (a shl 26)) xor ((a shr 11) or (a shl 21)) xor
+//      ((a shr 25) or (a shl 7))) + ((a and b) xor (not a and c)) + $90befffa + W[12];
+
+        MOV     EAX,[ESP].RegA
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegB
+        NOT     EAX
+        AND     EAX,[ESP].RegC
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$90befffa
+        ADD     EBX,[ESP].RegD
+
+//  t2:= (((e shr 2) or (e shl 30)) xor ((e shr 13) or (e shl 19)) xor
+//      ((e shr 22) xor (e shl 10))) + ((e and f) xor (e and g) xor (f and g));
+
+        MOV     EAX,[ESP].RegE
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegF
+        MOV     EBP,[ESP].RegG
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  d:= t1 + t2;
+//  h:= h + t1;
+
+        ADD     [ESP].RegH,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegD,EAX
+
+//  W[13]:= (((W[11] shr 17) or (W[11] shl 15)) xor
+//           ((W[11] shr 19) or (W[11] shl 13)) xor (W[11] shr 10)) + W[6] +
+//          (((W[14] shr 7) or (W[14] shl 25)) xor
+//           ((W[14] shr 18) or (W[14] shl 14)) xor (W[14] shr 3)) + W[13];
+
+        MOV     ESI,[EDI].W11
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W14
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W6
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W13
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W13,ESI
+
+//  t1:= c + (((h shr 6) or (h shl 26)) xor ((h shr 11) or (h shl 21)) xor
+//      ((h shr 25) or (h shl 7))) + ((h and a) xor (not h and b)) + $a4506ceb + W[13];
+
+        MOV     EAX,[ESP].RegH
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegA
+        NOT     EAX
+        AND     EAX,[ESP].RegB
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$a4506ceb
+        ADD     EBX,[ESP].RegC
+
+//  t2:= (((d shr 2) or (d shl 30)) xor ((d shr 13) or (d shl 19)) xor
+//      ((d shr 22) xor (d shl 10))) + ((d and e) xor (d and f) xor (e and f));
+
+        MOV     EAX,[ESP].RegD
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegE
+        MOV     EBP,[ESP].RegF
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  c:= t1 + t2;
+//  g:= g + t1;
+
+        ADD     [ESP].RegG,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegC,EAX
+
+//  W[14]:= (((W[12] shr 17) or (W[12] shl 15)) xor
+//           ((W[12] shr 19) or (W[12] shl 13)) xor (W[12] shr 10)) + W[7] +
+//          (((W[15] shr 7) or (W[15] shl 25)) xor
+//           ((W[15] shr 18) or (W[15] shl 14)) xor (W[15] shr 3)) + W[14];
+
+        MOV     ESI,[EDI].W12
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W15
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W7
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W14
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W14,ESI
+
+//  t1:= b + (((g shr 6) or (g shl 26)) xor ((g shr 11) or (g shl 21)) xor
+//      ((g shr 25) or (g shl 7))) + ((g and h) xor (not g and a)) + $bef9a3f7 + W[14];
+
+        MOV     EAX,[ESP].RegG
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegH
+        NOT     EAX
+        AND     EAX,[ESP].RegA
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$bef9a3f7
+        ADD     EBX,[ESP].RegB
+
+//  t2:= (((c shr 2) or (c shl 30)) xor ((c shr 13) or (c shl 19)) xor
+//      ((c shr 22) xor (c shl 10))) + ((c and d) xor (c and e) xor (d and e));
+
+        MOV     EAX,[ESP].RegC
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegD
+        MOV     EBP,[ESP].RegE
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  b:= t1 + t2;
+//  f:= f + t1;
+
+        ADD     [ESP].RegF,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegB,EAX
+
+//  W[15]:= (((W[13] shr 17) or (W[13] shl 15)) xor
+//           ((W[13] shr 19) or (W[13] shl 13)) xor (W[13] shr 10)) + W[8] +
+//          (((W[0] shr 7) or (W[0] shl 25)) xor
+//           ((W[0] shr 18) or (W[0] shl 14)) xor (W[0] shr 3)) + W[15];
+
+        MOV     ESI,[EDI].W13
+        MOV     EAX,ESI
+        MOV     EBX,ESI
+        ROL     ESI,15
+        ROL     EAX,13
+        SHR     EBX,10
+        XOR     ESI,EAX
+        XOR     ESI,EBX
+        MOV     EAX,[EDI].W0
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        ADD     ESI,[EDI].W8
+        ROR     EAX,7
+        ROL     EBX,14
+        SHR     ECX,3
+        ADD     ESI,[EDI].W15
+        XOR     EAX,EBX
+        XOR     EAX,ECX
+        ADD     ESI,EAX
+        MOV     [EDI].W15,ESI
+
+//  t1:= a + (((f shr 6) or (f shl 26)) xor ((f shr 11) or (f shl 21)) xor
+//      ((f shr 25) or (f shl 7))) + ((f and g) xor (not f and h)) + $c67178f2 + W[15];
+
+        MOV     EAX,[ESP].RegF
+        MOV     EBX,EAX
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        ROR     EBX,6
+        ROR     ECX,11
+        ROL     EDX,7
+        XOR     EBX,ECX
+        XOR     EBX,EDX
+        MOV     ECX,EAX
+        AND     ECX,[ESP].RegG
+        NOT     EAX
+        AND     EAX,[ESP].RegH
+        XOR     EAX,ECX
+        ADD     EBX,ESI
+        ADD     EBX,EAX
+        ADD     EBX,$c67178f2
+        ADD     EBX,[ESP].RegA
+
+//  t2:= (((b shr 2) or (b shl 30)) xor ((b shr 13) or (b shl 19)) xor
+//      ((b shr 22) xor (b shl 10))) + ((b and c) xor (b and d) xor (c and d));
+
+        MOV     EAX,[ESP].RegB
+        MOV     ECX,EAX
+        MOV     EDX,EAX
+        MOV     ESI,EAX
+        ROR     ECX,2
+        ROR     EDX,13
+        ROL     ESI,10
+        XOR     ECX,EDX
+        XOR     ECX,ESI
+        MOV     EDX,EAX
+        MOV     ESI,[ESP].RegC
+        MOV     EBP,[ESP].RegD
+        AND     EAX,ESI
+        AND     EDX,EBP
+        AND     ESI,EBP
+        XOR     EAX,EDX
+        XOR     EAX,ESI
+        ADD     EAX,ECX
+
+//  a:= t1 + t2;
+//  e:= e + t1;
+
+        ADD     [ESP].RegE,EBX
+        ADD     EAX,EBX
+        MOV     [ESP].RegA,EAX
+
+        POP     EAX
+        ADD     [EDI].DigestH,EAX
+        POP     EAX
+        ADD     [EDI].DigestG,EAX
+        POP     EAX
+        ADD     [EDI].DigestF,EAX
+        POP     EAX
+        ADD     [EDI].DigestE,EAX
+        POP     EAX
+        ADD     [EDI].DigestD,EAX
+        POP     EAX
+        ADD     [EDI].DigestC,EAX
+        POP     EAX
+        ADD     [EDI].DigestB,EAX
+        POP     EAX
+        ADD     [EDI].DigestA,EAX
+{
+        MOV     EAX,[ESP].RegA
+        MOV     [EDI].DigestA,EAX
+        MOV     EAX,[ESP].RegB
+        MOV     [EDI].DigestB,EAX
+        MOV     EAX,[ESP].RegC
+        MOV     [EDI].DigestC,EAX
+        MOV     EAX,[ESP].RegD
+        MOV     [EDI].DigestD,EAX
+        MOV     EAX,[ESP].RegE
+        MOV     [EDI].DigestE,EAX
+        MOV     EAX,[ESP].RegF
+        MOV     [EDI].DigestF,EAX
+        MOV     EAX,[ESP].RegG
+        MOV     [EDI].DigestG,EAX
+        MOV     EAX,[ESP].RegH
+        MOV     [EDI].DigestH,EAX
+
+        XOR     EAX,EAX
+        MOV     [ESP].RegA,EAX
+        MOV     [ESP].RegB,EAX
+        MOV     [ESP].RegC,EAX
+        MOV     [ESP].RegD,EAX
+        MOV     [ESP].RegE,EAX
+        MOV     [ESP].RegF,EAX
+        MOV     [ESP].RegG,EAX
+        MOV     [ESP].RegH,EAX
+        ADD     ESP,32
+}
+        XOR     EAX,EAX
+        MOV     [EDI].W0,EAX
+        MOV     [EDI].W1,EAX
+        MOV     [EDI].W2,EAX
+        MOV     [EDI].W3,EAX
+        MOV     [EDI].W4,EAX
+        MOV     [EDI].W5,EAX
+        MOV     [EDI].W6,EAX
+        MOV     [EDI].W7,EAX
+        MOV     [EDI].W8,EAX
+        MOV     [EDI].W9,EAX
+        MOV     [EDI].W10,EAX
+        MOV     [EDI].W11,EAX
+        MOV     [EDI].W12,EAX
+        MOV     [EDI].W13,EAX
+        MOV     [EDI].W14,EAX
+        MOV     [EDI].W15,EAX
+
+        POP     EBP
+        POP     EBX
+        POP     EDI
+        POP     ESI
+end;
+{$ENDIF}
+
+{$IFDEF CPUX64_WIN64}
+{$ENDIF}
 
 class procedure TSHA256Alg.Init(Inst: PSHA256Alg);
 begin
