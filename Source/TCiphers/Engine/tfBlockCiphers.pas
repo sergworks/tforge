@@ -16,14 +16,23 @@ type
   PBlockCipher = ^TBlockCipher;
   TBlockCipher = record
   private type
-    TBlock = array[0..127] of Byte;   // up to 128 * 8 = 1024 bit blocks
+    TBlock = array[0..256] of Byte;   // up to 256 * 8 = 2048 bit blocks
   private
     FVTable: Pointer;
     FRefCount: Integer;
 
+    FValidKey: LongBool;
+    FEncrypt: LongBool;
     FMode: LongWord;
     FPadding: LongWord;
     FIVector: TBlock;     // var len
+
+
+    function SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
+    function SetDir(Data: LongWord): TF_RESULT;
+    function SetMode(Data: LongWord): TF_RESULT;
+    function SetPadding(Data: LongWord): TF_RESULT;
+    function SetFlags(Data: LongWord): TF_RESULT;
 
     function EncryptECB(Data: PByte; var DataSize: LongWord;
              BufSize: LongWord; Last: Boolean): TF_RESULT;
@@ -38,10 +47,15 @@ type
     function DecryptCTR(Data: PByte; var DataSize: LongWord;
              Last: Boolean): TF_RESULT;
   public
+    class function SetKeyParam(Inst: Pointer; Param: LongWord; Data: Pointer;
+      DataLen: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Encrypt(Inst: Pointer; Data: PByte; var DataSize: LongWord;
-      BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+      BufSize: LongWord; Last: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Decrypt(Inst: Pointer; Data: PByte; var DataSize: LongWord;
-      Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+      Last: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 implementation
@@ -97,25 +111,33 @@ end;
 class function TBlockCipher.Encrypt(Inst: Pointer; Data: PByte;
   var DataSize: LongWord; BufSize: LongWord; Last: Boolean): TF_RESULT;
 begin
-  case PBlockCipher(Inst).FMode of
-    TF_KEYMODE_ECB: Result:= PBlockCipher(Inst).EncryptECB(Data, DataSize, BufSize, Last);
-    TF_KEYMODE_CBC: Result:= PBlockCipher(Inst).EncryptCBC(Data, DataSize, BufSize, Last);
-    TF_KEYMODE_CTR: Result:= PBlockCipher(Inst).EncryptCTR(Data, DataSize, BufSize, Last);
+  if PBlockCipher(Inst).FEncrypt and PBlockCipher(Inst).FValidKey then begin
+    case PBlockCipher(Inst).FMode of
+      TF_KEYMODE_ECB: Result:= PBlockCipher(Inst).EncryptECB(Data, DataSize, BufSize, Last);
+      TF_KEYMODE_CBC: Result:= PBlockCipher(Inst).EncryptCBC(Data, DataSize, BufSize, Last);
+      TF_KEYMODE_CTR: Result:= PBlockCipher(Inst).EncryptCTR(Data, DataSize, BufSize, Last);
+    else
+      Result:= TF_E_UNEXPECTED;
+    end;
+  end
   else
     Result:= TF_E_UNEXPECTED;
-  end;
 end;
 
 class function TBlockCipher.Decrypt(Inst: Pointer; Data: PByte;
   var DataSize: LongWord; Last: Boolean): TF_RESULT;
 begin
-  case PBlockCipher(Inst).FMode of
-    TF_KEYMODE_ECB: Result:= PBlockCipher(Inst).DecryptECB(Data, DataSize, Last);
-    TF_KEYMODE_CBC: Result:= PBlockCipher(Inst).DecryptCBC(Data, DataSize, Last);
-    TF_KEYMODE_CTR: Result:= PBlockCipher(Inst).DecryptCTR(Data, DataSize, Last);
+  if not PBlockCipher(Inst).FEncrypt and PBlockCipher(Inst).FValidKey then begin
+    case PBlockCipher(Inst).FMode of
+      TF_KEYMODE_ECB: Result:= PBlockCipher(Inst).DecryptECB(Data, DataSize, Last);
+      TF_KEYMODE_CBC: Result:= PBlockCipher(Inst).DecryptCBC(Data, DataSize, Last);
+      TF_KEYMODE_CTR: Result:= PBlockCipher(Inst).DecryptCTR(Data, DataSize, Last);
+    else
+      Result:= TF_E_UNEXPECTED;
+    end;
+  end
   else
     Result:= TF_E_UNEXPECTED;
-  end;
 end;
 
 function TBlockCipher.EncryptECB(Data: PByte; var DataSize: LongWord;
@@ -211,6 +233,86 @@ begin
     end;
   end;
   Result:= TF_S_OK;
+end;
+
+function TBlockCipher.SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
+begin
+  if (Data = nil) then begin
+    FillChar(FIVector, GetBlockSize(@Self), 0);
+    Result:= TF_S_OK;
+  end
+  else if (DataLen = GetBlockSize(@Self)) then begin
+    Move(Data^, FIVector, DataLen);
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+end;
+
+function TBlockCipher.SetDir(Data: LongWord): TF_RESULT;
+begin
+  if (Data <= 1) then begin
+    FEncrypt:= Data = TF_KEYDIR_ENCRYPT;
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+end;
+
+function TBlockCipher.SetFlags(Data: LongWord): TF_RESULT;
+begin
+  Result:= SetDir((Data shr TF_KEYDIR_SHIFT) and TF_KEYDIR_MASK);
+  if Result = TF_S_OK then
+    Result:= SetMode((Data shr TF_KEYMODE_SHIFT) and TF_KEYMODE_MASK);
+  if Result = TF_S_OK then
+    Result:= SetMode((Data shr TF_PADDING_SHIFT) and TF_PADDING_MASK);
+end;
+
+function TBlockCipher.SetMode(Data: LongWord): TF_RESULT;
+begin
+  if (Data >= TF_KEYMODE_MIN) and (Data <= TF_KEYMODE_MAX) then begin
+    FMode:= Data;
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+end;
+
+function TBlockCipher.SetPadding(Data: LongWord): TF_RESULT;
+begin
+  if (Data >= TF_PADDING_MIN) and (Data <= TF_PADDING_MAX) then begin
+    FPadding:= Data;
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+end;
+
+class function TBlockCipher.SetKeyParam(Inst: Pointer; Param: LongWord;
+               Data: Pointer; DataLen: LongWord): TF_RESULT;
+var
+  LData: LongWord;
+
+begin
+  if Param = TF_KP_IV then begin
+    Result:= PBlockCipher(Inst).SetIV(Data, DataLen);
+  end
+  else begin
+    if DataLen = SizeOf(LongWord) then begin
+      LData:= PLongWord(Data)^;
+      case Param of
+        TF_KP_DIR: Result:= PBlockCipher(Inst).SetDir(LData);
+        TF_KP_MODE: Result:= PBlockCipher(Inst).SetMode(LData);
+        TF_KP_PADDING: Result:= PBlockCipher(Inst).SetPadding(LData);
+        TF_KP_FLAGS: Result:= PBlockCipher(Inst).SetFlags(LData);
+      else
+        Result:= TF_E_INVALIDARG;
+      end;
+    end
+    else
+      Result:= TF_E_INVALIDARG;
+  end;
+  PBlockCipher(Inst).FValidKey:= False;
 end;
 
 function TBlockCipher.EncryptCBC(Data: PByte; var DataSize: LongWord;

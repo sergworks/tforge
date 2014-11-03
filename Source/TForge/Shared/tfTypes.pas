@@ -206,16 +206,21 @@ type
   end;
 
 const
-                           // Cryptographic Hash Algorithms
-  TF_ALG_MD5       = $1001;
-  TF_ALG_SHA1      = $1002;
-  TF_ALG_SHA256    = $1003;
-  TF_ALG_SHA512    = $1004;
-  TF_ALG_SHA224    = $1005;
-  TF_ALG_SHA384    = $1006;
-                           // Non-cryptographic Hash Algorithms
-  TF_ALG_CRC32     = $1801;
-  TF_ALG_JENKINS1  = $1802;
+                            // Cryptographic Hash Algorithms
+  TF_ALG_MD5      = $1001;
+  TF_ALG_SHA1     = $1002;
+  TF_ALG_SHA256   = $1003;
+  TF_ALG_SHA512   = $1004;
+  TF_ALG_SHA224   = $1005;
+  TF_ALG_SHA384   = $1006;
+                            // Non-cryptographic Hash Algorithms
+  TF_ALG_CRC32    = $1801;
+  TF_ALG_JENKINS1 = $1802;
+                            // Block ciphers
+  TF_ALG_AES      = $2001;
+  TF_ALG_DES      = $2002;
+                            // Stream ciphers
+  TF_ALG_RC5      = $2801;
 
 type
   IHashAlgorithm = interface(IInterface)
@@ -269,20 +274,28 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+(*
   IBlockCipherAlgorithm = interface(IInterface)
     function ImportKey(Key: PByte; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
+*)
 
   ICipherKey = interface(IInterface)
-    function DuplicateKey(var Key: ICipherKey): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function SetKeyParam(Param: LongWord; Data: PByte; DataLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function ExpandKey(Key: Pointer; KeySize: LongWord; Flags: LongWord): TF_RESULT;
+    function ExpandKey(Key: Pointer; KeySize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DestroyKey;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DuplicateKey(var Key: ICipherKey): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  ICipher = interface(ICipherKey)
+  ICipherAlgorithm = interface(ICipherKey)
     function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Encrypt(Data: PByte; var DataSize: LongWord;
              BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -292,18 +305,35 @@ type
     procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+  ICipherServer = interface(IInterface)
+    function GetByAlgID(AlgID: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetByName(Name: Pointer; CharSize: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetByIndex(Index: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetCount: Integer;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
 const
-// IBlockCipherAlgorithm.ImportKey Flags
-  TF_KEY_ENCRYPT = $80000000;
-  TF_KEY_DECRYPT = $00000000;
+                          // ICipherKey.SetKeyParam Params
+  TF_KP_IV      = 1;      // plaintext IV
+  TF_KP_DIR     = 2;      // encrypt/decrypt
+  TF_KP_MODE    = 3;      // mode of operation
+  TF_KP_PADDING = 4;      // block padding
+  TF_KP_FLAGS   = 5;      // DIR + MODE + PADDING
 
-// ICipherKey.SetKeyParam Params
-  TF_KP_KEY     = 1;
-  TF_KP_IV      = 2;
-  TF_KP_MODE    = 3;
-  TF_KP_PADDING = 4;
+                          // KP_DIR values
+  TF_KEYDIR_ENCRYPT = 0;
+  TF_KEYDIR_DECRYPT = 1;
 
-// Cipher Key Mode
+  TF_KEYDIR_SHIFT = 0;
+  TF_KEYDIR_MASK  = $00000001;
+
+                          // TF_KP_MODE values
   TF_KEYMODE_ECB = 1;
   TF_KEYMODE_CBC = 2;
   TF_KEYMODE_CTR = 3;
@@ -311,7 +341,10 @@ const
   TF_KEYMODE_MIN = TF_KEYMODE_ECB;
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
 
-// Cipher Key Padding
+  TF_KEYMODE_SHIFT = 1;
+  TF_KEYMODE_MASK  = $0000001F;
+
+                          // TF_KP_PADDING values
   TF_PADDING_DEFAULT  = 0;
   TF_PADDING_NONE     = 1;
   TF_PADDING_ZERO     = 2;    // XX 00 00 00 00
@@ -320,8 +353,26 @@ const
   TF_PADDING_ISO10126 = 5;    // XX ?? ?? ?? 04
   TF_PADDING_ISOIEC   = 6;    // XX 80 00 00 00
 
-  TF_PADDING_MIN = TF_PADDING_NONE;
+  TF_PADDING_MIN = TF_PADDING_DEFAULT;
   TF_PADDING_MAX = TF_PADDING_ISOIEC;
+
+  TF_PADDING_SHIFT = 6;
+  TF_PADDING_MASK  = $0000001F;
+
+  kfEncrypt = 0;
+  kfDecrypt = 1;
+
+  kfECB = TF_KEYMODE_ECB shl TF_KEYMODE_SHIFT;
+  kfCBC = TF_KEYMODE_CBC shl TF_KEYMODE_SHIFT;
+  kfCTR = TF_KEYMODE_CTR shl TF_KEYMODE_SHIFT;
+
+  kfPaddingDefault  = TF_PADDING_DEFAULT shl TF_PADDING_SHIFT;
+  kfPaddingNone     = TF_PADDING_NONE shl TF_PADDING_SHIFT;
+  kfPaddingZero     = TF_PADDING_ZERO shl TF_PADDING_SHIFT;
+  kfPaddingANSI     = TF_PADDING_ANSI shl TF_PADDING_SHIFT;
+  kfPaddingPKSC7    = TF_PADDING_PKSC7 shl TF_PADDING_SHIFT;
+  kfPaddingISO10126 = TF_PADDING_ISO10126 shl TF_PADDING_SHIFT;
+  kfPaddingISOIEC   = TF_PADDING_ISOIEC shl TF_PADDING_SHIFT;
 
 { Hash digest helper types }
 type

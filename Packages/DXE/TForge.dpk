@@ -36,7 +36,8 @@ contains
   tfByteVectors in '..\..\Source\TForge\Engine\tfByteVectors.pas',
   tfConsts in '..\..\Source\TForge\Client\tfConsts.pas',
   tfExceptions in '..\..\Source\TForge\Client\tfExceptions.pas',
-  tfBytes in '..\..\Source\TForge\Client\tfBytes.pas';
+  tfBytes in '..\..\Source\TForge\Client\tfBytes.pas',
+  tfAlgServ in '..\..\Source\TForge\Engine\tfAlgServ.pas';
 
 end.
 

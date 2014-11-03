@@ -83,7 +83,7 @@ type
     class function SHA224: THash; static;
     class function SHA384: THash; static;
 
-    class function HashName(Index: Integer): string; static;
+    class function Name(Index: Integer): string; static;
     class function Count: Integer; static;
 
     class operator Explicit(const Name: string): THash;
@@ -238,7 +238,7 @@ begin
                            Rounds, DKLen, IBytes(Result)));
 end;
 
-class function THash.HashName(Index: Integer): string;
+class function THash.Name(Index: Integer): string;
 var
   Bytes: IBytes;
   I, L: Integer;

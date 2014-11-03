@@ -10,7 +10,7 @@
       <SearchPaths>
         <IncludeFiles Value="C:\Projects\TForge\tforge\Source\Include\"/>
         <OtherUnitFiles Value="..\..\Source\THashes\Engine;..\..\Source\THashes\Client"/>
-        <UnitOutputDirectory Value="C:\bin\TForge\FPC\$(TargetCPU)-$(TargetOS)\"/>
+        <UnitOutputDirectory Value="C:\bin\TForge\FPC\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Other>
         <CompilerMessages>
@@ -19,7 +19,7 @@
         <CompilerPath Value="$(CompPath)"/>
       </Other>
     </CompilerOptions>
-    <Files Count="9">
+    <Files Count="10">
       <Item1>
         <Filename Value="..\..\Source\THashes\Engine\tfCRC32.pas"/>
         <UnitName Value="tfCRC32"/>
@@ -56,6 +56,10 @@
         <Filename Value="..\..\Source\Include\TFL.inc"/>
         <Type Value="Include"/>
       </Item9>
+      <Item10>
+        <Filename Value="..\..\Source\THashes\Engine\tfSHA512.pas"/>
+        <UnitName Value="tfSHA512"/>
+      </Item10>
     </Files>
     <Type Value="RunTimeOnly"/>
     <RequiredPkgs Count="1">

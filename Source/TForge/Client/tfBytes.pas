@@ -470,6 +470,7 @@ begin
 {$ENDIF}
 end;
 
+{$WARNINGS OFF}
 class operator ByteArray.Explicit(const Value: ByteArray): Byte;
 begin
   if Value.GetLen = 1 then
@@ -477,6 +478,7 @@ begin
   else
     ByteArrayError(TF_E_INVALIDARG);
 end;
+{$WARNINGS ON}
 
 class operator ByteArray.Explicit(const Value: ByteArray): Word;
 var

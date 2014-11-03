@@ -14,7 +14,7 @@ interface
 
 uses
   tfTypes;
-
+(*
 type
   PAESAlgorithm = ^TAESAlgorithm;
   TAESAlgorithm = record
@@ -76,62 +76,69 @@ type
     class procedure DecryptBlock(Inst: PAESAlgorithm; Data: PByte);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
+*)
 
 type
-  PAESCipher = ^TAESCipher;
-  TAESCipher = record
+  PAESAlgorithm = ^TAESAlgorithm;
+  TAESAlgorithm = record
+  private const
+    MaxRounds = 14;
+
+  private type
+    PBlock = ^TAESBlock;
+    TAESBlock = record
+      case Byte of
+        0: (Bytes: array[0..15] of Byte);
+        1: (LWords: array[0..3] of LongWord);
+    end;
+
+    PExpandedKey = ^TExpandedKey;
+    TExpandedKey = record
+      case Byte of
+        0: (Bytes: array[0 .. (MaxRounds + 2) * SizeOf(TAESBlock) - 1] of Byte);
+        1: (LWords: array[0 .. (MaxRounds + 2) * (SizeOf(TAESBlock) shr 2) - 1] of LongWord);
+        2: (Blocks: array[0 .. MaxRounds + 1] of TAESBlock);
+    end;
+
   private
 {$HINTS OFF}
+                                // from tfRecord
     FVTable: Pointer;
     FRefCount: Integer;
-{$HINTS ON}
+                                // from tfBlockCipher
+    FValidKey: LongBool;
+    FEncrypt: LongBool;
     FMode: LongWord;
     FPadding: LongWord;
-    FIVector: TAESAlgorithm.TAESBlock;
-// inherited from TAESAlgorithm
-    FExpandedKey: TAESAlgorithm.TExpandedKey;
+    FIVector: TAESBlock;
+{$HINTS ON}
+
+    FExpandedKey: TExpandedKey;
     FRounds: LongWord;
 
-    function SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
-    function SetMode(Data: Pointer; DataLen: LongWord): TF_RESULT;
-    function SetPadding(Data: Pointer; DataLen: LongWord): TF_RESULT;
-    function EncryptECB(Data: PByte; var DataSize: LongWord;
-             BufSize: LongWord; Last: Boolean): TF_RESULT;
-    function EncryptCBC(Data: PByte; var DataSize: LongWord;
-             BufSize: LongWord; Last: Boolean): TF_RESULT;
-    function EncryptCTR(Data: PByte; var DataSize: LongWord;
-             BufSize: LongWord; Last: Boolean): TF_RESULT;
-    function DecryptECB(Data: PByte; var DataSize: LongWord;
-             Last: Boolean): TF_RESULT;
-    function DecryptCBC(Data: PByte; var DataSize: LongWord;
-             Last: Boolean): TF_RESULT;
-    function DecryptCTR(Data: PByte; var DataSize: LongWord;
-             Last: Boolean): TF_RESULT; inline;
-
+    class procedure DoRound(const RoundKey: TAESBlock;
+                    var State: TAESBlock; Last: Boolean); static;
+    class procedure DoInvRound(const RoundKey: TAESBlock;
+                    var State: TAESBlock; First: Boolean); static;
   public
-    class function GetBlockSize(Inst: PAESCipher): Integer;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DuplicateKey(Inst: PAESCipher; var Key: PAESCipher): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetKeyParam(Inst: PAESCipher; Param: LongWord; Data: PByte;
-      DataLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DestroyKey(Inst: PAESCipher);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Encrypt(Inst: PAESCipher; Data: PByte; var DataSize: LongWord;
-      BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: PAESCipher; Data: PByte; var DataSize: LongWord;
-      Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure EncryptBlock(Inst: PAESCipher; Data: PByte);
+    class function ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DecryptBlock(Inst: PAESCipher; Data: PByte);
+    class function GetBlockSize(Inst: PAESAlgorithm): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DuplicateKey(Inst: PAESAlgorithm; var Key: PAESAlgorithm): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure DestroyKey(Inst: PAESAlgorithm);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure EncryptBlock(Inst: PAESAlgorithm; Data: PByte);
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure DecryptBlock(Inst: PAESAlgorithm; Data: PByte);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
-function GetAESCipher(var A: PAESCipher): TF_RESULT;
 
 implementation
 
-uses tfRecords;
+uses tfRecords, tfBlockCiphers;
 
 const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
@@ -172,7 +179,7 @@ begin
 end;
 
 { TksAESAlgorithm }
-
+(*
 const
   AESAlgVTable: array[0..6] of Pointer = (
    @TtfRecord.QueryIntf,
@@ -200,6 +207,7 @@ begin
     Result:= TF_E_OUTOFMEMORY;
   end;
 end;
+*)
 
 const
   RDLSBox : array[$00..$FF] of Byte =
@@ -627,15 +635,13 @@ begin
   State := TAESBlock(r);
 end;
 
-class function TAESAlgorithm.ImportKey(Inst: PAESAlgorithm; Key: PByte; Flags: LongWord): TF_RESULT;
+class function TAESAlgorithm.ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
 var
-  KeySize: LongWord;
   I: LongWord;
   Temp: TRDLVector;
   Nk: LongWord;
 
 begin
-  KeySize:= Flags and $FFFF;
   if (KeySize = 128) or (KeySize = 192) or (KeySize = 256) then begin
     KeySize:= KeySize shr 3;    // bit size -> byte size
     Move(Key^, Inst.FExpandedKey, KeySize);
@@ -659,6 +665,7 @@ begin
         Inst.FExpandedKey.LWords[I]:= Inst.FExpandedKey.LWords[I - Nk] xor Temp.LWord;
       end;
     end;
+    Inst.FValidKey:= True;
     Result:= TF_S_OK;
   end
   else
@@ -667,7 +674,11 @@ end;
 
 class procedure TAESAlgorithm.DestroyKey(Inst: PAESAlgorithm);
 begin
-  FillChar(Inst.FExpandedKey, SizeOf(Inst.FExpandedKey) + SizeOf(Inst.FRounds), 0);
+  FillChar(Inst.FIVector, SizeOf(Inst.FIVector)
+                          + SizeOf(Inst.FExpandedKey)
+                          + SizeOf(Inst.FRounds), 0);
+  Inst.FMode:= TF_KEYMODE_CBC;
+  Inst.FPadding:= TF_PADDING_DEFAULT;
 end;
 
 class procedure TAESAlgorithm.EncryptBlock(Inst: PAESAlgorithm; Data: PByte);
@@ -695,31 +706,32 @@ end;
 { TAESCipher }
 
 const
-  AESCipherVTable: array[0..10] of Pointer = (
+  AESCipherVTable: array[0..11] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
 
-   @TAESCipher.DuplicateKey,
-   @TAESCipher.SetKeyParam,
-   @TAESCipher.DestroyKey,
-   @TAESCipher.GetBlockSize,
-   @TAESCipher.Encrypt,
-   @TAESCipher.Decrypt,
-   @TAESCipher.EncryptBlock,
-   @TAESCipher.DecryptBlock
+   @TBlockCipher.SetKeyParam,
+   @TAESAlgorithm.ExpandKey,
+   @TAESAlgorithm.DestroyKey,
+   @TAESAlgorithm.DuplicateKey,
+   @TAESAlgorithm.GetBlockSize,
+   @TBlockCipher.Encrypt,
+   @TBlockCipher.Decrypt,
+   @TAESAlgorithm.EncryptBlock,
+   @TAESAlgorithm.DecryptBlock
    );
 
-function GetAESCipher(var A: PAESCipher): TF_RESULT;
+function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
 var
-  Tmp: PAESCipher;
+  Tmp: PAESAlgorithm;
 begin
   try
-    Tmp:= AllocMem(SizeOf(TAESCipher));
+    Tmp:= AllocMem(SizeOf(TAESAlgorithm));
     Tmp^.FVTable:= @AESCipherVTable;
     Tmp^.FRefCount:= 1;
-    Tmp^.FMode:= TF_KEYMODE_CBC;
-    Tmp^.FPadding:= TF_PADDING_DEFAULT;
+//    Tmp^.FMode:= TF_KEYMODE_CBC;
+//    Tmp^.FPadding:= TF_PADDING_DEFAULT;
     if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
@@ -728,794 +740,22 @@ begin
   end;
 end;
 
-function TAESCipher.SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
+class function TAESAlgorithm.DuplicateKey(Inst: PAESAlgorithm;
+                          var Key: PAESAlgorithm): TF_RESULT;
 begin
-  if (Data = nil) or (DataLen < AES_BLOCK_SIZE) then
-    Result:= TF_E_INVALIDARG
-  else begin
-    Move(Data^, FIVector, AES_BLOCK_SIZE);
-    Result:= TF_S_OK;
-  end;
-end;
-
-function TAESCipher.SetMode(Data: Pointer; DataLen: LongWord): TF_RESULT;
-var
-  Value: LongWord;
-
-begin
-  if DataLen < SizeOf(Value) then begin
-    Value:= 0;
-    Move(Data^, Value, DataLen);
-  end
-  else
-    Value:= PLongWord(Data)^;
-
-  case Value of
-    TF_KEYMODE_MIN .. TF_KEYMODE_MAX: begin
-      FMode:= Value;
-      Result:= TF_S_OK;
-    end;
-  else
-    Result:= TF_E_INVALIDARG;
-  end;
-end;
-
-function TAESCipher.SetPadding(Data: Pointer; DataLen: LongWord): TF_RESULT;
-var
-  Value: LongWord;
-
-begin
-  if DataLen < SizeOf(Value) then begin
-    Value:= 0;
-    Move(Data^, Value, DataLen);
-  end
-  else
-    Value:= PLongWord(Data)^;
-
-  case Value of
-    TF_PADDING_MIN .. TF_PADDING_MAX: begin
-      FPadding:= Value;
-      Result:= TF_S_OK;
-    end;
-  else
-    Result:= TF_E_INVALIDARG;
-  end;
-end;
-
-class function TAESCipher.DuplicateKey(Inst: PAESCipher;
-                          var Key: PAESCipher): TF_RESULT;
-begin
-  Result:= GetAESCipher(Key);
-  Key.FExpandedKey:= Inst.FExpandedKey;
-  Key.FRounds:= Inst.FRounds;
-  Key.FIVector:= Inst.FIVector;
+  Result:= GetAESAlgorithm(Key);
+  Key.FValidKey:= Inst.FValidKey;
+  Key.FEncrypt:= Inst.FEncrypt;
   Key.FMode:= Inst.FMode;
   Key.FPadding:= Inst.FPadding;
+  Key.FIVector:= Inst.FIVector;
+  Key.FExpandedKey:= Inst.FExpandedKey;
+  Key.FRounds:= Inst.FRounds;
 end;
 
-class function TAESCipher.SetKeyParam(Inst: PAESCipher; Param: LongWord;
-  Data: PByte; DataLen: LongWord): TF_RESULT;
+class function TAESAlgorithm.GetBlockSize(Inst: PAESAlgorithm): Integer;
 begin
-  case Param of
-    TF_KP_KEY:
-      Result:= TAESAlgorithm.ImportKey(PAESAlgorithm(Inst), Data, DataLen);
-    TF_KP_IV:      Result:= Inst.SetIV(Data, DataLen);
-    TF_KP_MODE:    Result:= Inst.SetMode(Data, DataLen);
-    TF_KP_PADDING: Result:= Inst.SetPadding(Data, DataLen);
-  else
-    Result:= TF_E_INVALIDARG;
-  end;
-end;
-
-class procedure TAESCipher.DestroyKey(Inst: PAESCipher);
-begin
-  FillChar(Inst.FExpandedKey, SizeOf(Inst.FExpandedKey)
-                            + SizeOf(Inst.FRounds)
-                            + SizeOf(Inst.FIVector), 0);
-  Inst.FMode:= TF_KEYMODE_CBC;
-  Inst.FPadding:= TF_PADDING_DEFAULT;
-end;
-
-class function TAESCipher.Encrypt(Inst: PAESCipher; Data: PByte;
-  var DataSize: LongWord; BufSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  case Inst.FMode of
-    TF_KEYMODE_ECB: Result:= Inst.EncryptECB(Data, DataSize, BufSize, Last);
-    TF_KEYMODE_CBC: Result:= Inst.EncryptCBC(Data, DataSize, BufSize, Last);
-    TF_KEYMODE_CTR: Result:= Inst.EncryptCTR(Data, DataSize, BufSize, Last);
-  else
-    Result:= TF_E_UNEXPECTED;
-  end;
-end;
-
-class function TAESCipher.Decrypt(Inst: PAESCipher; Data: PByte;
-  var DataSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  case Inst.FMode of
-    TF_KEYMODE_ECB: Result:= Inst.DecryptECB(Data, DataSize, Last);
-    TF_KEYMODE_CBC: Result:= Inst.DecryptCBC(Data, DataSize, Last);
-    TF_KEYMODE_CTR: Result:= Inst.DecryptCTR(Data, DataSize, Last);
-  else
-    Result:= TF_E_UNEXPECTED;
-  end;
-end;
-
-class procedure TAESCipher.EncryptBlock(Inst: PAESCipher; Data: PByte);
-begin
-// todo;
-end;
-
-function TAESCipher.EncryptECB(Data: PByte; var DataSize: LongWord;
-                    BufSize: LongWord; Last: Boolean): TF_RESULT;
-const
-  BLOCK_SIZE = 16;  // bytes, = 128 bits
-
-var
-  RequiredSize: LongWord;
-  LDataSize: LongWord;
-  Cnt: LongWord;
-
-begin
-  LDataSize:= DataSize;
-
-// check arguments
-  if Last then begin
-    case FPadding of
-      TF_PADDING_NONE: begin
-        if LDataSize and not (BLOCK_SIZE - 1) <> 0 then begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-        RequiredSize:= LDataSize;
-      end;
-      TF_PADDING_ZERO: RequiredSize:= (LDataSize + BLOCK_SIZE - 1) and not (BLOCK_SIZE - 1);
-      TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
-    else
-      Result:= TF_E_UNEXPECTED;
-      Exit;
-    end;
-  end
-  else begin
-    if LDataSize and not (BLOCK_SIZE - 1) <> 0 then begin
-      Result:= TF_E_INVALIDARG;
-      Exit;
-    end;
-    RequiredSize:= LDataSize;
-  end;
-  DataSize:= RequiredSize;
-  if BufSize < RequiredSize then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-
-// encrypt
-  while LDataSize >= BLOCK_SIZE do begin
-    TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-    Inc(Data, BLOCK_SIZE);
-    Dec(LDataSize, BLOCK_SIZE);
-  end;
-  if Last then begin
-    Cnt:= BLOCK_SIZE - LDataSize;    // 0 < Cnt <= BLOCK_SIZE
-    Inc(Data, LDataSize);
-    case FPadding of
-                                            // XX 00 00 00 00
-      TF_PADDING_ZERO: if LDataSize > 0 then begin
-        FillChar(Data^, Cnt, 0);
-        Dec(Data, LDataSize);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-                                            // XX 00 00 00 04
-      TF_PADDING_ANSI: begin
-        FillChar(Data^, Cnt - 1, 0);
-        Inc(Data, Cnt - 1);
-        Data^:= Byte(Cnt);
-        Dec(Data, BLOCK_SIZE - 1);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-                                            // XX 04 04 04 04
-//      TF_PADDING_ISO,
-      TF_PADDING_PKSC7: begin
-        FillChar(Data^, Cnt, Byte(Cnt));
-        Dec(Data, LDataSize);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-                                            // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
-        Data^:= $80;
-        Inc(Data);
-        FillChar(Data^, Cnt - 1, 0);
-        Dec(Data, LDataSize + 1);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-    end;
-  end;
-  Result:= TF_S_OK;
-end;
-
-class function TAESCipher.GetBlockSize(Inst: PAESCipher): Integer;
-begin
-  Result:= 16;
-end;
-
-function TAESCipher.EncryptCBC(Data: PByte; var DataSize: LongWord;
-                    BufSize: LongWord; Last: Boolean): TF_RESULT;
-const
-  BLOCK_SIZE = 16;  // bytes, = 128 bits
-
-var
-  RequiredSize: LongWord;
-  LDataSize: LongWord;
-  Cnt: LongWord;
-
-begin
-  LDataSize:= DataSize;
-
-// check arguments
-  if Last then begin
-    case FPadding of
-      TF_PADDING_NONE: begin
-        if LDataSize and not (BLOCK_SIZE - 1) <> 0 then begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-        RequiredSize:= LDataSize;
-      end;
-      TF_PADDING_ZERO: RequiredSize:= (LDataSize + BLOCK_SIZE - 1) and not (BLOCK_SIZE - 1);
-      TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
-//      TF_PADDING_ISO,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
-    else
-      Result:= TF_E_UNEXPECTED;
-      Exit;
-    end;
-  end
-  else begin
-    if LDataSize and not (BLOCK_SIZE - 1) <> 0 then begin
-      Result:= TF_E_INVALIDARG;
-      Exit;
-    end;
-    RequiredSize:= LDataSize;
-  end;
-  DataSize:= RequiredSize;
-  if BufSize < RequiredSize then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-
-// encrypt
-  while LDataSize >= BLOCK_SIZE do begin
-    Xor128(Data, @FIVector);
-    TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-    Move(Data^, FIVector, BLOCK_SIZE);
-    Inc(Data, BLOCK_SIZE);
-    Dec(LDataSize, BLOCK_SIZE);
-  end;
-  if Last then begin
-    Cnt:= BLOCK_SIZE - LDataSize;    // 0 < Cnt <= BLOCK_SIZE
-    Inc(Data, LDataSize);
-    case FPadding of
-                                            // XX 00 00 00 00
-      TF_PADDING_ZERO: if LDataSize > 0 then begin
-        FillChar(Data^, Cnt, 0);
-        Dec(Data, LDataSize);
-        Xor128(Data, @FIVector);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-                                            // XX 00 00 00 04
-      TF_PADDING_ANSI: begin
-        FillChar(Data^, Cnt - 1, 0);
-        Inc(Data, Cnt - 1);
-        Data^:= Byte(Cnt);
-        Dec(Data, BLOCK_SIZE - 1);
-        Xor128(Data, @FIVector);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-                                            // XX 04 04 04 04
-//      TF_PADDING_ISO,
-      TF_PADDING_PKSC7: begin
-        FillChar(Data^, Cnt, Byte(Cnt));
-        Dec(Data, LDataSize);
-        Xor128(Data, @FIVector);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-                                            // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
-        Data^:= $80;
-        Inc(Data);
-        FillChar(Data^, Cnt - 1, 0);
-        Dec(Data, LDataSize + 1);
-        Xor128(Data, @FIVector);
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-      end;
-    end;
-  end;
-  Result:= TF_S_OK;
-end;
-
-function TAESCipher.EncryptCTR(Data: PByte; var DataSize: LongWord;
-  BufSize: LongWord; Last: Boolean): TF_RESULT;
-
-const
-  BLOCK_SIZE = 16;  // bytes, = 128 bits
-
-var
-  RequiredSize: LongWord;
-  Temp: TAESAlgorithm.TAESBlock;
-  LDataSize: LongWord;
-  Cnt: LongWord;
-
-begin
-  LDataSize:= DataSize;
-
-// check arguments
-  if Last then begin
-    case FPadding of
-      TF_PADDING_NONE: begin
-{        if LDataSize and not (BLOCK_SIZE - 1) <> 0 then begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;}
-        RequiredSize:= LDataSize;
-      end;
-      TF_PADDING_ZERO: RequiredSize:= (LDataSize + BLOCK_SIZE - 1) and not (BLOCK_SIZE - 1);
-      TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
-//      TF_PADDING_ISO,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + BLOCK_SIZE) and not (BLOCK_SIZE - 1);
-    else
-      Result:= TF_E_UNEXPECTED;
-      Exit;
-    end;
-  end
-  else begin
-    if LDataSize and not (BLOCK_SIZE - 1) <> 0 then begin
-      Result:= TF_E_INVALIDARG;
-      Exit;
-    end;
-    RequiredSize:= LDataSize;
-  end;
-  DataSize:= RequiredSize;
-  if BufSize < RequiredSize then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-
-// encrypt
-  while LDataSize >= BLOCK_SIZE do begin        // process full blocks
-    Move(FIVector, Temp, BLOCK_SIZE);           // copy IV to temp block
-                                                // encrypt temp block
-    TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), @Temp);
-    Xor128(Data, @Temp);                        // xor ciphertext with encrypted block
-                                                // increment IV
-    Inc(FIVector.Bytes[15]);
-    if FIVector.Bytes[15] = 0 then begin
-      Cnt:= 15;
-      repeat
-        Dec(Cnt);
-        Inc(FIVector.Bytes[Cnt]);
-      until (FIVector.Bytes[Cnt] <> 0) or (Cnt = 0);
-    end;
-    Inc(Data, BLOCK_SIZE);                      // go to next block
-    Dec(LDataSize, BLOCK_SIZE);
-  end;
-  if Last then begin
-    if FPadding = TF_PADDING_NONE then begin
-      if LDataSize > 0 then begin
-        Move(FIVector, Temp, BLOCK_SIZE);       // copy IV to temp block
-                                                // encrypt temp block
-        TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), @Temp);
-        XorBytes(Data, @Temp, LDataSize);
-        Inc(FIVector.Bytes[15]);
-        if FIVector.Bytes[15] = 0 then begin
-          Cnt:= 15;
-          repeat
-            Dec(Cnt);
-            Inc(FIVector.Bytes[Cnt]);
-          until (FIVector.Bytes[Cnt] <> 0) or (Cnt = 0);
-        end;
-      end;
-    end
-    else begin
-      Cnt:= BLOCK_SIZE - LDataSize;    // 0 < Cnt <= BLOCK_SIZE
-      Inc(Data, LDataSize);
-      case FPadding of
-                                              // XX 00 00 00 00
-        TF_PADDING_ZERO: if LDataSize > 0 then begin
-          FillChar(Data^, Cnt, 0);
-          Dec(Data, LDataSize);
-          Xor128(Data, @FIVector);
-          TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-        end;
-                                              // XX 00 00 00 04
-        TF_PADDING_ANSI: begin
-          FillChar(Data^, Cnt - 1, 0);
-          Inc(Data, Cnt - 1);
-          Data^:= Byte(Cnt);
-          Dec(Data, BLOCK_SIZE - 1);
-          Xor128(Data, @FIVector);
-          TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-        end;
-                                              // XX 04 04 04 04
-//        TF_PADDING_ISO,
-        TF_PADDING_PKSC7: begin
-          FillChar(Data^, Cnt, Byte(Cnt));
-          Dec(Data, LDataSize);
-          Xor128(Data, @FIVector);
-          TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-        end;
-                                              // XX 80 00 00 00
-        TF_PADDING_ISOIEC: begin
-          Data^:= $80;
-          Inc(Data);
-          FillChar(Data^, Cnt - 1, 0);
-          Dec(Data, LDataSize + 1);
-          Xor128(Data, @FIVector);
-          TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), Data);
-        end;
-      end;
-    end;
-  end;
-  Result:= TF_S_OK;
-end;
-
-function TAESCipher.DecryptECB(Data: PByte; var DataSize: LongWord;
-                    Last: Boolean): TF_RESULT;
-const
-  BLOCK_SIZE = 16;  // bytes, = 128 bits
-
-var
-//  Temp: array[0..BLOCK_SIZE - 1] of Byte;
-  LDataSize: LongWord;
-  Cnt, SaveCnt: LongWord;
-
-begin
-  LDataSize:= DataSize;
-  if LDataSize and (BLOCK_SIZE - 1) <> 0 then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-  if Last and (DataSize = 0) then begin
-    case FPadding of
-      TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
-//      TF_PADDING_ISO,
-      TF_PADDING_ISOIEC: begin
-        Result:= TF_E_INVALIDARG;
-        Exit;
-      end;
-    end;
-  end;
-  while LDataSize >= BLOCK_SIZE do begin
-    TAESAlgorithm.DecryptBlock(PAESAlgorithm(@Self), Data);
-    Inc(Data, BLOCK_SIZE);
-    Dec(LDataSize, BLOCK_SIZE);
-  end;
-  if Last then begin
-    case FPadding of
-                                            // XX 00 00 00 04
-      TF_PADDING_ANSI: begin
-        Dec(Data);
-        Cnt:= Data^;
-        if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(Data);
-            if Data^ <> 0 then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-{                                            // XX ?? ?? ?? 04
-      TF_PADDING_ISO: begin
-        Cnt:= (Data - 1)^;
-        if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;       }
-                                            // XX 04 04 04 04
-      TF_PADDING_PKSC7: begin
-        Dec(Data);
-        Cnt:= Data^;
-        if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(Data);
-            if Data^ <> Cnt then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-                                            // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
-        Cnt:= BLOCK_SIZE;
-        repeat
-          Dec(Data);
-          Dec(Cnt);
-        until (Data^ <> 0) or (Cnt = 0);
-        if (Data^ = $80) then
-          DataSize:= DataSize - BLOCK_SIZE + Cnt
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-    end;
-  end;
-  Result:= TF_S_OK;
-end;
-
-class procedure TAESCipher.DecryptBlock(Inst: PAESCipher; Data: PByte);
-begin
-  // todo:
-end;
-
-function TAESCipher.DecryptCBC(Data: PByte; var DataSize: LongWord;
-                    Last: Boolean): TF_RESULT;
-const
-  BLOCK_SIZE = 16;  // bytes, = 128 bits
-
-var
-  Temp: array[0..BLOCK_SIZE - 1] of Byte;
-  LDataSize: LongWord;
-  Cnt, SaveCnt: LongWord;
-
-begin
-  LDataSize:= DataSize;
-  if LDataSize and (BLOCK_SIZE - 1) <> 0 then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-  if Last and (DataSize = 0) then begin
-    case FPadding of
-      TF_PADDING_ANSI,
-//      TF_PADDING_ISO,
-      TF_PADDING_PKSC7,
-      TF_PADDING_ISOIEC: begin
-        Result:= TF_E_INVALIDARG;
-        Exit;
-      end;
-    end;
-  end;
-  while LDataSize >= BLOCK_SIZE do begin
-    Move(Data^, Temp, BLOCK_SIZE);
-    TAESAlgorithm.DecryptBlock(PAESAlgorithm(@Self), Data);
-    Xor128(Data, @FIVector);
-    Move(Temp, FIVector, BLOCK_SIZE);
-    Inc(Data, BLOCK_SIZE);
-    Dec(LDataSize, BLOCK_SIZE);
-  end;
-  if Last then begin
-    case FPadding of
-                                            // XX 00 00 00 04
-      TF_PADDING_ANSI: begin
-        Dec(Data);
-        Cnt:= Data^;
-        if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(Data);
-            if Data^ <> 0 then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-{                                            // XX ?? ?? ?? 04
-      TF_PADDING_ISO: begin
-        Cnt:= (Data - 1)^;
-        if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-}                                            // XX 04 04 04 04
-      TF_PADDING_PKSC7: begin
-        Dec(Data);
-        Cnt:= Data^;
-        if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(Data);
-            if Data^ <> Cnt then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-                                            // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
-        Cnt:= BLOCK_SIZE;
-        repeat
-          Dec(Data);
-          Dec(Cnt);
-        until (Data^ <> 0) or (Cnt = 0);
-        if (Data^ = $80) then
-          DataSize:= DataSize - BLOCK_SIZE + Cnt
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-    end;
-  end;
-  Result:= TF_S_OK;
-end;
-
-function TAESCipher.DecryptCTR(Data: PByte; var DataSize: LongWord;
-                               Last: Boolean): TF_RESULT;
-const
-  BLOCK_SIZE = 16;  // bytes, = 128 bits
-
-var
-  Temp: array[0..BLOCK_SIZE - 1] of Byte;
-  LDataSize: LongWord;
-  Cnt, SaveCnt: LongWord;
-
-begin
-  LDataSize:= DataSize;
-  if (LDataSize and (BLOCK_SIZE - 1) <> 0) then begin
-// the last block with TF_PADDING_NONE can be incomplete
-    if not Last or (FPadding <> TF_PADDING_NONE) then begin
-      Result:= TF_E_INVALIDARG;
-      Exit;
-    end;
-  end;
-
-// encrypt
-  while LDataSize >= BLOCK_SIZE do begin        // process full blocks
-    Move(FIVector, Temp, BLOCK_SIZE);           // copy IV to temp block
-                                                // encrypt temp block
-    TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), @Temp);
-    Xor128(Data, @Temp);                        // xor ciphertext with encrypted block
-                                                // increment IV
-    Inc(FIVector.Bytes[15]);
-    if FIVector.Bytes[15] = 0 then begin
-      Cnt:= 15;
-      repeat
-        Dec(Cnt);
-        Inc(FIVector.Bytes[Cnt]);
-      until (FIVector.Bytes[Cnt] <> 0) or (Cnt = 0);
-    end;
-    Inc(Data, BLOCK_SIZE);                      // go to next block
-    Dec(LDataSize, BLOCK_SIZE);
-  end;
-
-  if Last then begin
-    if LDataSize > 0 then begin
-      Move(FIVector, Temp, BLOCK_SIZE);       // copy IV to temp block
-                                              // encrypt temp block
-      TAESAlgorithm.EncryptBlock(PAESAlgorithm(@Self), @Temp);
-      Inc(FIVector.Bytes[15]);
-      if FIVector.Bytes[15] = 0 then begin
-        Cnt:= 15;
-        repeat
-          Dec(Cnt);
-          Inc(FIVector.Bytes[Cnt]);
-        until (FIVector.Bytes[Cnt] <> 0) or (Cnt = 0);
-      end;
-      if FPadding = TF_PADDING_NONE then begin
-        XorBytes(Data, @Temp, LDataSize);
-        Result:= TF_S_OK;
-      end
-      else
-        Result:= TF_E_INVALIDARG;
-      Exit;
-    end
-    else begin    { LDataSize = 0 }
-      case FPadding of
-                                              // XX 00 00 00 04
-        TF_PADDING_ANSI: begin
-          Dec(Data);
-          Cnt:= Data^;
-          if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-            SaveCnt:= Cnt - 1;
-            while SaveCnt > 0 do begin
-              Dec(Data);
-              if Data^ <> 0 then begin
-                Result:= TF_E_INVALIDARG;
-                Exit;
-              end;
-              Dec(SaveCnt);
-            end;
-            DataSize:= DataSize - Cnt;
-          end
-          else begin
-            Result:= TF_E_INVALIDARG;
-            Exit;
-          end;
-        end;
-{                                              // XX ?? ?? ?? 04
-        TF_PADDING_ISO: begin
-          Cnt:= (Data - 1)^;
-          if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-            DataSize:= DataSize - Cnt;
-          end
-          else begin
-            Result:= TF_E_INVALIDARG;
-            Exit;
-          end;
-        end;
-}
-                                              // XX 04 04 04 04
-        TF_PADDING_PKSC7: begin
-          Dec(Data);
-          Cnt:= Data^;
-          if (Cnt > 0) and (Cnt <= BLOCK_SIZE) then begin
-            SaveCnt:= Cnt - 1;
-            while SaveCnt > 0 do begin
-              Dec(Data);
-              if Data^ <> Cnt then begin
-                Result:= TF_E_INVALIDARG;
-                Exit;
-              end;
-              Dec(SaveCnt);
-            end;
-            DataSize:= DataSize - Cnt;
-          end
-          else begin
-            Result:= TF_E_INVALIDARG;
-            Exit;
-          end;
-        end;
-                                              // XX 80 00 00 00
-        TF_PADDING_ISOIEC: begin
-          Cnt:= BLOCK_SIZE;
-          repeat
-            Dec(Data);
-            Dec(Cnt);
-          until (Data^ <> 0) or (Cnt = 0);
-          if (Data^ = $80) then
-            DataSize:= DataSize - BLOCK_SIZE + Cnt
-          else begin
-            Result:= TF_E_INVALIDARG;
-            Exit;
-          end;
-        end;
-      end;
-    end;
-  end;
-  Result:= TF_S_OK;
+  Result:= AES_BLOCK_SIZE;
 end;
 
 end.
