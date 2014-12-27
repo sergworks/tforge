@@ -14,7 +14,7 @@ begin
   Writeln('MD5:  ', THash.MD5.UpdateFile(FileName).Digest.ToHex);
   Writeln('SHA1: ', THash.SHA1.UpdateFile(FileName).Digest.ToHex);
   Writeln('CRC32: ', IntToHex(LongWord(THash.CRC32.UpdateFile(FileName).Digest), 8));
-  Writeln('CRC32: ', THash.CRC32.UpdateFile(FileName).Digest.Reverse.ToHex);
+  Writeln('CRC32: ', THash.CRC32.UpdateFile(FileName).Digest.ToHex);
 end;
 
 procedure CalcHash(const FileName: string);
@@ -76,6 +76,7 @@ begin
   ReportMemoryLeaksOnShutdown:= True;
   try
     if ParamCount = 1 then begin
+//      FluentCalcHash(ParamStr(1));
       CalcHash(ParamStr(1));
       SHA1_HMAC_File(ParamStr(1), ByteArray.FromText('Secret Key'));
       DeriveKeys(ByteArray.FromText('User Password'),

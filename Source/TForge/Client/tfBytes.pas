@@ -30,11 +30,9 @@ type
     procedure SetLen(Value: Integer);
     function GetRawData: PByte;
 
-    property Len: Integer read GetLen write SetLen;
-    property RawData: PByte read GetRawData;
-
-    class function Allocate(ASize: Cardinal): ByteArray; static;
-    class function ReAllocate(ASize: Cardinal): ByteArray; static;
+    class function Allocate(ASize: Cardinal): ByteArray; overload; static;
+    class function Allocate(ASize: Cardinal; Filler: Byte): ByteArray; overload; static;
+    class procedure ReAllocate(Target: ByteArray; ASize: Cardinal); static;
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
     class function ParseHex(const S: string): ByteArray; static;
@@ -44,6 +42,9 @@ type
     function ToText: string;
     function ToString: string;
     function ToHex: string;
+
+    procedure Incr;
+    procedure Decr;
 
     class function Copy(const A: ByteArray): ByteArray; overload; static;
     class function Copy(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
@@ -104,6 +105,9 @@ type
     class operator BitwiseAnd(const A, B: ByteArray): ByteArray;
     class operator BitwiseOr(const A, B: ByteArray): ByteArray;
     class operator BitwiseXor(const A, B: ByteArray): ByteArray;
+
+    property Len: Integer read GetLen write SetLen;
+    property RawData: PByte read GetRawData;
 
     property Bytes[Index: Integer]: Byte read GetByte write SetByte; default;
   end;
@@ -196,10 +200,17 @@ end;
 
 procedure ByteArray.SetLen(Value: Integer);
 begin
+(*
 {$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.SetLen(Value));
 {$ELSE}
   HResCheck(TByteVector.SetLen(PByteVector(FBytes), Value));
+{$ENDIF}
+*)
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorSetLen(FBytes, Value));
+{$ELSE}
+  HResCheck(ByteVectorSetLen(PByteVector(FBytes), Value));
 {$ENDIF}
 end;
 
@@ -225,12 +236,21 @@ begin
 {$ENDIF}
 end;
 
-class function ByteArray.ReAllocate(ASize: Cardinal): ByteArray;
+class function ByteArray.Allocate(ASize: Cardinal; Filler: Byte): ByteArray;
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(ByteVectorReAlloc(Result.FBytes, ASize));
+  HResCheck(ByteVectorAllocEx(Result.FBytes, ASize, Filler));
 {$ELSE}
-  HResCheck(ByteVectorReAlloc(PByteVector(Result.FBytes), ASize));
+  HResCheck(ByteVectorAllocEx(PByteVector(Result.FBytes), ASize, Filler));
+{$ENDIF}
+end;
+
+class procedure ByteArray.ReAllocate(Target: ByteArray; ASize: Cardinal);
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorReAlloc(Target.FBytes, ASize));
+{$ELSE}
+  HResCheck(ByteVectorReAlloc(PByteVector(Target.FBytes), ASize));
 {$ENDIF}
 end;
 
@@ -400,6 +420,24 @@ begin
 {$ENDIF}
 end;
 
+procedure ByteArray.Incr;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.Incr);
+{$ELSE}
+  HResCheck(TByteVector.Incr(PByteVector(FBytes)));
+{$ENDIF}
+end;
+
+procedure ByteArray.Decr;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.Decr);
+{$ELSE}
+  HResCheck(TByteVector.Decr(PByteVector(FBytes)));
+{$ENDIF}
+end;
+
 function ByteArray.Insert(I: Cardinal; B: TBytes): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -482,7 +520,8 @@ end;
 
 class operator ByteArray.Explicit(const Value: ByteArray): Word;
 var
-  L: LongWord;
+  L: Integer;
+  P: PByte;
 
 begin
   L:= Value.GetLen;
@@ -490,40 +529,57 @@ begin
     Result:= 0;
     WordRec(Result).Lo:= PByte(Value.GetRawData)^;
   end
-  else if L = 2 then
-    Result:= PWord(Value.GetRawData)^
+  else if L = 2 then begin
+    P:= Value.GetRawData;
+    WordRec(Result).Lo:= P[1];
+    WordRec(Result).Hi:= P[0];
+  end
   else
     ByteArrayError(TF_E_INVALIDARG);
 end;
 
 class operator ByteArray.Explicit(const Value: ByteArray): LongWord;
 var
-  L: LongWord;
+  L: Integer;
+  P, PR: PByte;
 
 begin
   L:= Value.GetLen;
-  if L < SizeOf(LongWord) then begin
+  if (L > 0) and (L <= SizeOf(LongWord)) then begin
     Result:= 0;
-    Move(Value.GetRawData^, Result, L);
+    P:= Value.GetRawData;
+    Inc(P, L);
+    PR:= @Result;
+    repeat
+      Dec(P);
+      PR^:= P^;
+      Inc(PR);
+      Dec(L);
+    until L = 0;
   end
-  else if L = SizeOf(LongWord) then
-    Result:= PLongWord(Value.GetRawData)^
   else
     ByteArrayError(TF_E_INVALIDARG);
 end;
 
 class operator ByteArray.Explicit(const Value: ByteArray): UInt64;
 var
-  L: LongWord;
+  L: Integer;
+  P, PR: PByte;
 
 begin
   L:= Value.GetLen;
-  if L < SizeOf(UInt64) then begin
+  if (L > 0) and (L <= SizeOf(UInt64)) then begin
     Result:= 0;
-    Move(Value.GetRawData^, Result, L);
+    P:= Value.GetRawData;
+    Inc(P, L);
+    PR:= @Result;
+    repeat
+      Dec(P);
+      PR^:= P^;
+      Inc(PR);
+      Dec(L);
+    until L = 0;
   end
-  else if L = SizeOf(UInt64) then
-    Result:= PUInt64(Value.GetRawData)^
   else
     ByteArrayError(TF_E_INVALIDARG);
 end;

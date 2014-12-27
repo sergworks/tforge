@@ -99,8 +99,22 @@ begin
 end;
 
 class procedure TCRC32Alg.Done(Inst: PCRC32Alg; PDigest: PLongWord);
+var
+  P, PD: PByte;
+  L: Integer;
+
 begin
-  PDigest^:= not Inst.FValue;
+//  PDigest^:= not Inst.FValue;
+  L:= 4;
+  Inst.FValue:= not Inst.FValue;
+  P:= @Inst.FValue;
+  PD:= PByte(PDigest) + 4;
+  repeat
+    Dec(PD);
+    PD^:= P^;
+    Inc(P);
+    Dec(L);
+  until L = 0;
   Inst.FValue:= CRC32_INIT_VALUE;
 end;
 

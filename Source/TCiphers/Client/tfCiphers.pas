@@ -24,19 +24,21 @@ type
     procedure Free;
     function IsAssigned: Boolean;
 
-    function KeyParams(AFlags: LongWord; AIV: Pointer; AIVLen: LongWord): TCipher; overload;
-    function KeyParams(AFlags: LongWord; AIV: ByteArray): TCipher; overload;
+    function SetFlags(AFlags: LongWord): TCipher; overload;
 
-    function Key(AKey: PByte; AKeyLen: LongWord): TCipher; overload;
-    function Key(AKey: ByteArray): TCipher; overload;
+    function SetIV(AIV: Pointer; AIVLen: LongWord): TCipher; overload;
+    function SetIV(const AIV: ByteArray): TCipher; overload;
 
+    function ExpandKey(AKey: PByte; AKeyLen: LongWord): TCipher; overload;
+    function ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord): TCipher; overload;
+    function ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord;
+                       AIV: Pointer; AIVLen: LongWord): TCipher; overload;
 
-    procedure ImportKey(Key: PByte; KeyLen: LongWord; Flags: LongWord;
-                        AKeyMode: LongWord; AIV: Pointer; AIVLen: LongWord;
-                        APadding: LongWord = TF_PADDING_DEFAULT); overload;
-    procedure ImportKey(Key: ByteArray; Flags: LongWord;
-                        AKeyMode: LongWord; AIV: ByteArray;
-                        APadding: LongWord = TF_PADDING_DEFAULT); overload;
+    function ExpandKey(const AKey: ByteArray): TCipher; overload;
+    function ExpandKey(const AKey: ByteArray; AFlags: LongWord): TCipher; overload;
+    function ExpandKey(const AKey: ByteArray; AFlags: LongWord;
+                       const AIV: ByteArray): TCipher; overload;
+
     procedure DestroyKey;
 
     procedure Encrypt(var Data; var DataSize: LongWord;
@@ -44,14 +46,11 @@ type
     procedure Decrypt(var Data; var DataSize: LongWord;
                       Last: Boolean); overload;
 
-    procedure EncryptBlock(var Data); overload;
-    procedure DecryptBlock(var Data); overload;
+    function EncryptBlock(const Data, Key: ByteArray): ByteArray;
+    function DecryptBlock(const Data, Key: ByteArray): ByteArray;
 
-    procedure EncryptBlock(var Data: ByteArray); overload;
-    procedure DecryptBlock(var Data: ByteArray); overload;
-
-    function EncryptBytes(const Data: ByteArray): ByteArray; overload;
-    function DecryptBytes(const Data: ByteArray): ByteArray; overload;
+    function EncryptData(const Data: ByteArray): ByteArray;
+    function DecryptData(const Data: ByteArray): ByteArray;
 
     class function AES: TCipher; static;
     function Copy: TCipher;
@@ -103,35 +102,47 @@ begin
   HResCheck(FServer.GetByAlgID(TF_ALG_AES, Result.FAlgorithm));
 end;
 
-procedure TCipher.ImportKey(Key: PByte; KeyLen: LongWord; Flags: LongWord;
-                            AKeyMode: LongWord; AIV: Pointer; AIVLen: LongWord;
-                            APadding: LongWord);
+function TCipher.ExpandKey(AKey: PByte; AKeyLen, AFlags: LongWord;
+                           AIV: Pointer; AIVLen: LongWord): TCipher;
 begin
-//  if AIV <> nil then
-    HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+  HResCheck(FAlgorithm.ExpandKey(AKey, AKeyLen));
+  Result:= Self;
+end;
+
+function TCipher.ExpandKey(const AKey: ByteArray; AFlags: LongWord;
+                           const AIV: ByteArray): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
+  HResCheck(FAlgorithm.ExpandKey(AKey.RawData, AKey.Len));
+  Result:= Self;
+end;
+
+function TCipher.ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+{
 //  if AKeyMode <> 0 then
     HResCheck(FAlgorithm.SetKeyParam(TF_KP_MODE, @AKeyMode, SizeOf(AKeyMode)));
 //  if APadding <> 0 then
     HResCheck(FAlgorithm.SetKeyParam(TF_KP_PADDING, @APadding, SizeOf(APadding)));
-
-  HResCheck(FAlgorithm.ExpandKey(Key, KeyLen, Flags));
+}
+  HResCheck(FAlgorithm.ExpandKey(AKey, AKeyLen));
+  Result:= Self;
 end;
 
-procedure TCipher.ImportKey(Key: ByteArray; Flags: LongWord;
-                        AKeyMode: LongWord; AIV: ByteArray;
-                        APadding: LongWord);
+function TCipher.ExpandKey(const AKey: ByteArray; AFlags: LongWord): TCipher;
 begin
-  ImportKey(Key.RawData, Key.Len, Flags, AKeyMode, AIV.RawData, AIV.Len, APadding);
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+  HResCheck(FAlgorithm.ExpandKey(AKey.RawData, AKey.Len));
+  Result:= Self;
 end;
 
 procedure TCipher.DestroyKey;
 begin
   FAlgorithm.DestroyKey;
-end;
-
-function TCipher.Encrypt(const Data: ByteArray): ByteArray;
-begin
-
 end;
 
 procedure TCipher.Encrypt(var Data; var DataSize: LongWord;
@@ -145,16 +156,79 @@ begin
   HResCheck(FAlgorithm.Decrypt(@Data, DataSize, Last));
 end;
 
+function TCipher.EncryptBlock(const Data, Key: ByteArray): ByteArray;
+var
+  Flags: LongWord;
+  BlockSize: Integer;
+
+begin
+  BlockSize:= FAlgorithm.GetBlockSize;
+  if (BlockSize = 0) or (BlockSize <> Data.GetLen) then
+    CipherError(TF_E_UNEXPECTED);
+
+  Flags:= ECB_ENCRYPT;
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
+  HResCheck(FAlgorithm.ExpandKey(Key.RawData, Key.Len));
+
+  Result:= ByteArray.Copy(Data);
+  FAlgorithm.EncryptBlock(Result.RawData);
+end;
+
+function TCipher.DecryptBlock(const Data, Key: ByteArray): ByteArray;
+var
+  Flags: LongWord;
+  BlockSize: Integer;
+
+begin
+  BlockSize:= FAlgorithm.GetBlockSize;
+  if (BlockSize = 0) or (BlockSize <> Data.GetLen) then
+    CipherError(TF_E_UNEXPECTED);
+
+  Flags:= ECB_DECRYPT;
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
+  HResCheck(FAlgorithm.ExpandKey(Key.RawData, Key.Len));
+
+  Result:= ByteArray.Copy(Data);
+  FAlgorithm.DecryptBlock(Result.RawData);
+end;
+
+function TCipher.EncryptData(const Data: ByteArray): ByteArray;
+var
+  L0, L1: LongWord;
+
+begin
+  L0:= Data.GetLen;
+  L1:= L0;
+  if (FAlgorithm.Encrypt(nil, L1, 0, True) <> TF_E_INVALIDARG) or (L1 <= 0)
+    then CipherError(TF_E_UNEXPECTED);
+
+  Result:= Data;
+  ByteArray.ReAllocate(Result, L1);
+  HResCheck(FAlgorithm.Encrypt(Result.RawData, L0, L1, True));
+end;
+
+function TCipher.DecryptData(const Data: ByteArray): ByteArray;
+var
+  L: LongWord;
+
+begin
+  L:= Data.GetLen;
+  Result:= ByteArray.Copy(Data);
+  HResCheck(FAlgorithm.Decrypt(Result.RawData, L, True));
+  Result.SetLen(L);
+end;
+
 function TCipher.Copy: TCipher;
 begin
-
+  HResCheck(FAlgorithm.DuplicateKey(Result.FAlgorithm));
 end;
 
 class function TCipher.Count: Integer;
 begin
-
+  Result:= FServer.GetCount;
 end;
 
+{
 function TCipher.Decrypt(const Data: ByteArray): ByteArray;
 var
   L: LongWord;
@@ -165,16 +239,7 @@ begin
   Decrypt(Result.RawData^, L, True);
   Result.Len:= L;
 end;
-
-procedure TCipher.DecryptBlock(var Data);
-begin
-
-end;
-
-function TCipher.DecryptBlock(const Data: ByteArray): ByteArray;
-begin
-
-end;
+}
 
 class function TCipher.Name(Index: Cardinal): string;
 var
@@ -193,24 +258,49 @@ begin
   end;
 end;
 
-function TCipher.EncryptBlock(const Data: ByteArray): ByteArray;
+function TCipher.SetFlags(AFlags: LongWord): TCipher;
 begin
-
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+  Result:= Self;
 end;
 
-procedure TCipher.EncryptBlock(var Data);
+function TCipher.SetIV(AIV: Pointer; AIVLen: LongWord): TCipher;
 begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+  Result:= Self;
+end;
 
+function TCipher.SetIV(const AIV: ByteArray): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
+  Result:= Self;
+end;
+
+function TCipher.ExpandKey(AKey: PByte; AKeyLen: LongWord): TCipher;
+begin
+  HResCheck(FAlgorithm.ExpandKey(AKey, AKeyLen));
+  Result:= Self;
+end;
+
+function TCipher.ExpandKey(const AKey: ByteArray): TCipher;
+begin
+  HResCheck(FAlgorithm.ExpandKey(AKey.RawData, AKey.Len));
+  Result:= Self;
 end;
 
 class operator TCipher.Explicit(AlgID: Integer): TCipher;
 begin
-
+  HResCheck(FServer.GetByAlgID(AlgID, Result.FAlgorithm));
 end;
 
 class operator TCipher.Explicit(const Name: string): TCipher;
 begin
-
+  HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FAlgorithm));
 end;
 
+{$IFNDEF TFL_DLL}
+initialization
+  GetCipherServer(TCipher.FServer);
+
+{$ENDIF}
 end.

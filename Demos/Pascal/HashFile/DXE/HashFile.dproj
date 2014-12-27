@@ -99,6 +99,9 @@
 					<Source>
 						<Source Name="MainSource">HashFile.dpr</Source>
 					</Source>
+					<Parameters>
+						<Parameters Name="RunParams">hashfile.exe</Parameters>
+					</Parameters>
 				</Delphi.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

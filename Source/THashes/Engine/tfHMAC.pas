@@ -49,6 +49,7 @@ type
   end;
 
 function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHashAlgorithm): TF_RESULT;
+//function GetHMACAlgorithm(var Inst: PHMACAlg; HashAlg: IHashAlgorithm): TF_RESULT;
 
 implementation
 
@@ -86,8 +87,10 @@ begin
     New(P);
     P^.FVTable:= @HMACVTable;
     P^.FRefCount:= 1;
+                  // interface assignment - refcount is incremented by the compiler
     P^.FHash:= HashAlg;
-    HashAlg._AddRef;
+                  // the bug is commented out - no need to increment refcount manually
+//    HashAlg._AddRef;
     P^.FKey:= nil;
     Result:= ByteVectorAlloc(P^.FKey, BlockSize);
     if Result = TF_S_OK then begin
@@ -113,13 +116,14 @@ var
   BurnProc: Pointer;
 
 begin
-  if PtfRecord(Inst).FRefCount > 0 then begin
-    Result:= tfDecrement(PtfRecord(Inst).FRefCount);
+  if Inst.FRefCount > 0 then begin
+    Result:= tfDecrement(Inst.FRefCount);
     if Result = 0 then begin
       BurnProc:= PPVTable(Inst)^^[6];  // 6 is 'Burn' index
       TBurnProc(BurnProc)(Inst);
-      if Inst.FHash <> nil
-        then Inst.FHash._Release;
+      if Inst.FHash <> nil then begin
+        Inst.FHash._Release;
+      end;
       if Inst.FKey <> nil
         then IBytes(Inst.FKey)._Release;
       FreeMem(Inst);

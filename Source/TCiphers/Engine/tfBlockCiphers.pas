@@ -16,15 +16,17 @@ type
   PBlockCipher = ^TBlockCipher;
   TBlockCipher = record
   private type
-    TBlock = array[0..256] of Byte;   // up to 256 * 8 = 2048 bit blocks
+    TBlock = array[0..255] of Byte;   // up to 256 * 8 = 2048 bit blocks
   private
     FVTable: Pointer;
     FRefCount: Integer;
 
     FValidKey: LongBool;
-    FEncrypt: LongBool;
-    FMode: LongWord;
+
+    FDir:     LongWord;
+    FMode:    LongWord;
     FPadding: LongWord;
+
     FIVector: TBlock;     // var len
 
 
@@ -111,7 +113,8 @@ end;
 class function TBlockCipher.Encrypt(Inst: Pointer; Data: PByte;
   var DataSize: LongWord; BufSize: LongWord; Last: Boolean): TF_RESULT;
 begin
-  if PBlockCipher(Inst).FEncrypt and PBlockCipher(Inst).FValidKey then begin
+  if (PBlockCipher(Inst).FDir = TF_KEYDIR_ENCRYPT) and
+      PBlockCipher(Inst).FValidKey then begin
     case PBlockCipher(Inst).FMode of
       TF_KEYMODE_ECB: Result:= PBlockCipher(Inst).EncryptECB(Data, DataSize, BufSize, Last);
       TF_KEYMODE_CBC: Result:= PBlockCipher(Inst).EncryptCBC(Data, DataSize, BufSize, Last);
@@ -127,7 +130,8 @@ end;
 class function TBlockCipher.Decrypt(Inst: Pointer; Data: PByte;
   var DataSize: LongWord; Last: Boolean): TF_RESULT;
 begin
-  if not PBlockCipher(Inst).FEncrypt and PBlockCipher(Inst).FValidKey then begin
+  if (PBlockCipher(Inst).FDir = TF_KEYDIR_DECRYPT) and
+      PBlockCipher(Inst).FValidKey then begin
     case PBlockCipher(Inst).FMode of
       TF_KEYMODE_ECB: Result:= PBlockCipher(Inst).DecryptECB(Data, DataSize, Last);
       TF_KEYMODE_CBC: Result:= PBlockCipher(Inst).DecryptCBC(Data, DataSize, Last);
@@ -156,7 +160,7 @@ begin
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
   if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKSC7;
+    then LPadding:= TF_PADDING_PKCS;
 
 // check arguments
   if Last then begin
@@ -170,7 +174,7 @@ begin
       end;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
       TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126,
       TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
     else
@@ -186,7 +190,7 @@ begin
     RequiredSize:= LDataSize;
   end;
   DataSize:= RequiredSize;
-  if BufSize < RequiredSize then begin
+  if (Data = nil) or (BufSize < RequiredSize) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
@@ -216,7 +220,7 @@ begin
         EncryptBlock(@Self, Data);
       end;
                                             // XX 04 04 04 04
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126: begin
         FillChar(Data^, Cnt, Byte(Cnt));
         Dec(Data, LDataSize);
@@ -241,7 +245,7 @@ begin
     FillChar(FIVector, GetBlockSize(@Self), 0);
     Result:= TF_S_OK;
   end
-  else if (DataLen = GetBlockSize(@Self)) then begin
+  else if (DataLen = LongWord(GetBlockSize(@Self))) then begin
     Move(Data^, FIVector, DataLen);
     Result:= TF_S_OK;
   end
@@ -251,21 +255,12 @@ end;
 
 function TBlockCipher.SetDir(Data: LongWord): TF_RESULT;
 begin
-  if (Data <= 1) then begin
-    FEncrypt:= Data = TF_KEYDIR_ENCRYPT;
+  if (Data = TF_KEYDIR_ENCRYPT) or (Data = TF_KEYDIR_DECRYPT) then begin
+    FDir:= Data;
     Result:= TF_S_OK;
   end
   else
     Result:= TF_E_INVALIDARG;
-end;
-
-function TBlockCipher.SetFlags(Data: LongWord): TF_RESULT;
-begin
-  Result:= SetDir((Data shr TF_KEYDIR_SHIFT) and TF_KEYDIR_MASK);
-  if Result = TF_S_OK then
-    Result:= SetMode((Data shr TF_KEYMODE_SHIFT) and TF_KEYMODE_MASK);
-  if Result = TF_S_OK then
-    Result:= SetMode((Data shr TF_PADDING_SHIFT) and TF_PADDING_MASK);
 end;
 
 function TBlockCipher.SetMode(Data: LongWord): TF_RESULT;
@@ -286,6 +281,20 @@ begin
   end
   else
     Result:= TF_E_INVALIDARG;
+end;
+
+function TBlockCipher.SetFlags(Data: LongWord): TF_RESULT;
+begin
+  Result:= TF_S_FALSE;
+
+  if Data and TF_KEYDIR_BASE <> 0 then
+    Result:= SetDir(Data and TF_KEYDIR_MASK);
+
+  if (Result >= 0) and (Data and TF_KEYMODE_BASE <> 0) then
+    Result:= SetMode(Data and TF_KEYMODE_MASK);
+
+  if (Result >= 0) and (Data and TF_PADDING_BASE <> 0) then
+    Result:= SetMode(Data and TF_PADDING_MASK);
 end;
 
 class function TBlockCipher.SetKeyParam(Inst: Pointer; Param: LongWord;
@@ -311,8 +320,10 @@ begin
     end
     else
       Result:= TF_E_INVALIDARG;
+
+// setting flags invalidates key
+    PBlockCipher(Inst).FValidKey:= False;
   end;
-  PBlockCipher(Inst).FValidKey:= False;
 end;
 
 function TBlockCipher.EncryptCBC(Data: PByte; var DataSize: LongWord;
@@ -331,7 +342,7 @@ begin
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
   if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKSC7;
+    then LPadding:= TF_PADDING_PKCS;
 
 // check arguments
   if Last then begin
@@ -345,7 +356,7 @@ begin
       end;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
       TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126,
       TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
     else
@@ -395,7 +406,7 @@ begin
         EncryptBlock(@Self, Data);
       end;
                                             // XX 04 04 04 04
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126: begin
         FillChar(Data^, Cnt, Byte(Cnt));
         Dec(Data, LDataSize);
@@ -446,7 +457,7 @@ begin
       TF_PADDING_NONE: RequiredSize:= LDataSize;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
       TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126,
       TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
     else
@@ -492,9 +503,9 @@ begin
                                                 // encrypt temp block
         EncryptBlock(@Self, @Temp);
         XorBytes(Data, @Temp, LDataSize);
-        Inc(FIVector[LBlockSize]);
-        if FIVector[LBlockSize] = 0 then begin
-          Cnt:= LBlockSize;
+        Cnt:= LBlockSize - 1;
+        Inc(FIVector[Cnt]);
+        if FIVector[Cnt] = 0 then begin
           repeat
             Dec(Cnt);
             Inc(FIVector[Cnt]);
@@ -523,7 +534,7 @@ begin
           EncryptBlock(@Self, Data);
         end;
                                               // XX 04 04 04 04
-        TF_PADDING_PKSC7,
+        TF_PADDING_PKCS,
         TF_PADDING_ISO10126 : begin
           FillChar(Data^, Cnt, Byte(Cnt));
           Dec(Data, LDataSize);
@@ -560,7 +571,7 @@ begin
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
   if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKSC7;
+    then LPadding:= TF_PADDING_PKCS;
 
   if LDataSize and (LBlockSize - 1) <> 0 then begin
     Result:= TF_E_INVALIDARG;
@@ -569,7 +580,7 @@ begin
   if Last and (LDataSize = 0) then begin
     case LPadding of
       TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126,
       TF_PADDING_ISOIEC: begin
         Result:= TF_E_INVALIDARG;
@@ -606,7 +617,7 @@ begin
         end;
       end;
                                             // XX 04 04 04 04
-      TF_PADDING_PKSC7: begin
+      TF_PADDING_PKCS: begin
         Dec(Data);
         Cnt:= Data^;
         if (Cnt > 0) and (Cnt <= LBlockSize) then begin
@@ -668,11 +679,10 @@ var
 
 begin
   @DecryptBlock:= GetDecryptProc(@Self);
-  LDataSize:= DataSize;
 
   LPadding:= FPadding;
   if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKSC7;
+    then LPadding:= TF_PADDING_PKCS;
 
   LBlockSize:= GetBlockSize(@Self);
   if LBlockSize > SizeOf(TBlock) then begin
@@ -688,7 +698,7 @@ begin
   if Last and (DataSize = 0) then begin
     case LPadding of
       TF_PADDING_ANSI,
-      TF_PADDING_PKSC7,
+      TF_PADDING_PKCS,
       TF_PADDING_ISO10126,
       TF_PADDING_ISOIEC: begin
         Result:= TF_E_INVALIDARG;
@@ -728,7 +738,7 @@ begin
         end;
       end;
                                               // XX 04 04 04 04
-      TF_PADDING_PKSC7: begin
+      TF_PADDING_PKCS: begin
         Dec(Data);
         Cnt:= Data^;
         if (Cnt > 0) and (Cnt <= LBlockSize) then begin
@@ -833,9 +843,9 @@ begin
       Move(FIVector, Temp, LBlockSize);       // copy IV to temp block
                                               // encrypt temp block
       EncryptBlock(@Self, @Temp);
-      Inc(FIVector[LBlockSize]);
-      if FIVector[LBlockSize] = 0 then begin
-        Cnt:= LBlockSize;
+      Cnt:= LBlockSize - 1;
+      Inc(FIVector[Cnt]);
+      if FIVector[Cnt] = 0 then begin
         repeat
           Dec(Cnt);
           Inc(FIVector[Cnt]);
@@ -873,7 +883,7 @@ begin
           end;
         end;
                                               // XX 04 04 04 04
-        TF_PADDING_PKSC7: begin
+        TF_PADDING_PKCS: begin
           Dec(Data);
           Cnt:= Data^;
           if (Cnt > 0) and (Cnt <= LBlockSize) then begin

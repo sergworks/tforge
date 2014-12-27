@@ -100,6 +100,12 @@ type
 
     class function ToDec(A: PByteVector; var R: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function Incr(A: PByteVector): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function Decr(A: PByteVector): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
   end;
 
 // for .. in iteration support
@@ -121,7 +127,13 @@ type
 function ByteVectorAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+function ByteVectorAllocEx(var A: PByteVector; ASize: Cardinal; Filler: Byte): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
 function ByteVectorReAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+function ByteVectorSetLen(var A: PByteVector; L: Integer): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function ByteVectorFromPByte(var A: PByteVector; P: PByte; L: Cardinal): TF_RESULT;
@@ -140,7 +152,7 @@ implementation
 uses tfRecords, tfUtils;
 
 const
-  ByteVecVTable: array[0..29] of Pointer = (
+  ByteVecVTable: array[0..31] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -177,7 +189,10 @@ const
    @TByteVector.InsertPByte,
    @TByteVector.EqualToByte,
 
-   @TByteVector.ToDec
+   @TByteVector.ToDec,
+
+   @TByteVector.Incr,
+   @TByteVector.Decr
    );
 
 const
@@ -244,9 +259,6 @@ begin
 end;
 
 class function TByteVector.SetLen(A: PByteVector; L: Integer): TF_RESULT;
-//var
-//  Tmp: PByteVector;
-
 begin
   if Cardinal(L) <= Cardinal(A.FCapacity) then begin
     A.FUsed:= L;
@@ -254,13 +266,6 @@ begin
   end
   else
     Result:= TF_E_INVALIDARG;
-{    Result:= AllocVector(Tmp, L);
-    if Result = TF_S_OK then begin
-      Move(A.FData, Tmp.FData, A.FUsed);
-      TtfRecord.Release(A);
-      A:= Tmp;
-    end;
-  end;  }
 end;
 
 class function TByteVector.GetEnum(Inst: PByteVector;
@@ -666,6 +671,34 @@ begin
   R:= Tmp;
 end;
 
+class function TByteVector.Incr(A: PByteVector): TF_RESULT;
+var
+  N: Integer;
+
+begin
+  N:= A.FUsed;
+  while N > 0 do begin
+    Dec(N);
+    Inc(A.FData[N]);
+    if A.FData[N] <> 0 then Break;
+  end;
+  Result:= TF_S_OK;
+end;
+
+class function TByteVector.Decr(A: PByteVector): TF_RESULT;
+var
+  N: Integer;
+
+begin
+  N:= A.FUsed;
+  while N > 0 do begin
+    Dec(N);
+    Dec(A.FData[N]);
+    if A.FData[N] <> $FF then Break;
+  end;
+  Result:= TF_S_OK;
+end;
+
 class function TByteVector.InsertByte(A: PByteVector; Index: Cardinal;
                B: Byte; var R: PByteVector): TF_RESULT;
 var
@@ -794,6 +827,19 @@ begin
   end;
 end;
 
+function ByteVectorAllocEx(var A: PByteVector; ASize: Cardinal; Filler: Byte): TF_RESULT;
+var
+  Tmp: PByteVector;
+
+begin
+  Result:= TByteVector.AllocVector(Tmp, ASize);
+  if Result = TF_S_OK then begin
+    FillChar(Tmp.FData, ASize, Filler);
+    if A <> nil then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
+
 function ByteVectorReAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
 var
   Tmp: PByteVector;
@@ -810,6 +856,16 @@ begin
     end;
     A:= Tmp;
   end;
+end;
+
+function ByteVectorSetLen(var A: PByteVector; L: Integer): TF_RESULT;
+begin
+  if (A.FRefCount = 1) and (Cardinal(L) <= Cardinal(A.FCapacity)) then begin
+    A.FUsed:= L;
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= ByteVectorReAlloc(A, L);
 end;
 
 function ByteVectorFromPByte(var A: PByteVector; P: PByte;

@@ -9,6 +9,8 @@ interface
 
 {$I TFL.inc}
 
+{$R-}
+
 uses tfRecords, tfTypes, tfByteVectors;
 
 type
@@ -18,55 +20,67 @@ type
 type
   PAlgItem = ^TAlgItem;
   TAlgItem = record
-    Name: array[0..15] of Byte;
-    Getter: Pointer;
+  public const
+    NAME_SIZE = 16;
+  private
+    FName: array[0..NAME_SIZE - 1] of Byte;
+    FGetter: Pointer;
   end;
 
 type
   PAlgServer = ^TAlgServer;
   TAlgServer = record
+  public
     FVTable: PPointer;
-    FAlgTable: array[0..63] of TAlgItem;
+    FCapacity: Integer;   // set in derived classes
     FCount: Integer;
+//    FAlgTable: array[0..TABLE_SIZE - 1] of TAlgItem;
+    FAlgTable: array[0..0] of TAlgItem;  // var size
 
-    function AddTableItem(const AName: RawByteString; AGetter: Pointer): Boolean;
+  public
+    class function AddTableItem(Inst: Pointer;
+            const AName: RawByteString; AGetter: Pointer): Boolean; static;
 
-    class function GetByName(Inst: PAlgServer; AName: Pointer; CharSize: Integer;
+    class function GetByName(Inst: Pointer; AName: Pointer; CharSize: Integer;
           var Alg: IInterface): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetByIndex(Inst: PAlgServer; Index: Integer;
+    class function GetByIndex(Inst: Pointer; Index: Integer;
           var Alg: IInterface): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetName(Inst: PAlgServer; Index: Integer;
+    class function GetName(Inst: Pointer; Index: Integer;
           var Name: PByteVector): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetCount(Inst: PAlgServer): Integer;
+    class function GetCount(Inst: Pointer): Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 implementation
 
-function TAlgServer.AddTableItem(const AName: RawByteString; AGetter: Pointer): Boolean;
+// AName should be uppecase string
+//function TAlgServer.AddTableItem(const AName: RawByteString; AGetter: Pointer): Boolean;
+class function TAlgServer.AddTableItem(Inst: Pointer;
+        const AName: RawByteString; AGetter: Pointer): Boolean;
 var
   P: PAlgItem;
   L: Integer;
 
 begin
-  if FCount <= High(FAlgTable) then begin
-    P:= @FAlgTable[FCount];
-    FillChar(P^.Name, SizeOf(P^.Name), 0);
-    L:= Length(AName);
-    if L > SizeOf(P^.Name) then L:= SizeOf(P^.Name);
-    Move(Pointer(AName)^, P^.Name, L);
-    P^.Getter:= AGetter;
-    Inc(FCount);
-    Result:= True;
-  end
-  else
-    Result:= False;
+  with PAlgServer(Inst)^ do
+    if FCount < FCapacity then begin
+      P:= @FAlgTable[FCount];
+      FillChar(P^.FName, SizeOf(P^.FName), 0);
+      L:= Length(AName);
+      if L > SizeOf(P^.FName) then L:= SizeOf(P^.FName);
+      Move(Pointer(AName)^, P^.FName, L);
+      P^.FGetter:= AGetter;
+      Inc(FCount);
+      Result:= True;
+    end
+    else
+      Result:= False;
 end;
 
-class function TAlgServer.GetByName(Inst: PAlgServer; AName: Pointer;
+class function TAlgServer.GetByName(Inst: Pointer; AName: Pointer;
         CharSize: Integer; var Alg: IInterface): TF_RESULT;
 const
   ANSI_a = Ord('a');
@@ -79,14 +93,14 @@ var
   UP2: Byte;
 
 begin
-  PItem:= @Inst.FAlgTable;
+  PItem:= @PAlgServer(Inst).FAlgTable;
   Sentinel:= PItem;
-  Inc(Sentinel, Inst.FCount);
+  Inc(Sentinel, PAlgServer(Inst).FCount);
   while PItem <> Sentinel do begin
-    P1:= @PItem.Name;
+    P1:= @PItem.FName;
     P2:= AName;
     Found:= True;
-    I:= SizeOf(PItem.Name);
+    I:= SizeOf(PItem.FName);
     repeat
       UP2:= P2^;
       if UP2 >= ANSI_a then
@@ -101,7 +115,7 @@ begin
       Dec(I);
     until I = 0;
     if Found then begin
-      Result:= TAlgGetter(PItem.Getter)(Alg);
+      Result:= TAlgGetter(PItem.FGetter)(Alg);
       Exit;
     end;
     Inc(PItem);
@@ -109,21 +123,21 @@ begin
   Result:= TF_E_INVALIDARG;
 end;
 
-class function TAlgServer.GetByIndex(Inst: PAlgServer; Index: Integer;
+class function TAlgServer.GetByIndex(Inst: Pointer; Index: Integer;
         var Alg: IInterface): TF_RESULT;
 begin
-  if Cardinal(Index) >= Cardinal(Length(Inst.FAlgTable)) then
+  if Cardinal(Index) >= Cardinal(PAlgServer(Inst).FCount) then
     Result:= TF_E_INVALIDARG
   else
-    Result:= TAlgGetter(Inst.FAlgTable[Index].Getter)(Alg);
+    Result:= TAlgGetter(PAlgServer(Inst).FAlgTable[Index].FGetter)(Alg);
 end;
 
-class function TAlgServer.GetCount(Inst: PAlgServer): Integer;
+class function TAlgServer.GetCount(Inst: Pointer): Integer;
 begin
-  Result:= Inst.FCount;
+  Result:= PAlgServer(Inst).FCount;
 end;
 
-class function TAlgServer.GetName(Inst: PAlgServer; Index: Integer;
+class function TAlgServer.GetName(Inst: Pointer; Index: Integer;
         var Name: PByteVector): TF_RESULT;
 var
   Tmp: PByteVector;
@@ -131,10 +145,10 @@ var
   I: Integer;
 
 begin
-  if Cardinal(Index) >= Cardinal(Length(Inst.FAlgTable)) then
+  if Cardinal(Index) >= Cardinal(PAlgServer(Inst).FCount) then
     Result:= TF_E_INVALIDARG
   else begin
-    P:= @Inst.FAlgTable[Index].Name;
+    P:= @PAlgServer(Inst).FAlgTable[Index].FName;
     P1:= P;
     I:= 0;
     repeat
@@ -146,7 +160,7 @@ begin
       Result:= TF_E_UNEXPECTED
     else begin
       Tmp:= nil;
-      Result:= ByteVectorReAlloc(Tmp, I);
+      Result:= ByteVectorAlloc(Tmp, I);
       if Result = TF_S_OK then begin
         Move(P^, Tmp.FData, I);
         if Name <> nil then

@@ -95,11 +95,26 @@ begin
 end;
 
 class procedure TJenkinsOneAlg.Done(Inst: PJenkinsOneAlg; PDigest: PLongWord);
+var
+  P, PD: PByte;
+  L: Integer;
+
 begin
   Inst.FValue:= Inst.FValue + (Inst.FValue shl 3);
   Inst.FValue:= Inst.FValue xor (Inst.FValue shr 11);
   Inst.FValue:= Inst.FValue + (Inst.FValue shl 15);
-  PDigest^:= Inst.FValue;
+
+//  PDigest^:= Inst.FValue;
+  L:= 4;
+  P:= @Inst.FValue;
+  PD:= PByte(PDigest) + 4;
+  repeat
+    Dec(PD);
+    PD^:= P^;
+    Inc(P);
+    Dec(L);
+  until L = 0;
+
   Inst.FValue:= 0;
 end;
 

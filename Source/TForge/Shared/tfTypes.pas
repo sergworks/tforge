@@ -95,6 +95,9 @@ type
     function EqualToPByte(P: PByte; L: Integer): Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function ToDec(var R: IBytes): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function Incr: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decr: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 (*
@@ -220,7 +223,7 @@ const
   TF_ALG_AES      = $2001;
   TF_ALG_DES      = $2002;
                             // Stream ciphers
-  TF_ALG_RC5      = $2801;
+  TF_ALG_RC4      = $2801;
 
 type
   IHashAlgorithm = interface(IInterface)
@@ -274,28 +277,15 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-(*
-  IBlockCipherAlgorithm = interface(IInterface)
-    function ImportKey(Key: PByte; Flags: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  end;
-*)
-
-  ICipherKey = interface(IInterface)
+  ICipherAlgorithm = interface(IInterface)
     function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function ExpandKey(Key: Pointer; KeySize: LongWord; Flags: LongWord): TF_RESULT;
     function ExpandKey(Key: Pointer; KeySize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DestroyKey;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DuplicateKey(var Key: ICipherKey): TF_RESULT;
+    function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  end;
-
-  ICipherAlgorithm = interface(ICipherKey)
     function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Encrypt(Data: PByte; var DataSize: LongWord;
              BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -319,60 +309,78 @@ type
   end;
 
 const
-                          // ICipherKey.SetKeyParam Params
-  TF_KP_IV      = 1;      // plaintext IV
-  TF_KP_DIR     = 2;      // encrypt/decrypt
-  TF_KP_MODE    = 3;      // mode of operation
-  TF_KP_PADDING = 4;      // block padding
-  TF_KP_FLAGS   = 5;      // DIR + MODE + PADDING
+                          // ICipherAlgorithm.SetKeyParam Param values
+  TF_KP_DIR     = 1;      // encrypt/decrypt
+  TF_KP_MODE    = 2;      // mode of operation
+  TF_KP_PADDING = 3;      // block padding
+  TF_KP_FLAGS   = 4;      // DIR + MODE + PADDING
+  TF_KP_IV      = 5;      // initialization vector
+
+// Key Flags bits:
+//     0002            0040           0800
+//  0  1 | 2  3  4  5  6 | 7  8  9 10 11 |
+//  DIR  | MODE          | PADDING       |
 
                           // KP_DIR values
-  TF_KEYDIR_ENCRYPT = 0;
-  TF_KEYDIR_DECRYPT = 1;
-
   TF_KEYDIR_SHIFT = 0;
-  TF_KEYDIR_MASK  = $00000001;
+  TF_KEYDIR_BASE  = $0002;
+  TF_KEYDIR_MASK  = $0003;
+
+  TF_KEYDIR_ENCRYPT = TF_KEYDIR_BASE;
+  TF_KEYDIR_DECRYPT = TF_KEYDIR_BASE + 1;
 
                           // TF_KP_MODE values
-  TF_KEYMODE_ECB = 1;
-  TF_KEYMODE_CBC = 2;
-  TF_KEYMODE_CTR = 3;
+  TF_KEYMODE_SHIFT = 2;
+  TF_KEYMODE_BASE  = $0040;
+  TF_KEYMODE_MASK  = $007C;
+
+  TF_KEYMODE_ECB = TF_KEYMODE_BASE + 1 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CBC = TF_KEYMODE_BASE + 2 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CTR = TF_KEYMODE_BASE + 3 shl TF_KEYMODE_SHIFT;
 
   TF_KEYMODE_MIN = TF_KEYMODE_ECB;
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
 
-  TF_KEYMODE_SHIFT = 1;
-  TF_KEYMODE_MASK  = $0000001F;
-
                           // TF_KP_PADDING values
-  TF_PADDING_DEFAULT  = 0;
-  TF_PADDING_NONE     = 1;
-  TF_PADDING_ZERO     = 2;    // XX 00 00 00 00
-  TF_PADDING_ANSI     = 3;    // XX 00 00 00 04
-  TF_PADDING_PKSC7    = 4;    // XX 04 04 04 04
-  TF_PADDING_ISO10126 = 5;    // XX ?? ?? ?? 04
-  TF_PADDING_ISOIEC   = 6;    // XX 80 00 00 00
+  TF_PADDING_SHIFT = 7;
+  TF_PADDING_BASE  = $0800;
+  TF_PADDING_MASK  = $0F80;
+
+  TF_PADDING_DEFAULT  = TF_PADDING_BASE;
+  TF_PADDING_NONE     = TF_PADDING_BASE + 1 shl TF_PADDING_SHIFT;
+                                              // XX 00 00 00 00
+  TF_PADDING_ZERO     = TF_PADDING_BASE + 2 shl TF_PADDING_SHIFT;
+                                              // XX 00 00 00 04
+  TF_PADDING_ANSI     = TF_PADDING_BASE + 3 shl TF_PADDING_SHIFT;
+                                              // XX 04 04 04 04
+  TF_PADDING_PKCS     = TF_PADDING_BASE + 4 shl TF_PADDING_SHIFT;
+                                              // XX ?? ?? ?? 04
+  TF_PADDING_ISO10126 = TF_PADDING_BASE + 5 shl TF_PADDING_SHIFT;
+                                              // XX 80 00 00 00
+  TF_PADDING_ISOIEC   = TF_PADDING_BASE + 6 shl TF_PADDING_SHIFT;
 
   TF_PADDING_MIN = TF_PADDING_DEFAULT;
   TF_PADDING_MAX = TF_PADDING_ISOIEC;
 
-  TF_PADDING_SHIFT = 6;
-  TF_PADDING_MASK  = $0000001F;
+// "user-friendly" constants
 
-  kfEncrypt = 0;
-  kfDecrypt = 1;
+  ECB_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;
+  ECB_DECRYPT = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;
 
-  kfECB = TF_KEYMODE_ECB shl TF_KEYMODE_SHIFT;
-  kfCBC = TF_KEYMODE_CBC shl TF_KEYMODE_SHIFT;
-  kfCTR = TF_KEYMODE_CTR shl TF_KEYMODE_SHIFT;
+  CBC_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_CBC or TF_PADDING_DEFAULT;
+  CBC_DECRYPT = TF_KEYDIR_DECRYPT or TF_KEYMODE_CBC or TF_PADDING_DEFAULT;
 
-  kfPaddingDefault  = TF_PADDING_DEFAULT shl TF_PADDING_SHIFT;
-  kfPaddingNone     = TF_PADDING_NONE shl TF_PADDING_SHIFT;
-  kfPaddingZero     = TF_PADDING_ZERO shl TF_PADDING_SHIFT;
-  kfPaddingANSI     = TF_PADDING_ANSI shl TF_PADDING_SHIFT;
-  kfPaddingPKSC7    = TF_PADDING_PKSC7 shl TF_PADDING_SHIFT;
-  kfPaddingISO10126 = TF_PADDING_ISO10126 shl TF_PADDING_SHIFT;
-  kfPaddingISOIEC   = TF_PADDING_ISOIEC shl TF_PADDING_SHIFT;
+  CTR_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_CTR or TF_PADDING_DEFAULT;
+  CTR_DECRYPT = TF_KEYDIR_DECRYPT or TF_KEYMODE_CTR or TF_PADDING_DEFAULT;
+
+  PADDING_DEFAULT  = TF_PADDING_DEFAULT;
+  PADDING_NONE     = TF_PADDING_NONE;
+  PADDING_ZERO     = TF_PADDING_ZERO;
+  PADDING_ANSI     = TF_PADDING_ANSI;
+  PADDING_PKCS     = TF_PADDING_PKCS;
+  PADDING_ISO10126 = TF_PADDING_ISO10126;
+  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
+
 
 { Hash digest helper types }
 type

@@ -642,8 +642,9 @@ var
   Nk: LongWord;
 
 begin
-  if (KeySize = 128) or (KeySize = 192) or (KeySize = 256) then begin
-    KeySize:= KeySize shr 3;    // bit size -> byte size
+//  if (KeySize = 128) or (KeySize = 192) or (KeySize = 256) then begin
+//    KeySize:= KeySize shr 3;    // bit size -> byte size
+  if (KeySize = 16) or (KeySize = 24) or (KeySize = 32) then begin
     Move(Key^, Inst.FExpandedKey, KeySize);
                                 // key length in 4-byte words (# of key columns)
     Nk:= KeySize shr 2;         //   Nk = 4, 6 or 8

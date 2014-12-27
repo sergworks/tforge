@@ -5614,17 +5614,17 @@ end;
   RegG = R14D
   RegH = R15D
 -------------}
-procedure TSHA256Alg.Compress;
+procedure TSHA256Alg.Compress;{$IFDEF FPC}nostackframe;{$ENDIF}
 const
 // SHA256 registers:
-  DigestA = -32;  // [EDI - 32]
-  DigestB = -28;  // [EDI - 28]
-  DigestC = -24;  // [EDI - 24]
-  DigestD = -20;  // [EDI - 20]
-  DigestE = -16;  // [EDI - 16]
-  DigestF = -12;  // [EDI - 12]
-  DigestG = -8;   // [EDI - 8]
-  DigestH = -4;   // [EDI - 4]
+  DigestA = -32;  // [RDI - 32]
+  DigestB = -28;  // [RDI - 28]
+  DigestC = -24;  // [RDI - 24]
+  DigestD = -20;  // [RDI - 20]
+  DigestE = -16;  // [RDI - 16]
+  DigestF = -12;  // [RDI - 12]
+  DigestG = -8;   // [RDI - 8]
+  DigestH = -4;   // [RDI - 4]
 
   W0  = 0;    W1  = 4;    W2  = 8;    W3  = 12;
   W4  = 16;   W5  = 20;   W6  = 24;   W7  = 28;
@@ -5632,6 +5632,9 @@ const
   W12 = 48;   W13 = 52;   W14 = 56;   W15 = 60;
 
 asm
+{$IFNDEF FPC}
+        .NOFRAME
+{$ENDIF}
         PUSH    RSI
         PUSH    RDI
         PUSH    RBX
