@@ -32,7 +32,7 @@ type
 
     class function Allocate(ASize: Cardinal): ByteArray; overload; static;
     class function Allocate(ASize: Cardinal; Filler: Byte): ByteArray; overload; static;
-    class procedure ReAllocate(Target: ByteArray; ASize: Cardinal); static;
+    procedure ReAllocate(ASize: Cardinal);
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
     class function ParseHex(const S: string): ByteArray; static;
@@ -245,12 +245,12 @@ begin
 {$ENDIF}
 end;
 
-class procedure ByteArray.ReAllocate(Target: ByteArray; ASize: Cardinal);
+procedure ByteArray.ReAllocate(ASize: Cardinal);
 begin
 {$IFDEF TFL_DLL}
-  HResCheck(ByteVectorReAlloc(Target.FBytes, ASize));
+  HResCheck(ByteVectorReAlloc(FBytes, ASize));
 {$ELSE}
-  HResCheck(ByteVectorReAlloc(PByteVector(Target.FBytes), ASize));
+  HResCheck(ByteVectorReAlloc(PByteVector(FBytes), ASize));
 {$ENDIF}
 end;
 

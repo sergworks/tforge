@@ -203,7 +203,7 @@ begin
     then CipherError(TF_E_UNEXPECTED);
 
   Result:= Data;
-  ByteArray.ReAllocate(Result, L1);
+  Result.ReAllocate(L1);
   HResCheck(FAlgorithm.Encrypt(Result.RawData, L0, L1, True));
 end;
 

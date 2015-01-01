@@ -63,7 +63,7 @@ type
 implementation
 
 type
-  TVTable = array[0..10] of Pointer;
+  TVTable = array[0..11] of Pointer;
   PVTable = ^TVTable;
   PPVTable = ^PVTable;
 
@@ -76,17 +76,17 @@ type
 
 function GetEncryptProc(Inst: PBlockCipher): Pointer; inline;
 begin
-  Result:= PPVTable(Inst)^^[9];     // 9 is 'EncryptBlock' index
+  Result:= PPVTable(Inst)^^[10];     // 10 is 'EncryptBlock' index
 end;
 
 function GetDecryptProc(Inst: PBlockCipher): Pointer; inline;
 begin
-  Result:= PPVTable(Inst)^^[10];    // 10 is 'DecryptBlock' index
+  Result:= PPVTable(Inst)^^[11];    // 11 is 'DecryptBlock' index
 end;
 
 function GetBlockSize(Inst: PBlockCipher): LongInt; inline;
 begin
-  Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[6])(Inst);
+  Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[7])(Inst);
 end;
 
 procedure XorBytes(Target: Pointer; Value: Pointer; Count: Integer); inline;
@@ -294,7 +294,7 @@ begin
     Result:= SetMode(Data and TF_KEYMODE_MASK);
 
   if (Result >= 0) and (Data and TF_PADDING_BASE <> 0) then
-    Result:= SetMode(Data and TF_PADDING_MASK);
+    Result:= SetPadding(Data and TF_PADDING_MASK);
 end;
 
 class function TBlockCipher.SetKeyParam(Inst: Pointer; Param: LongWord;
@@ -485,9 +485,9 @@ begin
     EncryptBlock(@Self, @Temp);
     XorBytes(Data, @Temp, LBlockSize);          // xor ciphertext with encrypted block
                                                 // increment IV
-    Inc(FIVector[LBlockSize]);
-    if FIVector[LBlockSize] = 0 then begin
-      Cnt:= LBlockSize;
+    Cnt:= LBlockSize - 1;
+    Inc(FIVector[Cnt]);
+    if FIVector[Cnt] = 0 then begin
       repeat
         Dec(Cnt);
         Inc(FIVector[Cnt]);
@@ -826,9 +826,9 @@ begin
     EncryptBlock(@Self, @Temp);
     XorBytes(Data, @Temp, LBlockSize);          // xor ciphertext with encrypted block
                                                 // increment IV
-    Inc(FIVector[LBlockSize]);
-    if FIVector[LBlockSize] = 0 then begin
-      Cnt:= LBlockSize;
+    Cnt:= LBlockSize - 1;
+    Inc(FIVector[Cnt]);
+    if FIVector[Cnt] = 0 then begin
       repeat
         Dec(Cnt);
         Inc(FIVector[Cnt]);
