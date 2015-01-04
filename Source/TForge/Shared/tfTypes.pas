@@ -28,11 +28,12 @@ const
   TF_E_NOTIMPL      = TF_RESULT($80004001);   // Not implemented
   TF_E_OUTOFMEMORY  = TF_RESULT($8007000E);   // Failed to allocate necessary memory
   TF_E_UNEXPECTED   = TF_RESULT($8000FFFF);   // Unexpected failure
-                                              // = Numerics codes =
+
+                                              // = tforge codes =
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
   TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading tforge dll
-                                              // = Crypto codes =
-//  TF_E_INVALIDKEY   = TF_RESULT($A0001001);   // Invalid crypto key
+
+  TF_E_STATE        = TF_RESULT($A0001001);   // Invalid instance state
 
 {$IFNDEF FPC}
 const

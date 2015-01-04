@@ -265,9 +265,13 @@ begin
     if I = 0 then
       Result:= TF_E_UNEXPECTED
     else begin
-      Result:= ByteVectorReAlloc(Tmp, I);
-      if Result = TF_S_OK then
+      Tmp:= nil;
+      Result:= ByteVectorAlloc(Tmp, I);
+      if Result = TF_S_OK then begin
         Move(P^, Tmp.FData, I);
+        if Name <> nil then TtfRecord.Release(Name);
+        Name:= Tmp;
+      end;
     end;
   end;
 end;

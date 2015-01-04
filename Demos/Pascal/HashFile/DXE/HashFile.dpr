@@ -17,6 +17,8 @@ begin
   Writeln('CRC32: ', THash.CRC32.UpdateFile(FileName).Digest.ToHex);
 end;
 
+
+
 procedure CalcHash(const FileName: string);
 const
   BufSize = 16 * 1024;

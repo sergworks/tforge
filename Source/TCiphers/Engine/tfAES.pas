@@ -1,10 +1,7 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
-{ NB: it is OK to pass a zero-length last block to encryption routine,
-      but it is not Ok to pass it to decryption roitine if padding is used
-}
 
 unit tfAES;
 
@@ -14,69 +11,6 @@ interface
 
 uses
   tfTypes;
-(*
-type
-  PAESAlgorithm = ^TAESAlgorithm;
-  TAESAlgorithm = record
-  private const
-    MaxRounds = 14;
-
-   private type
-{    PVector = ^TVector;
-    TVector = record
-      case Byte of
-        0: (Bytes: array[0..3] of Byte);
-        1: (LWord: LongWord);
-    end;
-
-    TVectors = array[0..3] of TVector;
-}
-    PBlock = ^TAESBlock;
-    TAESBlock = record
-      case Byte of
-        0: (Bytes: array[0..15] of Byte);
-        1: (LWords: array[0..3] of LongWord);
-    end;
-{
-    PKey = ^TKey;
-    TKey = record         // AES key length can be 16, 24 or 32 bytes
-      case Byte of
-        0: (Bytes: array[0..31] of Byte);
-        1: (LWords: array[0..7] of LongWord);
-  //      2: (Vectors: array[0..7] of TVector);
-    end;
-}
-    PExpandedKey = ^TExpandedKey;
-    TExpandedKey = record
-      case Byte of
-        0: (Bytes: array[0 .. (MaxRounds + 2) * SizeOf(TAESBlock) - 1] of Byte);
-        1: (LWords: array[0 .. (MaxRounds + 2) * (SizeOf(TAESBlock) shr 2) - 1] of LongWord);
-        2: (Blocks: array[0 .. MaxRounds + 1] of TAESBlock);
-    end;
-
-  private
-{$HINTS OFF}
-    FVTable: Pointer;
-    FRefCount: Integer;
-{$HINTS ON}
-    FExpandedKey: TExpandedKey;
-    FRounds: LongWord;
-
-    class procedure DoRound(const RoundKey: TAESBlock;
-                    var State: TAESBlock; Last: Boolean); static;
-    class procedure DoInvRound(const RoundKey: TAESBlock;
-                    var State: TAESBlock; First: Boolean); static;
-  public
-    class function ImportKey(Inst: PAESAlgorithm; Key: PByte; Flags: LongWord): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DestroyKey(Inst: PAESAlgorithm);
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure EncryptBlock(Inst: PAESAlgorithm; Data: PByte);
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DecryptBlock(Inst: PAESAlgorithm; Data: PByte);
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-  end;
-*)
 
 type
   PAESAlgorithm = ^TAESAlgorithm;
@@ -103,14 +37,15 @@ type
   private
 {$HINTS OFF}
                                 // from tfRecord
-    FVTable: Pointer;
+    FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
     FValidKey: LongBool;
-    FEncrypt: LongBool;
-    FMode: LongWord;
-    FPadding: LongWord;
-    FIVector: TAESBlock;
+    FDir:      LongWord;
+    FMode:     LongWord;
+    FPadding:  LongWord;
+
+    FIVector:  TAESBlock;
 {$HINTS ON}
 
     FExpandedKey: TExpandedKey;
@@ -142,6 +77,56 @@ uses tfRecords, tfBlockCiphers;
 
 const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
+
+const
+  AESCipherVTable: array[0..11] of Pointer = (
+   @TtfRecord.QueryIntf,
+   @TtfRecord.Addref,
+   @TtfRecord.Release,
+
+   @TBlockCipher.SetKeyParam,
+   @TAESAlgorithm.ExpandKey,
+   @TAESAlgorithm.DestroyKey,
+   @TAESAlgorithm.DuplicateKey,
+   @TAESAlgorithm.GetBlockSize,
+   @TBlockCipher.Encrypt,
+   @TBlockCipher.Decrypt,
+   @TAESAlgorithm.EncryptBlock,
+   @TAESAlgorithm.DecryptBlock
+   );
+
+procedure BurnKey(Inst: PAESAlgorithm); inline;
+var
+  BurnSize: Integer;
+
+begin
+  BurnSize:= SizeOf(TAESAlgorithm) - Integer(@PAESAlgorithm(nil)^.FValidKey);
+  FillChar(Inst.FValidKey, BurnSize, 0);
+end;
+
+function ReleaseAES(Inst: PAESAlgorithm): Integer; inline;
+begin
+  BurnKey(Inst);
+  Result:= TtfRecord.Release(Inst);
+end;
+
+function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
+var
+  Tmp: PAESAlgorithm;
+begin
+  try
+    Tmp:= AllocMem(SizeOf(TAESAlgorithm));
+    Tmp^.FVTable:= @AESCipherVTable;
+    Tmp^.FRefCount:= 1;
+//    Tmp^.FMode:= TF_KEYMODE_CBC;
+//    Tmp^.FPadding:= TF_PADDING_DEFAULT;
+    if A <> nil then ReleaseAES(A);
+    A:= Tmp;
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
 
 procedure Xor128(Target: Pointer; Value: Pointer); inline;
 begin
@@ -179,35 +164,6 @@ begin
 end;
 
 { TksAESAlgorithm }
-(*
-const
-  AESAlgVTable: array[0..6] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TtfRecord.Release,
-//   nil,
-   @TAESAlgorithm.ImportKey,
-   @TAESAlgorithm.DestroyKey,
-   @TAESAlgorithm.EncryptBlock,
-   @TAESAlgorithm.DecryptBlock
-   );
-
-function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
-var
-  Tmp: PAESAlgorithm;
-begin
-  try
-    Tmp:= AllocMem(SizeOf(TAESAlgorithm));
-    Tmp^.FVTable:= @AESAlgVTable;
-    Tmp^.FRefCount:= 1;
-    if A <> nil then TtfRecord.Release(A);
-    A:= Tmp;
-    Result:= TF_S_OK;
-  except
-    Result:= TF_E_OUTOFMEMORY;
-  end;
-end;
-*)
 
 const
   RDLSBox : array[$00..$FF] of Byte =
@@ -675,11 +631,7 @@ end;
 
 class procedure TAESAlgorithm.DestroyKey(Inst: PAESAlgorithm);
 begin
-  FillChar(Inst.FIVector, SizeOf(Inst.FIVector)
-                          + SizeOf(Inst.FExpandedKey)
-                          + SizeOf(Inst.FRounds), 0);
-  Inst.FMode:= TF_KEYMODE_CBC;
-  Inst.FPadding:= TF_PADDING_DEFAULT;
+  BurnKey(Inst);
 end;
 
 class procedure TAESAlgorithm.EncryptBlock(Inst: PAESAlgorithm; Data: PByte);
@@ -706,52 +658,19 @@ end;
 
 { TAESCipher }
 
-const
-  AESCipherVTable: array[0..11] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TtfRecord.Release,
-
-   @TBlockCipher.SetKeyParam,
-   @TAESAlgorithm.ExpandKey,
-   @TAESAlgorithm.DestroyKey,
-   @TAESAlgorithm.DuplicateKey,
-   @TAESAlgorithm.GetBlockSize,
-   @TBlockCipher.Encrypt,
-   @TBlockCipher.Decrypt,
-   @TAESAlgorithm.EncryptBlock,
-   @TAESAlgorithm.DecryptBlock
-   );
-
-function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
-var
-  Tmp: PAESAlgorithm;
-begin
-  try
-    Tmp:= AllocMem(SizeOf(TAESAlgorithm));
-    Tmp^.FVTable:= @AESCipherVTable;
-    Tmp^.FRefCount:= 1;
-//    Tmp^.FMode:= TF_KEYMODE_CBC;
-//    Tmp^.FPadding:= TF_PADDING_DEFAULT;
-    if A <> nil then TtfRecord.Release(A);
-    A:= Tmp;
-    Result:= TF_S_OK;
-  except
-    Result:= TF_E_OUTOFMEMORY;
-  end;
-end;
-
 class function TAESAlgorithm.DuplicateKey(Inst: PAESAlgorithm;
                           var Key: PAESAlgorithm): TF_RESULT;
 begin
   Result:= GetAESAlgorithm(Key);
-  Key.FValidKey:= Inst.FValidKey;
-  Key.FEncrypt:= Inst.FEncrypt;
-  Key.FMode:= Inst.FMode;
-  Key.FPadding:= Inst.FPadding;
-  Key.FIVector:= Inst.FIVector;
-  Key.FExpandedKey:= Inst.FExpandedKey;
-  Key.FRounds:= Inst.FRounds;
+  if Result = TF_S_OK then begin
+    Key.FValidKey:= Inst.FValidKey;
+    Key.FDir:= Inst.FDir;
+    Key.FMode:= Inst.FMode;
+    Key.FPadding:= Inst.FPadding;
+    Key.FIVector:= Inst.FIVector;
+    Key.FExpandedKey:= Inst.FExpandedKey;
+    Key.FRounds:= Inst.FRounds;
+  end;
 end;
 
 class function TAESAlgorithm.GetBlockSize(Inst: PAESAlgorithm): Integer;

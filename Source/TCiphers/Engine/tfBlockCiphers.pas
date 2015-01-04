@@ -3,6 +3,10 @@
 { *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
 { *********************************************************** }
 
+{ NB: it is OK to pass a zero-length last block to encryption routine,
+      but it is not Ok to pass it to decryption roitine if padding is used
+}
+
 unit tfBlockCiphers;
 
 interface
@@ -18,16 +22,15 @@ type
   private type
     TBlock = array[0..255] of Byte;   // up to 256 * 8 = 2048 bit blocks
   private
-    FVTable: Pointer;
+    FVTable:   Pointer;
     FRefCount: Integer;
 
     FValidKey: LongBool;
+    FDir:      LongWord;
+    FMode:     LongWord;
+    FPadding:  LongWord;
 
-    FDir:     LongWord;
-    FMode:    LongWord;
-    FPadding: LongWord;
-
-    FIVector: TBlock;     // var len
+    FIVector:  TBlock;     // var len
 
 
     function SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
