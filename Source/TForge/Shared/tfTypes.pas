@@ -223,6 +223,7 @@ const
                             // Block ciphers
   TF_ALG_AES      = $2001;
   TF_ALG_DES      = $2002;
+  TF_ALG_RC5      = $2003;
                             // Stream ciphers
   TF_ALG_RC4      = $2801;
 
@@ -237,8 +238,8 @@ type
     function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  THashGetter = function(var A: IHashAlgorithm): TF_RESULT;
-                {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//  THashGetter = function(var A: IHashAlgorithm): TF_RESULT;
+//                {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   IHMACAlgorithm = interface(IInterface)
     procedure Init(Key: Pointer; KeySize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -252,6 +253,24 @@ type
           Salt: Pointer; SaltLen: LongWord;
           Rounds, DKLen: Integer; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
+  ICipherAlgorithm = interface(IInterface)
+    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKey(Key: Pointer; KeySize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DestroyKey;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Encrypt(Data: PByte; var DataSize: LongWord;
+             BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decrypt(Data: PByte; var DataSize: LongWord;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IHashServer = interface(IInterface)
@@ -278,24 +297,6 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  ICipherAlgorithm = interface(IInterface)
-    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: Pointer; KeySize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data: PByte; var DataSize: LongWord;
-             BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data: PByte; var DataSize: LongWord;
-             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  end;
-
   ICipherServer = interface(IInterface)
     function GetByAlgID(AlgID: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -306,6 +307,9 @@ type
     function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function RC5(BlockSize, Rounds: LongInt;
+          var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 

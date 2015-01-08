@@ -10,20 +10,11 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
-     tfAES;
+     tfAES, tfRC5;
 
 function GetCipherServer(var A: ICipherServer): TF_RESULT;
 
 implementation
-(*
-type
-  PAlgItem = ^TAlgItem;
-  TAlgItem = record
-    Name: array[0..15] of Byte;
-    Getter: Pointer;
-  end;
-
-*)
 
 type
   PCipherServer = ^TCipherServer;
@@ -40,6 +31,9 @@ type
     class function GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function RC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
+          var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
 
 class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
@@ -47,6 +41,7 @@ class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
 begin
   case AlgID of
     TF_ALG_AES: Result:= GetAESAlgorithm(PAESAlgorithm(Alg));
+    TF_ALG_RC5: Result:= GetRC5Algorithm(PRC5Algorithm(Alg));
   else
     case AlgID of
       TF_ALG_CRC32: Result:= TF_E_INVALIDARG;
@@ -54,6 +49,12 @@ begin
       Result:= TF_E_INVALIDARG;
     end;
   end;
+end;
+
+class function TCipherServer.RC5(Inst: PCipherServer; BlockSize,
+               Rounds: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
+begin
+  Result:= GetRC5AlgorithmEx(PRC5Algorithm(Alg), BlockSize, Rounds);
 end;
 
 const

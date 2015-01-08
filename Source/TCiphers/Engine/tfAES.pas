@@ -56,6 +56,7 @@ type
     class procedure DoInvRound(const RoundKey: TAESBlock;
                     var State: TAESBlock; First: Boolean); static;
   public
+    class function Release(Inst: PAESAlgorithm): Integer; stdcall; static;
     class function ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PAESAlgorithm): Integer;
@@ -82,7 +83,7 @@ const
   AESCipherVTable: array[0..11] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
-   @TtfRecord.Release,
+   @TAESAlgorithm.Release,
 
    @TBlockCipher.SetKeyParam,
    @TAESAlgorithm.ExpandKey,
@@ -104,10 +105,17 @@ begin
   FillChar(Inst.FValidKey, BurnSize, 0);
 end;
 
-function ReleaseAES(Inst: PAESAlgorithm): Integer; inline;
+class function TAESAlgorithm.Release(Inst: PAESAlgorithm): Integer;
 begin
-  BurnKey(Inst);
-  Result:= TtfRecord.Release(Inst);
+  if PtfRecord(Inst).FRefCount > 0 then begin
+    Result:= tfDecrement(PtfRecord(Inst).FRefCount);
+    if Result = 0 then begin
+      BurnKey(Inst);
+      FreeMem(Inst);
+    end;
+  end
+  else
+    Result:= PtfRecord(Inst).FRefCount;
 end;
 
 function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
@@ -120,7 +128,7 @@ begin
     Tmp^.FRefCount:= 1;
 //    Tmp^.FMode:= TF_KEYMODE_CBC;
 //    Tmp^.FPadding:= TF_PADDING_DEFAULT;
-    if A <> nil then ReleaseAES(A);
+    if A <> nil then TAESAlgorithm.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
   except
@@ -163,7 +171,7 @@ begin
   end;
 end;
 
-{ TksAESAlgorithm }
+{ TAESAlgorithm }
 
 const
   RDLSBox : array[$00..$FF] of Byte =

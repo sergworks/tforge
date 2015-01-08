@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfHashServ;
@@ -9,7 +9,7 @@ interface
 
 {$I TFL.inc}
 
-uses tfRecords, tfTypes, tfByteVectors,
+uses tfRecords, tfTypes, tfAlgServ, tfByteVectors,
      tfMD5, tfSHA1, tfSHA256, tfSHA512,
      tfCRC32, tfJenkinsOne,
      tfHMAC;
@@ -18,23 +18,43 @@ function GetHashServer(var A: IHashServer): TF_RESULT;
 
 implementation
 
+(*
 type
   PAlgItem = ^TAlgItem;
   TAlgItem = record
     Name: array[0..15] of Byte;
     Getter: Pointer;
   end;
+*)
 
 type
   PHashServer = ^THashServer;
   THashServer = record
+  public const
+    TABLE_SIZE = 64;
+  public
+                          // !! inherited from TAlgServer
+    FVTable: PPointer;
+    FCapacity: Integer;
+    FCount: Integer;
+    FAlgTable: array[0..TABLE_SIZE - 1] of TAlgItem;
+(*
     FVTable: PPointer;
     FAlgTable: array[0..63] of TAlgItem;
     FCount: Integer;
-
+*)
     class function GetByAlgID(Inst: PHashServer; AlgID: LongInt;
           var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
+//          Key: Pointer; KeySize: Cardinal;
+          const HashAlg: IHashAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
+          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
+          Rounds, dkLen: LongWord; var Key: PByteVector): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+(*
     class function GetByName(Inst: PHashServer; AName: Pointer; CharSize: Integer;
           var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -46,17 +66,11 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetCount(Inst: PHashServer): Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+*)
 //    class function RegisterHash(Inst: PHashServer; Name: Pointer; CharSize: Integer;
 //          Getter: THashGetter; var Index: Integer): TF_RESULT;
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
-//          Key: Pointer; KeySize: Cardinal;
-          const HashAlg: IHashAlgorithm): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
-          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
-          Rounds, dkLen: LongWord; var Key: PByteVector): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
   end;
 
 const
@@ -66,10 +80,15 @@ const
     @TtfSingleton.Release,
 
     @THashServer.GetByAlgID,
-    @THashServer.GetByName,
-    @THashServer.GetByIndex,
-    @THashServer.GetName,
-    @THashServer.GetCount,
+    @TAlgServer.GetByName,
+    @TAlgServer.GetByIndex,
+    @TAlgServer.GetName,
+    @TAlgServer.GetCount,
+
+//    @THashServer.GetByName,
+//    @THashServer.GetByIndex,
+//    @THashServer.GetName,
+//    @THashServer.GetCount,
     @THashServer.GetHMAC,
     @THashServer.PBKDF1
 //    @THashServer.RegisterHash,
@@ -88,6 +107,7 @@ const
   CRC32_LITERAL: UTF8String = 'CRC32';
   JENKINS1_LITERAL: UTF8String = 'JENKINS1';
 
+(*
 procedure AddTableItem(const AName: RawByteString; AGetter: Pointer);
 var
   P: PAlgItem;
@@ -102,19 +122,22 @@ begin
   P^.Getter:= AGetter;
   Inc(Instance.FCount);
 end;
+*)
 
 procedure InitInstance;
 begin
   Instance.FVTable:= @VTable;
+  Instance.FCapacity:= THashServer.TABLE_SIZE;
 //  Instance.FCount:= 0;
-  AddTableItem(MD5_LITERAL, @GetMD5Algorithm);
-  AddTableItem(SHA1_LITERAL, @GetSHA1Algorithm);
-  AddTableItem(SHA256_LITERAL, @GetSHA256Algorithm);
-  AddTableItem(SHA512_LITERAL, @GetSHA512Algorithm);
-  AddTableItem(SHA224_LITERAL, @GetSHA224Algorithm);
-  AddTableItem(SHA384_LITERAL, @GetSHA384Algorithm);
-  AddTableItem(CRC32_LITERAL, @GetCRC32Algorithm);
-  AddTableItem(JENKINS1_LITERAL, @GetJenkinsOneAlgorithm);
+
+  TAlgServer.AddTableItem(@Instance, MD5_LITERAL, @GetMD5Algorithm);
+  TAlgServer.AddTableItem(@Instance, SHA1_LITERAL, @GetSHA1Algorithm);
+  TAlgServer.AddTableItem(@Instance, SHA256_LITERAL, @GetSHA256Algorithm);
+  TAlgServer.AddTableItem(@Instance, SHA512_LITERAL, @GetSHA512Algorithm);
+  TAlgServer.AddTableItem(@Instance, SHA224_LITERAL, @GetSHA224Algorithm);
+  TAlgServer.AddTableItem(@Instance, SHA384_LITERAL, @GetSHA384Algorithm);
+  TAlgServer.AddTableItem(@Instance, CRC32_LITERAL, @GetCRC32Algorithm);
+  TAlgServer.AddTableItem(@Instance, JENKINS1_LITERAL, @GetJenkinsOneAlgorithm);
 end;
 
 function GetHashServer(var A: IHashServer): TF_RESULT;
@@ -126,50 +149,6 @@ begin
 end;
 
 { THashServer }
-
-class function THashServer.GetByName(Inst: PHashServer; AName: Pointer;
-        CharSize: Integer; var Alg: IHashAlgorithm): TF_RESULT;
-const
-  ANSI_a = Ord('a');
-
-var
-  I: Integer;
-  PItem, Sentinel: PAlgItem;
-  P1, P2: PByte;
-  Found: Boolean;
-  UP2: Byte;
-
-begin
-  PItem:= @Inst.FAlgTable;
-  Sentinel:= PItem;
-  Inc(Sentinel, Inst.FCount);
-  while PItem <> Sentinel do begin
-    P1:= @PItem.Name;
-    P2:= AName;
-    Found:= True;
-    I:= SizeOf(PItem.Name);
-    repeat
-      UP2:= P2^;
-      if UP2 >= ANSI_a then
-        UP2:= UP2 and not $20;  { upcase }
-      if P1^ <> UP2 then begin
-        Found:= False;
-        Break;
-      end;
-      if P1^ = 0 then Break;
-      Inc(P1);
-      Inc(P2, CharSize);
-      Dec(I);
-    until I = 0;
-    if Found then begin
-      Result:= THashGetter(PItem.Getter)(Alg);
-//      Result:= TF_S_OK;
-      Exit;
-    end;
-    Inc(PItem);
-  end;
-  Result:= TF_E_INVALIDARG;
-end;
 
 class function THashServer.PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
   Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
@@ -223,6 +202,57 @@ begin
   end;
 end;
 
+class function THashServer.GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
+                                   const HashAlg: IHashAlgorithm): TF_RESULT;
+begin
+  Result:= GetHMACAlgorithm(PHMACAlg(HMACAlg), HashAlg);
+end;
+
+(*
+class function THashServer.GetByName(Inst: PHashServer; AName: Pointer;
+        CharSize: Integer; var Alg: IHashAlgorithm): TF_RESULT;
+const
+  ANSI_a = Ord('a');
+
+var
+  I: Integer;
+  PItem, Sentinel: PAlgItem;
+  P1, P2: PByte;
+  Found: Boolean;
+  UP2: Byte;
+
+begin
+  PItem:= @Inst.FAlgTable;
+  Sentinel:= PItem;
+  Inc(Sentinel, Inst.FCount);
+  while PItem <> Sentinel do begin
+    P1:= @PItem.Name;
+    P2:= AName;
+    Found:= True;
+    I:= SizeOf(PItem.Name);
+    repeat
+      UP2:= P2^;
+      if UP2 >= ANSI_a then
+        UP2:= UP2 and not $20;  { upcase }
+      if P1^ <> UP2 then begin
+        Found:= False;
+        Break;
+      end;
+      if P1^ = 0 then Break;
+      Inc(P1);
+      Inc(P2, CharSize);
+      Dec(I);
+    until I = 0;
+    if Found then begin
+      Result:= THashGetter(PItem.Getter)(Alg);
+//      Result:= TF_S_OK;
+      Exit;
+    end;
+    Inc(PItem);
+  end;
+  Result:= TF_E_INVALIDARG;
+end;
+
 class function THashServer.GetByIndex(Inst: PHashServer; Index: Integer;
         var Alg: IHashAlgorithm): TF_RESULT;
 begin
@@ -235,12 +265,6 @@ end;
 class function THashServer.GetCount(Inst: PHashServer): Integer;
 begin
   Result:= Inst.FCount;
-end;
-
-class function THashServer.GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
-                                   const HashAlg: IHashAlgorithm): TF_RESULT;
-begin
-  Result:= GetHMACAlgorithm(PHMACAlg(HMACAlg), HashAlg);
 end;
 
 class function THashServer.GetName(Inst: PHashServer; Index: Integer;
@@ -275,6 +299,8 @@ begin
     end;
   end;
 end;
+*)
+
 {
 class function THashServer.RegisterHash(Inst: PHashServer; Name: Pointer;
   CharSize: Integer; Getter: THashGetter; var Index: Integer): TF_RESULT;

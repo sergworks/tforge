@@ -45,6 +45,7 @@ type
     FSubKeys:  TExpandedKey;
 
   public
+    class function Release(Inst: PDESAlgorithm): Integer; stdcall; static;
     class function ExpandKey(Inst: PDESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PDESAlgorithm): Integer;
@@ -72,7 +73,7 @@ const
   DESCipherVTable: array[0..11] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
-   @TtfRecord.Release,
+   @TDESAlgorithm.Release,
 
    @TBlockCipher.SetKeyParam,
    @TDESAlgorithm.ExpandKey,
@@ -94,10 +95,17 @@ begin
   FillChar(Inst.FValidKey, BurnSize, 0);
 end;
 
-function ReleaseDES(Inst: PDESAlgorithm): Integer; inline;
+class function TDESAlgorithm.Release(Inst: PDESAlgorithm): Integer;
 begin
-  BurnKey(Inst);
-  Result:= TtfRecord.Release(Inst);
+  if PtfRecord(Inst).FRefCount > 0 then begin
+    Result:= tfDecrement(PtfRecord(Inst).FRefCount);
+    if Result = 0 then begin
+      BurnKey(Inst);
+      FreeMem(Inst);
+    end;
+  end
+  else
+    Result:= PtfRecord(Inst).FRefCount;
 end;
 
 function GetDESAlgorithm(var A: PDESAlgorithm): TF_RESULT;
@@ -110,7 +118,7 @@ begin
     Tmp^.FRefCount:= 1;
 //    Tmp^.FMode:= TF_KEYMODE_CBC;
 //    Tmp^.FPadding:= TF_PADDING_DEFAULT;
-    if A <> nil then ReleaseDES(A);
+    if A <> nil then TDESAlgorithm.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
   except

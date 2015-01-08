@@ -35,6 +35,7 @@ type
 function tfIncrement(var Value: Integer): Integer;
 function tfDecrement(var Value: Integer): Integer;
 
+function ReleaseInstance(Inst: Pointer): Integer;
 function HashAlgRelease(Inst: Pointer): Integer; stdcall;
 
 implementation
@@ -109,6 +110,18 @@ begin
   end
   else
     Result:= PtfRecord(Inst).FRefCount;
+end;
+
+function ReleaseInstance(Inst: Pointer): Integer;
+type
+  TVTable = array[0..2] of Pointer;
+  PVTable = ^TVTable;
+  PPVTable = ^PVTable;
+
+  TRelease = function(Inst: Pointer): Integer; stdcall;
+
+begin
+  Result:= TRelease(PPVTable(Inst)^^[2])(Inst);
 end;
 
 // release with purging sensitive information for hash algorithms

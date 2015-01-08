@@ -875,12 +875,12 @@ var
 
 begin
 // not needed now after TByteVector.AllocVector(Tmp, 0) sets Tmp:= @ZeroVector;
-  if L = 0 then begin
-    if A <> nil then TtfRecord.Release(A);
-    A:= @ZeroVector;
-    Result:= TF_S_OK;
-    Exit;
-  end;
+//  if L = 0 then begin
+//    if A <> nil then TtfRecord.Release(A);
+//    A:= @ZeroVector;
+//    Result:= TF_S_OK;
+//    Exit;
+//  end;
   Result:= TByteVector.AllocVector(Tmp, L);
   if Result = TF_S_OK then begin
     Move(P^, Tmp.FData, L);

@@ -34,6 +34,7 @@ contains
   tfCiphers in '..\..\Source\TCiphers\Client\tfCiphers.pas',
   tfBlockCiphers in '..\..\Source\TCiphers\Engine\tfBlockCiphers.pas',
   tfCipherServ in '..\..\Source\TCiphers\Engine\tfCipherServ.pas',
-  tfDES in '..\..\Source\TCiphers\Engine\tfDES.pas';
+  tfDES in '..\..\Source\TCiphers\Engine\tfDES.pas',
+  tfRC5 in '..\..\Source\TCiphers\Engine\tfRC5.pas';
 
 end.
