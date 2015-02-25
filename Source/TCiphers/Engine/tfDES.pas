@@ -60,9 +60,11 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
+function GetDESAlgorithm(var A: PDESAlgorithm): TF_RESULT;
+
 implementation
 
-uses tfRecords, tfBlockCiphers;
+uses tfRecords, tfBaseCiphers;
 
 const
   DES_BLOCK_SIZE = 8;  // 8 bytes = 64 bits
@@ -70,7 +72,7 @@ const
 { TDESCipher }
 
 const
-  DESCipherVTable: array[0..11] of Pointer = (
+  DESCipherVTable: array[0..12] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TDESAlgorithm.Release,
@@ -83,7 +85,8 @@ const
    @TBlockCipher.Encrypt,
    @TBlockCipher.Decrypt,
    @TDESAlgorithm.EncryptBlock,
-   @TDESAlgorithm.EncryptBlock
+   @TDESAlgorithm.EncryptBlock,
+   @TBlockCipher.GetSequence
    );
 
 procedure BurnKey(Inst: PDESAlgorithm); inline;
@@ -154,7 +157,7 @@ begin
     Exit;
   end;
 
-  if (Inst.FDir <> TF_KEYDIR_ENCRYPT) or (Inst.FDir <> TF_KEYDIR_ENCRYPT) then begin
+  if (Inst.FDir <> TF_KEYDIR_ENCRYPT) and (Inst.FDir <> TF_KEYDIR_DECRYPT) then begin
     Result:= TF_E_STATE;
     Exit;
   end;

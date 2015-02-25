@@ -65,10 +65,54 @@ type
     class function Hash(const Data; DataSize: Cardinal): LongWord; static;
   end;
 
-// todo: remove
-//function JenkinsOneHash(const Data; Len: Cardinal): Integer;
+type
+  TBigEndian = record
+    class procedure Incr(First: Pointer; Count: Cardinal); overload; static;
+    class procedure Incr(First: Pointer; Count: Cardinal; Value: Byte); overload; static;
+    class procedure Decr(First: Pointer; Count: Cardinal); overload; static;
+    class procedure Decr(First: Pointer; Count: Cardinal; Value: Byte); overload; static;
+  end;
+
+procedure ReverseCopy(First, Last, Output: Pointer); overload;
+procedure ReverseCopy(First: Pointer; Count: Cardinal; Output: Pointer); overload;
+procedure ReverseBytes(First, Last: Pointer); overload;
+procedure ReverseBytes(First: Pointer; Count: Cardinal); overload;
 
 implementation
+
+procedure ReverseCopy(First, Last, Output: Pointer);
+begin
+  while First <> Last do begin
+    Dec(PByte(Last));
+    PByte(Output)^:= PByte(Last)^;
+    Inc(PByte(Output));
+  end;
+end;
+
+procedure ReverseCopy(First: Pointer; Count: Cardinal; Output: Pointer);
+begin
+  ReverseCopy(First, PByte(First) + Count, Output);
+end;
+
+procedure ReverseBytes(First, Last: Pointer);
+var
+  Tmp: Byte;
+
+begin
+  while First <> Last do begin
+    Dec(PByte(Last));
+    if First = Last then Break;
+    Tmp:= PByte(Last)^;
+    PByte(Last)^:= PByte(First)^;
+    PByte(First)^:= Tmp;
+    Inc(PByte(First));
+  end;
+end;
+
+procedure ReverseBytes(First: Pointer; Count: Cardinal);
+begin
+  ReverseBytes(First, PByte(First) + Count);
+end;
 
 { TCRC32 }
 
@@ -182,5 +226,62 @@ begin
   Result:= Result + (Result shl 15);
 end;
 *)
+
+{ TBigEndian }
+
+class procedure TBigEndian.Incr(First: Pointer; Count: Cardinal);
+begin
+  Inc(PByte(First), Count);
+  while Count > 0 do begin
+    Dec(PByte(First));
+    Inc(PByte(First)^);
+    if PByte(First)^ <> 0 then Break;
+    Dec(Count);
+  end;
+end;
+
+class procedure TBigEndian.Decr(First: Pointer; Count: Cardinal);
+begin
+  Inc(PByte(First), Count);
+  while Count > 0 do begin
+    Dec(PByte(First));
+    Dec(PByte(First)^);
+    if PByte(First)^ <> $FF then Break;
+    Dec(Count);
+  end;
+end;
+
+
+class procedure TBigEndian.Incr(First: Pointer; Count: Cardinal; Value: Byte);
+var
+  Tmp1, Tmp2: Byte;
+
+begin
+  Inc(PByte(First), Count);
+  while Count > 0 do begin
+    Dec(PByte(First));
+    Tmp1:= PByte(First)^;
+    Tmp2:= Tmp1 + Value;
+    PByte(First)^:= Tmp2;
+    if Tmp2 >= Tmp1 then Break;
+    Dec(Count);
+  end;
+end;
+
+class procedure TBigEndian.Decr(First: Pointer; Count: Cardinal; Value: Byte);
+var
+  Tmp1, Tmp2: Byte;
+
+begin
+  Inc(PByte(First), Count);
+  while Count > 0 do begin
+    Dec(PByte(First));
+    Tmp1:= PByte(First)^;
+    Tmp2:= Tmp1 - Value;
+    PByte(First)^:= Tmp2;
+    if Tmp2 <= Tmp1 then Break;
+    Dec(Count);
+  end;
+end;
 
 end.

@@ -32,9 +32,11 @@ requires
 contains
   tfAES in '..\..\Source\TCiphers\Engine\tfAES.pas',
   tfCiphers in '..\..\Source\TCiphers\Client\tfCiphers.pas',
-  tfBlockCiphers in '..\..\Source\TCiphers\Engine\tfBlockCiphers.pas',
+  tfBaseCiphers in '..\..\Source\TCiphers\Engine\tfBaseCiphers.pas',
   tfCipherServ in '..\..\Source\TCiphers\Engine\tfCipherServ.pas',
   tfDES in '..\..\Source\TCiphers\Engine\tfDES.pas',
-  tfRC5 in '..\..\Source\TCiphers\Engine\tfRC5.pas';
+  tfRC5 in '..\..\Source\TCiphers\Engine\tfRC5.pas',
+  tfRC4 in '..\..\Source\TCiphers\Engine\tfRC4.pas',
+  tfSalsa20 in '..\..\Source\TCiphers\Engine\tfSalsa20.pas';
 
 end.

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfByteVectors;
@@ -141,6 +141,10 @@ function ByteVectorFromPByte(var A: PByteVector; P: PByte; L: Cardinal): TF_RESU
 
 function ByteVectorFromPCharHex(var A: PByteVector; P: PByte;
                                 L: Cardinal; CharSize: Cardinal): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+function ByteVectorFromPCharHexEx(var A: PByteVector; P: PByte;
+         L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function ByteVectorFromByte(var A: PByteVector; Value: Byte): TF_RESULT;
@@ -962,6 +966,67 @@ begin
       Inc(P, CharSize);
       Dec(L);
     until L = 0;
+    if A <> nil then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+function ByteVectorFromPCharHexEx(var A: PByteVector; P: PByte;
+         L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
+var
+  Tmp: PByteVector;
+  B, Nibble: Byte;
+  PA: PByte;
+  Cnt: Integer;
+
+begin
+  if L = 0 then begin
+    if A <> nil then TtfRecord.Release(A);
+    A:= @ZeroVector;
+    Result:= TF_S_OK;
+    Exit;
+  end;
+
+//  L:= L shr 1;
+  Result:= TByteVector.AllocVector(Tmp, L shr 1);
+
+  if Result = TF_S_OK then begin
+//    Tmp.FUsed:= L;
+    PA:= @Tmp.FData;
+    Cnt:= 0;
+    repeat
+      while ((P^ = $20) or (P^ = Delimiter)) and (L > 0) do begin
+        Inc(P, CharSize);
+        Dec(L);
+      end;
+      if L > 0 then begin
+        B:= P^;
+        if not GetNibble(B) then begin
+          TtfRecord.Release(Tmp);
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+        Inc(P, CharSize);
+        Dec(L);
+        if L = 0 then begin
+          TtfRecord.Release(Tmp);
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+        Nibble:= P^;
+        if not GetNibble(Nibble) then begin
+          TtfRecord.Release(Tmp);
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+        PA^:= B shl 4 + Nibble;
+        Inc(Cnt);
+        Inc(PA);
+        Inc(P, CharSize);
+        Dec(L);
+      end;
+    until L = 0;
+    Tmp.FUsed:= Cnt;
     if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;

@@ -74,13 +74,13 @@ function GetAESAlgorithm(var A: PAESAlgorithm): TF_RESULT;
 
 implementation
 
-uses tfRecords, tfBlockCiphers;
+uses tfRecords, tfBaseCiphers;
 
 const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  AESCipherVTable: array[0..11] of Pointer = (
+  AESCipherVTable: array[0..12] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TAESAlgorithm.Release,
@@ -93,7 +93,8 @@ const
    @TBlockCipher.Encrypt,
    @TBlockCipher.Decrypt,
    @TAESAlgorithm.EncryptBlock,
-   @TAESAlgorithm.DecryptBlock
+   @TAESAlgorithm.DecryptBlock,
+   @TBlockCipher.GetSequence
    );
 
 procedure BurnKey(Inst: PAESAlgorithm); inline;

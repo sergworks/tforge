@@ -73,25 +73,6 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DecryptBlock128(Inst: PRC5Algorithm; Data: PByte);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-{
-  private
-
-    FKey: array[0..255] of Byte;
-    FKeyLength: Cardinal;         // 0..255
-    FSubKeys: PLongWord;          // (2 * Rounds + 2)
-    FEncryption: Boolean;
-    procedure FreeKeys;
-    procedure DecryptBlock(P: Pointer);
-    procedure EncryptBlock(P: Pointer);
-  protected
-    procedure ExpandKey(Encryption: Boolean); override;
-    procedure UpdateBlock(Data: PByte); override;
-    function ImportKey(AKey: PByte; AKeySize: LongWord;
-             Algorithm: LongWord): Boolean; stdcall;
-  public
-    constructor Create;
-    destructor Destroy; override;
-}
   end;
 
 function GetRC5Algorithm(var A: PRC5Algorithm): TF_RESULT;
@@ -99,13 +80,13 @@ function GetRC5AlgorithmEx(var A: PRC5Algorithm; BlockSize, Rounds: Integer): TF
 
 implementation
 
-uses tfRecords, tfBlockCiphers;
+uses tfRecords, tfBaseCiphers;
 
 const
   MAX_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  RC5VTable32: array[0..11] of Pointer = (
+  RC5VTable32: array[0..12] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TRC5Algorithm.Release,
@@ -118,10 +99,11 @@ const
    @TBlockCipher.Encrypt,
    @TBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock32,
-   @TRC5Algorithm.DecryptBlock32
+   @TRC5Algorithm.DecryptBlock32,
+   @TBlockCipher.GetSequence
    );
 
-  RC5VTable64: array[0..11] of Pointer = (
+  RC5VTable64: array[0..12] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TRC5Algorithm.Release,
@@ -134,10 +116,11 @@ const
    @TBlockCipher.Encrypt,
    @TBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock64,
-   @TRC5Algorithm.DecryptBlock64
+   @TRC5Algorithm.DecryptBlock64,
+   @TBlockCipher.GetSequence
    );
 
-  RC5VTable128: array[0..11] of Pointer = (
+  RC5VTable128: array[0..12] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TRC5Algorithm.Release,
@@ -150,7 +133,8 @@ const
    @TBlockCipher.Encrypt,
    @TBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock128,
-   @TRC5Algorithm.DecryptBlock128
+   @TRC5Algorithm.DecryptBlock128,
+   @TBlockCipher.GetSequence
    );
 
 procedure BurnKey(Inst: PRC5Algorithm); inline;
@@ -197,8 +181,8 @@ end;
 function GetRC5Algorithm(var A: PRC5Algorithm): TF_RESULT;
 begin
   Result:= GetRC5AlgorithmEx(A,   // "standard" RC5:
-                             8,   //   64-bit block (8 bytes)
-                            12    //   12 rounds
+                             64,  //   64-bit block (8 bytes)
+                             12   //   12 rounds
                               );
 end;
 
@@ -208,7 +192,7 @@ var
 
 begin
   if ((BlockSize <> 32) and (BlockSize <> 64) and (BlockSize <> 128))
-       or (Cardinal(Rounds) > 255)
+       or (Rounds < 1) or (Rounds > 255)
     then begin
       Result:= TF_E_INVALIDARG;
       Exit;
@@ -234,19 +218,6 @@ begin
     Result:= TF_E_OUTOFMEMORY;
   end;
 end;
-
-(*
-class procedure TRC5Algorithm.AllocKey(Inst: PRC5Algorithm; ABlockSize, ARounds: Integer);
-begin
-  if Inst.FSubKeys <> nil then begin
-    FillChar(Inst.FSubKeys^, (Inst.FRounds + 1) * Inst.FBlockSize, 0);
-    FreeMem(Inst.FSubKeys);
-  end;
-  GetMem(Inst.FSubKeys, (ARounds + 1) * ABlockSize);
-  FBlockSize:= ABlockSize;
-  FRounds:= ARounds;
-end;
-*)
 
 class procedure TRC5Algorithm.DestroyKey(Inst: PRC5Algorithm);
 begin

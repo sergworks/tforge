@@ -19,6 +19,9 @@ type
     class var FServer: ICipherServer;
   private
     FAlgorithm: ICipherAlgorithm;
+    procedure SetFlagsProc(const Value: LongWord);
+    procedure SetIVProc(const Value: ByteArray);
+    procedure SetNonceProc(const Value: ByteArray);
   public
     class function Create(const Alg: ICipherAlgorithm): TCipher; static;
     procedure Free;
@@ -28,6 +31,11 @@ type
 
     function SetIV(AIV: Pointer; AIVLen: LongWord): TCipher; overload;
     function SetIV(const AIV: ByteArray): TCipher; overload;
+
+    function SetNonce(const Value: ByteArray): TCipher; overload;
+    function SetNonce(const Value: UInt64): TCipher; overload;
+    function SetPos(const Value: ByteArray): TCipher; overload;
+    function SetPos(const Value: UInt64): TCipher; overload;
 
     function ExpandKey(AKey: PByte; AKeyLen: LongWord): TCipher; overload;
     function ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord): TCipher; overload;
@@ -46,6 +54,9 @@ type
     procedure Decrypt(var Data; var DataSize: LongWord;
                       Last: Boolean); overload;
 
+    procedure GetSequence(var Data; DataSize: LongWord);
+    function Sequence(DataSize: LongWord): ByteArray;
+
     function EncryptBlock(const Data, Key: ByteArray): ByteArray;
     function DecryptBlock(const Data, Key: ByteArray): ByteArray;
 
@@ -53,6 +64,13 @@ type
     function DecryptData(const Data: ByteArray): ByteArray;
 
     class function AES: TCipher; static;
+    class function DES: TCipher; static;
+    class function RC5: TCipher; overload; static;
+    class function RC5(BlockSize, Rounds: LongWord): TCipher; overload; static;
+    class function RC4: TCipher; static;
+    class function Salsa20: TCipher; overload; static;
+    class function Salsa20(Rounds: LongWord): TCipher; overload; static;
+
     function Copy: TCipher;
 
     class operator Explicit(const Name: string): TCipher;
@@ -62,6 +80,11 @@ type
     class function Count: Integer; static;
 
     property Algorithm: ICipherAlgorithm read FAlgorithm;
+
+    property Flags: LongWord write SetFlagsProc;
+    property IV: ByteArray write SetIVProc;
+    property Nonce: ByteArray write SetNonceProc;
+//    property Position: ByteArray write SetPosProc;
   end;
 
 type
@@ -92,6 +115,17 @@ begin
   FAlgorithm:= nil;
 end;
 
+procedure TCipher.GetSequence(var Data; DataSize: LongWord);
+begin
+  HResCheck(FAlgorithm.GetSequence(@Data, DataSize));
+end;
+
+function TCipher.Sequence(DataSize: LongWord): ByteArray;
+begin
+  Result:= ByteArray.Allocate(DataSize);
+  GetSequence(Result.RawData^, DataSize);
+end;
+
 function TCipher.IsAssigned: Boolean;
 begin
   Result:= FAlgorithm <> nil;
@@ -100,6 +134,26 @@ end;
 class function TCipher.AES: TCipher;
 begin
   HResCheck(FServer.GetByAlgID(TF_ALG_AES, Result.FAlgorithm));
+end;
+
+class function TCipher.DES: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_DES, Result.FAlgorithm));
+end;
+
+class function TCipher.RC5: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_RC5, Result.FAlgorithm));
+end;
+
+class function TCipher.RC4: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_RC4, Result.FAlgorithm));
+end;
+
+class function TCipher.RC5(BlockSize, Rounds: LongWord): TCipher;
+begin
+  HResCheck(FServer.GetRC5(BlockSize, Rounds, Result.FAlgorithm));
 end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen, AFlags: LongWord;
@@ -258,10 +312,25 @@ begin
   end;
 end;
 
+class function TCipher.Salsa20: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_SALSA20, Result.FAlgorithm));
+end;
+
+class function TCipher.Salsa20(Rounds: LongWord): TCipher;
+begin
+  HResCheck(FServer.GetSalsa20(Rounds, Result.FAlgorithm));
+end;
+
 function TCipher.SetFlags(AFlags: LongWord): TCipher;
 begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
   Result:= Self;
+end;
+
+procedure TCipher.SetFlagsProc(const Value: LongWord);
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @Value, SizeOf(Value)));
 end;
 
 function TCipher.SetIV(AIV: Pointer; AIVLen: LongWord): TCipher;
@@ -273,6 +342,40 @@ end;
 function TCipher.SetIV(const AIV: ByteArray): TCipher;
 begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
+  Result:= Self;
+end;
+
+procedure TCipher.SetIVProc(const Value: ByteArray);
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_IV, Value.RawData, Value.Len));
+end;
+
+function TCipher.SetNonce(const Value: ByteArray): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE, Value.RawData, Value.Len));
+  Result:= Self;
+end;
+
+function TCipher.SetNonce(const Value: UInt64): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE_LE, @Value, SizeOf(Value)));
+  Result:= Self;
+end;
+
+procedure TCipher.SetNonceProc(const Value: ByteArray);
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE, Value.RawData, Value.Len));
+end;
+
+function TCipher.SetPos(const Value: ByteArray): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_POS, Value.RawData, Value.Len));
+  Result:= Self;
+end;
+
+function TCipher.SetPos(const Value: UInt64): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_POS_LE, @Value, SizeOf(Value)));
   Result:= Self;
 end;
 

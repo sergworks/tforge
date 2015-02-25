@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfBytes;
@@ -28,6 +28,7 @@ type
 
     function GetLen: Integer;
     procedure SetLen(Value: Integer);
+    procedure SetInstanceLen(Value: Integer);
     function GetRawData: PByte;
 
     class function Allocate(ASize: Cardinal): ByteArray; overload; static;
@@ -35,7 +36,8 @@ type
     procedure ReAllocate(ASize: Cardinal);
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
-    class function ParseHex(const S: string): ByteArray; static;
+    class function ParseHex(const S: string): ByteArray; overload; static;
+    class function ParseHex(const S: string; Delimiter: Char): ByteArray; overload; static;
     class function TryParseHex(const S: string; var R: ByteArray): Boolean; static;
     class function ParseBitString(const S: string; ABitLen: Integer): ByteArray; static;
 
@@ -79,7 +81,10 @@ type
     class operator Explicit(const Value: ByteArray): LongWord;
     class operator Explicit(const Value: ByteArray): UInt64;
 
-    class operator Explicit(const Value: Byte): ByteArray;
+    class operator Implicit(const Value: Byte): ByteArray;
+    class operator Implicit(const Value: Word): ByteArray;
+    class operator Implicit(const Value: LongWord): ByteArray;
+    class operator Implicit(const Value: UInt64): ByteArray;
 
     class operator Implicit(const Value: ByteArray): TBytes;
     class operator Implicit(const Value: TBytes): ByteArray;
@@ -106,6 +111,7 @@ type
     class operator BitwiseOr(const A, B: ByteArray): ByteArray;
     class operator BitwiseXor(const A, B: ByteArray): ByteArray;
 
+    property InstanceLen: Integer read GetLen write SetInstanceLen;
     property Len: Integer read GetLen write SetLen;
     property RawData: PByte read GetRawData;
 
@@ -200,17 +206,19 @@ end;
 
 procedure ByteArray.SetLen(Value: Integer);
 begin
-(*
-{$IFDEF TFL_INTFCALL}
-  HResCheck(FBytes.SetLen(Value));
-{$ELSE}
-  HResCheck(TByteVector.SetLen(PByteVector(FBytes), Value));
-{$ENDIF}
-*)
 {$IFDEF TFL_DLL}
   HResCheck(ByteVectorSetLen(FBytes, Value));
 {$ELSE}
   HResCheck(ByteVectorSetLen(PByteVector(FBytes), Value));
+{$ENDIF}
+end;
+
+procedure ByteArray.SetInstanceLen(Value: Integer);
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.SetLen(Value));
+{$ELSE}
+  HResCheck(TByteVector.SetLen(PByteVector(FBytes), Value));
 {$ENDIF}
 end;
 
@@ -283,6 +291,17 @@ begin
 {$ELSE}
   HResCheck(ByteVectorFromPCharHex(PByteVector(Result.FBytes),
                                    Pointer(S), Length(S), SizeOf(Char)));
+{$ENDIF}
+end;
+
+class function ByteArray.ParseHex(const S: string; Delimiter: Char): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPCharHexEx(Result.FBytes, Pointer(S), Length(S),
+            SizeOf(Char), Byte(Delimiter)));
+{$ELSE}
+  HResCheck(ByteVectorFromPCharHexEx(PByteVector(Result.FBytes),
+            Pointer(S), Length(S), SizeOf(Char), Byte(Delimiter)));
 {$ENDIF}
 end;
 
@@ -510,9 +529,13 @@ end;
 
 {$WARNINGS OFF}
 class operator ByteArray.Explicit(const Value: ByteArray): Byte;
+var
+  L: Integer;
+
 begin
-  if Value.GetLen = 1 then
-    Result:= PByte(Value.GetRawData)^
+  L:= Value.GetLen;
+  if L >= 1 then
+    Result:= PByte(Value.GetRawData)[L-1]
   else
     ByteArrayError(TF_E_INVALIDARG);
 end;
@@ -529,10 +552,10 @@ begin
     Result:= 0;
     WordRec(Result).Lo:= PByte(Value.GetRawData)^;
   end
-  else if L = 2 then begin
+  else if L >= 2 then begin
     P:= Value.GetRawData;
-    WordRec(Result).Lo:= P[1];
-    WordRec(Result).Hi:= P[0];
+    WordRec(Result).Lo:= P[L-1];
+    WordRec(Result).Hi:= P[L-2];
   end
   else
     ByteArrayError(TF_E_INVALIDARG);
@@ -545,10 +568,11 @@ var
 
 begin
   L:= Value.GetLen;
-  if (L > 0) and (L <= SizeOf(LongWord)) then begin
+  if (L > 0) then begin
     Result:= 0;
     P:= Value.GetRawData;
     Inc(P, L);
+    if (L > SizeOf(LongWord)) then L:= SizeOf(LongWord);
     PR:= @Result;
     repeat
       Dec(P);
@@ -568,10 +592,11 @@ var
 
 begin
   L:= Value.GetLen;
-  if (L > 0) and (L <= SizeOf(UInt64)) then begin
+  if (L > 0) then begin
     Result:= 0;
     P:= Value.GetRawData;
     Inc(P, L);
+    if (L > SizeOf(UInt64)) then L:= SizeOf(UInt64);
     PR:= @Result;
     repeat
       Dec(P);
@@ -584,13 +609,79 @@ begin
     ByteArrayError(TF_E_INVALIDARG);
 end;
 
-class operator ByteArray.Explicit(const Value: Byte): ByteArray;
+class operator ByteArray.Implicit(const Value: Byte): ByteArray;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(ByteVectorFromByte(Result.FBytes, Value));
 {$ELSE}
   HResCheck(ByteVectorFromByte(PByteVector(Result.FBytes), Value));
 {$ENDIF}
+end;
+
+class operator ByteArray.Implicit(const Value: Word): ByteArray;
+var
+  P: PByte;
+
+begin
+  if Value >= 256 then begin
+    Result:= ByteArray.Allocate(SizeOf(Word));
+    P:= Result.RawData;
+    P[0]:= WordRec(Value).Hi;
+    P[1]:= WordRec(Value).Lo;
+  end
+  else begin
+    Result:= ByteArray.Allocate(SizeOf(Byte));
+    P:= Result.RawData;
+    P[0]:= WordRec(Value).Lo;
+  end;
+end;
+
+class operator ByteArray.Implicit(const Value: LongWord): ByteArray;
+var
+  P, P1: PByte;
+  L: Integer;
+
+begin
+  L:= SizeOf(LongWord);
+  P1:= @Value;
+  Inc(P1, SizeOf(LongWord) - 1);
+  while (P1^ = 0) do begin
+    Dec(L);
+    Dec(P1);
+    if L = 1 then Break;
+  end;
+  Result:= ByteArray.Allocate(L);
+  P:= Result.RawData;
+  repeat
+    P^:= P1^;
+    Inc(P);
+    Dec(P1);
+    Dec(L);
+  until L = 0;
+end;
+
+class operator ByteArray.Implicit(const Value: UInt64): ByteArray;
+var
+  P, P1: PByte;
+  L: Integer;
+
+begin
+  L:= SizeOf(UInt64);
+  P1:= @Value;
+  Inc(P1, SizeOf(UInt64) - 1);
+  while (P1^ = 0) do begin
+    Dec(L);
+    Dec(P1);
+    if L = 1 then Break;
+  end;
+  Result:= ByteArray.Allocate(L);
+  P:= Result.RawData;
+  repeat
+    P^:= P1^;
+    Inc(P);
+    Dec(P1);
+    Dec(L);
+  until L = 0;
 end;
 
 function ByteArray.ToHex: string;

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfCipherServ;
@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
-     tfAES, tfRC5;
+     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20;
 
 function GetCipherServer(var A: ICipherServer): TF_RESULT;
 
@@ -31,7 +31,10 @@ type
     class function GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function RC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
+    class function GetRC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
+          var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetSalsa20(Inst: PCipherServer; Rounds: LongInt;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
@@ -40,35 +43,46 @@ class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
                     var Alg: ICipherAlgorithm): TF_RESULT;
 begin
   case AlgID of
+// block ciphers
     TF_ALG_AES: Result:= GetAESAlgorithm(PAESAlgorithm(Alg));
+    TF_ALG_DES: Result:= GetDESAlgorithm(PDESAlgorithm(Alg));
     TF_ALG_RC5: Result:= GetRC5Algorithm(PRC5Algorithm(Alg));
   else
     case AlgID of
-      TF_ALG_CRC32: Result:= TF_E_INVALIDARG;
+// stream ciphers
+      TF_ALG_RC4: Result:= GetRC4Algorithm(PRC4Algorithm(Alg));
+      TF_ALG_SALSA20: Result:= GetSalsa20Algorithm(PSalsa20(Alg));
     else
       Result:= TF_E_INVALIDARG;
     end;
   end;
 end;
 
-class function TCipherServer.RC5(Inst: PCipherServer; BlockSize,
+class function TCipherServer.GetRC5(Inst: PCipherServer; BlockSize,
                Rounds: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
 begin
   Result:= GetRC5AlgorithmEx(PRC5Algorithm(Alg), BlockSize, Rounds);
 end;
 
+class function TCipherServer.GetSalsa20(Inst: PCipherServer; Rounds: Integer;
+  var Alg: ICipherAlgorithm): TF_RESULT;
+begin
+  Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
+end;
+
 const
-  VTable: array[0..7] of Pointer = (
+  VTable: array[0..9] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfSingleton.Addref,
     @TtfSingleton.Release,
 
     @TCipherServer.GetByAlgID,
-//    @GetByAlgID,
     @TAlgServer.GetByName,
     @TAlgServer.GetByIndex,
     @TAlgServer.GetName,
-    @TAlgServer.GetCount
+    @TAlgServer.GetCount,
+    @TCipherServer.GetRC5,
+    @TCipherServer.GetSalsa20
   );
 
 var
@@ -76,22 +90,10 @@ var
 
 const
   AES_LITERAL: UTF8String = 'AES';
-{
-procedure AddTableItem(const AName: RawByteString; AGetter: Pointer);
-var
-  P: PAlgItem;
-  L: Integer;
-
-begin
-  P:= @Instance.FAlgTable[Instance.FCount];
-  FillChar(P^.Name, SizeOf(P^.Name), 0);
-  L:= Length(AName);
-  if L > SizeOf(P^.Name) then L:= SizeOf(P^.Name);
-  Move(Pointer(AName)^, P^.Name, L);
-  P^.Getter:= AGetter;
-  Inc(Instance.FCount);
-end;
-}
+  DES_LITERAL: UTF8String = 'DES';
+  RC5_LITERAL: UTF8String = 'RC5';
+  RC4_LITERAL: UTF8String = 'RC4';
+  SALSA20_LITERAL: UTF8String = 'SALSA20';
 
 procedure InitInstance;
 begin
@@ -99,6 +101,10 @@ begin
   Instance.FCapacity:= TCipherServer.TABLE_SIZE;
 //  Instance.FCount:= 0;
   TAlgServer.AddTableItem(@Instance, AES_LITERAL, @GetAESAlgorithm);
+  TAlgServer.AddTableItem(@Instance, DES_LITERAL, @GetDESAlgorithm);
+  TAlgServer.AddTableItem(@Instance, RC5_LITERAL, @GetRC5Algorithm);
+  TAlgServer.AddTableItem(@Instance, RC4_LITERAL, @GetRC4Algorithm);
+  TAlgServer.AddTableItem(@Instance, SALSA20_LITERAL, @GetSalsa20Algorithm);
 end;
 
 function GetCipherServer(var A: ICipherServer): TF_RESULT;

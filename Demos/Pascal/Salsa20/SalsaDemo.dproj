@@ -1,12 +1,12 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{0F3DD8AD-B719-4E23-9D11-A0DD74129EA3}</ProjectGuid>
-			<MainSource>TCiphers.dpk</MainSource>
+			<ProjectGuid>{DCDA4862-84C3-4F08-8402-D31FFEC362C6}</ProjectGuid>
 			<ProjectVersion>12.3</ProjectVersion>
+			<MainSource>SalsaDemo.dpr</MainSource>
 			<Base>True</Base>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<Platform>Win32</Platform>
-			<AppType>Package</AppType>
+			<AppType>Console</AppType>
 			<FrameworkType>None</FrameworkType>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 		</PropertyGroup>
@@ -24,20 +24,11 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_UnitSearchPath>C:\Projects\TForge\tforge\Source\Include;$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
-			<DCC_DcpOutput>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform)</DCC_DcpOutput>
-			<GenPackage>true</GenPackage>
-			<DCC_DcuOutput>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform)</DCC_DcuOutput>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
+			<DCC_DcuOutput>.\$(Config)\$(Platform)</DCC_DcuOutput>
+			<DCC_UnitSearchPath>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
-			<DCC_CBuilderOutput>All</DCC_CBuilderOutput>
-			<DCC_E>false</DCC_E>
-			<DCC_S>false</DCC_S>
-			<GenDll>true</GenDll>
-			<DCC_N>false</DCC_N>
-			<DCC_F>false</DCC_F>
-			<DCC_K>false</DCC_K>
+			<DCC_ExeOutput>.\$(Config)\$(Platform)</DCC_ExeOutput>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -51,19 +42,9 @@
 			<DCC_DebugInformation>false</DCC_DebugInformation>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="TCiphers.dpk">
+			<DelphiCompile Include="SalsaDemo.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="rtl.dcp"/>
-			<DCCReference Include="TForge.dcp"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfAES.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Client\tfCiphers.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfBaseCiphers.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfCipherServ.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfDES.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfRC5.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfRC4.pas"/>
-			<DCCReference Include="..\..\Source\TCiphers\Engine\tfSalsa20.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
@@ -80,14 +61,11 @@
 		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 		<ProjectExtensions>
 			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
-			<Borland.ProjectType>Package</Borland.ProjectType>
+			<Borland.ProjectType/>
 			<BorlandProject>
 				<Delphi.Personality>
-					<Source>
-						<Source Name="MainSource">TCiphers.dpk</Source>
-					</Source>
 					<VersionInfo>
-						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">False</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">0</VersionInfo>
@@ -113,12 +91,9 @@
 						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
-					<Excluded_Packages>
-						<Excluded_Packages Name="$(BDSBIN)\bcboffice2k150.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
-						<Excluded_Packages Name="$(BDSBIN)\bcbofficexp150.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
-						<Excluded_Packages Name="$(BDSBIN)\dcloffice2k150.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-						<Excluded_Packages Name="$(BDSBIN)\dclofficexp150.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
-					</Excluded_Packages>
+					<Source>
+						<Source Name="MainSource">SalsaDemo.dpr</Source>
+					</Source>
 				</Delphi.Personality>
 				<Platforms>
 					<Platform value="Win32">True</Platform>

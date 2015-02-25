@@ -1,13 +1,13 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 { NB: it is OK to pass a zero-length last block to encryption routine,
       but it is not Ok to pass it to decryption roitine if padding is used
 }
 
-unit tfBlockCiphers;
+unit tfBaseCiphers;
 
 interface
 
@@ -61,9 +61,34 @@ type
     class function Decrypt(Inst: Pointer; Data: PByte; var DataSize: LongWord;
       Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetSequence(Inst: Pointer; Data: PByte; DataSize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+  end;
+
+type
+  PStreamCipher = ^TStreamCipher;
+  TStreamCipher = record
+  private
+    FVTable:   Pointer;
+    FRefCount: Integer;
+
+    FValidKey: LongBool;
+
+  public
+    class function SetKeyParam(Inst: Pointer; Param: LongWord; Data: Pointer;
+          DataLen: LongWord): TF_RESULT;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetBlockSize(Inst: Pointer): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure EncryptBlock(Inst: Pointer; Data: PByte);
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure DecryptBlock(Inst: Pointer; Data: PByte);
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 implementation
+
+{ TBlockCipher }
 
 type
   TVTable = array[0..11] of Pointer;
@@ -238,6 +263,55 @@ begin
         EncryptBlock(@Self, Data);
       end;
     end;
+  end;
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipher.GetSequence(Inst: Pointer; Data: PByte;
+  DataSize: LongWord): TF_RESULT;
+
+var
+  EncryptBlock: TBlockProc;
+  Block: TBlock;
+  LBlockSize, LL, Cnt: Cardinal;
+
+begin
+  @EncryptBlock:= GetEncryptProc(Inst);
+  LBlockSize:= GetBlockSize(Inst);
+  if LBlockSize > SizeOf(Block) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+  while DataSize > 0 do begin
+    LL:= LBlockSize;
+    if LL > DataSize then begin
+      LL:= DataSize;
+      if Data <> nil then begin
+        Move(PBlockCipher(Inst).FIVector, Block, LBlockSize);
+        EncryptBlock(Inst, @Block);
+        Move(Block, Data^, LL);
+        FillChar(Block, LBlockSize, 0);
+      end;
+    end
+    else begin
+      if Data <> nil then begin
+        Move(PBlockCipher(Inst).FIVector, Data^, LBlockSize);
+        EncryptBlock(Inst, Data);
+      end;
+    end;
+
+// Inc IV
+    Cnt:= LBlockSize - 1;
+    Inc(PBlockCipher(Inst).FIVector[Cnt]);
+    if PBlockCipher(Inst).FIVector[Cnt] = 0 then begin
+      repeat
+        Dec(Cnt);
+        Inc(PBlockCipher(Inst).FIVector[Cnt]);
+      until (PBlockCipher(Inst).FIVector[Cnt] <> 0) or (Cnt = 0);
+    end;
+
+    if Data <> nil then Inc(Data, LL);
+    Dec(DataSize, LL);
   end;
   Result:= TF_S_OK;
 end;
@@ -936,6 +1010,29 @@ begin
     end;
   end;
   Result:= TF_S_OK;
+end;
+
+{ TStreamCipher }
+
+class function TStreamCipher.SetKeyParam(Inst: Pointer; Param: LongWord;
+  Data: Pointer; DataLen: LongWord): TF_RESULT;
+begin
+  Result:= TF_E_NOTIMPL;
+end;
+
+class function TStreamCipher.GetBlockSize(Inst: Pointer): Integer;
+begin
+  Result:= 0;
+end;
+
+class procedure TStreamCipher.EncryptBlock(Inst: Pointer; Data: PByte);
+begin
+{ stub - not applicable for stream ciphers};
+end;
+
+class procedure TStreamCipher.DecryptBlock(Inst: Pointer; Data: PByte);
+begin
+{ stub - not applicable for stream ciphers};
 end;
 
 end.
