@@ -139,6 +139,10 @@ function ByteVectorSetLen(var A: PByteVector; L: Integer): TF_RESULT;
 function ByteVectorFromPByte(var A: PByteVector; P: PByte; L: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+function ByteVectorFromPCharDec(var A: PByteVector; P: PByte;
+         L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
 function ByteVectorFromPCharHex(var A: PByteVector; P: PByte;
                                 L: Cardinal; CharSize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -970,6 +974,181 @@ begin
     A:= Tmp;
   end;
 end;
+
+function ByteVectorFromPCharDec(var A: PByteVector; P: PByte;
+         L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
+const
+  ASCII_ZERO: Cardinal = Ord('0');
+  ASCII_NINE: Cardinal = Ord('9');
+  ASCII_SPACE: Cardinal = Ord(' ');
+
+var
+  Buffer: array[0..4095] of Byte;
+  BufCount: Cardinal;
+  Tmp: PByteVector;
+  TmpP: PByte;
+  Value: Cardinal;
+  ValueExists: Boolean;
+  TmpSize: Cardinal;
+  B: Byte;
+
+begin
+
+// skip spaces at the beginning
+  while (L > 0) and (P^ <= ASCII_SPACE) do begin
+    Inc(P, CharSize);
+    Dec(L);
+  end;
+
+  Tmp:= nil;
+  TmpSize:= 0;
+  BufCount:= 0;
+
+  while (L > 0) do begin
+    Value:= 0;
+//    State:= 0;
+    ValueExists:= False;
+    repeat
+      B:= P^;
+      if (B >= ASCII_ZERO) and (B <= ASCII_NINE) then begin
+        ValueExists:= True;
+        Value:= Value * 10 + (B - ASCII_ZERO);
+        if Value > 255 then begin
+          if Tmp <> nil then TtfRecord.Release(Tmp);
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+        Inc(P, CharSize);
+        Dec(L);
+      end
+      else Break;
+    until L = 0;
+
+    if ValueExists then begin
+      if BufCount = SizeOf(Buffer) then begin
+        Inc(TmpSize, SizeOf(Buffer));
+        Result:= ByteVectorRealloc(Tmp, TmpSize);
+        if Result <> TF_S_OK then begin
+          if Tmp <> nil then TtfRecord.Release(Tmp);
+          Exit;
+        end;
+        TmpP:= PByte(@Tmp.FData) + TmpSize - SizeOf(Buffer);
+        Move(Buffer, TmpP^, SizeOf(Buffer));
+        BufCount:= 0;
+      end;
+      Buffer[BufCount]:= Value;
+      Inc(BufCount);
+//       Inc(State);
+    end
+    else begin
+      if Tmp <> nil then TtfRecord.Release(Tmp);
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+        // skip spaces
+    while (L > 0) and (P^ <= ASCII_SPACE) do begin
+      Inc(P, CharSize);
+      Dec(L);
+    end;
+       // skip delimiter
+    if (Delimiter > 0) and (L > 0) and (P^ = Delimiter) then begin
+      Inc(P, CharSize);
+      Dec(L);
+    end;
+       // skip spaces
+    while (L > 0) and (P^ <= ASCII_SPACE) do begin
+      Inc(P, CharSize);
+      Dec(L);
+    end;
+  end;
+
+  if BufCount > 0 then begin
+    Inc(TmpSize, BufCount);
+    Result:= ByteVectorRealloc(Tmp, TmpSize);
+    if Result <> TF_S_OK then begin
+      if Tmp <> nil then TtfRecord.Release(Tmp);
+      Exit;
+    end;
+    TmpP:= PByte(@Tmp.FData) + TmpSize - BufCount;
+    Move(Buffer, TmpP^, BufCount);
+//    BufCount:= 0;
+  end;
+
+  if A <> nil then TtfRecord.Release(A);
+  if Tmp = nil then begin
+    A:= @ZeroVector;
+  end
+  else A:= Tmp;
+  Result:= TF_S_OK;
+end;
+
+  (*
+      case State of
+        0: if (B >= ASCII_ZERO) and (B <= ASCII_NINE) then begin
+             ValueExists:= True;
+             Value:= Value * 10 + (B - ASCII_ZERO);
+             if Value > 255 then begin
+               if Tmp <> nil then TtfRecord.Release(Tmp);
+               Result:= TF_E_INVALIDARG;
+               Exit;
+             end;
+             Inc(P, CharSize);
+             Dec(L);
+           end
+           else Inc(State);
+        1: if ValueExists then begin
+// todo:
+             if BufCount = SizeOf(Buffer) then begin
+               Inc(TmpSize, SizeOf(Buffer));
+               Result:= ByteVectorRealloc(Tmp, TmpSize);
+               if Result <> TF_S_OK then begin
+                 if Tmp <> nil then TtfRecord.Release(Tmp);
+                 Exit;
+               end;
+               TmpP:= PByte(@Tmp.FData) + TmpSize - SizeOf(Buffer);
+               Move(Buffer, TmpP^, SizeOf(Buffer));
+               BufCount:= 0;
+             end;
+             Buffer[BufCount]:= Value;
+             Inc(BufCount);
+             Inc(State);
+           end
+           else begin
+             if Tmp <> nil then TtfRecord.Release(Tmp);
+             Result:= TF_E_INVALIDARG;
+             Exit;
+           end;
+        2: begin       // skip spaces
+             while (L > 0) and (P^ <= ASCII_SPACE) do begin
+               Inc(P, CharSize);
+               Dec(L);
+             end;
+             Inc(State);
+           end;
+        3: begin       // skip delimiter
+             if (Delimiter > 0) and (L > 0) and (P^ = Delimiter) then begin
+               Inc(P, CharSize);
+               Dec(L);
+             end;
+             Inc(State);
+           end;
+        4: begin       // skip spaces
+             while (L > 0) and (P^ <= ASCII_SPACE) do begin
+               Inc(P, CharSize);
+               Dec(L);
+             end;
+             State:= 0;
+           end;
+      end {case};
+    until (L = 0); // or (PBuffer = Sentinel);
+        else begin
+          if Tmp <> nil then TtfRecord.Release(Tmp);
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+    until (L = 0) or (PBuffer = Sentinel);
+  until L = 0; *)
+
 
 function ByteVectorFromPCharHexEx(var A: PByteVector; P: PByte;
          L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;

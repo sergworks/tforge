@@ -36,6 +36,7 @@ type
     procedure ReAllocate(ASize: Cardinal);
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
+    class function ParseDec(const S: string; Delimiter: Char = #0): ByteArray; static;
     class function ParseHex(const S: string): ByteArray; overload; static;
     class function ParseHex(const S: string; Delimiter: Char): ByteArray; overload; static;
     class function TryParseHex(const S: string; var R: ByteArray): Boolean; static;
@@ -281,6 +282,17 @@ begin
   HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S), Length(S)));
 {$ELSE}
   HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S), Length(S)));
+{$ENDIF}
+end;
+
+class function ByteArray.ParseDec(const S: string; Delimiter: Char): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPCharDec(Result.FBytes, Pointer(S), Length(S),
+            SizeOf(Char), Byte(Delimiter)));
+{$ELSE}
+  HResCheck(ByteVectorFromPCharDec(PByteVector(Result.FBytes),
+            Pointer(S), Length(S), SizeOf(Char), Byte(Delimiter)));
 {$ENDIF}
 end;
 

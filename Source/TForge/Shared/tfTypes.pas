@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfTypes;
@@ -33,7 +33,7 @@ const
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
   TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading tforge dll
 
-  TF_E_STATE        = TF_RESULT($A0001001);   // Invalid instance state
+//  TF_E_STATE        = TF_RESULT($A0001001);   // Invalid instance state
 
 {$IFNDEF FPC}
 const
@@ -261,7 +261,7 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ExpandKey(Key: Pointer; KeySize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;
+    procedure BurnKey;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -272,8 +272,9 @@ type
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetSequence(Data: PByte; DataSize: LongWord): TF_RESULT;
+    function GetRand(Data: PByte; DataSize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure RandBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IHashServer = interface(IInterface)
@@ -319,6 +320,10 @@ type
   end;
 
 const
+                            // max block size for supported block ciphers:
+                            //   256 bytes = 2048 bits
+  TF_MAX_CIPHER_BLOCK_SIZE = 256;
+
                             // ICipherAlgorithm.SetKeyParam Param values
   TF_KP_DIR       = 1;      // encrypt/decrypt
   TF_KP_MODE      = 2;      // mode of operation
@@ -326,16 +331,17 @@ const
   TF_KP_FLAGS     = 4;      // DIR + MODE + PADDING
   TF_KP_IV        = 5;      // initialization vector
   TF_KP_NONCE     = 6;      // nonce
-  TF_KP_POS       = 7;      // position (Salsa20)
+  TF_KP_BLOCKNO   = 7;      // block number
 
   TF_KP_LE        = $1000;  // little endian
                             // _LE - suffix means the param is integer
                             //       in little-endian format;
-                            //    optimization for little-endian CPU
+                            //    that is optimization for little-endian CPU
                             //    and algorithms expecting data in
                             //    little-endian format;
-  TF_KP_NONCE_LE  = TF_KP_LE + TF_KP_NONCE;
-  TF_KP_POS_LE    = TF_KP_LE + TF_KP_POS;
+
+  TF_KP_NONCE_LE    = TF_KP_LE + TF_KP_NONCE;
+  TF_KP_BLOCKNO_LE  = TF_KP_LE + TF_KP_BLOCKNO;
 
 // Key Flags bits:
 //     0002            0040           0800

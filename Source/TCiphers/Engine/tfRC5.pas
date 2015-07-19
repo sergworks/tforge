@@ -100,7 +100,8 @@ const
    @TBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock32,
    @TRC5Algorithm.DecryptBlock32,
-   @TBlockCipher.GetSequence
+   @TBlockCipher.GetRand
+//   @TBlockCipher.RandCrypt
    );
 
   RC5VTable64: array[0..12] of Pointer = (
@@ -117,7 +118,8 @@ const
    @TBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock64,
    @TRC5Algorithm.DecryptBlock64,
-   @TBlockCipher.GetSequence
+   @TBlockCipher.GetRand
+//   @TBlockCipher.RandCrypt
    );
 
   RC5VTable128: array[0..12] of Pointer = (
@@ -134,7 +136,8 @@ const
    @TBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock128,
    @TRC5Algorithm.DecryptBlock128,
-   @TBlockCipher.GetSequence
+   @TBlockCipher.GetRand
+//   @TBlockCipher.RandCrypt
    );
 
 procedure BurnKey(Inst: PRC5Algorithm); inline;
@@ -191,13 +194,13 @@ var
   Tmp: PRC5Algorithm;
 
 begin
-  if ((BlockSize <> 32) and (BlockSize <> 64) and (BlockSize <> 128))
+  if ((BlockSize <> 4) and (BlockSize <> 8) and (BlockSize <> 16))
        or (Rounds < 1) or (Rounds > 255)
     then begin
       Result:= TF_E_INVALIDARG;
       Exit;
     end;
-  BlockSize:= BlockSize shr 3;
+//  BlockSize:= BlockSize shr 3;
   try
     Tmp:= AllocMem(SizeOf(TRC5Algorithm)
                    - SizeOf(TRC5Algorithm.TDummy)

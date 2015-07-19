@@ -86,7 +86,8 @@ const
    @TBlockCipher.Decrypt,
    @TDESAlgorithm.EncryptBlock,
    @TDESAlgorithm.EncryptBlock,
-   @TBlockCipher.GetSequence
+   @TBlockCipher.GetRand
+//   @TBlockCipher.RandCrypt
    );
 
 procedure BurnKey(Inst: PDESAlgorithm); inline;
@@ -158,7 +159,7 @@ begin
   end;
 
   if (Inst.FDir <> TF_KEYDIR_ENCRYPT) and (Inst.FDir <> TF_KEYDIR_DECRYPT) then begin
-    Result:= TF_E_STATE;
+    Result:= TF_E_UNEXPECTED;
     Exit;
   end;
 

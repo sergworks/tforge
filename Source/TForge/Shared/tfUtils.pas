@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfUtils;
@@ -8,6 +8,8 @@ unit tfUtils;
 {$I TFL.inc}
 
 interface
+
+//uses tfLimbs;
 
 const CRC32Table: array[0..255] of LongWord = (
   $00000000, $77073096, $ee0e612c, $990951ba, $076dc419, $706af48f, $e963a535,
@@ -67,19 +69,42 @@ type
 
 type
   TBigEndian = record
-    class procedure Incr(First: Pointer; Count: Cardinal); overload; static;
-    class procedure Incr(First: Pointer; Count: Cardinal; Value: Byte); overload; static;
-    class procedure Decr(First: Pointer; Count: Cardinal); overload; static;
-    class procedure Decr(First: Pointer; Count: Cardinal; Value: Byte); overload; static;
-  end;
+    class function Incr(First, Last: Pointer): Boolean; overload; static;
+    class function Incr(First: Pointer; Count: Cardinal): Boolean; overload; static;
+    class function Incr(First, Last: Pointer; Value: Byte): Boolean; overload; static;
+    class function Incr(First: Pointer; Count: Cardinal; Value: Byte): Boolean; overload; static;
+    class function Decr(First, Last: Pointer): Boolean; overload; static;
+    class function Decr(First: Pointer; Count: Cardinal): Boolean; overload; static;
+    class function Decr(First, Last: Pointer; Value: Byte): Boolean; overload; static;
+    class function Decr(First: Pointer; Count: Cardinal; Value: Byte): Boolean; overload; static;
+    class function Add(A: Pointer; LA: Cardinal; B: Pointer; LB: Cardinal): Boolean; overload; static;
 
+    class procedure ShiftRight(First, Last: Pointer); overload; static;
+    class procedure ShiftRight(First: Pointer; Count: Cardinal); overload; static;
+    class procedure ShiftRight(First, Last: Pointer; Shift: Cardinal); overload; static;
+    class procedure ShiftRight(First: Pointer; Count, Shift: Cardinal); overload; static;
+
+    class procedure Reverse(First, Last: Pointer); overload; static;
+    class procedure Reverse(First: Pointer; Count: Cardinal); overload; static;
+    class procedure ReverseCopy(First, Last, Output: Pointer); overload; static;
+    class procedure ReverseCopy(First: Pointer; Count: Cardinal; Output: Pointer); overload; static;
+  end;
+{
+type
+  TLittleEndian = record
+    class function Incr(A: Pointer; L: Cardinal): Boolean; overload; static;
+    class function Incr(A: Pointer; L: Cardinal; Value: TLimb): Boolean; overload; static;
+    class function Add(A: Pointer; LA: Cardinal; B: Pointer; LB: Cardinal): Boolean; overload; static;
+  end;
+}
+{
 procedure ReverseCopy(First, Last, Output: Pointer); overload;
 procedure ReverseCopy(First: Pointer; Count: Cardinal; Output: Pointer); overload;
 procedure ReverseBytes(First, Last: Pointer); overload;
 procedure ReverseBytes(First: Pointer; Count: Cardinal); overload;
-
+}
 implementation
-
+{
 procedure ReverseCopy(First, Last, Output: Pointer);
 begin
   while First <> Last do begin
@@ -113,7 +138,7 @@ procedure ReverseBytes(First: Pointer; Count: Cardinal);
 begin
   ReverseBytes(First, PByte(First) + Count);
 end;
-
+}
 { TCRC32 }
 
 class function TCRC32.Init: LongWord;
@@ -229,59 +254,275 @@ end;
 
 { TBigEndian }
 
-class procedure TBigEndian.Incr(First: Pointer; Count: Cardinal);
+class function TBigEndian.Incr(First, Last: Pointer): Boolean;
 begin
-  Inc(PByte(First), Count);
-  while Count > 0 do begin
-    Dec(PByte(First));
-    Inc(PByte(First)^);
-    if PByte(First)^ <> 0 then Break;
-    Dec(Count);
+  while First <> Last do begin
+    Dec(PByte(Last));
+    Inc(PByte(Last)^);
+    if PByte(Last)^ <> 0 then begin
+      Result:= False;
+      Exit;
+    end;
   end;
+  Result:= True;
 end;
 
-class procedure TBigEndian.Decr(First: Pointer; Count: Cardinal);
+class function TBigEndian.Incr(First: Pointer; Count: Cardinal): Boolean;
 begin
-  Inc(PByte(First), Count);
-  while Count > 0 do begin
-    Dec(PByte(First));
-    Dec(PByte(First)^);
-    if PByte(First)^ <> $FF then Break;
-    Dec(Count);
-  end;
+  Result:= Incr(First, PByte(First) + Count);
 end;
 
-
-class procedure TBigEndian.Incr(First: Pointer; Count: Cardinal; Value: Byte);
+class function TBigEndian.Incr(First, Last: Pointer; Value: Byte): Boolean;
 var
-  Tmp1, Tmp2: Byte;
+  Tmp: Byte;
 
 begin
-  Inc(PByte(First), Count);
-  while Count > 0 do begin
-    Dec(PByte(First));
-    Tmp1:= PByte(First)^;
-    Tmp2:= Tmp1 + Value;
-    PByte(First)^:= Tmp2;
-    if Tmp2 >= Tmp1 then Break;
-    Dec(Count);
+  while First <> Last do begin
+    Dec(PByte(Last));
+    Tmp:= PByte(Last)^;
+    PByte(Last)^:= Tmp + Value;
+    if PByte(Last)^ >= Tmp then begin
+      Result:= False;
+      Exit;
+    end;
   end;
+  Result:= True;
 end;
 
-class procedure TBigEndian.Decr(First: Pointer; Count: Cardinal; Value: Byte);
+class function TBigEndian.Incr(First: Pointer; Count: Cardinal; Value: Byte): Boolean;
+begin
+  Result:= Incr(First, PByte(First) + Count, Value);
+end;
+
+class function TBigEndian.Decr(First, Last: Pointer): Boolean;
+begin
+  while First <> Last do begin
+    Dec(PByte(Last));
+    Dec(PByte(Last)^);
+    if PByte(Last)^ <> $FF then begin
+      Result:= False;
+      Exit;
+    end;
+  end;
+  Result:= True;
+end;
+
+class function TBigEndian.Decr(First: Pointer; Count: Cardinal): Boolean;
+begin
+  Result:= Decr(First, PByte(First) + Count);
+end;
+
+class function TBigEndian.Decr(First, Last: Pointer; Value: Byte): Boolean;
 var
-  Tmp1, Tmp2: Byte;
+  Tmp: Byte;
 
 begin
-  Inc(PByte(First), Count);
-  while Count > 0 do begin
-    Dec(PByte(First));
-    Tmp1:= PByte(First)^;
-    Tmp2:= Tmp1 - Value;
-    PByte(First)^:= Tmp2;
-    if Tmp2 <= Tmp1 then Break;
-    Dec(Count);
+  while First <> Last do begin
+    Dec(PByte(Last));
+    Tmp:= PByte(Last)^;
+    PByte(Last)^:= Tmp - Value;
+    if PByte(Last)^ <= Tmp then begin
+      Result:= False;
+      Exit;
+    end;
+  end;
+  Result:= True;
+end;
+
+class function TBigEndian.Decr(First: Pointer; Count: Cardinal; Value: Byte): Boolean;
+begin
+  Result:= Decr(First, PByte(First) + Count, Value);
+end;
+
+class function TBigEndian.Add(A: Pointer; LA: Cardinal; B: Pointer; LB: Cardinal): Boolean;
+var
+  CarryOut, CarryIn: Boolean;
+  Tmp: Byte;
+
+begin
+  if LB > LA then begin
+    Inc(PByte(B), LB - LA);
+    LB:= LA;
+  end;
+  Inc(PByte(A), LA);
+  Inc(PByte(B), LB);
+  Dec(LA, LB);
+  CarryIn:= False;
+  while LB > 0 do begin
+    Dec(PByte(B));
+    Dec(PByte(A));
+    Tmp:= PByte(A)^ + PByte(B)^;
+    CarryOut:= Tmp < PByte(A)^;
+    if CarryIn then begin
+      Inc(Tmp);
+      CarryOut:= CarryOut or (Tmp = 0);
+    end;
+    CarryIn:= CarryOut;
+    PByte(A)^:= Tmp;
+    Dec(LB);
+  end;
+  while (LA > 0) and CarryIn do begin
+    Dec(PByte(A));
+    Tmp:= PByte(A)^ + 1;
+    CarryIn:= Tmp = 0;
+    PByte(A)^:= Tmp;
+    Dec(LA);
+  end;
+  Result:= CarryIn;
+end;
+
+class procedure TBigEndian.Reverse(First, Last: Pointer);
+var
+  Tmp: Byte;
+
+begin
+  while First <> Last do begin
+    Dec(PByte(Last));
+    if First = Last then Break;
+    Tmp:= PByte(Last)^;
+    PByte(Last)^:= PByte(First)^;
+    PByte(First)^:= Tmp;
+    Inc(PByte(First));
   end;
 end;
+
+class procedure TBigEndian.Reverse(First: Pointer; Count: Cardinal);
+begin
+  Reverse(First, PByte(First) + Count);
+end;
+
+class procedure TBigEndian.ReverseCopy(First, Last, Output: Pointer);
+begin
+  while First <> Last do begin
+    Dec(PByte(Last));
+    PByte(Output)^:= PByte(Last)^;
+    Inc(PByte(Output));
+  end;
+end;
+
+class procedure TBigEndian.ReverseCopy(First: Pointer; Count: Cardinal; Output: Pointer);
+begin
+  ReverseCopy(First, PByte(First) + Count, Output);
+end;
+
+class procedure TBigEndian.ShiftRight(First, Last: Pointer);
+var
+  Carry, Tmp: Byte;
+
+begin
+  if First <> Last then begin
+    Carry:= PByte(First)^;
+    PByte(First)^:= Carry shr 1;
+    Carry:= Carry shl 7;
+    Dec(PByte(Last));
+    while First <> Last do begin
+      Inc(PByte(First));
+      Tmp:= PByte(First)^;
+      PByte(First)^:= (Tmp shr 1) or Carry;
+      Carry:= Tmp shl 7;
+    end;
+  end;
+end;
+
+class procedure TBigEndian.ShiftRight(First: Pointer; Count: Cardinal);
+begin
+  ShiftRight(First, PByte(First) + Count);
+end;
+
+class procedure TBigEndian.ShiftRight(First, Last: Pointer; Shift: Cardinal);
+begin
+// todo:
+  while Shift > 0 do begin
+    ShiftRight(First, Last);
+    Dec(Shift);
+  end;
+end;
+
+class procedure TBigEndian.ShiftRight(First: Pointer; Count, Shift: Cardinal);
+begin
+// todo:
+  while Shift > 0 do begin
+    ShiftRight(First, PByte(First) + Count);
+    Dec(Shift);
+  end;
+end;
+
+{ TLittleEndian
+
+class function TLittleEndian.Incr(A: Pointer; L: Cardinal): Boolean;
+var
+  Tmp: TLimb;
+
+begin
+                          // !! Assert(Count > 0);
+  Tmp:= PLimb(A)^ + 1;
+  PLimb(A)^:= Tmp;
+                          //  while we have carry from prev limb ..
+  while (Tmp = 0) do begin
+    Dec(L);
+    Inc(PLimb(A));
+    if L = 0 then begin
+      Result:= True;
+      Exit;
+    end;
+    Tmp:= PLimb(A)^ + 1;
+    PLimb(A)^:= Tmp;
+  end;
+  Result:= False;
+end;
+
+class function TLittleEndian.Add(A: Pointer; LA: Cardinal;
+                                 B: Pointer; LB: Cardinal): Boolean;
+var
+  CarryOut, CarryIn: Boolean;
+  Tmp: TLimb;
+
+begin
+  if LB > LA then LB:= LA;
+  Dec(LA, LB);
+  CarryIn:= False;
+  while LB > 0 do begin
+    Tmp:= PLimb(A)^ + PLimb(B)^;
+    CarryOut:= Tmp < PLimb(A)^;
+    Inc(PLimb(B));
+    if CarryIn then begin
+      Inc(Tmp);
+      CarryOut:= CarryOut or (Tmp = 0);
+    end;
+    CarryIn:= CarryOut;
+    PLimb(A)^:= Tmp;
+    Inc(PLimb(A));
+    Dec(LB);
+  end;
+  while (LA > 0) and CarryIn do begin
+    Tmp:= PLimb(A)^ + 1;
+    CarryIn:= Tmp = 0;
+    PLimb(A)^:= Tmp;
+    Inc(PLimb(A));
+    Dec(LA);
+  end;
+  Result:= CarryIn;
+end;
+
+class function TLittleEndian.Incr(A: Pointer; L: Cardinal; Value: TLimb): Boolean;
+var
+  Tmp: TLimb;
+
+begin
+  Tmp:= PLimb(A)^ + Value;
+  PLimb(A)^:= Tmp;
+  if Tmp < Value then repeat
+    Dec(L);
+    Inc(PLimb(A));
+    if L = 0 then begin
+      Result:= True;
+      Exit;
+    end;
+    Tmp:= PLimb(A)^ + 1;
+    PLimb(A)^:= Tmp;
+  until Tmp <> 0;
+  Result:= False;
+end;
+}
 
 end.

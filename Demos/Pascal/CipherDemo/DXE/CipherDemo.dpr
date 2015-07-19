@@ -3,7 +3,7 @@ program CipherDemo;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfTypes, tfBytes, tfCiphers;
+  SysUtils, tfTypes, tfBytes, tfHashes, tfCiphers;
 
 const
   HexKey = '2BD6459F82C5B300952C49104881FF48';
@@ -137,11 +137,130 @@ begin
   Assert(PTextA = PText1 + PText2);
 end;
 
+procedure CBCDemo(const PlainText, IV, Key: ByteArray);
+var
+  CipherText, Plaintext2: ByteArray;
+
+begin
+  Writeln;
+  Writeln('-- Running CBCDemo --');
+  Writeln('PlainText:  ', PlainText.ToHex);
+  CipherText:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV).EncryptData(PlainText);
+  Writeln('CipherText: ', CipherText.ToHex);
+  PlainText2:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV).DecryptData(CipherText);
+  Writeln('PlainText:  ', PlainText2.ToHex);
+  Assert(PlainText = PlainText2);
+  Writeln('-- Done CBCDemo --');
+end;
+
+procedure CTRDemo(const PlainText, IV, Key: ByteArray);
+var
+  CipherText, Plaintext2: ByteArray;
+
+begin
+  Writeln;
+  Writeln('-- Running CTRDemo --');
+  Writeln('PlainText:  ', PlainText.ToHex);
+  CipherText:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, IV).EncryptData(PlainText);
+  Writeln('CipherText: ', CipherText.ToHex);
+  PlainText2:= TCipher.AES.ExpandKey(Key, CTR_DECRYPT, IV).DecryptData(CipherText);
+  Writeln('PlainText:  ', PlainText2.ToHex);
+  Assert(PlainText = PlainText2);
+  Writeln('-- Done CTRDemo --');
+end;
+
+procedure CBCFileDemo(const FileName: string; const IV, Key: ByteArray);
+begin
+  Writeln;
+  Writeln('-- Running CBCFileDemo --');
+  TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV)
+             .EncryptFile(FileName, FileName + '.aes');
+  TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV)
+             .DecryptFile(FileName + '.aes', FileName + '.bak');
+  Writeln('-- Done CBCFileDemo --');
+end;
+
+procedure CBCFileDemo2(const FileName: string; const IV, Key: ByteArray);
+var
+  Cipher: TCipher;
+
+begin
+  Writeln;
+  Writeln('-- Running CBCFileDemo 2 --');
+  Cipher:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV);
+  try
+    Cipher.EncryptFile(FileName, FileName + '.aes');
+  finally
+    Cipher.Burn;
+  end;
+  Cipher:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV);
+  try
+    Cipher.DecryptFile(FileName + '.aes', FileName + '.bak');
+  finally
+    Cipher.Burn;
+  end;
+  Writeln('-- Done CBCFileDemo 2 --');
+end;
+
+procedure BlockDemo(const Block, Key: ByteArray);
+var
+  CipherText, PlainText: ByteArray;
+
+begin
+  Writeln;
+  Writeln('-- Running BlockDemo --');
+  Writeln('Block:     ', Block.ToHex);
+  Writeln('Key:       ', Key.ToHex);
+  CipherText:= TCipher.DES.EncryptBlock(Block, Key);
+  Writeln('Encrypted: ', CipherText.ToHex);
+  PlainText:= TCipher.DES.DecryptBlock(CipherText, Key);
+  Writeln('Decrypted: ', PlainText.ToHex);
+  Assert(PlainText = Block);
+  Writeln('-- Done BlockDemo --');
+end;
+
+procedure RC5BlockDemo(const Block, Key: ByteArray);
+var
+  CipherText, PlainText: ByteArray;
+
+begin
+  Writeln;
+  Writeln('-- Running RC5BlockDemo --');
+  Writeln('Block:     ', Block.ToHex);
+  Writeln('Key:       ', Key.ToHex);
+  CipherText:= TCipher.RC5(Block.Len, 20).EncryptBlock(Block, Key);
+  Writeln('Encrypted: ', CipherText.ToHex);
+  PlainText:= TCipher.RC5(Block.Len, 20).DecryptBlock(CipherText, Key);
+  Writeln('Decrypted: ', PlainText.ToHex);
+  Assert(PlainText = Block);
+  Writeln('-- Done RC5BlockDemo --');
+end;
+
 begin
   try
+{    CBCFileDemo(ParamStr(0),
+            ByteArray.ParseHex(HexIV),
+            ByteArray.ParseHex(HexKey));
+}
     ECBTest;
     CBCTest;
     CTRTest;
+    CBCDemo(ByteArray.ParseHex(PlainText1),
+            ByteArray.ParseHex(HexIV),
+            ByteArray.ParseHex(HexKey));
+    CTRDemo(ByteArray.ParseHex(PlainText1),
+            ByteArray.ParseHex(HexIV),
+            ByteArray.ParseHex(HexKey));
+    CBCFileDemo(ParamStr(0),
+            ByteArray.ParseHex(HexIV),
+            ByteArray.ParseHex(HexKey));
+    CBCFileDemo2(ParamStr(0),
+            ByteArray.ParseHex(HexIV),
+            ByteArray.ParseHex(HexKey));
+    BlockDemo(ByteArray.ParseHex(PlainText1).Copy(1, 8),
+              ByteArray.ParseHex(HexKey).Copy(1, 8));
+    RC5BlockDemo(ByteArray.ParseHex(PlainText1),
+                 ByteArray.ParseHex(HexKey));
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

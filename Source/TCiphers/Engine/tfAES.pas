@@ -80,7 +80,7 @@ const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  AESCipherVTable: array[0..12] of Pointer = (
+  AESCipherVTable: array[0..13] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TAESAlgorithm.Release,
@@ -94,7 +94,8 @@ const
    @TBlockCipher.Decrypt,
    @TAESAlgorithm.EncryptBlock,
    @TAESAlgorithm.DecryptBlock,
-   @TBlockCipher.GetSequence
+   @TBlockCipher.GetRand,
+   @TBlockCipher.RandBlock
    );
 
 procedure BurnKey(Inst: PAESAlgorithm); inline;

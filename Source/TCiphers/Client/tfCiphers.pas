@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses
-  SysUtils, tfTypes, tfBytes, tfConsts, tfExceptions,
+  SysUtils, Classes, tfTypes, tfBytes, tfConsts, tfExceptions,
   {$IFDEF TFL_DLL} tfImport {$ELSE} tfCipherServ {$ENDIF};
 
 type
@@ -34,8 +34,8 @@ type
 
     function SetNonce(const Value: ByteArray): TCipher; overload;
     function SetNonce(const Value: UInt64): TCipher; overload;
-    function SetPos(const Value: ByteArray): TCipher; overload;
-    function SetPos(const Value: UInt64): TCipher; overload;
+    function SetBlockNo(const Value: ByteArray): TCipher; overload;
+    function SetBlockNo(const Value: UInt64): TCipher; overload;
 
     function ExpandKey(AKey: PByte; AKeyLen: LongWord): TCipher; overload;
     function ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord): TCipher; overload;
@@ -47,21 +47,27 @@ type
     function ExpandKey(const AKey: ByteArray; AFlags: LongWord;
                        const AIV: ByteArray): TCipher; overload;
 
-    procedure DestroyKey;
+    procedure Burn;
 
     procedure Encrypt(var Data; var DataSize: LongWord;
-                      BufSize: LongWord; Last: Boolean); overload;
+                      BufSize: LongWord; Last: Boolean); // overload;
     procedure Decrypt(var Data; var DataSize: LongWord;
-                      Last: Boolean); overload;
+                      Last: Boolean); // overload;
 
-    procedure GetSequence(var Data; DataSize: LongWord);
-    function Sequence(DataSize: LongWord): ByteArray;
+    procedure GetRand(var Data; DataSize: LongWord);
+    function Rand(DataSize: LongWord): ByteArray;
 
     function EncryptBlock(const Data, Key: ByteArray): ByteArray;
     function DecryptBlock(const Data, Key: ByteArray): ByteArray;
 
     function EncryptData(const Data: ByteArray): ByteArray;
     function DecryptData(const Data: ByteArray): ByteArray;
+
+    procedure EncryptStream(InStream, OutStream: TStream; BufSize: LongWord = 0);
+    procedure DecryptStream(InStream, OutStream: TStream; BufSize: LongWord = 0);
+
+    procedure EncryptFile(const InName, OutName: string; BufSize: LongWord = 0);
+    procedure DecryptFile(const InName, OutName: string; BufSize: LongWord = 0);
 
     class function AES: TCipher; static;
     class function DES: TCipher; static;
@@ -115,15 +121,15 @@ begin
   FAlgorithm:= nil;
 end;
 
-procedure TCipher.GetSequence(var Data; DataSize: LongWord);
+procedure TCipher.GetRand(var Data; DataSize: LongWord);
 begin
-  HResCheck(FAlgorithm.GetSequence(@Data, DataSize));
+  HResCheck(FAlgorithm.GetRand(@Data, DataSize));
 end;
 
-function TCipher.Sequence(DataSize: LongWord): ByteArray;
+function TCipher.Rand(DataSize: LongWord): ByteArray;
 begin
   Result:= ByteArray.Allocate(DataSize);
-  GetSequence(Result.RawData^, DataSize);
+  GetRand(Result.RawData^, DataSize);
 end;
 
 function TCipher.IsAssigned: Boolean;
@@ -194,9 +200,9 @@ begin
   Result:= Self;
 end;
 
-procedure TCipher.DestroyKey;
+procedure TCipher.Burn;
 begin
-  FAlgorithm.DestroyKey;
+  FAlgorithm.BurnKey;
 end;
 
 procedure TCipher.Encrypt(var Data; var DataSize: LongWord;
@@ -261,6 +267,117 @@ begin
   HResCheck(FAlgorithm.Encrypt(Result.RawData, L0, L1, True));
 end;
 
+procedure TCipher.EncryptFile(const InName, OutName: string; BufSize: LongWord);
+var
+  InStream, OutStream: TStream;
+
+begin
+  InStream:= TFileStream.Create(InName, fmOpenRead or fmShareDenyWrite);
+  OutStream:= TFileStream.Create(OutName, fmCreate);
+  try
+    EncryptStream(InStream, OutStream, BufSize);
+  finally
+    InStream.Free;
+    OutStream.Free;
+  end;
+end;
+
+procedure TCipher.EncryptStream(InStream, OutStream: TStream; BufSize: LongWord);
+const
+  MIN_BUFSIZE = 4 * 1024;
+  MAX_BUFSIZE = 4 * 1024 * 1024;
+  DEFAULT_BUFSIZE = 16 * 1024;
+  PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
+
+
+var
+  OutBufSize, DataSize: LongWord;
+  Data, PData: PByte;
+  N: Integer;
+  Cnt: LongWord;
+  Last: Boolean;
+
+begin
+  if (BufSize < MIN_BUFSIZE) or (BufSize > MAX_BUFSIZE)
+    then BufSize:= DEFAULT_BUFSIZE
+    else BufSize:= (BufSize + PAD_BUFSIZE - 1)
+                         and not (PAD_BUFSIZE - 1);
+  OutBufSize:= BufSize + PAD_BUFSIZE;
+  GetMem(Data, OutBufSize);
+  try
+    repeat
+      Cnt:= BufSize;
+      PData:= Data;
+      repeat
+        N:= InStream.Read(PData^, Cnt);
+        if N <= 0 then Break;
+        Inc(PData, N);
+        Dec(Cnt, N);
+      until (Cnt = 0);
+      Last:= Cnt > 0;
+      DataSize:= BufSize - Cnt;
+      Encrypt(Data^, DataSize, OutBufSize, Last);
+      if DataSize > 0 then
+        OutStream.WriteBuffer(Data^, DataSize);
+    until Last;
+  finally
+    FreeMem(Data);
+  end;
+end;
+
+procedure TCipher.DecryptStream(InStream, OutStream: TStream; BufSize: LongWord);
+const
+  MIN_BUFSIZE = 4 * 1024;
+  MAX_BUFSIZE = 4 * 1024 * 1024;
+  DEFAULT_BUFSIZE = 16 * 1024;
+  PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
+
+var
+  OutBufSize, DataSize: LongWord;
+  Data, PData: PByte;
+  N: Integer;
+  Cnt: LongWord;
+  Last: Boolean;
+
+begin
+  if (BufSize < MIN_BUFSIZE) or (BufSize > MAX_BUFSIZE)
+    then BufSize:= DEFAULT_BUFSIZE
+    else BufSize:= (BufSize + PAD_BUFSIZE - 1)
+                         and not (PAD_BUFSIZE - 1);
+  OutBufSize:= BufSize + PAD_BUFSIZE;
+  GetMem(Data, OutBufSize);
+  try
+    PData:= Data;
+    Cnt:= OutBufSize;
+    repeat
+      repeat
+        N:= InStream.Read(PData^, Cnt);
+        if N <= 0 then Break;
+        Inc(PData, N);
+        Dec(Cnt, N);
+      until (Cnt = 0);
+      Last:= Cnt > 0;
+      if Last then begin
+        DataSize:= OutBufSize - Cnt;
+      end
+      else begin
+        DataSize:= BufSize - Cnt;
+      end;
+      Decrypt(Data^, DataSize, Last);
+      if DataSize > 0 then
+        OutStream.WriteBuffer(Data^, DataSize);
+      if Last then Break
+      else begin
+        Move((Data + OutBufSize - PAD_BUFSIZE)^, Data^, PAD_BUFSIZE);
+        PData:= Data + PAD_BUFSIZE;
+        Cnt:= BufSize;
+      end;
+    until False;
+  finally
+    FreeMem(Data);
+  end;
+end;
+
 function TCipher.DecryptData(const Data: ByteArray): ByteArray;
 var
   L: LongWord;
@@ -270,6 +387,21 @@ begin
   Result:= ByteArray.Copy(Data);
   HResCheck(FAlgorithm.Decrypt(Result.RawData, L, True));
   Result.SetLen(L);
+end;
+
+procedure TCipher.DecryptFile(const InName, OutName: string; BufSize: LongWord);
+var
+  InStream, OutStream: TStream;
+
+begin
+  InStream:= TFileStream.Create(InName, fmOpenRead or fmShareDenyWrite);
+  OutStream:= TFileStream.Create(OutName, fmCreate);
+  try
+    DecryptStream(InStream, OutStream, BufSize);
+  finally
+    InStream.Free;
+    OutStream.Free;
+  end;
 end;
 
 function TCipher.Copy: TCipher;
@@ -367,15 +499,15 @@ begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE, Value.RawData, Value.Len));
 end;
 
-function TCipher.SetPos(const Value: ByteArray): TCipher;
+function TCipher.SetBlockNo(const Value: ByteArray): TCipher;
 begin
-  HResCheck(FAlgorithm.SetKeyParam(TF_KP_POS, Value.RawData, Value.Len));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_BLOCKNO, Value.RawData, Value.Len));
   Result:= Self;
 end;
 
-function TCipher.SetPos(const Value: UInt64): TCipher;
+function TCipher.SetBlockNo(const Value: UInt64): TCipher;
 begin
-  HResCheck(FAlgorithm.SetKeyParam(TF_KP_POS_LE, @Value, SizeOf(Value)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_BLOCKNO_LE, @Value, SizeOf(Value)));
   Result:= Self;
 end;
 
