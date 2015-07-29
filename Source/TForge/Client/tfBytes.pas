@@ -49,26 +49,26 @@ type
     procedure Incr;
     procedure Decr;
 
-    class function Copy(const A: ByteArray): ByteArray; overload; static;
-    class function Copy(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
-    class function Copy(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
+//    class function Copy(const A: ByteArray): ByteArray; overload; static;
+//    class function Copy(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
+//    class function Copy(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
     function Copy: ByteArray; overload;
     function Copy(I: Cardinal): ByteArray; overload;
     function Copy(I, L: Cardinal): ByteArray; overload;
 
-    class function Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray; overload; static;
-    class function Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray; overload; static;
-    class function Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray; overload; static;
+//    class function Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray; overload; static;
+//    class function Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray; overload; static;
+//    class function Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray; overload; static;
     function Insert(I: Cardinal; B: Byte): ByteArray; overload;
     function Insert(I: Cardinal; B: ByteArray): ByteArray; overload;
     function Insert(I: Cardinal; B: TBytes): ByteArray; overload;
 
-    class function Remove(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
-    class function Remove(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
+//    class function Remove(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
+//    class function Remove(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
     function Remove(I: Cardinal): ByteArray; overload;
     function Remove(I, L: Cardinal): ByteArray; overload;
 
-    class function Reverse(const A: ByteArray): ByteArray; overload; static;
+//    class function Reverse(const A: ByteArray): ByteArray; overload; static;
     function Reverse: ByteArray; overload;
 
     class function AddBytes(const A, B: ByteArray): ByteArray; static;
@@ -403,6 +403,7 @@ begin
 {$ENDIF}
 end;
 
+(*
 class function ByteArray.Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -431,6 +432,7 @@ begin
                         PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
+*)
 
 function ByteArray.Insert(I: Cardinal; B: Byte): ByteArray;
 begin
@@ -479,6 +481,7 @@ begin
 {$ENDIF}
 end;
 
+(*
 class function ByteArray.Remove(const A: ByteArray; I: Cardinal): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -498,6 +501,7 @@ begin
                         PByteVector(Result.FBytes), I, L));
 {$ENDIF}
 end;
+*)
 
 function ByteArray.Remove(I: Cardinal): ByteArray;
 begin
@@ -519,6 +523,7 @@ begin
 {$ENDIF}
 end;
 
+(*
 class function ByteArray.Reverse(const A: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -528,6 +533,7 @@ begin
                                      PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
+*)
 
 function ByteArray.Reverse: ByteArray;
 begin
@@ -998,6 +1004,7 @@ begin
 {$ENDIF}
 end;
 
+(*
 class function ByteArray.Copy(const A: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -1027,6 +1034,7 @@ begin
                                    PByteVector(Result.FBytes), I, L));
 {$ENDIF}
 end;
+*)
 
 function ByteArray.Copy: ByteArray;
 begin

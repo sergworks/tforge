@@ -32,7 +32,6 @@ type
                                 // -- inherited fields end --
     FState:    TState;
 {$HINTS ON}
-//    class procedure Update(State: PState; Data: PByte; DataSize: LongWord); static;
   public
     class function Release(Inst: PRC4Algorithm): Integer; stdcall; static;
     class function ExpandKey(Inst: PRC4Algorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
@@ -42,17 +41,7 @@ type
     class function DuplicateKey(Inst: PRC4Algorithm; var Key: PRC4Algorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DestroyKey(Inst: PRC4Algorithm);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-(*
-    class function Encrypt(Inst: PRC4Algorithm; Data: PByte; var DataSize: LongWord;
-      BufSize: LongWord; Last: Boolean): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: PRC4Algorithm; Data: PByte; var DataSize: LongWord;
-      Last: Boolean): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetSequence(Inst: PRC4Algorithm; Data: PByte; DataSize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-*)
-    class procedure RandBlock(Inst: PRC4Algorithm; Data: PByte);
+    class function RandBlock(Inst: PRC4Algorithm; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -63,7 +52,7 @@ implementation
 uses tfRecords, tfBaseCiphers;
 
 const
-  RC4VTable: array[0..13] of Pointer = (
+  RC4VTable: array[0..14] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TRC4Algorithm.Release,
@@ -78,7 +67,8 @@ const
    @TStreamCipher.EncryptBlock,
    @TStreamCipher.EncryptBlock,
    @TStreamCipher.GetRand,
-   @TRC4Algorithm.RandBlock
+   @TRC4Algorithm.RandBlock,
+   @TStreamCipher.RandCrypt
    );
 
 function GetRC4Algorithm(var A: PRC4Algorithm): TF_RESULT;
@@ -162,6 +152,8 @@ begin
   until I = 256;
   Inst.FState.I:= 0;
   Inst.FState.J:= 0;
+
+  Inst.FValidKey:= True;
   Result:= TF_S_OK;
 end;
 
@@ -170,65 +162,7 @@ begin
   Result:= 1;
 end;
 
-(*
-class function TRC4Algorithm.GetSequence(Inst: PRC4Algorithm; Data: PByte;
-                 DataSize: LongWord): TF_RESULT;
-var
-  Tmp: Byte;
-  State: PState;
-
-begin
-  State:= @Inst.FState;
-  while DataSize > 0 do begin
-    Inc(State.I);
-    Tmp:= State.S[State.I];
-    State.J:= State.J + Tmp;
-    State.S[State.I]:= State.S[State.J];
-    State.S[State.J]:= Tmp;
-    Tmp:= Tmp + State.S[State.I];
-    if Data <> nil then begin
-      Data^:= State.S[Tmp];
-      Inc(Data);
-    end;
-    Dec(DataSize);
-  end;
-  Result:= TF_S_OK;
-end;
-
-class procedure TRC4Algorithm.Update(State: PState; Data: PByte; DataSize: LongWord);
-var
-  Tmp: Byte;
-
-begin
-  while DataSize > 0 do begin
-    Inc(State.I);
-    Tmp:= State.S[State.I];
-    State.J:= State.J + Tmp;
-    State.S[State.I]:= State.S[State.J];
-    State.S[State.J]:= Tmp;
-    Tmp:= Tmp + State.S[State.I];
-    Data^:= Data^ xor State.S[Tmp];
-    Inc(Data);
-    Dec(DataSize);
-  end;
-end;
-
-class function TRC4Algorithm.Encrypt(Inst: PRC4Algorithm; Data: PByte;
-  var DataSize: LongWord; BufSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  Update(@Inst.FState, Data, DataSize);
-  Result:= TF_S_OK;
-end;
-
-class function TRC4Algorithm.Decrypt(Inst: PRC4Algorithm; Data: PByte;
-  var DataSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  Update(@Inst.FState, Data, DataSize);
-  Result:= TF_S_OK;
-end;
-*)
-
-class procedure TRC4Algorithm.RandBlock(Inst: PRC4Algorithm; Data: PByte);
+class function TRC4Algorithm.RandBlock(Inst: PRC4Algorithm; Data: PByte): TF_RESULT;
 var
   Tmp: Byte;
   State: PState;
@@ -242,6 +176,7 @@ begin
   State.S[State.J]:= Tmp;
   Tmp:= Tmp + State.S[State.I];
   Data^:= State.S[Tmp];
+  Result:= TF_S_OK;
 end;
 
 end.

@@ -236,6 +236,38 @@ begin
   Writeln('-- Done RC5BlockDemo --');
 end;
 
+// Shows how to use AES as pseudorandom generator
+procedure RandDemo(const Key: ByteArray);
+var
+  Cipher: TCipher;
+  I: Integer;
+  Rand: LongWord;
+
+begin
+  Writeln;
+  Writeln('-- Running RandDemo --');
+  Cipher:= Cipher.AES.ExpandKey(Key, CTR_ENCRYPT);
+  for I:= 0 to 9 do begin
+    Rand:= LongWord(Cipher.KeyStream(SizeOf(Rand)));
+    Writeln(I:3, ': ', Rand);
+  end;
+  Writeln('-- Done RandDemo --');
+end;
+
+// discards the first 1536 bytes of RC4 keystream [RFC4345]
+procedure RC4FileDemo(const FileName: string; const Key: ByteArray);
+begin
+  Writeln;
+  Writeln('-- Running RC4FileDemo --');
+  TCipher.RC4.ExpandKey(Key)
+             .Skip(1536)
+             .EncryptFile(FileName, FileName + '.rc4');
+  TCipher.RC4.ExpandKey(Key)
+             .Skip(1536)
+             .DecryptFile(FileName + '.rc4', FileName + '.bak');
+  Writeln('-- Done RC4FileDemo --');
+end;
+
 begin
   try
 {    CBCFileDemo(ParamStr(0),
@@ -261,6 +293,9 @@ begin
               ByteArray.ParseHex(HexKey).Copy(1, 8));
     RC5BlockDemo(ByteArray.ParseHex(PlainText1),
                  ByteArray.ParseHex(HexKey));
+    RandDemo(ByteArray.ParseHex(HexKey));
+    RC4FileDemo(ParamStr(0),
+                ByteArray.ParseHex(HexKey));
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

@@ -64,9 +64,9 @@ type
     class function DuplicateKey(Inst: PAESAlgorithm; var Key: PAESAlgorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DestroyKey(Inst: PAESAlgorithm);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure EncryptBlock(Inst: PAESAlgorithm; Data: PByte);
+    class function EncryptBlock(Inst: PAESAlgorithm; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DecryptBlock(Inst: PAESAlgorithm; Data: PByte);
+    class function DecryptBlock(Inst: PAESAlgorithm; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -80,7 +80,7 @@ const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  AESCipherVTable: array[0..13] of Pointer = (
+  AESCipherVTable: array[0..14] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TAESAlgorithm.Release,
@@ -95,7 +95,8 @@ const
    @TAESAlgorithm.EncryptBlock,
    @TAESAlgorithm.DecryptBlock,
    @TBlockCipher.GetRand,
-   @TBlockCipher.RandBlock
+   @TBlockCipher.RandBlock,
+   @TBlockCipher.RandCrypt
    );
 
 procedure BurnKey(Inst: PAESAlgorithm); inline;
@@ -644,7 +645,7 @@ begin
   BurnKey(Inst);
 end;
 
-class procedure TAESAlgorithm.EncryptBlock(Inst: PAESAlgorithm; Data: PByte);
+class function TAESAlgorithm.EncryptBlock(Inst: PAESAlgorithm; Data: PByte): TF_RESULT;
 var
   I: Integer;
 
@@ -653,9 +654,10 @@ begin
   for I:= 1 to Inst.FRounds - 1 do
     DoRound(Inst.FExpandedKey.Blocks[I], PBlock(Data)^, False);
   DoRound(Inst.FExpandedKey.Blocks[Inst.FRounds], PBlock(Data)^, True);
+  Result:= TF_S_OK;
 end;
 
-class procedure TAESAlgorithm.DecryptBlock(Inst: PAESAlgorithm; Data: PByte);
+class function TAESAlgorithm.DecryptBlock(Inst: PAESAlgorithm; Data: PByte): TF_RESULT;
 var
   I: Integer;
 
@@ -664,6 +666,7 @@ begin
   for I:= (Inst.FRounds - 1) downto 1 do
     DoInvRound(Inst.FExpandedKey.Blocks[I], PBlock(Data)^, False);
   Xor128(Data, @Inst.FExpandedKey);
+  Result:= TF_S_OK;
 end;
 
 { TAESCipher }

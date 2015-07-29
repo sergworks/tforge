@@ -53,10 +53,10 @@ type
     class function DuplicateKey(Inst: PDESAlgorithm; var Key: PDESAlgorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DestroyKey(Inst: PDESAlgorithm);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure EncryptBlock(Inst: PDESAlgorithm; Data: PByte);
+    class function EncryptBlock(Inst: PDESAlgorithm; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-//    class procedure DecryptBlock(Inst: PDESAlgorithm; Data: PByte);
+//    class function DecryptBlock(Inst: PDESAlgorithm; Data: PByte);
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -72,7 +72,7 @@ const
 { TDESCipher }
 
 const
-  DESCipherVTable: array[0..12] of Pointer = (
+  DESCipherVTable: array[0..14] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TDESAlgorithm.Release,
@@ -86,8 +86,9 @@ const
    @TBlockCipher.Decrypt,
    @TDESAlgorithm.EncryptBlock,
    @TDESAlgorithm.EncryptBlock,
-   @TBlockCipher.GetRand
-//   @TBlockCipher.RandCrypt
+   @TBlockCipher.GetRand,
+   @TBlockCipher.RandBlock,
+   @TBlockCipher.RandCrypt
    );
 
 procedure BurnKey(Inst: PDESAlgorithm); inline;
@@ -376,7 +377,7 @@ begin
   end;
 end;
 
-class procedure TDESAlgorithm.EncryptBlock(Inst: PDESAlgorithm; Data: PByte);
+class function TDESAlgorithm.EncryptBlock(Inst: PDESAlgorithm; Data: PByte): TF_RESULT;
 var
   I, L, R, Work : LongWord;
   CPtr          : PLongWord;
@@ -418,6 +419,7 @@ begin
 
   FPerm(L, R);
   JoinBlock(L, R, Data);
+  Result:= TF_S_OK;
 end;
 
 end.

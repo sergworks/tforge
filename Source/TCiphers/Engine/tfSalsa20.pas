@@ -21,12 +21,6 @@ type
 
     PBlock = ^TBlock;
     TBlock = array[0..15] of LongWord;
-    {record
-      case Byte of
-        0: (Words64: array[0..7] of UInt64);
-        1: (Words: array[0..15] of LongWord);
-        2: (Bytes: array[0..63] of Byte);
-    end; }
 
     TNonce = record
       case Byte of
@@ -82,7 +76,7 @@ type
     class procedure EncryptBlock(Inst: PSalsa20; Data: PByte);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 *)
-    class procedure RandBlock(Inst: PSalsa20; Data: PByte);
+    class function KeyBlock(Inst: PSalsa20; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -96,7 +90,7 @@ uses tfRecords, tfUtils, tfBaseCiphers;
 const
   SALSA_BLOCK_SIZE = 64;
 
-  Salsa20VTable: array[0..13] of Pointer = (
+  Salsa20VTable: array[0..14] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TSalsa20.Release,
@@ -111,7 +105,8 @@ const
    @TStreamCipher.EncryptBlock,
    @TStreamCipher.EncryptBlock,
    @TStreamCipher.GetRand,
-   @TSalsa20.RandBlock
+   @TSalsa20.KeyBlock,
+   @TStreamCipher.RandCrypt
    );
 
 
@@ -172,12 +167,12 @@ class procedure TSalsa20.DestroyKey(Inst: PSalsa20);
 begin
   BurnKey(Inst);
 end;
-
+{
 type
   PSalsaBlock = ^TSalsaBlock;
   TSalsaBlock = array[0..15] of LongWord;
-
-procedure DoubleRound(x: PSalsaBlock);
+}
+procedure DoubleRound(x: TSalsa20.PBlock); //PSalsaBlock);
 var
   y: LongWord;
 
@@ -221,7 +216,7 @@ begin
   Result:= SALSA_BLOCK_SIZE;
 end;
 
-class procedure TSalsa20.RandBlock(Inst: PSalsa20; Data: PByte);
+class function TSalsa20.KeyBlock(Inst: PSalsa20; Data: PByte): TF_RESULT;
 var
 //  Block: TBlock;
   N: Cardinal;
@@ -229,17 +224,19 @@ var
 begin
   Move(Inst.FExpandedKey, Data^, SizeOf(TBlock));
   N:= Inst.FRounds;
+//N:= 1;
   repeat
-    DoubleRound(PSalsaBlock(Data));
+    DoubleRound(TSalsa20.PBlock(Data));
     Dec(N);
   until N = 0;
   repeat
-    Data[N]:= Data[N] + Inst.FExpandedKey[N];
+    PLongWord(Data)[N]:= PLongWord(Data)[N] + Inst.FExpandedKey[N];
     Inc(N);
   until N = 16;
   Inc(Inst.FExpandedKey[8]);
   if (Inst.FExpandedKey[8] = 0)
     then Inc(Inst.FExpandedKey[9]);
+  Result:= TF_S_OK;
 end;
 
 (*
@@ -435,6 +432,10 @@ begin
   Inst.FExpandedKey[8]:= 0;
   Inst.FExpandedKey[9]:= 0;
   Inst.FValidKey:= True;
+
+//FillChar(Inst.FExpandedKey, SizeOf(Inst.FExpandedKey), 0);
+//Inst.FExpandedKey[0]:= 1;
+
   Result:= TF_S_OK;
 end;
 
@@ -447,10 +448,19 @@ type
   end;
 
 var
-  P: PByte;
-  Tmp: UInt64;
+  Tmp, Tmp1: UInt64;
 
 begin
+  if (Param = TF_KP_IV) then begin
+    if (DataLen <> 2 * SizeOf(UInt64)) then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+//    TBigEndian.ReverseCopy(Data, PByte(Data) + 2 * SizeOf(UInt64), @Inst.FExpandedKey[6]);
+    Move(Data^, Inst.FExpandedKey[6], 2 * SizeOf(UInt64));
+    Result:= TF_S_OK;
+    Exit;
+  end;
   if (Param = TF_KP_NONCE) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
       Inst.FExpandedKey[6]:= 0;
@@ -492,45 +502,54 @@ begin
     else
       Result:= TF_E_INVALIDARG;
   end
-  else if (Param = TF_KP_BLOCKNO) then begin
+  else if (Param = TF_KP_INCNO) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
-      if (Data <> nil) then begin
+//      if (Data <> nil) then begin
+// Salsa20 uses little-endian block numbers
         Tmp:= 0;
+        TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[8];
+        TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[9];
+
         TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Tmp);
-//        Inst.FPos:= Tmp and $3F;      // 2^6 = SizeOf(TBlock)
-//        Tmp:= Tmp shr 6;              // 64-byte block number
+
+        Tmp:= Tmp + Tmp1;
 
         Inst.FExpandedKey[8]:= TUInt64Rec(Tmp).Lo;
         Inst.FExpandedKey[9]:= TUInt64Rec(Tmp).Hi;
-      end
+//      end
+(*
       else begin
                                         // 64-byte block number
         Inst.FExpandedKey[8]:= 0;
         Inst.FExpandedKey[9]:= 0;
 //        Inst.FPos:= 0;
       end;
+*)
       Result:= TF_S_OK;
     end
     else
       Result:= TF_E_INVALIDARG;
   end
-  else if (Param = TF_KP_BLOCKNO_LE) then begin
+  else if (Param = TF_KP_INCNO_LE) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
-      if (Data <> nil) then begin
+//      if (Data <> nil) then begin
         Tmp:= 0;
+        TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[8];
+        TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[9];
+
         Move(Data^, Tmp, DataLen);
-//        Inst.FPos:= Tmp and $3F;      // 2^6 = SizeOf(TBlock)
-//        Tmp:= Tmp shr 6;              // 64-byte block number
+
+        Tmp:= Tmp + Tmp1;
 
         Inst.FExpandedKey[8]:= TUInt64Rec(Tmp).Lo;
         Inst.FExpandedKey[9]:= TUInt64Rec(Tmp).Hi;
-      end
+{      end
       else begin
                                         // 64-byte block number
         Inst.FExpandedKey[8]:= 0;
         Inst.FExpandedKey[9]:= 0;
 //        Inst.FPos:= 0;
-      end;
+      end;}
       Result:= TF_S_OK;
     end
     else

@@ -67,10 +67,11 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRand(Inst: Pointer; Data: PByte; DataSize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-(*
-    class function RandCrypt(Inst: Pointer; Data: PByte; DataSize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-*)
+    class function RandBlock(Inst: Pointer; Data: PByte): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function RandCrypt(Inst: Pointer; Data: PByte; DataSize: LongWord;
+      Last: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 type
@@ -96,16 +97,13 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRand(Inst: Pointer; Data: PByte; DataSize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-(*
-    class function GetBlockSize(Inst: Pointer): Integer;
+    class function RandCrypt(Inst: Pointer; Data: PByte; DataSize: LongWord;
+      Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function RandCrypt(Inst: Pointer; Data: PByte; DataSize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-*)
 // this method is not really needed for stream ciphers,
 //   but it can be reasonably implemented
 //   and VTable entries for EncryptBlock/DecryptBlock should be filled anyway
-    class procedure EncryptBlock(Inst: Pointer; Data: PByte);
+    class function EncryptBlock(Inst: Pointer; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -118,7 +116,7 @@ type
   PVTable = ^TVTable;
   PPVTable = ^PVTable;
 
-  TBlockProc = procedure(Inst: PBlockCipher; Data: PByte);
+  TBlockFunc = function(Inst: Pointer; Data: PByte): TF_RESULT;
                  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   TGetBlockSizeFunc = function(Inst: PBlockCipher): LongInt;
@@ -128,29 +126,29 @@ type
       Data: PByte; DataSize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-function GetEncryptProc(Inst: PBlockCipher): Pointer; inline;
+function GetEncryptFunc(Inst: Pointer): Pointer; inline;
 begin
   Result:= PPVTable(Inst)^^[10];     // 10 is 'EncryptBlock' index
 end;
 
-function GetDecryptProc(Inst: PBlockCipher): Pointer; inline;
+function GetDecryptFunc(Inst: Pointer): Pointer; inline;
 begin
   Result:= PPVTable(Inst)^^[11];    // 11 is 'DecryptBlock' index
 end;
 
-function GetRandFunc(Inst: PStreamCipher): Pointer; inline;
+function GetRandFunc(Inst: Pointer): Pointer; inline;
 begin
   Result:= PPVTable(Inst)^^[12];    // 12 is 'GetRand' index
 end;
 
-function GetBlockSize(Inst: PBlockCipher): LongInt; inline;
-begin
-  Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[7])(Inst);
-end;
-
-function GetRandBlockProc(Inst: Pointer): Pointer; inline;
+function GetRandBlockFunc(Inst: Pointer): Pointer; inline;
 begin
   Result:= PPVTable(Inst)^^[13];    // 13 is 'RandBlock' index
+end;
+
+function GetBlockSize(Inst: Pointer): LongInt; inline;
+begin
+  Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[7])(Inst);
 end;
 
 procedure XorBytes(Target: Pointer; Value: Pointer; Count: Integer); inline;
@@ -208,10 +206,23 @@ begin
     Result:= TF_E_UNEXPECTED;
 end;
 
+class function TBlockCipher.RandCrypt(Inst: Pointer; Data: PByte;
+               DataSize: LongWord; Last: Boolean): TF_RESULT;
+begin
+  if PBlockCipher(Inst).FValidKey
+    and (PBlockCipher(Inst).FMode = TF_KEYMODE_CTR)
+    and ((PBlockCipher(Inst).FPadding = TF_PADDING_NONE)
+      or (PBlockCipher(Inst).FPadding = TF_PADDING_DEFAULT))
+    then
+      Result:= PBlockCipher(Inst).DecryptCTR(Data, DataSize, Last)
+    else
+      Result:= TF_E_UNEXPECTED;
+end;
+
 function TBlockCipher.EncryptECB(Data: PByte; var DataSize: LongWord;
                       BufSize: LongWord; Last: Boolean): TF_RESULT;
 var
-  EncryptBlock: TBlockProc;
+  EncryptBlock: TBlockFunc;
   RequiredSize: LongWord;
   LDataSize: LongWord;
   LPadding: LongWord;
@@ -219,7 +230,7 @@ var
   Cnt: LongWord;
 
 begin
-  @EncryptBlock:= GetEncryptProc(@Self);
+  @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
@@ -307,12 +318,12 @@ class function TBlockCipher.GetRand(Inst: Pointer; Data: PByte;
   DataSize: LongWord): TF_RESULT;
 
 var
-  EncryptBlock: TBlockProc;
+  EncryptBlock: TBlockFunc;
   Block: TBlock;
-  LBlockSize, LL, Cnt: Cardinal;
+  LBlockSize, LL{, Cnt}: Cardinal;
 
 begin
-  @EncryptBlock:= GetEncryptProc(Inst);
+  @EncryptBlock:= GetEncryptFunc(Inst);
   LBlockSize:= GetBlockSize(Inst);
   if LBlockSize > SizeOf(Block) then begin
     Result:= TF_E_UNEXPECTED;
@@ -337,6 +348,9 @@ begin
     end;
 
 // Inc IV
+    TBigEndian.Incr(@PBlockCipher(Inst).FIVector,
+                    PByte(@PBlockCipher(Inst).FIVector) + LBlockSize);
+{
     Cnt:= LBlockSize - 1;
     Inc(PBlockCipher(Inst).FIVector[Cnt]);
     if PBlockCipher(Inst).FIVector[Cnt] = 0 then begin
@@ -345,20 +359,33 @@ begin
         Inc(PBlockCipher(Inst).FIVector[Cnt]);
       until (PBlockCipher(Inst).FIVector[Cnt] <> 0) or (Cnt = 0);
     end;
-
+}
     if Data <> nil then Inc(Data, LL);
     Dec(DataSize, LL);
   end;
   Result:= TF_S_OK;
 end;
 
-(*
-class function TBlockCipher.RandCrypt(Inst: Pointer; Data: PByte;
-  DataSize: LongWord): TF_RESULT;
+class function TBlockCipher.RandBlock(Inst: Pointer; Data: PByte): TF_RESULT;
+var
+  EncryptBlock: TBlockFunc;
+  LBlockSize: Cardinal;
+
 begin
-  Result:= TF_E_NOTIMPL;
+  @EncryptBlock:= GetEncryptFunc(Inst);
+  LBlockSize:= GetBlockSize(Inst);
+  if (LBlockSize = 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+  Move(PBlockCipher(Inst).FIVector, Data^, LBlockSize);
+  EncryptBlock(Inst, Data);
+
+// Inc IV
+  TBigEndian.Incr(@PBlockCipher(Inst).FIVector,
+                  PByte(@PBlockCipher(Inst).FIVector) + LBlockSize);
+  Result:= TF_S_OK;
 end;
-*)
 
 function TBlockCipher.SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
 begin
@@ -445,6 +472,7 @@ begin
   end;
 
   LData:= 0;
+// since IV is big-endian, little-endian data is reversed
   if LE then
     TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData)
   else
@@ -510,7 +538,7 @@ begin
   if Param = TF_KP_IV then begin
     Result:= PBlockCipher(Inst).SetIV(Data, DataLen);
   end
-  else if Param and not TF_KP_LE = TF_KP_BLOCKNO then begin
+  else if Param and not TF_KP_LE = TF_KP_INCNO then begin
 
 //    if Param and TF_KP_LE <> 0 then             // convert to big endian
 //      TBigEndian.Reverse(Data, Data + Datalen);
@@ -540,7 +568,7 @@ end;
 function TBlockCipher.EncryptCBC(Data: PByte; var DataSize: LongWord;
                       BufSize: LongWord; Last: Boolean): TF_RESULT;
 var
-  EncryptBlock: TBlockProc;
+  EncryptBlock: TBlockFunc;
   RequiredSize: LongWord;
   LDataSize: LongWord;
   LPadding: LongWord;
@@ -548,7 +576,7 @@ var
   Cnt: LongWord;
 
 begin
-  @EncryptBlock:= GetEncryptProc(@Self);
+  @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
@@ -642,7 +670,7 @@ function TBlockCipher.EncryptCTR(Data: PByte; var DataSize: LongWord;
   BufSize: LongWord; Last: Boolean): TF_RESULT;
 
 var
-  EncryptBlock: TBlockProc;
+  EncryptBlock: TBlockFunc;
   Temp: TBlock;
   RequiredSize: LongWord;
   LDataSize: LongWord;
@@ -651,7 +679,7 @@ var
   Cnt: LongWord;
 
 begin
-  @EncryptBlock:= GetEncryptProc(@Self);
+  @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
@@ -770,14 +798,14 @@ end;
 function TBlockCipher.DecryptECB(Data: PByte; var DataSize: LongWord;
                                  Last: Boolean): TF_RESULT;
 var
-  DecryptBlock: TBlockProc;
+  DecryptBlock: TBlockFunc;
   LDataSize: LongWord;
   LPadding: LongWord;
   LBlockSize: LongWord;
   Cnt, SaveCnt: LongWord;
 
 begin
-  @DecryptBlock:= GetDecryptProc(@Self);
+  @DecryptBlock:= GetDecryptFunc(@Self);
   LDataSize:= DataSize;
   LPadding:= FPadding;
   LBlockSize:= GetBlockSize(@Self);
@@ -881,7 +909,7 @@ end;
 function TBlockCipher.DecryptCBC(Data: PByte; var DataSize: LongWord;
                     Last: Boolean): TF_RESULT;
 var
-  DecryptBlock: TBlockProc;
+  DecryptBlock: TBlockFunc;
   Temp: TBlock;
   LDataSize: LongWord;
   LPadding: LongWord;
@@ -889,7 +917,7 @@ var
   Cnt, SaveCnt: LongWord;
 
 begin
-  @DecryptBlock:= GetDecryptProc(@Self);
+  @DecryptBlock:= GetDecryptFunc(@Self);
 
   LPadding:= FPadding;
   if LPadding = TF_PADDING_DEFAULT
@@ -1002,7 +1030,7 @@ end;
 function TBlockCipher.DecryptCTR(Data: PByte; var DataSize: LongWord;
                                Last: Boolean): TF_RESULT;
 var
-  EncryptBlock: TBlockProc;
+  EncryptBlock: TBlockFunc;
   Temp: TBlock;
   LDataSize: LongWord;
   LPadding: LongWord;
@@ -1010,7 +1038,7 @@ var
   Cnt, SaveCnt: LongWord;
 
 begin
-  @EncryptBlock:= GetEncryptProc(@Self);  // !! CTR mode uses EncryptBlock for decryption
+  @EncryptBlock:= GetEncryptFunc(@Self);  // !! CTR mode uses EncryptBlock for decryption
   LDataSize:= DataSize;
   LPadding:= FPadding;
   if LPadding = TF_PADDING_DEFAULT
@@ -1202,7 +1230,7 @@ end;
 class function TStreamCipher.Decrypt(Inst: Pointer; Data: PByte;
   var DataSize: LongWord; Last: Boolean): TF_RESULT;
 var
-  DecryptBlock: TBlockProc;
+  DecryptBlock: TBlockFunc;
   LDataSize: LongWord;
   LBlockSize: LongWord;
   Block: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
@@ -1218,7 +1246,7 @@ begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
-  @DecryptBlock:= GetDecryptProc(Inst);
+  @DecryptBlock:= GetDecryptFunc(Inst);
   while LDataSize >= LBlockSize do begin
     DecryptBlock(Inst, Data);
     Inc(Data, LBlockSize);
@@ -1239,41 +1267,40 @@ end;
 
 class function TStreamCipher.SetKeyParam(Inst: Pointer; Param: LongWord;
   Data: Pointer; DataLen: LongWord): TF_RESULT;
-begin
-  Result:= TF_E_NOTIMPL;
-end;
-
-(*
-class function TStreamCipher.GetBlockSize(Inst: Pointer): Integer;
-begin
-  Result:= 0;
-end;
-
-class function TStreamCipher.RandCrypt(Inst: Pointer; Data: PByte;
-  DataSize: LongWord): TF_RESULT;
 
 var
-  GetRandFunc: TGetRandFunc;
-  Buffer: UInt64;
+  Block: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
+  Cnt: UInt64;
+  RandBlock: TBlockFunc;
+  LBlockSize: Cardinal;
 
 begin
-  @GetRandFunc:= GetRandFunc(@Self);
-  while DataSize > SizeOf(Buffer) do begin
-    Result:= GetRandFunc(Inst, @Buffer, SizeOf(Buffer));
-    if Result <> TF_S_OK then Exit;
-    XorBytes(Data, @Buffer, SizeOf(Buffer));
-    Inc(Data, SizeOf(Buffer));
-    Dec(DataSize, SizeOf(Buffer));
-  end;
-  if DataSize > 0 then begin
-    Result:= GetRandFunc(Inst, @Buffer, DataSize);
-    if Result <> TF_S_OK then Exit;
-    XorBytes(Data, @Buffer, DataSize);
-  end;
+  if Param = TF_KP_INCNO_LE then begin
+    if (DataLen = 0) or (DataLen > SizeOf(Cnt)) then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+    LBlockSize:= GetBlockSize(Inst);
+    if (LBlockSize = 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+    Cnt:= 0;
+    Move(Data^, Cnt, DataLen);
+    @RandBlock:= GetRandBlockFunc(Inst);
+    while Cnt > 0 do begin
+      RandBlock(Inst, @Block);
+      Dec(Cnt);
+    end;
+    FillChar(Block, LBlockSize, 0);
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+//    Result:= TF_E_NOTIMPL;
 end;
-*)
 
-class procedure TStreamCipher.EncryptBlock(Inst: Pointer; Data: PByte);
+class function TStreamCipher.EncryptBlock(Inst: Pointer; Data: PByte): TF_RESULT;
 var
   L: LongWord;
   GetRand: TGetRandFunc;
@@ -1281,19 +1308,22 @@ var
 
 begin
   L:= GetBlockSize(Inst);
-  if (L > 0) and (L <= TF_MAX_CIPHER_BLOCK_SIZE) then begin
-    @GetRand:= GetRandFunc(Inst);
-    GetRand(Inst, @Block, L);
-    XorBytes(Data, @Block, L);
-    FillChar(Block, L, 0);
+  if (L = 0) or (L > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
   end;
+  @GetRand:= GetRandFunc(Inst);
+  GetRand(Inst, @Block, L);
+  XorBytes(Data, @Block, L);
+  FillChar(Block, L, 0);
+  Result:= TF_S_OK;
 end;
 
 class function TStreamCipher.GetRand(Inst: Pointer; Data: PByte;
   DataSize: LongWord): TF_RESULT;
 var
   LBlockSize: LongWord;
-  RandBlock: TBlockProc;
+  RandBlock: TBlockFunc;
   Block: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
 
 begin
@@ -1302,7 +1332,7 @@ begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
-  @RandBlock:= GetRandBlockProc(Inst);
+  @RandBlock:= GetRandBlockFunc(Inst);
   while DataSize >= LBlockSize do begin
     RandBlock(Inst, Data);
     Inc(Data, LBlockSize);
@@ -1313,6 +1343,45 @@ begin
     Move(Block, Data^, DataSize);
     FillChar(Block, LBlockSize, 0);
   end;
+  Result:= TF_S_OK;
+end;
+
+class function TStreamCipher.RandCrypt(Inst: Pointer; Data: PByte;
+  DataSize: LongWord; Last: Boolean): TF_RESULT;
+var
+  LBlockSize: LongWord;
+  RandBlock: TBlockFunc;
+  Block: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
+
+begin
+  if not PStreamCipher(Inst).FValidKey then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+  LBlockSize:= GetBlockSize(Inst);
+  if (LBlockSize = 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) or
+    (not Last and (DataSize mod LBlockSize <> 0)) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+  @RandBlock:= GetRandBlockFunc(Inst);
+  while DataSize >= LBlockSize do begin
+    RandBlock(Inst, @Block);
+    XorBytes(Data, @Block, LBlockSize);
+    Inc(Data, LBlockSize);
+    Dec(DataSize, LBlockSize);
+  end;
+  if DataSize > 0 then begin
+(*
+    if not Last then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+*)
+    RandBlock(Inst, @Block);
+    XorBytes(Data, @Block, DataSize);
+  end;
+  FillChar(Block, LBlockSize, 0);
   Result:= TF_S_OK;
 end;
 

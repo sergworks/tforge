@@ -266,15 +266,17 @@ type
     function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data: PByte; var DataSize: LongWord;
-             BufSize: LongWord; Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Encrypt(Data: PByte; var DataSize: LongWord; BufSize: LongWord;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Decrypt(Data: PByte; var DataSize: LongWord;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure EncryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DecryptBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetRand(Data: PByte; DataSize: LongWord): TF_RESULT;
+    function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyStream(Data: PByte; DataSize: LongWord): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure RandBlock(Data: PByte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function KeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function KeyCrypt(Data: PByte; DataSize: LongWord;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IHashServer = interface(IInterface)
@@ -331,7 +333,7 @@ const
   TF_KP_FLAGS     = 4;      // DIR + MODE + PADDING
   TF_KP_IV        = 5;      // initialization vector
   TF_KP_NONCE     = 6;      // nonce
-  TF_KP_BLOCKNO   = 7;      // block number
+  TF_KP_INCNO     = 7;      // increment block number
 
   TF_KP_LE        = $1000;  // little endian
                             // _LE - suffix means the param is integer
@@ -340,8 +342,8 @@ const
                             //    and algorithms expecting data in
                             //    little-endian format;
 
-  TF_KP_NONCE_LE    = TF_KP_LE + TF_KP_NONCE;
-  TF_KP_BLOCKNO_LE  = TF_KP_LE + TF_KP_BLOCKNO;
+  TF_KP_NONCE_LE     = TF_KP_LE + TF_KP_NONCE;
+  TF_KP_INCNO_LE     = TF_KP_LE + TF_KP_INCNO;
 
 // Key Flags bits:
 //     0002            0040           0800

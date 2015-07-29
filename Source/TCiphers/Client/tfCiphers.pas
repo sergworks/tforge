@@ -22,6 +22,7 @@ type
     procedure SetFlagsProc(const Value: LongWord);
     procedure SetIVProc(const Value: ByteArray);
     procedure SetNonceProc(const Value: ByteArray);
+    function GetBlockSize: Cardinal;
   public
     class function Create(const Alg: ICipherAlgorithm): TCipher; static;
     procedure Free;
@@ -34,8 +35,8 @@ type
 
     function SetNonce(const Value: ByteArray): TCipher; overload;
     function SetNonce(const Value: UInt64): TCipher; overload;
-    function SetBlockNo(const Value: ByteArray): TCipher; overload;
-    function SetBlockNo(const Value: UInt64): TCipher; overload;
+//    function SetBlockNo(const Value: ByteArray): TCipher; overload;
+//    function SetBlockNo(const Value: UInt64): TCipher; overload;
 
     function ExpandKey(AKey: PByte; AKeyLen: LongWord): TCipher; overload;
     function ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord): TCipher; overload;
@@ -53,9 +54,11 @@ type
                       BufSize: LongWord; Last: Boolean); // overload;
     procedure Decrypt(var Data; var DataSize: LongWord;
                       Last: Boolean); // overload;
+    procedure KeyCrypt(var Data; DataSize: LongWord;
+                        Last: Boolean);
 
-    procedure GetRand(var Data; DataSize: LongWord);
-    function Rand(DataSize: LongWord): ByteArray;
+    procedure GetKeyStream(var Data; DataSize: LongWord);
+    function KeyStream(DataSize: LongWord): ByteArray;
 
     function EncryptBlock(const Data, Key: ByteArray): ByteArray;
     function DecryptBlock(const Data, Key: ByteArray): ByteArray;
@@ -68,6 +71,10 @@ type
 
     procedure EncryptFile(const InName, OutName: string; BufSize: LongWord = 0);
     procedure DecryptFile(const InName, OutName: string; BufSize: LongWord = 0);
+
+    function Skip(Value: LongWord): TCipher; overload;
+    function Skip(Value: UInt64): TCipher; overload;
+    function Skip(Value: ByteArray): TCipher; overload;
 
     class function AES: TCipher; static;
     class function DES: TCipher; static;
@@ -90,7 +97,7 @@ type
     property Flags: LongWord write SetFlagsProc;
     property IV: ByteArray write SetIVProc;
     property Nonce: ByteArray write SetNonceProc;
-//    property Position: ByteArray write SetPosProc;
+    property BlockSize: Cardinal read GetBlockSize;
   end;
 
 type
@@ -121,15 +128,20 @@ begin
   FAlgorithm:= nil;
 end;
 
-procedure TCipher.GetRand(var Data; DataSize: LongWord);
+function TCipher.GetBlockSize: Cardinal;
 begin
-  HResCheck(FAlgorithm.GetRand(@Data, DataSize));
+  Result:= FAlgorithm.GetBlockSize;
 end;
 
-function TCipher.Rand(DataSize: LongWord): ByteArray;
+procedure TCipher.GetKeyStream(var Data; DataSize: LongWord);
+begin
+  HResCheck(FAlgorithm.GetKeyStream(@Data, DataSize));
+end;
+
+function TCipher.KeyStream(DataSize: LongWord): ByteArray;
 begin
   Result:= ByteArray.Allocate(DataSize);
-  GetRand(Result.RawData^, DataSize);
+  GetKeyStream(Result.RawData^, DataSize);
 end;
 
 function TCipher.IsAssigned: Boolean;
@@ -216,6 +228,11 @@ begin
   HResCheck(FAlgorithm.Decrypt(@Data, DataSize, Last));
 end;
 
+procedure TCipher.KeyCrypt(var Data; DataSize: LongWord; Last: Boolean);
+begin
+  HResCheck(FAlgorithm.KeyCrypt(@Data, DataSize, Last));
+end;
+
 function TCipher.EncryptBlock(const Data, Key: ByteArray): ByteArray;
 var
   Flags: LongWord;
@@ -230,7 +247,7 @@ begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
   HResCheck(FAlgorithm.ExpandKey(Key.RawData, Key.Len));
 
-  Result:= ByteArray.Copy(Data);
+  Result:= Data.Copy();
   FAlgorithm.EncryptBlock(Result.RawData);
 end;
 
@@ -248,7 +265,7 @@ begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
   HResCheck(FAlgorithm.ExpandKey(Key.RawData, Key.Len));
 
-  Result:= ByteArray.Copy(Data);
+  Result:= Data.Copy;
   FAlgorithm.DecryptBlock(Result.RawData);
 end;
 
@@ -384,7 +401,7 @@ var
 
 begin
   L:= Data.GetLen;
-  Result:= ByteArray.Copy(Data);
+  Result:= Data.Copy;
   HResCheck(FAlgorithm.Decrypt(Result.RawData, L, True));
   Result.SetLen(L);
 end;
@@ -499,6 +516,7 @@ begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE, Value.RawData, Value.Len));
 end;
 
+{
 function TCipher.SetBlockNo(const Value: ByteArray): TCipher;
 begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_BLOCKNO, Value.RawData, Value.Len));
@@ -508,6 +526,25 @@ end;
 function TCipher.SetBlockNo(const Value: UInt64): TCipher;
 begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_BLOCKNO_LE, @Value, SizeOf(Value)));
+  Result:= Self;
+end;
+}
+
+function TCipher.Skip(Value: LongWord): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO_LE, @Value, SizeOf(Value)));
+  Result:= Self;
+end;
+
+function TCipher.Skip(Value: UInt64): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO_LE, @Value, SizeOf(Value)));
+  Result:= Self;
+end;
+
+function TCipher.Skip(Value: ByteArray): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO, @Value, SizeOf(Value)));
   Result:= Self;
 end;
 
