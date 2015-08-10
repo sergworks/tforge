@@ -41,7 +41,7 @@ type
     function SetPadding(Data: LongWord): TF_RESULT;
     function SetFlags(Data: LongWord): TF_RESULT;
 //    function SetPos32(Data: TLimb): TF_RESULT;
-    function IncBlockNo(Data: Pointer; DataLen: Cardinal; LE: Boolean): TF_RESULT;
+    function IncBlockNo(Data: Pointer; DataLen: Cardinal{; LE: Boolean}): TF_RESULT;
 
     function EncryptECB(Data: PByte; var DataSize: LongWord;
              BufSize: LongWord; Last: Boolean): TF_RESULT;
@@ -454,7 +454,7 @@ begin
 end;
 }
 
-function TBlockCipher.IncBlockNo(Data: Pointer; DataLen: Cardinal; LE: Boolean): TF_RESULT;
+function TBlockCipher.IncBlockNo(Data: Pointer; DataLen: Cardinal{; LE: Boolean}): TF_RESULT;
 var
   LBlockSize: LongWord;
   LData: UInt64;
@@ -473,10 +473,10 @@ begin
 
   LData:= 0;
 // since IV is big-endian, little-endian data is reversed
-  if LE then
-    TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData)
-  else
-    Move(Data^, LData, DataLen);
+//  if LE then
+    TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData);
+//  else
+//    Move(Data^, LData, DataLen);
 
 
 (*
@@ -538,12 +538,12 @@ begin
   if Param = TF_KP_IV then begin
     Result:= PBlockCipher(Inst).SetIV(Data, DataLen);
   end
-  else if Param and not TF_KP_LE = TF_KP_INCNO then begin
+  else if Param {and not TF_KP_LE} = TF_KP_INCNO then begin
 
 //    if Param and TF_KP_LE <> 0 then             // convert to big endian
 //      TBigEndian.Reverse(Data, Data + Datalen);
 
-    Result:= PBlockCipher(Inst).IncBlockNo(Data, DataLen, Param and TF_KP_LE <> 0);
+    Result:= PBlockCipher(Inst).IncBlockNo(Data, DataLen{, Param and TF_KP_LE <> 0});
   end
   else begin
     if DataLen = SizeOf(LongWord) then begin
@@ -1275,7 +1275,7 @@ var
   LBlockSize: Cardinal;
 
 begin
-  if Param = TF_KP_INCNO_LE then begin
+  if Param = TF_KP_INCNO{_LE} then begin
     if (DataLen = 0) or (DataLen > SizeOf(Cnt)) then begin
       Result:= TF_E_INVALIDARG;
       Exit;

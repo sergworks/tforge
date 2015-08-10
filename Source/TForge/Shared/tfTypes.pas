@@ -341,15 +341,15 @@ const
   TF_KP_NONCE     = 6;      // nonce
   TF_KP_INCNO     = 7;      // increment block number
 
-  TF_KP_LE        = $1000;  // little endian
+//  TF_KP_LE        = $1000;  // little endian
                             // _LE - suffix means the param is integer
                             //       in little-endian format;
                             //    that is optimization for little-endian CPU
                             //    and algorithms expecting data in
                             //    little-endian format;
 
-  TF_KP_NONCE_LE     = TF_KP_LE + TF_KP_NONCE;
-  TF_KP_INCNO_LE     = TF_KP_LE + TF_KP_INCNO;
+//  TF_KP_NONCE_LE     = TF_KP_LE + TF_KP_NONCE;
+//  TF_KP_INCNO_LE     = TF_KP_LE + TF_KP_INCNO;
 
 // Key Flags bits:
 //     0002            0040           0800

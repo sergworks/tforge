@@ -74,7 +74,7 @@ type
 
     function Skip(Value: LongWord): TCipher; overload;
     function Skip(Value: UInt64): TCipher; overload;
-    function Skip(Value: ByteArray): TCipher; overload;
+//    function Skip(Value: ByteArray): TCipher; overload;
 
     class function AES: TCipher; static;
     class function DES: TCipher; static;
@@ -507,7 +507,7 @@ end;
 
 function TCipher.SetNonce(const Value: UInt64): TCipher;
 begin
-  HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE_LE, @Value, SizeOf(Value)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE{_LE}, @Value, SizeOf(Value)));
   Result:= Self;
 end;
 
@@ -532,22 +532,22 @@ end;
 
 function TCipher.Skip(Value: LongWord): TCipher;
 begin
-  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO_LE, @Value, SizeOf(Value)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO{_LE}, @Value, SizeOf(Value)));
   Result:= Self;
 end;
 
 function TCipher.Skip(Value: UInt64): TCipher;
 begin
-  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO_LE, @Value, SizeOf(Value)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO{_LE}, @Value, SizeOf(Value)));
   Result:= Self;
 end;
-
+{
 function TCipher.Skip(Value: ByteArray): TCipher;
 begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO, @Value, SizeOf(Value)));
   Result:= Self;
 end;
-
+}
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: LongWord): TCipher;
 begin
   HResCheck(FAlgorithm.ExpandKey(AKey, AKeyLen));

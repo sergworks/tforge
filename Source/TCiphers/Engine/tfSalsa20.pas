@@ -279,13 +279,21 @@ var
 
 begin
   if (Param = TF_KP_IV) then begin
-    if (DataLen <> 2 * SizeOf(UInt64)) then begin
-      Result:= TF_E_INVALIDARG;
+    if (DataLen = 2 * SizeOf(UInt64)) then begin
+      Move(Data^, Inst.FExpandedKey[6], 2 * SizeOf(UInt64));
+      Result:= TF_S_OK;
       Exit;
     end;
-//    TBigEndian.ReverseCopy(Data, PByte(Data) + 2 * SizeOf(UInt64), @Inst.FExpandedKey[6]);
-    Move(Data^, Inst.FExpandedKey[6], 2 * SizeOf(UInt64));
-    Result:= TF_S_OK;
+    if (DataLen = SizeOf(UInt64)) then begin
+      Move(Data^, Inst.FExpandedKey[6], SizeOf(UInt64));
+                                      // 64-byte block number
+      Inst.FExpandedKey[8]:= 0;
+      Inst.FExpandedKey[9]:= 0;
+
+      Result:= TF_S_OK;
+      Exit;
+    end;
+    Result:= TF_E_INVALIDARG;
     Exit;
   end;
   if (Param = TF_KP_NONCE) then begin
@@ -303,6 +311,7 @@ begin
     else
       Result:= TF_E_INVALIDARG;
   end
+{
   else if (Param = TF_KP_NONCE_LE) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
       Inst.FExpandedKey[6]:= 0;
@@ -320,6 +329,7 @@ begin
     else
       Result:= TF_E_INVALIDARG;
   end
+}
   else if (Param = TF_KP_INCNO) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
 //      if (Data <> nil) then begin
@@ -328,7 +338,8 @@ begin
         TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[8];
         TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[9];
 
-        TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Tmp);
+//        TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Tmp);
+        Move(Data^, Tmp, DataLen);
 
         Tmp:= Tmp + Tmp1;
 
@@ -348,6 +359,7 @@ begin
     else
       Result:= TF_E_INVALIDARG;
   end
+(*
   else if (Param = TF_KP_INCNO_LE) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
 //      if (Data <> nil) then begin
@@ -373,6 +385,7 @@ begin
     else
       Result:= TF_E_INVALIDARG;
   end
+*)
   else
     Result:= TF_E_NOTIMPL;
 end;
