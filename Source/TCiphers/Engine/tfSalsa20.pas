@@ -37,21 +37,8 @@ type
     FValidKey: LongBool;
                                 // -- inherited fields end --
     FExpandedKey: TBlock;
-//    FNonce: TNonce;
-//    FBlock: TBlock;
-//    FBlockNo: TNonce;
-//    FKeySize: Cardinal;         // 16 (128 bits) or 32 (256 bits)
     FRounds: Cardinal;            // 1..255
-(*
-    procedure DoCrypt(Data: PByte; DataSize: LongWord);
-    class procedure EncryptBlock(Inst: PSalsa20; Data: PByte); static;
-    class function GetSequence(Inst: PSalsa20; Data: PBlock;
-      DataSize: LongWord): TF_RESULT; static;
-*)
-//    FPos: Cardinal;             // 0..63
 {$HINTS ON}
-//    procedure UpdateBlock;
-//    procedure DoCrypt(Data: PByte; DataSize: LongWord);
   public
     class function Release(Inst: PSalsa20): Integer; stdcall; static;
     class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: LongWord): TF_RESULT;
@@ -64,19 +51,7 @@ type
     class function SetKeyParam(Inst: PSalsa20; Param: LongWord; Data: Pointer;
           DataLen: LongWord): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-(*
-    class function Encrypt(Inst: PSalsa20; Data: PByte; var DataSize: LongWord;
-      BufSize: LongWord; Last: Boolean): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: PSalsa20; Data: PByte; var DataSize: LongWord;
-      Last: Boolean): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetSequence(Inst: PSalsa20; Data: PBlock; DataSize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure EncryptBlock(Inst: PSalsa20; Data: PByte);
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-*)
-    class function KeyBlock(Inst: PSalsa20; Data: PByte): TF_RESULT;
+    class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -108,7 +83,6 @@ const
    @TSalsa20.KeyBlock,
    @TStreamCipher.RandCrypt
    );
-
 
 function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;
 begin
@@ -216,21 +190,19 @@ begin
   Result:= SALSA_BLOCK_SIZE;
 end;
 
-class function TSalsa20.KeyBlock(Inst: PSalsa20; Data: PByte): TF_RESULT;
+class function TSalsa20.KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
 var
-//  Block: TBlock;
   N: Cardinal;
 
 begin
   Move(Inst.FExpandedKey, Data^, SizeOf(TBlock));
   N:= Inst.FRounds;
-//N:= 1;
   repeat
-    DoubleRound(TSalsa20.PBlock(Data));
+    DoubleRound(Data);
     Dec(N);
   until N = 0;
   repeat
-    PLongWord(Data)[N]:= PLongWord(Data)[N] + Inst.FExpandedKey[N];
+    Data[N]:= Data[N] + Inst.FExpandedKey[N];
     Inc(N);
   until N = 16;
   Inc(Inst.FExpandedKey[8]);
@@ -239,158 +211,13 @@ begin
   Result:= TF_S_OK;
 end;
 
-(*
-class function TSalsa20.GetSequence(Inst: PSalsa20; Data: PBlock;
-                                    DataSize: LongWord): TF_RESULT;
-var
-//  L, L1: LongWord;
-  Block: TBlock;
-  N: Cardinal;
-
-begin
-  while DataSize >= SALSA_BLOCK_SIZE do begin
-    Move(Inst.FExpandedKey, Data^, SizeOf(TBlock));
-    N:= Inst.FRounds;
-    repeat
-      DoubleRound(PSalsaBlock(Data));
-      Dec(N);
-    until N = 0;
-    repeat
-      Data[N]:= Data[N] + Inst.FExpandedKey[N];
-      Inc(N);
-    until N = 16;
-    Inc(Inst.FExpandedKey[8]);
-    if (Inst.FExpandedKey[8] = 0)
-      then Inc(Inst.FExpandedKey[9]);
-    Dec(DataSize, SALSA_BLOCK_SIZE);
-  end;
-  if DataSize > 0 then begin
-    Move(Inst.FExpandedKey, Block, SizeOf(TBlock));
-    N:= Inst.FRounds;
-    repeat
-      DoubleRound(@Block);
-      Dec(N);
-    until N = 0;
-    repeat
-      Block[N]:= Block[N] + Inst.FExpandedKey[N];
-      Inc(N);
-    until N = 16;
-    Inc(Inst.FExpandedKey[8]);
-    if (Inst.FExpandedKey[8] = 0)
-      then Inc(Inst.FExpandedKey[9]);
-    Move(Block, Data^, DataSize);
-    FillChar(Block, DataSize, 0);
-  end;
-  Result:= TF_S_OK;
-end;
-
-class procedure TSalsa20.EncryptBlock(Inst: PSalsa20; Data: PByte);
-var
-  Block: TBlock;
-  L, N: LongWord;
-  P: PLongWord;
-
-begin
-                                        // produce a 64-byte block
-  Move(Inst.FExpandedKey, Block, SizeOf(TBlock));
-  N:= Inst.FRounds;
-  repeat
-    DoubleRound(@Block);
-    Dec(N);
-  until N = 0;
-  repeat
-    Block[N]:= Block[N] + Inst.FExpandedKey[N];
-    Inc(N);
-  until N = 16;
-  Inc(Inst.FExpandedKey[8]);
-  if (Inst.FExpandedKey[8] = 0)
-    then Inc(Inst.FExpandedKey.Words[9]);
-                                        // xor the plaintext with the block
-  L:= SizeOf(TBlock) shr 2;
-  P:= @Block;
-  while L > 0 do begin
-    PLongWord(Data)^:= PLongWord(Data)^ xor P^;
-    P^:= 0;                             // burn the block
-    Inc(PLongWord(Data));
-    Inc(P);
-    Dec(L);
-  end;
-end;
-
-procedure TSalsa20.DoCrypt(Data: PByte; DataSize: LongWord);
-var
-  L, L1: LongWord;
-  P: PByte;
-//  Block: TBlock;
-  N: Cardinal;
-
-begin
-  while DataSize > 0 do begin
-    if FPos = 0 then begin
-      Move(FExpandedKey, FBlock, SizeOf(TBlock));
-      N:= FRounds;
-      repeat
-        DoubleRound(@FBlock);
-        Dec(N);
-      until N = 0;
-      repeat
-        FBlock.Words[N]:= FBlock.Words[N] + FExpandedKey.Words[N];
-        Inc(N);
-      until N = 16;
-      Inc(FExpandedKey.Words[8]);
-      if (FExpandedKey.Words[8] = 0)
-        then Inc(FExpandedKey.Words[9]);
-    end;
-    L:= DataSize;
-    L1:= SizeOf(TBlock) - FPos;
-    if L > L1 then L:= L1;
-    L1:= L;
-    P:= @FBlock.Bytes[FPos];
-    repeat
-      Data^:= Data^ xor P^;
-      Inc(Data);
-      Inc(P);
-      Dec(L1);
-    until L1 = 0;
-    FPos:= FPos + L;
-    if FPos >= SizeOf(TBlock) then FPos:= 0;
-    Dec(DataSize, L);
-  end;
-end;
-*)
-(*
-class function TSalsa20.Encrypt(Inst: PSalsa20; Data: PByte;
-  var DataSize: LongWord; BufSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  if Inst.FValidKey then begin
-    Inst.DoCrypt(Data, DataSize);
-    Result:= TF_S_OK;
-  end
-  else
-    Result:= TF_E_STATE;
-end;
-
-class function TSalsa20.Decrypt(Inst: PSalsa20; Data: PByte;
-  var DataSize: LongWord; Last: Boolean): TF_RESULT;
-begin
-  if Inst.FValidKey then begin
-    Inst.DoCrypt(Data, DataSize);
-    Result:= TF_S_OK;
-  end
-  else
-    Result:= TF_E_STATE;
-end;
-*)
-
 class function TSalsa20.DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
 begin
   Result:= GetSalsa20Algorithm(Key);
   if Result = TF_S_OK then begin
     Key.FValidKey:= Inst.FValidKey;
     Key.FExpandedKey:= Inst.FExpandedKey;
-//    Key.FBlock:= Inst.FBlock;
     Key.FRounds:= Inst.FRounds;
-//    Key.FPos:= Inst.FPos;
   end;
 end;
 
@@ -466,18 +293,7 @@ begin
       Inst.FExpandedKey[6]:= 0;
       Inst.FExpandedKey[7]:= 0;
       if (Data <> nil) then begin
-                                      // convert data to little-endian
-        TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Inst.FExpandedKey[6]);
-(*
-        Inc(PByte(Data), DataLen);
-        P:= @(Inst.FExpandedKey.Words[6]);
-        while DataLen > 0 do begin
-          Dec(PByte(Data));
-          P^:= PByte(Data)^;
-          Inc(P);
-          Dec(DataLen);
-        end;
-*)
+        Move(Data^, Inst.FExpandedKey, DataLen);
       end;
                                       // 64-byte block number
       Inst.FExpandedKey[8]:= 0;
@@ -493,6 +309,8 @@ begin
       Inst.FExpandedKey[7]:= 0;
       if (Data <> nil) then begin
         Move(Data^, Inst.FExpandedKey, DataLen);
+                                      // convert data to big-endian
+//        TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Inst.FExpandedKey[6]);
       end;
                                       // 64-byte block number
       Inst.FExpandedKey[8]:= 0;

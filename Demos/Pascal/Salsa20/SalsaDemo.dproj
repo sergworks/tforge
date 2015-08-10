@@ -6,9 +6,9 @@
 			<Base>True</Base>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<Platform>Win32</Platform>
-			<AppType>Console</AppType>
 			<FrameworkType>None</FrameworkType>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+			<AppType>Console</AppType>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
 			<Base>true</Base>

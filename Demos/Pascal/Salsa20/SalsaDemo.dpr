@@ -116,13 +116,13 @@ var
   Tmp: ByteArray;
 
 begin
-  Key:= ByteArray.ParseDec(KeyStr, ',');
+  Key:= ByteArray.Parse(KeyStr, ',');
   Writeln('Key: ', Key.ToString);
-  Nonce:= ByteArray.ParseDec(NonceStr, ',');
+  Nonce:= ByteArray.Parse(NonceStr, ',');
   Writeln('Nonce: ', Nonce.ToString);
-  No:= UInt64(ByteArray.ParseDec(NoStr, ','));
+  No:= UInt64(ByteArray.Parse(NoStr, ','));
   Writeln('No: ', No);
-  IV:= ByteArray.ParseDec(IVStr, ',');
+  IV:= ByteArray.Parse(IVStr, ',');
   Keystream:= TCipher.Salsa20
                    .ExpandKey(Key)
                    .SetIV(IV)
@@ -291,7 +291,7 @@ var
   I: Integer;
 
 begin
-  Keystream:= ByteArray.ParseDec(KeyStr, ',');
+  Keystream:= ByteArray.Parse(KeyStr, ',');
   Writeln(KeyStream.ToString);
   I:= 0;
 //  Tmp:= ByteArray.Copy(KeyStream, I*4, 4);
@@ -299,6 +299,54 @@ begin
   Writeln(KeyStream.Len, ', ', KeyStream.ToHex);
   Writeln(Tmp.Len, ', ', Tmp.ToHex);
   Writeln;
+end;
+
+procedure TestFromText;
+var
+  A: ByteArray;
+  I, Sum: Integer;
+  P: PByte;
+  B: Byte;
+
+begin
+  A:= ByteArray.Parse('10 20 30 40 50');
+                  // using 'Bytes' property
+  Sum:= 0;
+  for I:= 0 to A.Len - 1 do
+    Inc(Sum, A[I]);
+  Writeln(Sum);
+                  // using 'RawData' property
+  Sum:= 0;
+  P:= A.RawData;
+  for I:= 0 to A.Len - 1 do
+    Inc(Sum, P[I]);
+  Writeln(Sum);
+                  // using 'for .. in' loop
+  Sum:= 0;
+  for B in A do
+    Inc(Sum, B);
+  Writeln(Sum);
+end;
+
+procedure EncryptFiles(const Key: ByteArray; FileNames: array of string);
+var
+  Cipher: TCipher;
+  Nonce: UInt64;
+  I: Integer;
+
+begin
+  Nonce:= 0;
+  for I:= 0 to High(FileNames) do begin
+    Cipher:= TCipher.Salsa20;
+    Inc(Nonce);
+    try
+      Cipher.ExpandKey(Key)
+            .SetNonce(Nonce)
+            .EncryptFile(FileNames[I], FileNames[I] + '.salsa20');
+    finally
+      Cipher.Burn;
+    end;
+  end;
 end;
 
 begin
@@ -313,6 +361,7 @@ begin
 //    TestKey;
     TestVectors;
 //    TestCopy;
+//  TestFromText;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

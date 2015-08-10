@@ -159,14 +159,14 @@ begin
   HResCheck(FServer.GetByAlgID(TF_ALG_DES, Result.FAlgorithm));
 end;
 
-class function TCipher.RC5: TCipher;
-begin
-  HResCheck(FServer.GetByAlgID(TF_ALG_RC5, Result.FAlgorithm));
-end;
-
 class function TCipher.RC4: TCipher;
 begin
   HResCheck(FServer.GetByAlgID(TF_ALG_RC4, Result.FAlgorithm));
+end;
+
+class function TCipher.RC5: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_RC5, Result.FAlgorithm));
 end;
 
 class function TCipher.RC5(BlockSize, Rounds: LongWord): TCipher;

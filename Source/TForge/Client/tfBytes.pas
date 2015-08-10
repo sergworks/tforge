@@ -36,39 +36,40 @@ type
     procedure ReAllocate(ASize: Cardinal);
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
-    class function ParseDec(const S: string; Delimiter: Char = #0): ByteArray; static;
+    class function Parse(const S: string; Delimiter: Char = #0): ByteArray; static;
     class function ParseHex(const S: string): ByteArray; overload; static;
     class function ParseHex(const S: string; Delimiter: Char): ByteArray; overload; static;
     class function TryParseHex(const S: string; var R: ByteArray): Boolean; static;
     class function ParseBitString(const S: string; ABitLen: Integer): ByteArray; static;
 
+    class function FromData(const Data; DataLen: Cardinal;
+                     Reversed: Boolean): ByteArray; static;
+
     function ToText: string;
     function ToString: string;
     function ToHex: string;
 
+    procedure ToData(const Data; DataLen: Cardinal; Reversed: Boolean);
+
     procedure Incr;
     procedure Decr;
 
-//    class function Copy(const A: ByteArray): ByteArray; overload; static;
-//    class function Copy(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
-//    class function Copy(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
+    procedure Burn;
+    procedure Fill(AValue: Byte);
+
+    class function Concat(const A, B: ByteArray): ByteArray; static;
+
     function Copy: ByteArray; overload;
     function Copy(I: Cardinal): ByteArray; overload;
     function Copy(I, L: Cardinal): ByteArray; overload;
 
-//    class function Insert(const A: ByteArray; I: Cardinal; B: Byte): ByteArray; overload; static;
-//    class function Insert(const A: ByteArray; I: Cardinal; B: ByteArray): ByteArray; overload; static;
-//    class function Insert(const A: ByteArray; I: Cardinal; B: TBytes): ByteArray; overload; static;
     function Insert(I: Cardinal; B: Byte): ByteArray; overload;
-    function Insert(I: Cardinal; B: ByteArray): ByteArray; overload;
-    function Insert(I: Cardinal; B: TBytes): ByteArray; overload;
+    function Insert(I: Cardinal; const B: ByteArray): ByteArray; overload;
+    function Insert(I: Cardinal; const B: TBytes): ByteArray; overload;
 
-//    class function Remove(const A: ByteArray; I: Cardinal): ByteArray; overload; static;
-//    class function Remove(const A: ByteArray; I, L: Cardinal): ByteArray; overload; static;
     function Remove(I: Cardinal): ByteArray; overload;
     function Remove(I, L: Cardinal): ByteArray; overload;
 
-//    class function Reverse(const A: ByteArray): ByteArray; overload; static;
     function Reverse: ByteArray; overload;
 
     class function AddBytes(const A, B: ByteArray): ByteArray; static;
@@ -274,6 +275,9 @@ begin
 {$ELSE}
   HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), Pointer(S8), Length(S8)));
 {$ENDIF}
+  if Pointer(S8) <> Pointer(S) then begin
+    FillChar(Pointer(S8)^, Length(S8), 32);
+  end;
 end;
 
 class function ByteArray.FromAnsi(const S: RawByteString): ByteArray;
@@ -285,7 +289,17 @@ begin
 {$ENDIF}
 end;
 
-class function ByteArray.ParseDec(const S: string; Delimiter: Char): ByteArray;
+class function ByteArray.FromData(const Data; DataLen: Cardinal;
+                 Reversed: Boolean): ByteArray;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(ByteVectorFromPByteEx(Result.FBytes, @Data, DataLen, Reversed));
+{$ELSE}
+  HResCheck(ByteVectorFromPByteEx(PByteVector(Result.FBytes), @Data, DataLen, Reversed));
+{$ENDIF}
+end;
+
+class function ByteArray.Parse(const S: string; Delimiter: Char): ByteArray;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(ByteVectorFromPCharDec(Result.FBytes, Pointer(S), Length(S),
@@ -443,13 +457,41 @@ begin
 {$ENDIF}
 end;
 
-function ByteArray.Insert(I: Cardinal; B: ByteArray): ByteArray;
+function ByteArray.Insert(I: Cardinal; const B: ByteArray): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.InsertBytes(I, B.FBytes, Result.FBytes));
 {$ELSE}
   HResCheck(TByteVector.InsertBytes(PByteVector(FBytes), I, PByteVector(B.FBytes),
                                     PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+function ByteArray.Insert(I: Cardinal; const B: TBytes): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.InsertPByte(PByteVector(FBytes), I, Pointer(B), Length(B),
+                        PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+procedure ByteArray.Burn;
+begin
+{$IFDEF TFL_INTFCALL}
+  FBytes.Burn;
+{$ELSE}
+  TByteVector.Burn(PByteVector(FBytes));
+{$ENDIF}
+end;
+
+procedure ByteArray.Fill(AValue: Byte);
+begin
+{$IFDEF TFL_INTFCALL}
+  FBytes.Fill(AValue);
+{$ELSE}
+  TByteVector.Fill(PByteVector(FBytes), AValue);
 {$ENDIF}
 end;
 
@@ -468,16 +510,6 @@ begin
   HResCheck(FBytes.Decr);
 {$ELSE}
   HResCheck(TByteVector.Decr(PByteVector(FBytes)));
-{$ENDIF}
-end;
-
-function ByteArray.Insert(I: Cardinal; B: TBytes): ByteArray;
-begin
-{$IFDEF TFL_INTFCALL}
-  HResCheck(FBytes.InsertPByte(I, Pointer(B), Length(B), Result.FBytes));
-{$ELSE}
-  HResCheck(TByteVector.InsertPByte(PByteVector(FBytes), I, Pointer(B), Length(B),
-                        PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
 
@@ -702,6 +734,15 @@ begin
   until L = 0;
 end;
 
+procedure ByteArray.ToData(const Data; DataLen: Cardinal; Reversed: Boolean);
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.ToData(@Data, DataLen, Reversed));
+{$ELSE}
+  HResCheck(TByteVector.ToData(PByteVector(FBytes), @Data, DataLen, Reversed));
+{$ENDIF}
+end;
+
 function ByteArray.ToHex: string;
 const
   ASCII_0 = Ord('0');
@@ -781,6 +822,8 @@ begin
     SetLength(S8, L);
     Move(FBytes.GetRawData^, Pointer(S8)^, L);
     Result:= string(S8);
+    if Pointer(S8) <> Pointer(Result) then
+      FillChar(Pointer(S8)^, Length(S8), 32);
   end;
 end;
 
@@ -1035,6 +1078,16 @@ begin
 {$ENDIF}
 end;
 *)
+
+class function ByteArray.Concat(const A, B: ByteArray): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.ConcatBytes(B.FBytes, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ConcatBytes(PByteVector(A.FBytes), PByteVector(B.FBytes),
+                                    PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
 
 function ByteArray.Copy: ByteArray;
 begin

@@ -106,6 +106,13 @@ type
     class function Decr(A: PByteVector): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
+    class procedure Burn(A: PByteVector);
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class procedure Fill(A: PByteVector; Value: Byte);
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function ToData(A: PByteVector; Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 // for .. in iteration support
@@ -139,16 +146,20 @@ function ByteVectorSetLen(var A: PByteVector; L: Integer): TF_RESULT;
 function ByteVectorFromPByte(var A: PByteVector; P: PByte; L: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+function ByteVectorFromPByteEx(var A: PByteVector; P: PByte; L: Cardinal;
+           Reversed: Boolean): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
 function ByteVectorFromPCharDec(var A: PByteVector; P: PByte;
-         L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
+           L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function ByteVectorFromPCharHex(var A: PByteVector; P: PByte;
-                                L: Cardinal; CharSize: Cardinal): TF_RESULT;
+           L: Cardinal; CharSize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function ByteVectorFromPCharHexEx(var A: PByteVector; P: PByte;
-         L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
+           L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function ByteVectorFromByte(var A: PByteVector; Value: Byte): TF_RESULT;
@@ -160,7 +171,7 @@ implementation
 uses tfRecords, tfUtils;
 
 const
-  ByteVecVTable: array[0..31] of Pointer = (
+  ByteVecVTable: array[0..34] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -200,7 +211,12 @@ const
    @TByteVector.ToDec,
 
    @TByteVector.Incr,
-   @TByteVector.Decr
+   @TByteVector.Decr,
+
+   @TByteVector.Burn,
+   @TByteVector.Fill,
+
+   @TByteVector.ToData
    );
 
 const
@@ -601,6 +617,30 @@ begin
   Result:= TF_S_OK;
 end;
 
+class function TByteVector.ToData(A: PByteVector; Data: PByte; L: Cardinal;
+                 Reversed: Boolean): TF_RESULT;
+var
+  LA, LL: Cardinal;
+
+begin
+  LA:= A.FUsed;
+  if (L > LA) then begin
+    FillChar((Data + (L - LA))^, L - LA, 0);
+    LL:= LA;
+  end
+  else
+    LL:= L;
+
+  if LA > 0 then begin
+    if Reversed
+      then TBigEndian.ReverseCopy(PByte(@A.FData) + (LA - LL),
+                                  PByte(@A.FData) + LA, Data)
+      else Move(A.FData, Data^, LL);
+  end;
+
+  Result:= TF_S_OK;
+end;
+
 class function TByteVector.ToDec(A: PByteVector; var R: PByteVector): TF_RESULT;
 var
   Tmp: PByteVector;
@@ -677,6 +717,17 @@ begin
 
   if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
+end;
+
+class procedure TByteVector.Burn(A: PByteVector);
+begin
+  FillChar(A.FData, A.FUsed, 0);
+  A.FUsed:= 1;
+end;
+
+class procedure TByteVector.Fill(A: PByteVector; Value: Byte);
+begin
+  FillChar(A.FData, A.FUsed, Value);
 end;
 
 class function TByteVector.Incr(A: PByteVector): TF_RESULT;
@@ -893,6 +944,23 @@ begin
   if Result = TF_S_OK then begin
     Move(P^, Tmp.FData, L);
 //    Tmp.FUsed:= L;
+    if A <> nil then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+function ByteVectorFromPByteEx(var A: PByteVector; P: PByte;
+           L: Cardinal; Reversed: Boolean): TF_RESULT;
+var
+  Tmp: PByteVector;
+
+begin
+  Result:= TByteVector.AllocVector(Tmp, L);
+  if (Result = TF_S_OK) then begin
+    if (L > 0) then begin
+      if Reversed then TBigEndian.ReverseCopy(P, P + L, @Tmp.FData)
+      else Move(P^, Tmp.FData, L);
+    end;
     if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;

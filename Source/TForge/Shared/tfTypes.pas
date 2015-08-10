@@ -99,6 +99,12 @@ type
 
     function Incr: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Decr: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Fill(Value: Byte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function ToData(Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 (*
