@@ -37,7 +37,7 @@ type
     FValidKey: LongBool;
                                 // -- inherited fields end --
     FExpandedKey: TBlock;
-    FRounds: Cardinal;            // 1..255
+    FRounds: Cardinal;          // 2..254
 {$HINTS ON}
   public
     class function Release(Inst: PSalsa20): Integer; stdcall; static;
@@ -55,8 +55,25 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
+type
+  TChaCha20 = record
+  public
+    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: LongWord): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SetKeyParam(Inst: PSalsa20; Param: LongWord; Data: Pointer;
+          DataLen: LongWord): TF_RESULT;
+         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+  end;
+
 function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;
 function GetSalsa20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
+
+function GetChaCha20Algorithm(var A: PSalsa20): TF_RESULT;
+function GetChaCha20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
 
 implementation
 
@@ -84,6 +101,25 @@ const
    @TStreamCipher.RandCrypt
    );
 
+  ChaCha20VTable: array[0..14] of Pointer = (
+   @TtfRecord.QueryIntf,
+   @TtfRecord.Addref,
+   @TSalsa20.Release,
+
+   @TChaCha20.SetKeyParam,
+   @TChaCha20.ExpandKey,
+   @TSalsa20.DestroyKey,
+   @TChaCha20.DuplicateKey,
+   @TSalsa20.GetBlockSize,
+   @TStreamCipher.Encrypt,
+   @TStreamCipher.Decrypt,
+   @TStreamCipher.EncryptBlock,
+   @TStreamCipher.EncryptBlock,
+   @TStreamCipher.GetRand,
+   @TChaCha20.KeyBlock,
+   @TStreamCipher.RandCrypt
+   );
+
 function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;
 begin
   Result:= GetSalsa20AlgorithmEx(A, 20);
@@ -101,6 +137,34 @@ begin
   try
     Tmp:= AllocMem(SizeOf(TSalsa20));
     Tmp^.FVTable:= @Salsa20VTable;
+    Tmp^.FRefCount:= 1;
+    Tmp^.FRounds:= Rounds shr 1;
+
+    if A <> nil then TSalsa20.Release(A);
+    A:= Tmp;
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
+function GetChaCha20Algorithm(var A: PSalsa20): TF_RESULT;
+begin
+  Result:= GetChaCha20AlgorithmEx(A, 20);
+end;
+
+function GetChaCha20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
+var
+  Tmp: PSalsa20;
+
+begin
+  if (Rounds < 1) or (Rounds > 255) or Odd(Rounds) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  try
+    Tmp:= AllocMem(SizeOf(TSalsa20));
+    Tmp^.FVTable:= @ChaCha20VTable;
     Tmp^.FRefCount:= 1;
     Tmp^.FRounds:= Rounds shr 1;
 
@@ -141,12 +205,8 @@ class procedure TSalsa20.DestroyKey(Inst: PSalsa20);
 begin
   BurnKey(Inst);
 end;
-{
-type
-  PSalsaBlock = ^TSalsaBlock;
-  TSalsaBlock = array[0..15] of LongWord;
-}
-procedure DoubleRound(x: TSalsa20.PBlock); //PSalsaBlock);
+
+procedure SalsaDoubleRound(x: TSalsa20.PBlock);
 var
   y: LongWord;
 
@@ -185,6 +245,68 @@ begin
   y := x[14] + x[13]; x[15] := x[15] xor ((y shl 18) or (y shr (32-18)));
 end;
 
+procedure ChaChaDoubleRound(x: TSalsa20.PBlock);
+var
+  a, b, c, d: LongWord;
+
+begin
+  a := x[0];   b := x[4];      c := x[8];      d:= x[12];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[0] := a;   x[4] := b;      x[8] := c;      x[12] := d;
+
+  a := x[1];   b := x[5];      c := x[9];      d := x[13];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[1] := a;   x[5] := b;      x[9] := c;      x[13] := d;
+
+  a := x[2];   b := x[6];      c := x[10];     d := x[14];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[2] := a;   x[6] := b;      x[10] := c;     x[14] := d;
+
+  a := x[3];   b := x[7];      c := x[11];     d := x[15];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[3] := a;   x[7] := b;      x[11] := c;     x[15] := d;
+
+  a := x[0];   b := x[5];      c := x[10];     d := x[15];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[0] := a;   x[5] := b;      x[10] := c;     x[15] := d;
+
+  a := x[1];   b := x[6];      c := x[11];     d := x[12];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[1] := a;   x[6] := b;      x[11] := c;     x[12] := d;
+
+  a := x[2];   b := x[7];      c := x[8];      d := x[13];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[2] := a;   x[7] := b;      x[8] := c;      x[13] := d;
+
+  a := x[3];   b := x[4];      c := x[9];      d := x[14];
+  inc(a, b);   d := a xor d;   d := (d shl 16) or (d shr (32-16));
+  inc(c, d);   b := c xor b;   b := (b shl 12) or (b shr (32-12));
+  inc(a, b);   d := a xor d;   d := (d shl  8) or (d shr (32- 8));
+  inc(c, d);   b := c xor b;   b := (b shl  7) or (b shr (32- 7));
+  x[3] := a;   x[4] := b;      x[9] := c;      x[14] := d;
+end;
+
 class function TSalsa20.GetBlockSize(Inst: PSalsa20): Integer;
 begin
   Result:= SALSA_BLOCK_SIZE;
@@ -198,7 +320,7 @@ begin
   Move(Inst.FExpandedKey, Data^, SizeOf(TBlock));
   N:= Inst.FRounds;
   repeat
-    DoubleRound(Data);
+    SalsaDoubleRound(Data);
     Dec(N);
   until N = 0;
   repeat
@@ -213,11 +335,11 @@ end;
 
 class function TSalsa20.DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
 begin
-  Result:= GetSalsa20Algorithm(Key);
+  Result:= GetSalsa20AlgorithmEx(Key, Inst.FRounds shl 1);
   if Result = TF_S_OK then begin
     Key.FValidKey:= Inst.FValidKey;
     Key.FExpandedKey:= Inst.FExpandedKey;
-    Key.FRounds:= Inst.FRounds;
+//    Key.FRounds:= Inst.FRounds;
   end;
 end;
 
@@ -260,9 +382,6 @@ begin
   Inst.FExpandedKey[9]:= 0;
   Inst.FValidKey:= True;
 
-//FillChar(Inst.FExpandedKey, SizeOf(Inst.FExpandedKey), 0);
-//Inst.FExpandedKey[0]:= 1;
-
   Result:= TF_S_OK;
 end;
 
@@ -279,11 +398,6 @@ var
 
 begin
   if (Param = TF_KP_IV) then begin
-    if (DataLen = 2 * SizeOf(UInt64)) then begin
-      Move(Data^, Inst.FExpandedKey[6], 2 * SizeOf(UInt64));
-      Result:= TF_S_OK;
-      Exit;
-    end;
     if (DataLen = SizeOf(UInt64)) then begin
       Move(Data^, Inst.FExpandedKey[6], SizeOf(UInt64));
                                       // 64-byte block number
@@ -300,9 +414,7 @@ begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
       Inst.FExpandedKey[6]:= 0;
       Inst.FExpandedKey[7]:= 0;
-      if (Data <> nil) then begin
-        Move(Data^, Inst.FExpandedKey, DataLen);
-      end;
+      Move(Data^, Inst.FExpandedKey[6], DataLen);
                                       // 64-byte block number
       Inst.FExpandedKey[8]:= 0;
       Inst.FExpandedKey[9]:= 0;
@@ -310,84 +422,170 @@ begin
     end
     else
       Result:= TF_E_INVALIDARG;
-  end
-{
-  else if (Param = TF_KP_NONCE_LE) then begin
+    Exit;
+  end;
+  if (Param = TF_KP_INCNO) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
-      Inst.FExpandedKey[6]:= 0;
-      Inst.FExpandedKey[7]:= 0;
-      if (Data <> nil) then begin
-        Move(Data^, Inst.FExpandedKey, DataLen);
-                                      // convert data to big-endian
-//        TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Inst.FExpandedKey[6]);
-      end;
-                                      // 64-byte block number
-      Inst.FExpandedKey[8]:= 0;
-      Inst.FExpandedKey[9]:= 0;
-      Result:= TF_S_OK;
-    end
-    else
-      Result:= TF_E_INVALIDARG;
-  end
-}
-  else if (Param = TF_KP_INCNO) then begin
-    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
-//      if (Data <> nil) then begin
+
 // Salsa20 uses little-endian block numbers
-        Tmp:= 0;
-        TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[8];
-        TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[9];
+      Tmp:= 0;
+      TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[8];
+      TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[9];
 
-//        TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @Tmp);
-        Move(Data^, Tmp, DataLen);
+      Move(Data^, Tmp, DataLen);
 
-        Tmp:= Tmp + Tmp1;
+      Tmp:= Tmp + Tmp1;
 
-        Inst.FExpandedKey[8]:= TUInt64Rec(Tmp).Lo;
-        Inst.FExpandedKey[9]:= TUInt64Rec(Tmp).Hi;
-//      end
-(*
-      else begin
-                                        // 64-byte block number
-        Inst.FExpandedKey[8]:= 0;
-        Inst.FExpandedKey[9]:= 0;
-//        Inst.FPos:= 0;
-      end;
-*)
+      Inst.FExpandedKey[8]:= TUInt64Rec(Tmp).Lo;
+      Inst.FExpandedKey[9]:= TUInt64Rec(Tmp).Hi;
+
       Result:= TF_S_OK;
     end
     else
       Result:= TF_E_INVALIDARG;
   end
-(*
-  else if (Param = TF_KP_INCNO_LE) then begin
-    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
-//      if (Data <> nil) then begin
-        Tmp:= 0;
-        TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[8];
-        TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[9];
-
-        Move(Data^, Tmp, DataLen);
-
-        Tmp:= Tmp + Tmp1;
-
-        Inst.FExpandedKey[8]:= TUInt64Rec(Tmp).Lo;
-        Inst.FExpandedKey[9]:= TUInt64Rec(Tmp).Hi;
-{      end
-      else begin
-                                        // 64-byte block number
-        Inst.FExpandedKey[8]:= 0;
-        Inst.FExpandedKey[9]:= 0;
-//        Inst.FPos:= 0;
-      end;}
-      Result:= TF_S_OK;
-    end
-    else
-      Result:= TF_E_INVALIDARG;
-  end
-*)
   else
-    Result:= TF_E_NOTIMPL;
+    Result:= TF_E_INVALIDARG;
+//    Result:= TF_E_NOTIMPL;
+end;
+
+{ TChaCha20 }
+
+class function TChaCha20.DuplicateKey(Inst: PSalsa20;
+  var Key: PSalsa20): TF_RESULT;
+begin
+  Result:= GetChaCha20AlgorithmEx(Key, Inst.FRounds shl 1);
+  if Result = TF_S_OK then begin
+    Key.FValidKey:= Inst.FValidKey;
+    Key.FExpandedKey:= Inst.FExpandedKey;
+//    Key.FRounds:= Inst.FRounds;
+  end;
+end;
+
+class function TChaCha20.ExpandKey(Inst: PSalsa20; Key: PByte;
+  KeySize: LongWord): TF_RESULT;
+const
+                        // Sigma = 'expand 32-byte k'
+  Sigma0 = $61707865;
+  Sigma1 = $3320646e;
+  Sigma2 = $79622d32;
+  Sigma3 = $6b206574;
+                        // Tau = 'expand 16-byte k'
+  Tau0   = $61707865;
+  Tau1   = $3120646e;
+  Tau2   = $79622d36;
+  Tau3   = $6b206574;
+
+begin
+  if (KeySize <> 16) and (KeySize <> 32) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  if KeySize = 16 then begin        // 128-bit key
+    Inst.FExpandedKey[0]:= Tau0;
+    Inst.FExpandedKey[1]:= Tau1;
+    Inst.FExpandedKey[2]:= Tau2;
+    Inst.FExpandedKey[3]:= Tau3;
+    Move(Key^, Inst.FExpandedKey[4], 16);
+    Move(Key^, Inst.FExpandedKey[8], 16);
+  end
+  else begin                        // 256-bit key
+    Inst.FExpandedKey[0]:= Sigma0;
+    Inst.FExpandedKey[1]:= Sigma1;
+    Inst.FExpandedKey[2]:= Sigma2;
+    Inst.FExpandedKey[3]:= Sigma3;
+    Move(Key^, Inst.FExpandedKey[4], 32);
+  end;
+                                    // 64-bit block number
+  Inst.FExpandedKey[12]:= 0;
+  Inst.FExpandedKey[13]:= 0;
+  Inst.FValidKey:= True;
+
+  Result:= TF_S_OK;
+end;
+
+class function TChaCha20.KeyBlock(Inst: PSalsa20;
+  Data: TSalsa20.PBlock): TF_RESULT;
+var
+  N: Cardinal;
+
+begin
+  Move(Inst.FExpandedKey, Data^, SizeOf(TSalsa20.TBlock));
+  N:= Inst.FRounds;
+  repeat
+    ChaChaDoubleRound(Data);
+    Dec(N);
+  until N = 0;
+  repeat
+    Data[N]:= Data[N] + Inst.FExpandedKey[N];
+    Inc(N);
+  until N = 16;
+  Inc(Inst.FExpandedKey[12]);
+  if (Inst.FExpandedKey[12] = 0)
+    then Inc(Inst.FExpandedKey[13]);
+  Result:= TF_S_OK;
+end;
+
+class function TChaCha20.SetKeyParam(Inst: PSalsa20; Param: LongWord;
+  Data: Pointer; DataLen: LongWord): TF_RESULT;
+type
+  TUInt64Rec = record
+    Lo, Hi: LongWord;
+  end;
+
+var
+  Tmp, Tmp1: UInt64;
+
+begin
+  if (Param = TF_KP_IV) then begin
+    if (DataLen = SizeOf(UInt64)) then begin
+      Move(Data^, Inst.FExpandedKey[14], SizeOf(UInt64));
+                                      // 64-byte block number
+      Inst.FExpandedKey[12]:= 0;
+      Inst.FExpandedKey[13]:= 0;
+
+      Result:= TF_S_OK;
+    end
+    else begin
+      Result:= TF_E_INVALIDARG;
+    end;
+    Exit;
+  end;
+  if (Param = TF_KP_NONCE) then begin
+    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
+      Inst.FExpandedKey[14]:= 0;
+      Inst.FExpandedKey[15]:= 0;
+      Move(Data^, Inst.FExpandedKey[14], DataLen);
+                                      // 64-byte block number
+      Inst.FExpandedKey[8]:= 0;
+      Inst.FExpandedKey[9]:= 0;
+      Result:= TF_S_OK;
+    end
+    else
+      Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  if (Param = TF_KP_INCNO) then begin
+    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
+// Salsa20 uses little-endian block numbers
+      Tmp:= 0;
+      TUInt64Rec(Tmp1).Lo:= Inst.FExpandedKey[12];
+      TUInt64Rec(Tmp1).Hi:= Inst.FExpandedKey[13];
+
+      Move(Data^, Tmp, DataLen);
+
+      Tmp:= Tmp + Tmp1;
+
+      Inst.FExpandedKey[12]:= TUInt64Rec(Tmp).Lo;
+      Inst.FExpandedKey[13]:= TUInt64Rec(Tmp).Hi;
+      Result:= TF_S_OK;
+    end
+    else
+      Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  Result:= TF_E_INVALIDARG;
 end;
 
 end.

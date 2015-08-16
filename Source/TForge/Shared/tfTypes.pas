@@ -103,7 +103,7 @@ type
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Fill(Value: Byte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToData(Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
+    function ToInt(Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 

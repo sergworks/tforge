@@ -42,14 +42,14 @@ type
     class function TryParseHex(const S: string; var R: ByteArray): Boolean; static;
     class function ParseBitString(const S: string; ABitLen: Integer): ByteArray; static;
 
-    class function FromData(const Data; DataLen: Cardinal;
+    class function FromInt(const Data; DataLen: Cardinal;
                      Reversed: Boolean): ByteArray; static;
 
     function ToText: string;
     function ToString: string;
     function ToHex: string;
 
-    procedure ToData(const Data; DataLen: Cardinal; Reversed: Boolean);
+    procedure ToInt(var Data; DataLen: Cardinal; Reversed: Boolean);
 
     procedure Incr;
     procedure Decr;
@@ -289,7 +289,7 @@ begin
 {$ENDIF}
 end;
 
-class function ByteArray.FromData(const Data; DataLen: Cardinal;
+class function ByteArray.FromInt(const Data; DataLen: Cardinal;
                  Reversed: Boolean): ByteArray;
 begin
 {$IFDEF TFL_DLL}
@@ -734,12 +734,12 @@ begin
   until L = 0;
 end;
 
-procedure ByteArray.ToData(const Data; DataLen: Cardinal; Reversed: Boolean);
+procedure ByteArray.ToInt(var Data; DataLen: Cardinal; Reversed: Boolean);
 begin
 {$IFDEF TFL_INTFCALL}
-  HResCheck(FBytes.ToData(@Data, DataLen, Reversed));
+  HResCheck(FBytes.ToInt(@Data, DataLen, Reversed));
 {$ELSE}
-  HResCheck(TByteVector.ToData(PByteVector(FBytes), @Data, DataLen, Reversed));
+  HResCheck(TByteVector.ToInt(PByteVector(FBytes), @Data, DataLen, Reversed));
 {$ENDIF}
 end;
 

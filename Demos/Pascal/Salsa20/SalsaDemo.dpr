@@ -3,7 +3,9 @@ program SalsaDemo;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfBytes, tfCiphers;
+  SysUtils,
+  tfBytes,
+  tfCiphers;
 
 type
   PExtKey = ^TExtKey;

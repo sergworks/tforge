@@ -111,7 +111,7 @@ type
     class procedure Fill(A: PByteVector; Value: Byte);
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function ToData(A: PByteVector; Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
+    class function ToInt(A: PByteVector; Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -216,7 +216,7 @@ const
    @TByteVector.Burn,
    @TByteVector.Fill,
 
-   @TByteVector.ToData
+   @TByteVector.ToInt
    );
 
 const
@@ -617,10 +617,11 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TByteVector.ToData(A: PByteVector; Data: PByte; L: Cardinal;
+class function TByteVector.ToInt(A: PByteVector; Data: PByte; L: Cardinal;
                  Reversed: Boolean): TF_RESULT;
 var
   LA, LL: Cardinal;
+  P, Sent: PByte;
 
 begin
   LA:= A.FUsed;
@@ -628,8 +629,26 @@ begin
     FillChar((Data + (L - LA))^, L - LA, 0);
     LL:= LA;
   end
-  else
+  else begin
+    if (L < LA) then begin
+      P:= @A.FUsed;
+      if Reversed then begin
+        Sent:= P + (LA - L);
+      end
+      else begin
+        Sent:= P + LA;
+        Inc(P, L);
+      end;
+      repeat
+        if P^ <> 0 then begin
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+        Inc(P);
+      until P = Sent;
+    end;
     LL:= L;
+  end;
 
   if LA > 0 then begin
     if Reversed
