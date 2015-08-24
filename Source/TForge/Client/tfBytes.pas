@@ -83,10 +83,10 @@ type
     class operator Explicit(const Value: ByteArray): LongWord;
     class operator Explicit(const Value: ByteArray): UInt64;
 
-    class operator Implicit(const Value: Byte): ByteArray;
-    class operator Implicit(const Value: Word): ByteArray;
-    class operator Implicit(const Value: LongWord): ByteArray;
-    class operator Implicit(const Value: UInt64): ByteArray;
+    class operator Explicit(const Value: Byte): ByteArray;
+    class operator Explicit(const Value: Word): ByteArray;
+    class operator Explicit(const Value: LongWord): ByteArray;
+    class operator Explicit(const Value: UInt64): ByteArray;
 
     class operator Implicit(const Value: ByteArray): TBytes;
     class operator Implicit(const Value: TBytes): ByteArray;
@@ -305,7 +305,7 @@ begin
   HResCheck(ByteVectorFromPCharDec(Result.FBytes, Pointer(S), Length(S),
             SizeOf(Char), Byte(Delimiter)));
 {$ELSE}
-  HResCheck(ByteVectorFromPCharDec(PByteVector(Result.FBytes),
+  HResCheck(ByteVectorParse(PByteVector(Result.FBytes),
             Pointer(S), Length(S), SizeOf(Char), Byte(Delimiter)));
 {$ENDIF}
 end;
@@ -326,7 +326,7 @@ begin
   HResCheck(ByteVectorFromPCharHexEx(Result.FBytes, Pointer(S), Length(S),
             SizeOf(Char), Byte(Delimiter)));
 {$ELSE}
-  HResCheck(ByteVectorFromPCharHexEx(PByteVector(Result.FBytes),
+  HResCheck(ByteVectorParseHex(PByteVector(Result.FBytes),
             Pointer(S), Length(S), SizeOf(Char), Byte(Delimiter)));
 {$ENDIF}
 end;
@@ -659,7 +659,7 @@ begin
     ByteArrayError(TF_E_INVALIDARG);
 end;
 
-class operator ByteArray.Implicit(const Value: Byte): ByteArray;
+class operator ByteArray.Explicit(const Value: Byte): ByteArray;
 begin
 {$IFDEF TFL_DLL}
   HResCheck(ByteVectorFromByte(Result.FBytes, Value));
@@ -668,7 +668,7 @@ begin
 {$ENDIF}
 end;
 
-class operator ByteArray.Implicit(const Value: Word): ByteArray;
+class operator ByteArray.Explicit(const Value: Word): ByteArray;
 var
   P: PByte;
 
@@ -686,7 +686,7 @@ begin
   end;
 end;
 
-class operator ByteArray.Implicit(const Value: LongWord): ByteArray;
+class operator ByteArray.Explicit(const Value: LongWord): ByteArray;
 var
   P, P1: PByte;
   L: Integer;
@@ -710,7 +710,7 @@ begin
   until L = 0;
 end;
 
-class operator ByteArray.Implicit(const Value: UInt64): ByteArray;
+class operator ByteArray.Explicit(const Value: UInt64): ByteArray;
 var
   P, P1: PByte;
   L: Integer;

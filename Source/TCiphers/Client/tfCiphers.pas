@@ -78,11 +78,14 @@ type
 
     class function AES: TCipher; static;
     class function DES: TCipher; static;
+    class function TripleDES: TCipher; static;
     class function RC5: TCipher; overload; static;
     class function RC5(BlockSize, Rounds: LongWord): TCipher; overload; static;
     class function RC4: TCipher; static;
     class function Salsa20: TCipher; overload; static;
     class function Salsa20(Rounds: LongWord): TCipher; overload; static;
+    class function ChaCha20: TCipher; overload; static;
+    class function ChaCha20(Rounds: LongWord): TCipher; overload; static;
 
     function Copy: TCipher;
 
@@ -157,6 +160,11 @@ end;
 class function TCipher.DES: TCipher;
 begin
   HResCheck(FServer.GetByAlgID(TF_ALG_DES, Result.FAlgorithm));
+end;
+
+class function TCipher.TripleDES: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_3DES, Result.FAlgorithm));
 end;
 
 class function TCipher.RC4: TCipher;
@@ -469,6 +477,16 @@ end;
 class function TCipher.Salsa20(Rounds: LongWord): TCipher;
 begin
   HResCheck(FServer.GetSalsa20(Rounds, Result.FAlgorithm));
+end;
+
+class function TCipher.ChaCha20: TCipher;
+begin
+  HResCheck(FServer.GetByAlgID(TF_ALG_CHACHA20, Result.FAlgorithm));
+end;
+
+class function TCipher.ChaCha20(Rounds: LongWord): TCipher;
+begin
+  HResCheck(FServer.GetChaCha20(Rounds, Result.FAlgorithm));
 end;
 
 function TCipher.SetFlags(AFlags: LongWord): TCipher;

@@ -37,6 +37,9 @@ type
     class function GetSalsa20(Inst: PCipherServer; Rounds: LongInt;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetChaCha20(Inst: PCipherServer; Rounds: LongInt;
+          var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
 
 class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
@@ -47,11 +50,13 @@ begin
     TF_ALG_AES: Result:= GetAESAlgorithm(PAESAlgorithm(Alg));
     TF_ALG_DES: Result:= GetDESAlgorithm(PDESAlgorithm(Alg));
     TF_ALG_RC5: Result:= GetRC5Algorithm(PRC5Algorithm(Alg));
+    TF_ALG_3DES: Result:= Get3DESAlgorithm(P3DESAlgorithm(Alg));
   else
     case AlgID of
 // stream ciphers
       TF_ALG_RC4: Result:= GetRC4Algorithm(PRC4Algorithm(Alg));
       TF_ALG_SALSA20: Result:= GetSalsa20Algorithm(PSalsa20(Alg));
+      TF_ALG_CHACHA20: Result:= GetChaCha20Algorithm(PSalsa20(Alg));
     else
       Result:= TF_E_INVALIDARG;
     end;
@@ -70,8 +75,14 @@ begin
   Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
 end;
 
+class function TCipherServer.GetChaCha20(Inst: PCipherServer; Rounds: Integer;
+  var Alg: ICipherAlgorithm): TF_RESULT;
+begin
+  Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
+end;
+
 const
-  VTable: array[0..9] of Pointer = (
+  VTable: array[0..10] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfSingleton.Addref,
     @TtfSingleton.Release,
@@ -82,7 +93,8 @@ const
     @TAlgServer.GetName,
     @TAlgServer.GetCount,
     @TCipherServer.GetRC5,
-    @TCipherServer.GetSalsa20
+    @TCipherServer.GetSalsa20,
+    @TCipherServer.GetChaCha20
   );
 
 var
@@ -91,9 +103,11 @@ var
 const
   AES_LITERAL: UTF8String = 'AES';
   DES_LITERAL: UTF8String = 'DES';
+  TRIPLE_DES_LITERAL: UTF8String = '3DES';
   RC5_LITERAL: UTF8String = 'RC5';
   RC4_LITERAL: UTF8String = 'RC4';
   SALSA20_LITERAL: UTF8String = 'SALSA20';
+  CHACHA20_LITERAL: UTF8String = 'CHACHA20';
 
 procedure InitInstance;
 begin
@@ -102,9 +116,11 @@ begin
 //  Instance.FCount:= 0;
   TAlgServer.AddTableItem(@Instance, AES_LITERAL, @GetAESAlgorithm);
   TAlgServer.AddTableItem(@Instance, DES_LITERAL, @GetDESAlgorithm);
+  TAlgServer.AddTableItem(@Instance, TRIPLE_DES_LITERAL, @Get3DESAlgorithm);
   TAlgServer.AddTableItem(@Instance, RC5_LITERAL, @GetRC5Algorithm);
   TAlgServer.AddTableItem(@Instance, RC4_LITERAL, @GetRC4Algorithm);
   TAlgServer.AddTableItem(@Instance, SALSA20_LITERAL, @GetSalsa20Algorithm);
+  TAlgServer.AddTableItem(@Instance, CHACHA20_LITERAL, @GetChaCha20Algorithm);
 end;
 
 function GetCipherServer(var A: ICipherServer): TF_RESULT;

@@ -317,8 +317,8 @@ begin
 end;
 
 class function T3DESAlgorithm.ExpandKey(Inst: P3DESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
-var
-  Encryption: Boolean;
+//var
+//  Encryption: Boolean;
 
 begin
   if (KeySize <> 8) and (KeySize <> 16) and (KeySize <> 24) then begin
@@ -331,19 +331,32 @@ begin
     Exit;
   end;
 
-  Encryption:= (Inst.FDir = TF_KEYDIR_ENCRYPT) or (Inst.FMode = TF_KEYMODE_CTR);
+  if (Inst.FDir = TF_KEYDIR_ENCRYPT) or (Inst.FMode = TF_KEYMODE_CTR) then begin
+    TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[0], True);
 
-  TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[0], Encryption);
+    if KeySize > 8 then
+      TDESAlgorithm.DoExpandKey(Key + 8, Inst.FSubKeys[1], False)
+    else
+      TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[1], False);
 
-  if KeySize > 8 then
-    TDESAlgorithm.DoExpandKey(@Key[8], Inst.FSubKeys[1], not Encryption)
-  else
-    TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[1], not Encryption);
+    if KeySize > 16 then
+      TDESAlgorithm.DoExpandKey(Key + 16, Inst.FSubKeys[2], True)
+    else
+      TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[2], True);
+  end
+  else begin
+    if KeySize > 16 then
+      TDESAlgorithm.DoExpandKey(Key + 16, Inst.FSubKeys[0], False)
+    else
+      TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[0], False);
 
-  if KeySize > 16 then
-    TDESAlgorithm.DoExpandKey(@Key[16], Inst.FSubKeys[2], Encryption)
-  else
-    TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[2], Encryption);
+    if KeySize > 8 then
+      TDESAlgorithm.DoExpandKey(Key + 8, Inst.FSubKeys[1], True)
+    else
+      TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[1], True);
+
+    TDESAlgorithm.DoExpandKey(Key, Inst.FSubKeys[2], False);
+  end;
 
   Inst.FValidKey:= True;
   Result:= TF_S_OK;

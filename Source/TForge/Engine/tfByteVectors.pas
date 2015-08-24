@@ -150,7 +150,7 @@ function ByteVectorFromPByteEx(var A: PByteVector; P: PByte; L: Cardinal;
            Reversed: Boolean): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-function ByteVectorFromPCharDec(var A: PByteVector; P: PByte;
+function ByteVectorParse(var A: PByteVector; P: PByte;
            L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
@@ -158,7 +158,7 @@ function ByteVectorFromPCharHex(var A: PByteVector; P: PByte;
            L: Cardinal; CharSize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-function ByteVectorFromPCharHexEx(var A: PByteVector; P: PByte;
+function ByteVectorParseHex(var A: PByteVector; P: PByte;
            L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
@@ -1062,7 +1062,7 @@ begin
   end;
 end;
 
-function ByteVectorFromPCharDec(var A: PByteVector; P: PByte;
+function ByteVectorParse(var A: PByteVector; P: PByte;
          L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
 const
   ASCII_ZERO: Cardinal = Ord('0');
@@ -1077,11 +1077,12 @@ var
   Value: Cardinal;
   ValueExists: Boolean;
   TmpSize: Cardinal;
-  B: Byte;
+  B, Nibble: Byte;
+  IsHex: Boolean;
 
 begin
 
-// skip spaces at the beginning
+// skip leading spaces
   while (L > 0) and (P^ <= ASCII_SPACE) do begin
     Inc(P, CharSize);
     Dec(L);
@@ -1095,22 +1096,67 @@ begin
     Value:= 0;
 //    State:= 0;
     ValueExists:= False;
-    repeat
-      B:= P^;
-      if (B >= ASCII_ZERO) and (B <= ASCII_NINE) then begin
-        ValueExists:= True;
-        Value:= Value * 10 + (B - ASCII_ZERO);
-        if Value > 255 then begin
-          if Tmp <> nil then TtfRecord.Release(Tmp);
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-        Inc(P, CharSize);
-        Dec(L);
-      end
-      else Break;
-    until L = 0;
+    IsHex:= False;
+// 3 chars required for a valid $.. hex byte
+    if (L > 2) and (P^ = Byte('$')) then begin
+      Inc(P, CharSize);
+      Dec(L);
+      IsHex:= True;
+    end;
+// 4 chars required for a valid 0x.. hex byte
+    if (L > 3) and (P^ = ASCII_ZERO)  and ((P + CharSize)^ = Byte('x')) then begin
+      Inc(P, 2 * CharSize);
+      Dec(L, 2);
+      IsHex:= True;
+    end;
 
+    if IsHex then begin
+      B:= P^;
+      if not GetNibble(B) then begin
+        if Tmp <> nil then TtfRecord.Release(Tmp);
+        Result:= TF_E_INVALIDARG;
+        Exit;
+      end;
+      Inc(P, CharSize);
+      Dec(L);
+      Nibble:= P^;
+      if not GetNibble(Nibble) then begin
+        if Tmp <> nil then TtfRecord.Release(Tmp);
+        Result:= TF_E_INVALIDARG;
+        Exit;
+      end;
+      Inc(P, CharSize);
+      Dec(L);
+
+      ValueExists:= True;
+      Value:= B * 16 + Nibble;
+
+// next byte should not be a valid hex digit
+      if (L > 0) and GetNibble(Nibble) then begin
+        if Tmp <> nil then TtfRecord.Release(Tmp);
+        Result:= TF_E_INVALIDARG;
+        Exit;
+      end;
+    end
+    else begin
+      repeat
+        B:= P^;
+//        Inc(P, CharSize);
+//        Dec(L);
+        if (B >= ASCII_ZERO) and (B <= ASCII_NINE) then begin
+          ValueExists:= True;
+          Value:= Value * 10 + (B - ASCII_ZERO);
+          if Value > 255 then begin
+            if Tmp <> nil then TtfRecord.Release(Tmp);
+            Result:= TF_E_INVALIDARG;
+            Exit;
+          end;
+          Inc(P, CharSize);
+          Dec(L);
+        end
+        else Break;
+      until L = 0;
+    end;
     if ValueExists then begin
       if BufCount = SizeOf(Buffer) then begin
         Inc(TmpSize, SizeOf(Buffer));
@@ -1237,7 +1283,7 @@ end;
   until L = 0; *)
 
 
-function ByteVectorFromPCharHexEx(var A: PByteVector; P: PByte;
+function ByteVectorParseHex(var A: PByteVector; P: PByte;
          L: Cardinal; CharSize: Cardinal; Delimiter: Byte): TF_RESULT;
 var
   Tmp: PByteVector;

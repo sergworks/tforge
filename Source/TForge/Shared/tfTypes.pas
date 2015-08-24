@@ -230,9 +230,11 @@ const
   TF_ALG_AES      = $2001;
   TF_ALG_DES      = $2002;
   TF_ALG_RC5      = $2003;
+  TF_ALG_3DES     = $2004;
                             // Stream ciphers
   TF_ALG_RC4      = $2801;
   TF_ALG_SALSA20  = $2802;
+  TF_ALG_CHACHA20 = $2803;
 
 type
   IHashAlgorithm = interface(IInterface)
@@ -325,6 +327,8 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetSalsa20(Rounds: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetChaCha20(Rounds: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 const
@@ -357,28 +361,44 @@ const
 //  DIR  | MODE          | PADDING       |
 
                           // KP_DIR values
+                          //   01 - encrypt only
+                          //   10 - decrypt only
+                          //   11 - encrypt & decrypt
   TF_KEYDIR_SHIFT = 0;
-  TF_KEYDIR_BASE  = $0002;
+  TF_KEYDIR_BASE  = 1;
+//  TF_KEYDIR_BASE  = $0002;
   TF_KEYDIR_MASK  = $0003;
 
   TF_KEYDIR_ENCRYPT = TF_KEYDIR_BASE;
   TF_KEYDIR_DECRYPT = TF_KEYDIR_BASE + 1;
 
                           // TF_KP_MODE values
+                          //   00001 - ECB
+                          //   00010 - CBC
+                          //   00011 - CTR
   TF_KEYMODE_SHIFT = 2;
-  TF_KEYMODE_BASE  = $0040;
-  TF_KEYMODE_MASK  = $007C;
+  TF_KEYMODE_BASE  = 4;
+  TF_KEYMODE_MASK  = $003C;
 
-  TF_KEYMODE_ECB = TF_KEYMODE_BASE + 1 shl TF_KEYMODE_SHIFT;
-  TF_KEYMODE_CBC = TF_KEYMODE_BASE + 2 shl TF_KEYMODE_SHIFT;
-  TF_KEYMODE_CTR = TF_KEYMODE_BASE + 3 shl TF_KEYMODE_SHIFT;
+//  TF_KEYMODE_ECB = TF_KEYMODE_BASE + 1 shl TF_KEYMODE_SHIFT;
+//  TF_KEYMODE_CBC = TF_KEYMODE_BASE + 2 shl TF_KEYMODE_SHIFT;
+//  TF_KEYMODE_CTR = TF_KEYMODE_BASE + 3 shl TF_KEYMODE_SHIFT;
+
+  TF_KEYMODE_ECB = TF_KEYMODE_BASE;
+  TF_KEYMODE_CBC = TF_KEYMODE_BASE + 1 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CTR = TF_KEYMODE_BASE + 2 shl TF_KEYMODE_SHIFT;
 
   TF_KEYMODE_MIN = TF_KEYMODE_ECB;
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
 
                           // TF_KP_PADDING values
-  TF_PADDING_SHIFT = 7;
-  TF_PADDING_BASE  = $0800;
+                          //   00001 - default
+                          //   00011 - NONE
+                          //   00101 - ZERO
+                          //   00111 - ANSI
+                          //   ...
+  TF_PADDING_SHIFT = 8;
+  TF_PADDING_BASE  = 128;
   TF_PADDING_MASK  = $0F80;
 
   TF_PADDING_DEFAULT  = TF_PADDING_BASE;

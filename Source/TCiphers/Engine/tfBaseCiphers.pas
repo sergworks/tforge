@@ -518,7 +518,7 @@ end;
 function TBlockCipher.SetFlags(Data: LongWord): TF_RESULT;
 begin
   Result:= TF_S_FALSE;
-
+{
   if Data and TF_KEYDIR_BASE <> 0 then
     Result:= SetDir(Data and TF_KEYDIR_MASK);
 
@@ -527,6 +527,16 @@ begin
 
   if (Result >= 0) and (Data and TF_PADDING_BASE <> 0) then
     Result:= SetPadding(Data and TF_PADDING_MASK);
+}
+  if Data and TF_KEYDIR_MASK <> 0 then
+    Result:= SetDir(Data and TF_KEYDIR_MASK);
+
+  if (Result >= 0) and (Data and TF_KEYMODE_MASK <> 0) then
+    Result:= SetMode(Data and TF_KEYMODE_MASK);
+
+  if (Result >= 0) and (Data and TF_PADDING_MASK <> 0) then
+    Result:= SetPadding(Data and TF_PADDING_MASK);
+
 end;
 
 class function TBlockCipher.SetKeyParam(Inst: Pointer; Param: LongWord;
