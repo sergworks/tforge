@@ -631,7 +631,7 @@ begin
   end
   else begin
     if (L < LA) then begin
-      P:= @A.FUsed;
+      P:= @A.FData;
       if Reversed then begin
         Sent:= P + (LA - L);
       end

@@ -351,6 +351,16 @@ begin
   end;
 end;
 
+procedure NewCiphers;
+var
+  Cipher: TCipher;
+
+begin
+  Cipher:= TCipher.TripleDES;   // 3DES
+  Cipher:= TCipher.ChaCha20;    // 20-rounds ChaCha
+  Cipher:= TCipher.ChaCha20(12) // 12-rounds ChaCha
+end;
+
 begin
   try
 {
