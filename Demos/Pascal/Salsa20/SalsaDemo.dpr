@@ -361,6 +361,31 @@ begin
   Cipher:= TCipher.ChaCha20(12) // 12-rounds ChaCha
 end;
 
+procedure FromInt;
+var
+  A: ByteArray;
+  I: LongWord;
+
+begin
+  I:= $030201;
+  A:= ByteArray.FromInt(I, SizeOf(I), False);
+  Writeln(A.ToString);
+  A:= ByteArray.FromInt(I, SizeOf(I), True);
+  Writeln(A.ToString);
+end;
+
+procedure ByteArr;
+var
+  A: ByteArray;
+  B: Byte;
+
+begin
+  A:= ByteArray.Parse('1 2 3 4');
+  for B in A do
+    Write(B:2);
+  Writeln;
+end;
+
 begin
   try
 {
@@ -371,9 +396,11 @@ begin
     TestHash(Salsa20_10, Salsa20_10_Expected);
 }
 //    TestKey;
-    TestVectors;
+//    TestVectors;
 //    TestCopy;
 //  TestFromText;
+//    FromInt;
+  ByteArr;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

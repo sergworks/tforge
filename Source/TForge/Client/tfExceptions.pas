@@ -15,19 +15,29 @@ type
     FCode: TF_RESULT;
   public
     constructor Create(ACode: TF_RESULT; const Msg: string = '');
-    function CodeInfo: string;
     property Code: TF_RESULT read FCode;
   end;
 
 procedure ForgeError(ACode: TF_RESULT; const Msg: string = '');
+function ForgeInfo(ACode: TF_RESULT): string;
 
 implementation
 
 { EForgeError }
 
-function EForgeError.CodeInfo: string;
+constructor EForgeError.Create(ACode: TF_RESULT; const Msg: string);
 begin
-  case FCode of
+  if Msg = '' then
+    inherited Create(Format('Forge Error 0x%.8x (%s)', [ACode, ForgeInfo(ACode)]))
+  else
+    inherited Create(Msg);
+  FCode:= ACode;
+end;
+
+function ForgeInfo(ACode: TF_RESULT): string;
+begin
+  case ACode of
+    TF_S_OK: Result:= 'TF_S_OK';
     TF_S_FALSE: Result:= 'TF_S_FALSE';
     TF_E_FAIL: Result:= 'TF_E_FAIL';
     TF_E_INVALIDARG: Result:= 'TF_E_INVALIDARG';
@@ -41,15 +51,6 @@ begin
   else
     Result:= 'Unknown';
   end;
-end;
-
-constructor EForgeError.Create(ACode: TF_RESULT; const Msg: string);
-begin
-  if Msg = '' then
-    inherited Create(Format('Forge Error 0x%.8x', [ACode]))
-  else
-    inherited Create(Msg);
-  FCode:= ACode;
 end;
 
 procedure ForgeError(ACode: TF_RESULT; const Msg: string);

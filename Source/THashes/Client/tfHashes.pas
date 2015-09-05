@@ -83,8 +83,8 @@ type
     class function SHA224: THash; static;
     class function SHA384: THash; static;
 
-    class function Name(Index: Integer): string; static;
-    class function Count: Integer; static;
+    class function AlgName(Index: Integer): string; static;
+    class function AlgCount: Integer; static;
 
     class operator Explicit(const Name: string): THash;
     class operator Explicit(AlgID: Integer): THash;
@@ -184,7 +184,7 @@ begin
   HResCheck(FAlgorithm.Duplicate(Result.FAlgorithm));
 end;
 
-class function THash.Count: Integer;
+class function THash.AlgCount: Integer;
 begin
   Result:= FServer.GetCount;
 end;
@@ -238,7 +238,7 @@ begin
                            Rounds, DKLen, IBytes(Result)));
 end;
 
-class function THash.Name(Index: Integer): string;
+class function THash.AlgName(Index: Integer): string;
 var
   Bytes: IBytes;
   I, L: Integer;

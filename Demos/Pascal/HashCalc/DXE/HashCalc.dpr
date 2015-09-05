@@ -1,3 +1,8 @@
+{
+  demonstrates:
+  1) how to enumerate hash algorithms supported by THash class
+  2) how to calculate several hashes of a file using a single file read pass
+}
 program HashCalc;
 
 {$APPTYPE CONSOLE}
@@ -21,12 +26,12 @@ var
   I, N, HashCount, L: Integer;
 
 begin
-  HashCount:= THash.Count;
+  HashCount:= THash.AlgCount;
   SetLength(HashName, HashCount);
   SetLength(HashArr, HashCount);
   L:= 0;
   for I:= 0 to HashCount - 1 do begin
-    HashName[I]:= THash.Name(I);
+    HashName[I]:= THash.AlgName(I);
     if Length(HashName[I]) > L then L:= Length(HashName[I]);
     HashArr[I]:= THash(HashName[I]);
   end;
@@ -53,6 +58,7 @@ begin
   ReportMemoryLeaksOnShutdown:= True;
   try
     if ParamCount = 1 then begin
+      Writeln('File: > ', ParamStr(1));
       CalcHash(ParamStr(1));
     end
     else

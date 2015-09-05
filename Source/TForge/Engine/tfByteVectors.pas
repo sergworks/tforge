@@ -33,6 +33,7 @@ type
     FVTable: Pointer;
     FRefCount: Integer;
     FCapacity: Integer;         // number of bytes allocated
+    FBigEndian: Boolean;
     FUsed: Integer;             // number of bytes used
     FData: TData;
 
@@ -234,6 +235,7 @@ const
     FVTable: @ByteVecVTable;
     FRefCount: -1;
     FCapacity: 0;
+    FBigEndian: True;
     FUsed: 0;
 {$IFDEF DEBUG}
     FData: (0, 0, 0, 0, 0, 0, 0, 0);
@@ -269,6 +271,7 @@ begin
     GetMem(A, BytesRequired);
     A^.FVTable:= @ByteVecVTable;
     A^.FRefCount:= 1;
+    A^.FBigEndian:= True;
     A^.FCapacity:= BytesRequired - ByteVecPrefixSize;
     A^.FUsed:= NBytes;
     Result:= TF_S_OK;
@@ -324,6 +327,8 @@ begin
   Result:= AllocVector(Tmp, UsedA + UsedB);
   if Result <> TF_S_OK then Exit;
 
+  Tmp.FBigEndian:= A.FBigEndian;
+
   P:= @Tmp.FData;
   Move(A.FData, P^, UsedA);
   Inc(P, UsedA);
@@ -349,6 +354,7 @@ begin
   LUsed:= A.FUsed;
   Result:= TByteVector.AllocVector(Tmp, LUsed);
   if Result = TF_S_OK then begin
+    Tmp.FBigEndian:= A.FBigEndian;
     PA:= @A.FData;
     PTmp:= @Tmp.FData;
     Inc(PA, LUsed);
@@ -426,6 +432,7 @@ begin
   Result:= AllocVector(Tmp, UsedA - L);
   if Result <> TF_S_OK then Exit;
 
+  Tmp.FBigEndian:= A.FBigEndian;
   PTmp:= @Tmp.FData;
 
   if LL > 0 then begin
@@ -463,6 +470,8 @@ begin
 
   Result:= AllocVector(Tmp, UsedR);
   if Result <> TF_S_OK then Exit;
+
+  Tmp.FBigEndian:= A.FBigEndian;
   Tmp.FUsed:= UsedR;
 
   PA:= @A.FData;
@@ -495,6 +504,7 @@ begin
 
   Result:= AllocVector(Tmp, UsedR);
   if Result <> TF_S_OK then Exit;
+  Tmp.FBigEndian:= A.FBigEndian;
   Tmp.FUsed:= UsedR;
 
   PA:= @A.FData;
@@ -527,6 +537,8 @@ begin
 
   Result:= AllocVector(Tmp, UsedR);
   if Result <> TF_S_OK then Exit;
+
+  Tmp.FBigEndian:= A.FBigEndian;
   Tmp.FUsed:= UsedR;
 
   PA:= @A.FData;
@@ -559,6 +571,8 @@ begin
 
   Result:= AllocVector(Tmp, UsedR);
   if Result <> TF_S_OK then Exit;
+
+  Tmp.FBigEndian:= A.FBigEndian;
   Tmp.FUsed:= UsedR;
 
   PA:= @A.FData;
@@ -591,6 +605,8 @@ begin
 
   Result:= AllocVector(Tmp, UsedR);
   if Result <> TF_S_OK then Exit;
+
+  Tmp.FBigEndian:= A.FBigEndian;
   Tmp.FUsed:= UsedR;
 
   PA:= @A.FData;
@@ -728,6 +744,8 @@ begin
   Result:= AllocVector(Tmp, UsedA + 1);
   if Result <> TF_S_OK then Exit;
 
+  Tmp.FBigEndian:= A.FBigEndian;
+
   P:= @Tmp.FData;
   Move(A.FData, P^, UsedA);
   Inc(P, UsedA);
@@ -752,13 +770,25 @@ end;
 class function TByteVector.Incr(A: PByteVector): TF_RESULT;
 var
   N: Integer;
+  P: PByte;
 
 begin
   N:= A.FUsed;
-  while N > 0 do begin
-    Dec(N);
-    Inc(A.FData[N]);
-    if A.FData[N] <> 0 then Break;
+  if A.FBigEndian then begin
+    while N > 0 do begin
+      Dec(N);
+      Inc(A.FData[N]);
+      if A.FData[N] <> 0 then Break;
+    end;
+  end
+  else begin
+    P:= @A.FData;
+    while N > 0 do begin
+      Inc(P^);
+      if P^ <> 0 then Break;
+      Inc(P);
+      Dec(N);
+    end;
   end;
   Result:= TF_S_OK;
 end;
@@ -766,13 +796,25 @@ end;
 class function TByteVector.Decr(A: PByteVector): TF_RESULT;
 var
   N: Integer;
+  P: PByte;
 
 begin
   N:= A.FUsed;
-  while N > 0 do begin
-    Dec(N);
-    Dec(A.FData[N]);
-    if A.FData[N] <> $FF then Break;
+  if A.FBigEndian then begin
+    while N > 0 do begin
+      Dec(N);
+      Dec(A.FData[N]);
+      if A.FData[N] <> $FF then Break;
+    end;
+  end
+  else begin
+    P:= @A.FData;
+    while N > 0 do begin
+      Dec(P^);
+      if P^ <> $FF then Break;
+      Inc(P);
+      Dec(N);
+    end;
   end;
   Result:= TF_S_OK;
 end;
@@ -789,6 +831,8 @@ begin
 
   Result:= AllocVector(Tmp, UsedA + 1);
   if Result <> TF_S_OK then Exit;
+
+  Tmp.FBigEndian:= A.FBigEndian;
 
   if Index > UsedA then Index:= UsedA;
   PTmp:= @Tmp.FData;
@@ -828,6 +872,8 @@ begin
 
   if Result <> TF_S_OK then Exit;
 
+  Tmp.FBigEndian:= A.FBigEndian;
+
   PA:= @Tmp.FData;
   Move(A.FData, PA^, UsedA);
   Inc(PA, UsedA);
@@ -854,6 +900,8 @@ begin
     Result:= AllocVector(Tmp, UsedA + L);
 
   if Result <> TF_S_OK then Exit;
+
+  Tmp.FBigEndian:= A.FBigEndian;
 
   if Index > UsedA then Index:= UsedA;
 
@@ -927,6 +975,7 @@ begin
   Result:= TByteVector.AllocVector(Tmp, ASize);
   if Result = TF_S_OK then begin
     if A <> nil then begin
+      Tmp.FBigEndian:= A.FBigEndian;
       L:= A.FUsed;
       if L > ASize then L:= ASize;
       Move(A.FData, Tmp.FData, L);
@@ -976,6 +1025,7 @@ var
 begin
   Result:= TByteVector.AllocVector(Tmp, L);
   if (Result = TF_S_OK) then begin
+    Tmp.FBigEndian:= Reversed;
     if (L > 0) then begin
       if Reversed then TBigEndian.ReverseCopy(P, P + L, @Tmp.FData)
       else Move(P^, Tmp.FData, L);
@@ -1356,7 +1406,6 @@ begin
     A:= Tmp;
   end;
 end;
-
 
 { TByteVectorEnum }
 

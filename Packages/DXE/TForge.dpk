@@ -37,7 +37,11 @@ contains
   tfConsts in '..\..\Source\TForge\Client\tfConsts.pas',
   tfExceptions in '..\..\Source\TForge\Client\tfExceptions.pas',
   tfBytes in '..\..\Source\TForge\Client\tfBytes.pas',
-  tfAlgServ in '..\..\Source\TForge\Engine\tfAlgServ.pas';
+  tfAlgServ in '..\..\Source\TForge\Engine\tfAlgServ.pas',
+  tfGNumerics in '..\..\Source\TForge\Client\tfGNumerics.pas',
+  tfNumerics in '..\..\Source\TForge\Client\tfNumerics.pas',
+  arrProcs in '..\..\Source\TForge\Engine\arrProcs.pas',
+  tfNumbers in '..\..\Source\TForge\Engine\tfNumbers.pas';
 
 end.
 
