@@ -7,7 +7,8 @@ unit THashes;
 interface
 
 uses
-  tfCRC32, tfHashServ, tfHMAC, tfJenkinsOne, tfMD5, tfSHA1, tfSHA256, tfHashes;
+  tfCRC32, tfHashServ, tfHMAC, tfJenkinsOne, tfMD5, tfSHA1, tfSHA256, 
+  tfHashes, tfSHA512;
 
 implementation
 

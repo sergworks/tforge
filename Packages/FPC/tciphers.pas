@@ -2,13 +2,12 @@
   This source is only used to compile and install the package.
  }
 
-unit TForge;
+unit tciphers;
 
 interface
 
 uses
-  tfLimbs, tfTypes, tfUtils, tfByteVectors, tfRecords, tfBytes, tfConsts, 
-  tfExceptions, tfNumbers, arrProcs, tfAlgServ, tfNumerics;
+  tfCiphers, tfAES, tfBaseCiphers, tfCipherServ, tfDES, tfRC4, tfRC5, tfSalsa20;
 
 implementation
 

@@ -13,7 +13,7 @@ uses
   tfLimbs;
 
 type
-  TF_RESULT = LongInt;
+  TF_RESULT = type LongInt;
 
 // Codes returned by TF functions; see also
 //   http://msdn.microsoft.com/en-us/library/cc231198(v=prot.10).aspx
@@ -105,6 +105,20 @@ type
 
     function ToInt(Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function IncrLE: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DecrLE: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function ShiftLeft(Shift: Cardinal; var R: IBytes): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ShiftRight(Shift: Cardinal; var R: IBytes): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+    function GetBitSet(Shift: Cardinal): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetSeniorBit: Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
   end;
 
 (*

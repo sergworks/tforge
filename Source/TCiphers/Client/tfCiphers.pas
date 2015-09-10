@@ -92,8 +92,8 @@ type
     class operator Explicit(const Name: string): TCipher;
     class operator Explicit(AlgID: Integer): TCipher;
 
-    class function Name(Index: Cardinal): string; static;
-    class function Count: Integer; static;
+    class function AlgName(Index: Cardinal): string; static;
+    class function AlgCount: Integer; static;
 
     property Algorithm: ICipherAlgorithm read FAlgorithm;
 
@@ -434,7 +434,7 @@ begin
   HResCheck(FAlgorithm.DuplicateKey(Result.FAlgorithm));
 end;
 
-class function TCipher.Count: Integer;
+class function TCipher.AlgCount: Integer;
 begin
   Result:= FServer.GetCount;
 end;
@@ -452,7 +452,7 @@ begin
 end;
 }
 
-class function TCipher.Name(Index: Cardinal): string;
+class function TCipher.AlgName(Index: Cardinal): string;
 var
   Bytes: IBytes;
   I, L: Integer;

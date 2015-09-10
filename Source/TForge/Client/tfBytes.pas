@@ -58,6 +58,9 @@ type
     procedure Incr;
     procedure Decr;
 
+    procedure IncrLE;
+    procedure DecrLE;
+
     procedure Burn;
     procedure Fill(AValue: Byte);
 
@@ -74,6 +77,9 @@ type
 
     function Reverse: ByteArray; overload;
 
+    function IsBitSet(BitNo: Cardinal): Boolean;
+    function SeniorBit: Integer;
+
     class function Concat(const A, B: ByteArray): ByteArray; static;
 
     class function AddBytes(const A, B: ByteArray): ByteArray; static;
@@ -81,6 +87,9 @@ type
     class function AndBytes(const A, B: ByteArray): ByteArray; static;
     class function OrBytes(const A, B: ByteArray): ByteArray; static;
     class function XorBytes(const A, B: ByteArray): ByteArray; static;
+
+    class function ShlBytes(const A: ByteArray; Shift: Cardinal): ByteArray; static;
+    class function ShrBytes(const A: ByteArray; Shift: Cardinal): ByteArray; static;
 
     class operator Explicit(const Value: ByteArray): Byte;
     class operator Explicit(const Value: ByteArray): Word;
@@ -117,6 +126,9 @@ type
     class operator BitwiseOr(const A, B: ByteArray): ByteArray;
     class operator BitwiseXor(const A, B: ByteArray): ByteArray;
 
+    class operator LeftShift(const A: ByteArray; Shift: Cardinal): ByteArray;
+    class operator RightShift(const A: ByteArray; Shift: Cardinal): ByteArray;
+
     property InstanceLen: Integer read GetLen write SetInstanceLen;
     property Len: Integer read GetLen write SetLen;
     property RawData: PByte read GetRawData;
@@ -136,7 +148,7 @@ type
     FVTable: Pointer;
     FRefCount: Integer;
     FCapacity: Integer;         // number of bytes allocated
-    FBigEndian: Boolean;
+//    FBigEndian: Boolean;
     FUsed: Integer;             // number of bytes used
     FData: array[0..0] of Byte;
   end;
@@ -239,6 +251,24 @@ begin
 {$ELSE}
   Result:= TByteVector.GetRawData(PByteVector(FBytes));
 {$ENDIF}
+{$ENDIF}
+end;
+
+function ByteArray.IsBitSet(BitNo: Cardinal): Boolean;
+begin
+{$IFDEF TFL_INTFCALL}
+  Result:= FBytes.GetBitSet(BitNo);
+{$ELSE}
+  Result:= TByteVector.GetBitSet(PByteVector(FBytes), BitNo);
+{$ENDIF}
+end;
+
+function ByteArray.SeniorBit: Integer;
+begin
+{$IFDEF TFL_INTFCALL}
+  Result:= FBytes.GetSeniorBit;
+{$ELSE}
+  Result:= TByteVector.GetSeniorBit(PByteVector(FBytes));
 {$ENDIF}
 end;
 
@@ -564,12 +594,30 @@ begin
 {$ENDIF}
 end;
 
+procedure ByteArray.IncrLE;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.IncrLE);
+{$ELSE}
+  HResCheck(TByteVector.IncrLE(PByteVector(FBytes)));
+{$ENDIF}
+end;
+
 procedure ByteArray.Decr;
 begin
 {$IFDEF TFL_INTFCALL}
   HResCheck(FBytes.Decr);
 {$ELSE}
   HResCheck(TByteVector.Decr(PByteVector(FBytes)));
+{$ENDIF}
+end;
+
+procedure ByteArray.DecrLE;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FBytes.DecrLE);
+{$ELSE}
+  HResCheck(TByteVector.DecrLE(PByteVector(FBytes)));
 {$ENDIF}
 end;
 
@@ -980,6 +1028,50 @@ begin
 {$ELSE}
   HResCheck(TByteVector.XorBytes(PByteVector(A.FBytes),
             PByteVector(B.FBytes), PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class function ByteArray.ShlBytes(const A: ByteArray;
+  Shift: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.ShiftLeft(Shift, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ShiftLeft(PByteVector(A.FBytes), Shift,
+                       PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class function ByteArray.ShrBytes(const A: ByteArray;
+  Shift: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.ShiftRight(Shift, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ShiftRight(PByteVector(A.FBytes), Shift,
+                       PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class operator ByteArray.LeftShift(const A: ByteArray;
+  Shift: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.ShiftLeft(Shift, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ShiftLeft(PByteVector(A.FBytes), Shift,
+                       PByteVector(Result.FBytes)));
+{$ENDIF}
+end;
+
+class operator ByteArray.RightShift(const A: ByteArray;
+  Shift: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FBytes.ShiftRight(Shift, Result.FBytes));
+{$ELSE}
+  HResCheck(TByteVector.ShiftRight(PByteVector(A.FBytes), Shift,
+                       PByteVector(Result.FBytes)));
 {$ENDIF}
 end;
 

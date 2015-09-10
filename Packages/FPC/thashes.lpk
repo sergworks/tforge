@@ -10,7 +10,7 @@
       <SearchPaths>
         <IncludeFiles Value="C:\Projects\TForge\tforge\Source\Include\"/>
         <OtherUnitFiles Value="..\..\Source\THashes\Engine;..\..\Source\THashes\Client"/>
-        <UnitOutputDirectory Value="C:\bin\TForge\FPC\$(TargetCPU)-$(TargetOS)"/>
+        <UnitOutputDirectory Value="C:\bin\FPC\TForge\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
       <Other>
         <CompilerMessages>

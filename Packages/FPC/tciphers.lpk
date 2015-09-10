@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="tciphers"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <IncludeFiles Value="C:\Projects\TForge\tforge\Source\Include\;C:\Projects\TForge\tforge\Source\TCiphers\Engine\"/>
+        <OtherUnitFiles Value="C:\bin\FPC\TForge\$(TargetCPU)-$(TargetOS)\;..\..\Source\TCiphers\Client;..\..\Source\TCiphers\Engine"/>
+        <UnitOutputDirectory Value="C:\bin\FPC\TForge\$(TargetCPU)-$(TargetOS)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="10">
+      <Item1>
+        <Filename Value="..\..\Source\Include\TFL.inc"/>
+        <Type Value="Include"/>
+      </Item1>
+      <Item2>
+        <Filename Value="..\..\Source\TCiphers\Client\tfCiphers.pas"/>
+        <UnitName Value="tfCiphers"/>
+      </Item2>
+      <Item3>
+        <Filename Value="..\..\Source\TCiphers\Engine\DES_SPBoxes.inc"/>
+        <Type Value="Include"/>
+      </Item3>
+      <Item4>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfAES.pas"/>
+        <UnitName Value="tfAES"/>
+      </Item4>
+      <Item5>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfBaseCiphers.pas"/>
+        <UnitName Value="tfBaseCiphers"/>
+      </Item5>
+      <Item6>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfCipherServ.pas"/>
+        <UnitName Value="tfCipherServ"/>
+      </Item6>
+      <Item7>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfDES.pas"/>
+        <UnitName Value="tfDES"/>
+      </Item7>
+      <Item8>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfRC4.pas"/>
+        <UnitName Value="tfRC4"/>
+      </Item8>
+      <Item9>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfRC5.pas"/>
+        <UnitName Value="tfRC5"/>
+      </Item9>
+      <Item10>
+        <Filename Value="..\..\Source\TCiphers\Engine\tfSalsa20.pas"/>
+        <UnitName Value="tfSalsa20"/>
+      </Item10>
+    </Files>
+    <Type Value="RunTimeOnly"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="TForge"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>
