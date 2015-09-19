@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfNumerics;
@@ -346,6 +346,10 @@ type
     class operator Modulus(const A: TIntLimb; const B: BigInteger): TIntLimb;
     class function DivRem(const Dividend: TIntLimb; const Divisor: BigInteger;
                           var Remainder: TIntLimb): TIntLimb; overload; static;
+
+// unary minus/plus
+    class operator Negative(const A: BigInteger): BigInteger;
+    class operator Positive(const A: BigInteger): BigInteger;
   end;
 
 type
@@ -2615,6 +2619,26 @@ begin
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(Divisor.FNumber), Dividend,
             Result, Remainder));
+{$ENDIF}
+end;
+
+class operator BigInteger.Negative(const A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.NegateNumber(Result.FNumber);
+{$ELSE}
+  HResCheck(TBigNumber.NegateNumber(PBigNumber(A.FNumber),
+                                    PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigInteger.Positive(const A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.DuplicateNumber(Result.FNumber);
+{$ELSE}
+  HResCheck(TBigNumber.DuplicateNumber(PBigNumber(A.FNumber),
+                                       PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
 

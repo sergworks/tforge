@@ -115,6 +115,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function NegateNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DuplicateNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Pow(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
@@ -329,11 +331,10 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..73] of Pointer = (
+  BigNumVTable: array[0..74] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
-//   nil,
 
    @TBigNumber.GetHashCode,
    @TBigNumber.GetLen,
@@ -372,6 +373,7 @@ const
    @TBigNumber.CopyNumber,
    @TBigNumber.AbsNumber,
    @TBigNumber.NegateNumber,
+   @TBigNumber.DuplicateNumber,
    @TBigNumber.Pow,
    @TBigNumber.PowU,
 
@@ -385,8 +387,6 @@ const
    @TBigNumber.ToIntLimb,
    @TBigNumber.ToDec,
    @TBigNumber.ToHex,
-//   @TBigNumber.ToWideString,
-//   @TBigNumber.ToWideHexString,
    @TBigNumber.ToPByte,
 
    @TBigNumber.CompareToLimb,
@@ -463,28 +463,6 @@ const
     FLimbs: (1);
 {$ENDIF}
     );
-
-class function TBigNumber.CloneNumber(var A: PBigNumber; B: PBigNumber;
-                                       ASign: Integer = 0): TF_RESULT;
-var
-  Used: Cardinal;
-  Tmp: PBigNumber;
-
-begin
-  Used:= B.FUsed;
-  Result:= AllocNumber(Tmp, Used);
-  if Result = TF_S_OK then begin
-    Move(B.FUsed, Tmp.FUsed, FUsedSize + Used * SizeOf(TLimb));
-    if ASign = 0 then
-      Tmp.FSign:= B.FSign
-// to avoid negative zero
-    else if (ASign < 0) and ((Used > 1) or (Tmp.FLimbs[0] <> 0)) then
-      Tmp.FSign:= -1
-    else Tmp.FSign:= 0;
-    if A <> nil then TtfRecord.Release(A);
-    A:= Tmp;
-  end;
-end;
 
 {
 function TBigNumber.AsString: string;
@@ -1719,6 +1697,49 @@ begin
   end;
 end;
 
+class function TBigNumber.CloneNumber(var A: PBigNumber; B: PBigNumber;
+                                       ASign: Integer = 0): TF_RESULT;
+var
+  Used: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  Used:= B.FUsed;
+  Result:= AllocNumber(Tmp, Used);
+  if Result = TF_S_OK then begin
+    Move(B.FUsed, Tmp.FUsed, FUsedSize + Used * SizeOf(TLimb));
+    if ASign = 0 then
+      Tmp.FSign:= B.FSign
+// to avoid negative zero
+    else if (ASign < 0) and ((Used > 1) or (Tmp.FLimbs[0] <> 0)) then
+      Tmp.FSign:= -1
+    else Tmp.FSign:= 0;
+    if A <> nil then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+class function TBigNumber.DuplicateNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+var
+  Tmp: PBigNumber;
+
+begin
+  if A.IsZero then begin
+    if R <> nil then TtfRecord.Release(R);
+    R:= @BigNumZero;
+    Result:= TF_S_OK;
+  end
+  else begin
+    Result:= AllocNumber(Tmp, A.FUsed);
+    if Result = TF_S_OK then begin
+// Copy FUsed and FData fields:
+      Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
+      if R <> nil then TtfRecord.Release(R);
+      R:= Tmp;
+    end;
+  end;
+end;
+
 class function TBigNumber.NegateNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   Tmp: PBigNumber;
@@ -1732,6 +1753,7 @@ begin
   else begin
     Result:= AllocNumber(Tmp, A.FUsed);
     if Result = TF_S_OK then begin
+// Copy FUsed and FData fields:
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
       if A.FSign >= 0 then Tmp.FSign:= -1;
 //      else Tmp.FSign:= 0;

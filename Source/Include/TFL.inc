@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 {$IFDEF FPC}
@@ -59,6 +59,10 @@
 
 // -----------------------------------------------------
 
+// build target:
+// TFL_CPU386_WIN32 - intel 386 compatible CPU (32- or 64-bit) on 32-bit Windows
+// TFL_CPUX64_WIN64 - intel 64-bit x86 CPU on 64-bit Windows
+
 {$IFDEF FPC}
   {$IFDEF CPUX86_64}
     {$DEFINE CPUX64}
@@ -67,19 +71,19 @@
 
 {$IFDEF CPU386}
   {$IFDEF WIN32}
-    {$DEFINE TFL_CPUX86_WIN32}
-  {$ENDIF}
-{$ENDIF}
-{$IFDEF CPUX64}
-  {$IFDEF WIN64}
-    {$DEFINE TFL_CPUX64_WIN64}
+    {$DEFINE TFL_CPUX86_WIN32}		// deprecated - to be removed later
+    {$DEFINE TFL_CPU386_WIN32}
+    {$IFDEF TFL_LIMB32}
+      {$DEFINE TFL_LIMB32_CPU386_WIN32}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
-{$IFDEF CPU386}
-  {$IFDEF WIN32}
+{$IFDEF CPUX64}
+  {$IFDEF WIN64}
+    {$DEFINE TFL_CPUX64_WIN64}
     {$IFDEF TFL_LIMB32}
-      {$DEFINE TFL_WIN32_ASM86}
+      {$DEFINE TFL_LIMB32_CPUX64_WIN64}
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}

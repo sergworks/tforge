@@ -19,11 +19,12 @@ begin
       Writeln;
       CalcHash(ParamStr(1));
     end
-    else
+    else begin
       Writeln('Usage: > HashCalc filename');
       Writeln('File: ', ExtractFileName(ParamStr(0)));
       Writeln;
       CalcHash(ParamStr(0));
+    end;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

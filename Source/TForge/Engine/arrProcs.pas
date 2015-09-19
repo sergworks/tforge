@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { * ------------------------------------------------------- * }
 { *   # engine unit                                         * }
 { *********************************************************** }
@@ -39,8 +39,12 @@ unit arrProcs;
 
 {$I TFL.inc}
 
-{$IFDEF TFL_WIN32_ASM86}
-  {.$DEFINE WIN32_ASM86}
+{$IFDEF TFL_LIMB32_CPU386_WIN32}
+  {$DEFINE ASM86}
+{$ENDIF}
+
+{$IFDEF TFL_LIMB32_CPUX64_WIN64}
+  {$DEFINE ASM64}
 {$ENDIF}
 
 interface
@@ -137,8 +141,8 @@ begin
   Result:= L;
 end;
 
+{$IFDEF ASM86}
 function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
-{$IFDEF WIN32_ASM86}
 asm
         PUSH  ESI
         PUSH  EDI
@@ -146,7 +150,7 @@ asm
         MOV   ESI,EAX     // ESI <-- A
         MOV   ECX,LA
         SUB   ECX,LB
-        PUSH  ECX         // -(SP) <-- LA - LB;
+        PUSH  ECX
         MOV   ECX,LB
         CLC
 @@Loop:
@@ -160,7 +164,7 @@ asm
         LEA   EDX,[EDX+4]
         LOOP  @@Loop
 
-        POP   ECX         // ECX <-- LA - LB;
+        POP   ECX         // POP to keep carry
         JECXZ @@Done
 @@Loop2:
         LODSD
@@ -174,40 +178,45 @@ asm
         POP   EDI
         POP   ESI
 end;
+
 {$ELSE}
-{$IFDEF WIN64_ASM86}
+{$IFDEF ASM64}
+function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
 asm
-        .PUSHNV  RSI
-        .PUSHNV  RDI
-        MOV   RDI,R8      // EDI <-- Res
-        MOV   RSI,RCX     // ESI <-- A
-        MOV   RCX,LB
-        SUB   R9,RCX
+        MOV   R10,RCX       // R10 <-- A
+        MOV   ECX,LB        // ECX <-- LB
+        SUB   R9,RCX        // R9D <-- LA - LB
         CLC
 @@Loop:
-//        MOV   EAX,[ESI]
-//        LEA   ESI,[ESI+4]
-        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        MOV   EAX,[R10]
+        LEA   R10,[R10+4]
         ADC   EAX,[RDX]
-//        MOV   [EDI],EAX
-//        LEA   EDI,[EDI+4]
-        STOSD             // [EDI] <-- EAX, EDI <-- EDI + 4
+        MOV   [R8],EAX
+        LEA   R8,[R8+4]
         LEA   RDX,[RDX+4]
-        LOOP  @@Loop
+//        LOOP  @@Loop
+        DEC   ECX
+        JNZ   @@Loop
 
-        MOV   RCX,R9         // ECX <-- LA - LB;
+        MOV   ECX,R9D       // ECX <-- LA - LB
         JECXZ @@Done
 @@Loop2:
-        LODSD
+        MOV   EAX,[R10]
+        LEA   R10,[R10+4]
         ADC   EAX, 0
-        STOSD
-        LOOP  @@Loop2
+        MOV   [R8],EAX
+        LEA   R8,[R8+4]
+//        LOOP  @@Loop2
+        DEC   ECX
+        JNZ   @@Loop2
 @@Done:
         SETC  AL
         MOVZX EAX,AL
-        MOV   [RDI],EAX
+        MOV   [R8],EAX
 end;
+
 {$ELSE}
+function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
 var
   CarryOut, CarryIn: Boolean;
   Tmp: TLimb;
@@ -260,8 +269,8 @@ end;
     if function returns True the Res senior limb is set: Res[L] = 1
 }
 
+{$IFDEF ASM86}
 function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
-{$IFDEF WIN32_ASM86}
 asm
         ADD   EDX,[EAX]     // Limb:= Limb + A[0]
         MOV   [ECX],EDX
@@ -285,22 +294,25 @@ asm
         MOV   [EDX],EAX
 end;
 {$ELSE}
-{$IFDEF WIN64_ASM86}
+{$IFDEF ASM64}
+function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
+{$IFDEF FPC}nostackframe;{$ENDIF}
 asm
-        .PUSHNV  RSI
         ADD   EDX,[RCX]     // Limb:= Limb + A[0]
         MOV   [R8],EDX
         MOV   RDX,R8
-        LEA   RSI,[RCX+4]
+        LEA   R10,[RCX+4]
         MOV   RCX,R9
         DEC   ECX
         JZ    @@Done
 @@Loop:
-        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+        MOV   EAX,[R10]
+        LEA   R10,[R10+4]
         LEA   RDX,[RDX+4]
         ADC   EAX,0
         MOV   [RDX],EAX
-        LOOP  @@Loop
+        DEC   ECX
+        JNZ   @@Loop
 @@Done:
         SETC  AL
         MOVZX EAX,AL
@@ -308,6 +320,7 @@ asm
         MOV   [RDX],EAX
 end;
 {$ELSE}
+function arrAddLimb(A: PLimb; Limb: TLimb; Res: PLimb; LA: Cardinal): Boolean;
 var
   CarryIn: Boolean;
   Tmp: TLimb;
@@ -364,13 +377,12 @@ asm
 end;
 {$ELSE}
 {$IFDEF WIN64_ASM86}
-// RCX <-- A, RDX <--Res, R8 <-- L
+// RCX <-- A, RDX <--Res, R8D <-- L
 asm
-        .NOFRAME
-        MOV   R9,[RCX]
-        MOV   [RDX],R9
+        MOV   R9D,[RCX]
+        MOV   [RDX],R9D
         ADD   [RDX],1
-        DEC   R8
+        DEC   R8D
         JZ    @@Done
 @@Loop:
         LEA   RCX,[RCX+4]
@@ -378,7 +390,7 @@ asm
         MOV   EAX,[RCX]
         ADC   EAX,0
         MOV   [RDX],EAX
-        DEC   R8
+        DEC   R8D
         JNZ   @@Loop
 @@Done:
         SETC  AL
