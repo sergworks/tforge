@@ -77,7 +77,7 @@ type
 
     function Reverse: ByteArray; overload;
 
-    function IsBitSet(BitNo: Cardinal): Boolean;
+    function TestBit(BitNo: Cardinal): Boolean;
     function SeniorBit: Integer;
 
     class function Concat(const A, B: ByteArray): ByteArray; static;
@@ -254,7 +254,7 @@ begin
 {$ENDIF}
 end;
 
-function ByteArray.IsBitSet(BitNo: Cardinal): Boolean;
+function ByteArray.TestBit(BitNo: Cardinal): Boolean;
 begin
 {$IFDEF TFL_INTFCALL}
   Result:= FBytes.GetBitSet(BitNo);

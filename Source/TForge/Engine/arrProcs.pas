@@ -352,8 +352,8 @@ end;
 {$ENDIF}
 {$ENDIF}
 
+{$IFDEF ASM86}
 function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
-{$IFDEF WIN32_ASM86}
 asm
         PUSH  [EAX]
         POP   [EDX]
@@ -376,8 +376,10 @@ asm
         MOV   [EDX],EAX
 end;
 {$ELSE}
-{$IFDEF WIN64_ASM86}
+{$IFDEF ASM64}
 // RCX <-- A, RDX <--Res, R8D <-- L
+function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
+{$IFDEF FPC}nostackframe;{$ENDIF}
 asm
         MOV   R9D,[RCX]
         MOV   [RDX],R9D
@@ -386,7 +388,7 @@ asm
         JZ    @@Done
 @@Loop:
         LEA   RCX,[RCX+4]
-        LEA   EDX,[EDX+4]
+        LEA   EDX,[RDX+4]
         MOV   EAX,[RCX]
         ADC   EAX,0
         MOV   [RDX],EAX
@@ -399,6 +401,7 @@ asm
         MOV   [RDX],EAX
 end;
 {$ELSE}
+function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
 var
   Tmp: TLimb;
 

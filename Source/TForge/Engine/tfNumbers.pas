@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
 { *********************************************************** }
 
 unit tfNumbers;
@@ -13,6 +13,10 @@ unit tfNumbers;
 
 {$IFDEF TFL_LIMB32_ASM86}
   {.$DEFINE LIMB32_ASM86}
+{$ENDIF}
+
+{$IFDEF TFL_POINTERMATH}
+  {$POINTERMATH ON}
 {$ENDIF}
 
 {$R-}   // range checking is not allowed
@@ -134,6 +138,12 @@ type
     class function ModInverse(A, M: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
+    class function NextNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PrevNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function PrevNumberU(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function ToPByte(A: PBigNumber; P: PByte; var L: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -331,7 +341,7 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..74] of Pointer = (
+  BigNumVTable: array[0..77] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -415,6 +425,11 @@ const
    @TBigNumber.DivRemLimbU2,
    @TBigNumber.DivRemIntLimb,
    @TBigNumber.DivRemIntLimb2,
+
+   @TBigNumber.NextNumber,
+   @TBigNumber.PrevNumber,
+   @TBigNumber.PrevNumberU,
+
                                   // Double limb support
    @TBigNumber.ToDblLimb,
    @TBigNumber.ToDblIntLimb,
@@ -1859,6 +1874,7 @@ begin
   end;
 end;
 }
+
 class function TBigNumber.AddLimb(A: PBigNumber; Limb: TLimb;
                                   var R: PBigNumber): TF_RESULT;
 var
@@ -1896,6 +1912,44 @@ begin
     R:= Tmp;
   end;
 end;
+
+class function TBigNumber.NextNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TF_S_OK then begin
+    if A.FSign >= 0 then begin
+      if arrInc(@A.FLimbs, @Tmp.FLimbs, A.FUsed)
+        then Tmp.FUsed:= UsedA + 1
+        else Tmp.FUsed:= UsedA;
+    end
+    else begin            // A < 0
+      if UsedA = 1 then begin
+        if A.FLimbs[0] = 1 then begin
+          Tmp.FLimbs[0]:= 0;
+        end
+        else begin
+          Tmp.FLimbs[0]:= A.FLimbs[0] - 1;
+          Tmp.FSign:= -1;
+        end;
+      end
+      else begin { UsedA > 1 }
+        arrDec(@A.FLimbs, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
+          then Tmp.FUsed:= UsedA - 1
+          else Tmp.FUsed:= UsedA;
+        Tmp.FSign:= -1;
+      end;
+    end;
+    if R <> nil then TtfRecord.Release(R);
+    R:= Tmp;
+  end;
+end;
+
 (*
 class function TBigNumber.AddDblLimb(A: PBigNumber; B: TDblLimb;
                                      var R: PBigNumber): HResult;
@@ -2140,6 +2194,73 @@ begin
       end;
     end;
     if (R <> nil) then TtfRecord.Release(R);
+    R:= Tmp;
+  end;
+end;
+
+class function TBigNumber.PrevNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TF_S_OK then begin
+    if A.FSign < 0 then begin
+      if arrInc(@A.FLimbs, @Tmp.FLimbs, A.FUsed)
+        then Tmp.FUsed:= UsedA + 1
+        else Tmp.FUsed:= UsedA;
+      Tmp.FSign:= -1;
+    end
+    else begin            // A >= 0
+      if UsedA > 1 then begin
+        arrDec(@A.FLimbs, @Tmp.FLimbs, UsedA);
+        if Tmp.FLimbs[UsedA - 1] = 0
+          then Tmp.FUsed:= UsedA - 1
+          else Tmp.FUsed:= UsedA;
+      end
+      else begin { UsedA = 1 }
+        if A.FLimbs[0] > 0 then begin
+          Tmp.FLimbs[0]:= A.FLimbs[0] - 1;
+        end
+        else begin
+          Tmp.FLimbs[0]:= 1;
+          Tmp.FSign:= -1;
+        end;
+      end;
+    end;
+    if R <> nil then TtfRecord.Release(R);
+    R:= Tmp;
+  end;
+end;
+
+class function TBigNumber.PrevNumberU(A: PBigNumber;
+  var R: PBigNumber): TF_RESULT;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TF_S_OK then begin
+    if UsedA > 1 then begin
+      arrDec(@A.FLimbs, @Tmp.FLimbs, UsedA);
+      if Tmp.FLimbs[UsedA - 1] = 0
+        then Tmp.FUsed:= UsedA - 1
+        else Tmp.FUsed:= UsedA;
+    end
+    else begin { UsedA = 1 }
+      if A.FLimbs[0] > 0 then begin
+        Tmp.FLimbs[0]:= A.FLimbs[0] - 1;
+      end
+      else begin
+        Result:= TF_E_INVALIDARG;
+        Exit;
+      end;
+    end;
+    if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;

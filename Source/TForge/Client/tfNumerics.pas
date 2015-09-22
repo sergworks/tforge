@@ -157,6 +157,9 @@ type
     class operator IntDivide(const A: TLimb; const B: BigCardinal): TLimb;
     class operator Modulus(const A: BigCardinal; const B: TLimb): TLimb;
     class operator Modulus(const A: TLimb; const B: BigCardinal): TLimb;
+
+// unary plus
+    class operator Positive(const A: BigCardinal): BigCardinal;
   end;
 
   BigInteger = record
@@ -350,6 +353,9 @@ type
 // unary minus/plus
     class operator Negative(const A: BigInteger): BigInteger;
     class operator Positive(const A: BigInteger): BigInteger;
+
+    function Next: BigInteger;
+    function Prev: BigInteger;
   end;
 
 type
@@ -2622,6 +2628,26 @@ begin
 {$ENDIF}
 end;
 
+function BigInteger.Next: BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FNumber.NextNumber(Result.FNumber);
+{$ELSE}
+  HResCheck(TBigNumber.NextNumber(PBigNumber(FNumber),
+                                       PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+function BigInteger.Prev: BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(FNumber.PrevNumber(Result.FNumber);
+{$ELSE}
+  HResCheck(TBigNumber.PrevNumber(PBigNumber(FNumber),
+                                       PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
 class operator BigInteger.Negative(const A: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -2633,6 +2659,16 @@ begin
 end;
 
 class operator BigInteger.Positive(const A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.DuplicateNumber(Result.FNumber);
+{$ELSE}
+  HResCheck(TBigNumber.DuplicateNumber(PBigNumber(A.FNumber),
+                                       PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class operator BigCardinal.Positive(const A: BigCardinal): BigCardinal;
 begin
 {$IFDEF TFL_INTFCALL}
   HResCheck(A.DuplicateNumber(Result.FNumber);
