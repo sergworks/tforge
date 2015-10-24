@@ -36,12 +36,13 @@ type
 
 
     function SetIV(Data: Pointer; DataLen: LongWord): TF_RESULT;
+    function SetNonce(Data: PByte; DataLen: LongWord): TF_RESULT;
     function SetDir(Data: LongWord): TF_RESULT;
     function SetMode(Data: LongWord): TF_RESULT;
     function SetPadding(Data: LongWord): TF_RESULT;
     function SetFlags(Data: LongWord): TF_RESULT;
-//    function SetPos32(Data: TLimb): TF_RESULT;
-    function IncBlockNo(Data: Pointer; DataLen: Cardinal{; LE: Boolean}): TF_RESULT;
+    function IncBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+    function DecBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
 
     function EncryptECB(Data: PByte; var DataSize: LongWord;
              BufSize: LongWord; Last: Boolean): TF_RESULT;
@@ -401,6 +402,45 @@ begin
     Result:= TF_E_INVALIDARG;
 end;
 
+function TBlockCipher.SetNonce(Data: PByte; DataLen: LongWord): TF_RESULT;
+var
+  L: LongWord;
+  Output: PByte;
+
+begin
+  if (Data <> nil) then begin
+    FillChar(FIVector, GetBlockSize(@Self), 0);
+    L:= GetBlockSize(@Self);
+
+// IV is considered consisting of 2 parts: Nonce and BlockNo;
+//   BlockNo size is 64 bits (8 bytes);
+//   that said, IV size should be at least 8 + DataLen bytes.
+
+    if L < 16 then begin
+      Result:= TF_E_NOTIMPL;
+      Exit;
+    end;
+
+    if (DataLen = 0) or (DataLen > L - 8) then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+
+    Dec(L, 8);
+    Output:= @FIVector;
+
+// if IV size > 8 + DataLen bytes, the leftmost bytes are zeroed
+    if L > DataLen then begin
+      L:= DataLen;
+      Inc(Output, L - DataLen);
+    end;
+    TBigEndian.ReverseCopy(Data, Data + L, Output);
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+end;
+
 function TBlockCipher.SetDir(Data: LongWord): TF_RESULT;
 begin
   if (Data = TF_KEYDIR_ENCRYPT) or (Data = TF_KEYDIR_DECRYPT) then begin
@@ -430,35 +470,81 @@ begin
   else
     Result:= TF_E_INVALIDARG;
 end;
-{
-function TBlockCipher.SetPos32(Data: TLimb): TF_RESULT;
+
+(*
+function TBlockCipher.IncBlockNo(Data: Pointer; DataLen: Cardinal{; LE: Boolean}): TF_RESULT;
 var
-  LBlockSize: LongWord;
-  IV: TBlock;
+  L: LongWord;
+  LData: UInt64;
+  BlockNoPtr: PByte;
 
 begin
-  LBlockSize:= GetBlockSize(@Self);
-  if (LBlockSize = 0) or (LBlockSize > SizeOf(TBlock)) then begin
+  L:= GetBlockSize(@Self);
+  if (L = 0) or (L > SizeOf(TBlock)) then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
-  if Data mod LBlockSize <> 0 then begin
+  if (DataLen > SizeOf(LData)) or (DataLen > L) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
-  Data:= Data div LBlockSize;
-  TBigEndian.ReverseCopy(@FIVector, LBlockSize, @IV);
-  TLittleEndian.Incr(@IV, LBlockSize div SizeOf(TLimb), Data);
-  TBigEndian.ReverseCopy(@IV, LBlockSize, @FIVector);
+
+  BlockNoPtr:= @FIVector;
+// if block size > 8 bytes, the rightmost 8 bytes of IV are used as block number
+  if L > SizeOf(LData) then begin
+    Inc(BlockNoPtr, L - SizeOf(LData));
+    L:= SizeOf(LData);
+  end;
+
+  LData:= 0;
+// since IV is big-endian, little-endian data is reversed
+  TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData);
+
+  TBigEndian.Add(BlockNoPtr, L, @LData, DataLen);
+
   Result:= TF_S_OK;
 end;
-}
+
+function TBlockCipher.DecBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+var
+  L: LongWord;
+  LData: UInt64;
+  BlockNoPtr: PByte;
+
+begin
+  L:= GetBlockSize(@Self);
+  if (L = 0) or (L > SizeOf(TBlock)) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+
+  if (DataLen > SizeOf(LData)) or (DataLen > L) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  BlockNoPtr:= @FIVector;
+// if block size > 8 bytes, the rightmost 8 bytes of IV are used as block number
+  if L > SizeOf(LData) then begin
+    Inc(BlockNoPtr, L - SizeOf(LData));
+    L:= SizeOf(LData);
+  end;
+
+  LData:= 0;
+// since IV is big-endian, little-endian data is reversed
+  TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData);
+
+  TBigEndian.Sub(BlockNoPtr, L, @LData, DataLen);
+
+  Result:= TF_S_OK;
+end;
+
+*)
 
 function TBlockCipher.IncBlockNo(Data: Pointer; DataLen: Cardinal{; LE: Boolean}): TF_RESULT;
 var
   LBlockSize: LongWord;
   LData: UInt64;
-//  L: Cardinal;
 
 begin
   LBlockSize:= GetBlockSize(@Self);
@@ -473,44 +559,35 @@ begin
 
   LData:= 0;
 // since IV is big-endian, little-endian data is reversed
-//  if LE then
-    TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData);
-//  else
-//    Move(Data^, LData, DataLen);
+  TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData);
+
+  TBigEndian.Add(@FIVector, LBlockSize, @LData, DataLen);
+
+  Result:= TF_S_OK;
+end;
 
 
-(*
-// Position should be multiple of block size
-  if LData mod LBlockSize <> 0 then begin
+function TBlockCipher.DecBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+var
+  LBlockSize: LongWord;
+  LData: UInt64;
+
+begin
+  LBlockSize:= GetBlockSize(@Self);
+  if (LBlockSize = 0) or (LBlockSize > SizeOf(TBlock)) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+  if (DataLen > SizeOf(LData)) or (DataLen > LBlockSize) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
-  LData:= LData div LBlockSize;
-*)
+  LData:= 0;
+// since IV is big-endian, little-endian data is reversed
+  TBigEndian.ReverseCopy(Data, PByte(Data) + DataLen, @LData);
 
-//  TBigEndian.Reverse(@LData, PByte(@LData) + DataLen);
-
-// LData contains block number in little endian format
-//  if (DataLen > LBlockSize) then DataLen:= LBlockSize;
-//
-//  TBigEndian.Reverse(@LData, PByte(@LData) + DataLen);
-
-  TBigEndian.Add(@FIVector, LBlockSize, @LData, DataLen);
-
-//  FillChar(FIVector, LBlockSize, 0);
-//  TBigEndian.ReverseCopy(@LData, PByte(@LData) + DataLen,
-//                         PByte(@FIVector) + LBlockSize - DataLen);
-{
-  Tmp:= LBlockSize;
-  L:= 0;
-  repeat
-    Tmp:= Tmp shr 1;
-    Inc(L);
-  until Tmp = 0;
-  TBigEndian.RightShift(Data, DataLen, L-1);
-  TBigEndian.Add(@FIVector, LBlockSize, LData, DataLen);
-}
+  TBigEndian.Sub(@FIVector, LBlockSize, @LData, DataLen);
 
   Result:= TF_S_OK;
 end;
@@ -548,12 +625,18 @@ begin
   if Param = TF_KP_IV then begin
     Result:= PBlockCipher(Inst).SetIV(Data, DataLen);
   end
+  else if Param = TF_KP_NONCE then begin
+    Result:= PBlockCipher(Inst).SetNonce(Data, DataLen);
+  end
   else if Param {and not TF_KP_LE} = TF_KP_INCNO then begin
 
 //    if Param and TF_KP_LE <> 0 then             // convert to big endian
 //      TBigEndian.Reverse(Data, Data + Datalen);
 
     Result:= PBlockCipher(Inst).IncBlockNo(Data, DataLen{, Param and TF_KP_LE <> 0});
+  end
+  else if Param = TF_KP_DECNO then begin
+    Result:= PBlockCipher(Inst).DecBlockNo(Data, DataLen);
   end
   else begin
     if DataLen = SizeOf(LongWord) then begin

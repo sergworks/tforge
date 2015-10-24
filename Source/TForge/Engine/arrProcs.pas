@@ -646,7 +646,7 @@ end;
     if function returns True the Res is invalid
     any (A = B = Res) coincidence is allowed
 }
-{$IFDEF WIN32_ASM86}
+{$IFDEF ASM86}
 function arrSub(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 asm
         PUSH  ESI
@@ -673,12 +673,47 @@ asm
         STOSD
         LOOP  @@Loop2
 @@Done:
-        MOV   EAX,0
+//        MOV   EAX,0
         SETC  AL
+        MOVZX EAX,AL      // not needed really ..
 @@Exit:
         POP   EDI
         POP   ESI
 end;
+
+{$ELSE}
+{$IFDEF ASM64}
+function arrSub(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
+asm
+        MOV   R10,RCX       // R10 <-- A
+        MOV   ECX,LB        // ECX <-- LB
+        SUB   R9,RCX        // R9D <-- LA - LB
+        CLC
+@@Loop:
+        MOV   EAX,[R10]
+        LEA   R10,[R10+4]
+        SBB   EAX,[RDX]
+        MOV   [R8],EAX
+        LEA   R8,[R8+4]
+        LEA   RDX,[RDX+4]
+        DEC   ECX
+        JNZ   @@Loop
+
+        MOV   ECX,R9D       // ECX <-- LA - LB
+        JECXZ @@Done
+@@Loop2:
+        MOV   EAX,[R10]
+        LEA   R10,[R10+4]
+        SBB   EAX, 0
+        MOV   [R8],EAX
+        LEA   R8,[R8+4]
+        DEC   ECX
+        JNZ   @@Loop2
+@@Done:
+        SETC  AL
+        MOVZX EAX,AL      // not needed really ..
+end;
+
 {$ELSE}
 function arrSub(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 var
@@ -721,6 +756,7 @@ begin
   end;
   Result:= BorrowIn;
 end;
+{$ENDIF}
 {$ENDIF}
 
 {

@@ -155,13 +155,6 @@ type
                                TwoCompl: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-(*
-    class function ToWideString(A: PBigNumber; var S: WideString): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ToWideHexString(A: PBigNumber; var S: WideString;
-                     Digits: Cardinal; TwoCompl: Boolean): HResult;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-*)
     class function CompareToLimb(A: PBigNumber; B: TLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function CompareToLimbU(A: PBigNumber; B: TLimb): Integer;
@@ -289,6 +282,9 @@ type
 
 //    function AsString: string;
 //    function AsHexString(Digits: Cardinal; TwoCompl: Boolean = False): string;
+
+//    function SelfAddNumber(B: PBigNumber): TF_RESULT;
+
 
     function SelfCopy(Inst: PBigNumber): TF_RESULT;
     function SelfAddLimb(Value: TLimb): TF_RESULT;
@@ -2096,6 +2092,123 @@ begin
     Result:= TF_S_OK;
   end;
 end;
+(*
+function TBigNumber.SelfAddNumber(B: PBigNumber): TF_RESULT;
+var
+  UsedA, UsedB: Cardinal;
+  LimbsA, LimbsB: PLimb;
+  Diff: Integer;
+  Tmp: PBigNumber;
+
+begin
+  UsedA:= FUsed;
+  UsedB:= B.FUsed;
+  LimbsA:= @FLimbs;
+  LimbsB:= @B.FLimbs;
+
+{
+  if @Self = B then begin
+    Result:= AllocNumber(Tmp, UsedA + 1);
+    if Result <> TF_S_OK then Exit;
+    Tmp.FUsed:= arrShlOne(@A.FLimbs, @Tmp.FLimbs, UsedA);
+    Tmp.FSign:= A.FSign;
+    if (R <> nil) then TtfRecord.Release(R);
+    R:= Tmp;
+  end
+}
+
+  else { A <> B } begin
+    if (UsedB = 1) and (LimbsB^ = 0) { B = 0 } then begin
+      if R <> A then begin
+        if R <> nil then TtfRecord.Release(R);
+        R:= A;
+        TtfRecord.AddRef(R);
+      end;
+      Result:= TF_S_OK;
+      Exit;
+    end;
+
+    if (UsedA = 1) and (LimbsA^ = 0) { A = 0 } then begin
+      if R <> B then begin
+        if R <> nil then TtfRecord.Release(R);
+        R:= B;
+        TtfRecord.AddRef(R);
+      end;
+      Result:= TF_S_OK;
+      Exit;
+    end;
+
+    if A.FSign xor B.FSign >= 0 then begin
+// Values have the same sign - ADD lesser to greater
+
+      if UsedA >= UsedB then begin
+        Result:= AllocNumber(Tmp, UsedA + 1);
+        if Result <> TF_S_OK then Exit;
+        if arrAdd(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB)
+          then
+            Tmp.FUsed:= UsedA + 1
+          else
+            Tmp.FUsed:= UsedA;
+        Tmp.FSign:= A.FSign;
+      end
+      else begin
+        Result:= AllocNumber(Tmp, UsedB + 1);
+        if Result <> TF_S_OK then Exit;
+        if arrAdd(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA)
+          then
+            Tmp.FUsed:= UsedB + 1
+          else
+            Tmp.FUsed:= UsedB;
+        Tmp.FSign:= B.FSign;
+      end;
+
+      if (R <> nil) then TtfRecord.Release(R);
+      R:= Tmp;
+
+    end
+    else begin
+// Values have opposite signs - SUB lesser from greater
+
+      if (UsedA = UsedB) then begin
+        Diff:= arrCmp(LimbsA, LimbsB, UsedA);
+        if Diff = 0 then begin
+          if (R <> nil) then TtfRecord.Release(R);
+          R:= @BigNumZero;
+          Result:= TF_S_OK;
+          Exit;
+        end;
+      end
+      else
+        Diff:= Ord(UsedA > UsedB) shl 1 - 1;
+
+      if Diff > 0 then begin
+        Result:= AllocNumber(Tmp, UsedA + 1);
+        if Result <> TF_S_OK then Exit;
+        arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
+        Tmp.FUsed:= UsedA;
+        Tmp.FSign:= A.FSign;
+        Normalize(Tmp);
+
+        if (R <> nil) then TtfRecord.Release(R);
+        R:= Tmp;
+      end
+      else begin
+        Result:= AllocNumber(Tmp, UsedB + 1);
+        if Result <> TF_S_OK then Exit;
+        arrSub(LimbsB, LimbsA, @Tmp.FLimbs, UsedB, UsedA);
+
+        Tmp.FUsed:= UsedB;
+        Tmp.FSign:= B.FSign;
+        Normalize(Tmp);
+
+        if (R <> nil) then TtfRecord.Release(R);
+        R:= Tmp;
+      end;
+    end;
+  end;
+  Result:= TF_S_OK;
+end;
+*)
 
 function TBigNumber.SelfSubLimbU(Value: TLimb): TF_RESULT;
 var
@@ -2736,7 +2849,7 @@ end;
 
 class function TBigNumber.ToIntLimb(A: PBigNumber; var Value: TIntLimb): TF_RESULT;
 const
-  MaxValue = TLimb(TLimbInfo.MaxLimb shr 1 + 1);
+  MaxValue = TLimb(TLimb(TLimbInfo.MaxLimb shr 1) + TLimb(1));
 
 var
   Tmp: TLimb;
@@ -4416,47 +4529,6 @@ begin
   end;
 end;
 
-function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
-var
-  Tmp: PBigNumber;
-
-begin
-  Result:= TBigNumber.AllocNumber(Tmp, 2);
-  if Result = TF_S_OK then begin
-    PDblLimb(@Tmp.FLimbs)^:= Value;
-    if Tmp.FLimbs[1] <> 0 then Tmp.FUsed:= 2;
-    if (A <> nil) then TtfRecord.Release(A);
-    A:= Tmp;
-  end;
-end;
-
-
-(*
-function BigNumberFromCardinal(var A: PBigNumber; Value: Cardinal): HResult;
-const
-  DataSize = SizeOf(Cardinal) div SizeOf(TLimb);
-
-var
-  Tmp: PBigNumber;
-
-begin
-{$IF DataSize = 0}
-  Result:= TFL_E_NOTIMPL;
-{$ELSE}
-  Result:= TBigNumber.AllocNumber(Tmp, DataSize);
-  if Result <> TFL_S_OK then Exit;
-  {$IF DataSize = 1}
-    Tmp.FLimbs[0]:= Value;
-  {$ELSE}
-    Move(Value, Tmp.FLimbs, SizeOf(Cardinal));
-    Tmp.FUsed:= DataSize;
-    TBigNumber.Normalize(Tmp);
-  {$IFEND}
-  if (A <> nil) then TBigNumber.TtfRecord.Release((A);
-  A:= Tmp;
-{$IFEND}
-end;
-*)
 function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): TF_RESULT;
 var
   Tmp: PBigNumber;
@@ -4471,15 +4543,41 @@ begin
   end;
 end;
 
-function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
+function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
+type
+  TLimb2 = array[0..1] of TLimb;
+  PLimb2 = ^TLimb2;
+
 var
   Tmp: PBigNumber;
+  P: PLimb2;
 
 begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
   if Result = TF_S_OK then begin
-    PDblLimb(@Tmp.FLimbs)^:= Abs(Value);
-    if Tmp.FLimbs[1] <> 0 then Tmp.FUsed:= 2;
+    P:= @Tmp.FLimbs;
+    PDblLimb(P)^:= Value;
+    if P[1] <> 0 then Tmp.FUsed:= 2;
+    if (A <> nil) then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
+
+function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
+type
+  TLimb2 = array[0..1] of TLimb;
+  PLimb2 = ^TLimb2;
+
+var
+  Tmp: PBigNumber;
+  P: PLimb2;
+
+begin
+  Result:= TBigNumber.AllocNumber(Tmp, 2);
+  if Result = TF_S_OK then begin
+    P:= @Tmp.FLimbs;
+    PDblLimb(P)^:= Abs(Value);
+    if P[1] <> 0 then Tmp.FUsed:= 2;
     if Value < 0 then Tmp.FSign:= -1;
     if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;

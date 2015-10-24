@@ -350,6 +350,21 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+  IKeyStream = interface(IInterface)
+    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKey(Key: PByte; KeySize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DestroyKey;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Read(Data: PByte; DataSize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Skip(Dist: Int64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Crypt(Data: PByte; DataSize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
 const
                             // max block size for supported block ciphers:
                             //   256 bytes = 2048 bits
@@ -363,6 +378,7 @@ const
   TF_KP_IV        = 5;      // initialization vector
   TF_KP_NONCE     = 6;      // nonce
   TF_KP_INCNO     = 7;      // increment block number
+  TF_KP_DECNO     = 8;      // decrement block number
 
 //  TF_KP_LE        = $1000;  // little endian
                             // _LE - suffix means the param is integer

@@ -356,7 +356,17 @@ type
 
     function Next: BigInteger;
     function Prev: BigInteger;
-  end;
+
+// mutating methods
+//    procedure SelfAdd(const A: BigInteger); overload;
+//    procedure SelfAdd(const A: TLimb); overload;
+//    procedure SelfAdd(const A: TIntLimb); overload;
+
+//    procedure SelfSub(const A: BigInteger); overload;
+//    procedure SelfSub(const A: TLimb); overload;
+//    procedure SelfSub(const A: TIntLimb); overload;
+
+end;
 
 type
   EBigNumberError = class(Exception)
@@ -397,7 +407,7 @@ end;
 
 function Compare_BigCard_BigCard(const A, B: BigCardinal): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareNumberU(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.CompareNumbersU(PBigNumber(A.FNumber),
@@ -407,7 +417,7 @@ end;
 
 function Compare_BigInt_BigInt(const A, B: BigInteger): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareNumber(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
@@ -417,7 +427,7 @@ end;
 
 function Compare_BigInt_BigCard(const A: BigInteger; const B: BigCardinal): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareNumber(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
@@ -427,7 +437,7 @@ end;
 
 function Compare_BigCard_BigInt(const A: BigCardinal; const B: BigInteger): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareNumber(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.CompareNumbers(PBigNumber(A.FNumber),
@@ -437,7 +447,7 @@ end;
 
 function Compare_BigCard_Limb(const A: BigCardinal; const B: TLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToLimbU(B);
 {$ELSE}
   Result:= TBigNumber.CompareToLimbU(PBigNumber(A.FNumber), B);
@@ -446,7 +456,7 @@ end;
 
 function Compare_BigCard_IntLimb(const A: BigCardinal; const B: TIntLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToIntLimbU(B);
 {$ELSE}
   Result:= TBigNumber.CompareToIntLimbU(PBigNumber(A.FNumber), B);
@@ -455,7 +465,7 @@ end;
 
 function Compare_BigCard_DblLimb(const A: BigCardinal; const B: TDblLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToDblLimbU(B);
 {$ELSE}
   Result:= TBigNumber.CompareToDblLimbU(PBigNumber(A.FNumber), B);
@@ -464,7 +474,7 @@ end;
 
 function Compare_BigCard_DblIntLimb(const A: BigCardinal; const B: TDblIntLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToDblIntLimbU(B);
 {$ELSE}
   Result:= TBigNumber.CompareToDblIntLimbU(PBigNumber(A.FNumber), B);
@@ -473,7 +483,7 @@ end;
 
 function Compare_BigInt_Limb(const A: BigInteger; const B: TLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToLimb(B);
 {$ELSE}
   Result:= TBigNumber.CompareToLimb(PBigNumber(A.FNumber), B);
@@ -482,7 +492,7 @@ end;
 
 function Compare_BigInt_IntLimb(const A: BigInteger; const B: TIntLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToIntLimb(B);
 {$ELSE}
   Result:= TBigNumber.CompareToIntLimb(PBigNumber(A.FNumber), B);
@@ -491,7 +501,7 @@ end;
 
 function Compare_BigInt_DblLimb(const A: BigInteger; const B: TDblLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToDblLimb(B);
 {$ELSE}
   Result:= TBigNumber.CompareToDblLimb(PBigNumber(A.FNumber), B);
@@ -500,7 +510,7 @@ end;
 
 function Compare_BigInt_DblIntLimb(const A: BigInteger; const B: TDblIntLimb): Integer; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.CompareToDblIntLimb(B);
 {$ELSE}
   Result:= TBigNumber.CompareToDblIntLimb(PBigNumber(A.FNumber), B);
@@ -511,7 +521,7 @@ end;
 
 function Equal_BigCard_BigCard(const A, B: BigCardinal): Boolean; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.EqualsNumberU(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.EqualNumbersU(PBigNumber(A.FNumber),
@@ -521,7 +531,7 @@ end;
 
 function Equal_BigInt_BigInt(const A, B: BigInteger): Boolean; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.EqualsNumber(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
@@ -531,7 +541,7 @@ end;
 
 function Equal_BigInt_BigCard(const A: BigInteger; const B: BigCardinal): Boolean; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.EqualsNumber(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
@@ -541,7 +551,7 @@ end;
 
 function Equal_BigCard_BigInt(const A: BigCardinal; const B: BigInteger): Boolean; inline;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= A.FNumber.EqualsNumber(B.FNumber);
 {$ELSE}
   Result:= TBigNumber.EqualNumbers(PBigNumber(A.FNumber),
@@ -599,7 +609,7 @@ var
   I: Integer;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   BytesUsed:= FNumber.GetSize;
 {$ELSE}
   BytesUsed:= TBigNumber.GetSize(PBigNumber(FNumber));
@@ -608,7 +618,7 @@ begin
   L:= (BytesUsed * 41) div 17 + 1;
   GetMem(P, L);
   try
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
     HResCheck(FNumber.ToDec(P, L));
 {$ELSE}
     HResCheck(TBigNumber.ToDec(PBigNumber(FNumber), P, L));
@@ -638,7 +648,7 @@ begin
   if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
       HResCheck(FNumber.ToHex(P, L, TwoCompl));
 {$ELSE}
       HResCheck(TBigNumber.ToHex(PBigNumber(FNumber), P, L, TwoCompl));
@@ -678,7 +688,7 @@ begin
   if (HR = TF_E_INVALIDARG) and (L > 0) then begin
     Result:= nil;
     SetLength(Result, L);
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
     HR:= FNumber.ToPByte(Pointer(Result), L);
 {$ELSE}
     HR:= TBigNumber.ToPByte(PBigNumber(FNumber), Pointer(Result), L);
@@ -689,7 +699,7 @@ end;
 
 function BigCardinal.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
                               SizeOf(Char), False, TwoCompl) = TF_S_OK;
 {$ELSE}
@@ -700,7 +710,7 @@ end;
 
 function BigCardinal.GetHashCode: Integer;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= FNumber.GetHashCode;
 {$ELSE}
   Result:= TBigNumber.GetHashCode(PBigNumber(FNumber));
@@ -749,7 +759,7 @@ end;
 
 class operator BigCardinal.LeftShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ShlNumber(PBigNumber(A.FNumber), Shift,
@@ -759,7 +769,7 @@ end;
 
 class operator BigCardinal.RightShift(const A: BigCardinal; Shift: Cardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ShrNumber(PBigNumber(A.FNumber), Shift,
@@ -769,7 +779,7 @@ end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
                                SizeOf(Char), False, False));
 {$ELSE}
@@ -781,7 +791,7 @@ end;
 class operator BigCardinal.Explicit(const Value: TBytes): BigCardinal;
 begin
   HResCheck(BigNumberFromPByte(
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
     Result.FNumber,
 {$ELSE}
     PBigNumber(Result.FNumber),
@@ -796,7 +806,7 @@ end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): TLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToLimb(PBigNumber(Value.FNumber), Result));
@@ -805,7 +815,7 @@ end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): TIntLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToIntLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToIntLimb(PBigNumber(Value.FNumber), Result));
@@ -814,7 +824,7 @@ end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): TDblLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToDblLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToDblLimb(PBigNumber(Value.FNumber), Result));
@@ -823,7 +833,7 @@ end;
 
 class operator BigCardinal.Explicit(const Value: BigCardinal): TDblIntLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToDblIntLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToDblIntLimb(PBigNumber(Value.FNumber), Result));
@@ -835,7 +845,7 @@ begin
   if Value < 0 then
     BigNumberError(TF_E_INVALIDARG)
   else begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
     HResCheck(BigNumberFromIntLimb(Result.FNumber, TLimb(Value)));
 {$ELSE}
     HResCheck(BigNumberFromIntLimb(PBigNumber(Result.FNumber), TLimb(Value)));
@@ -848,7 +858,7 @@ begin
   if Value < 0 then
     BigNumberError(TF_E_INVALIDARG)
   else begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
     HResCheck(BigNumberFromDblIntLimb(Result.FNumber, TDblLimb(Value)));
 {$ELSE}
     HResCheck(BigNumberFromDblIntLimb(PBigNumber(Result.FNumber), TDblLimb(Value)));
@@ -858,7 +868,7 @@ end;
 
 class operator BigCardinal.Implicit(const Value: TLimb): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromLimb(Result.FNumber, Value));
 {$ELSE}
   HResCheck(BigNumberFromLimb(PBigNumber(Result.FNumber), Value));
@@ -867,7 +877,7 @@ end;
 
 class operator BigCardinal.Implicit(const Value: TDblLimb): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromDblLimb(Result.FNumber, Value));
 {$ELSE}
   HResCheck(BigNumberFromDblLimb(PBigNumber(Result.FNumber), Value));
@@ -876,7 +886,7 @@ end;
 
 class operator BigCardinal.BitwiseAnd(const A, B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AndNumberU(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AndNumbersU(PBigNumber(A.FNumber),
@@ -886,7 +896,7 @@ end;
 
 class operator BigCardinal.BitwiseOr(const A, B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.OrNumberU(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.OrNumbersU(PBigNumber(A.FNumber),
@@ -896,7 +906,7 @@ end;
 
 class operator BigCardinal.Add(const A, B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AddNumberU(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddNumbersU(PBigNumber(A.FNumber),
@@ -906,7 +916,7 @@ end;
 
 class operator BigCardinal.Subtract(const A, B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SubNumberU(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubNumbersU(PBigNumber(A.FNumber),
@@ -916,7 +926,7 @@ end;
 
 class operator BigCardinal.Multiply(const A, B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.MulNumberU(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulNumbersU(PBigNumber(A.FNumber),
@@ -929,7 +939,7 @@ var
   Remainder: IBigNumber;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(A.FNumber),
@@ -943,7 +953,7 @@ var
   Quotient: IBigNumber;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemNumberU(B.FNumber, Quotient, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.DivRemNumbersU(PBigNumber(A.FNumber),
@@ -1214,7 +1224,7 @@ end;
 
 class operator BigCardinal.Add(const A: BigCardinal; const B: TLimb): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AddLimbU(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddLimbU(PBigNumber(A.FNumber), B,
@@ -1224,7 +1234,7 @@ end;
 
 class operator BigCardinal.Add(const A: TLimb; const B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.AddLimbU(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddLimbU(PBigNumber(B.FNumber), A,
@@ -1234,7 +1244,7 @@ end;
 
 class operator BigCardinal.Subtract(const A: BigCardinal; const B: TLimb): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SubLimbU(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubLimbU(PBigNumber(A.FNumber), B,
@@ -1244,7 +1254,7 @@ end;
 
 class operator BigCardinal.Subtract(const A: TLimb; const B: BigCardinal): Cardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.SubLimbU2(A, Result));
 {$ELSE}
   HResCheck(TBigNumber.SubLimbU2(PBigNumber(B.FNumber), A, Result));
@@ -1253,7 +1263,7 @@ end;
 
 class operator BigCardinal.Multiply(const A: BigCardinal; const B: TLimb): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.MulLimbU(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulLimbU(PBigNumber(A.FNumber), B,
@@ -1263,7 +1273,7 @@ end;
 
 class operator BigCardinal.Multiply(const A: TLimb; const B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.MulLimbU(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulLimbU(PBigNumber(B.FNumber), A,
@@ -1276,7 +1286,7 @@ var
   Remainder: TLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemLimbU(B, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimbU(PBigNumber(A.FNumber), B,
@@ -1289,7 +1299,7 @@ var
   Remainder: TLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.DivRemLimbU2(A, Result, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimbU2(PBigNumber(B.FNumber), A,
@@ -1302,7 +1312,7 @@ var
   Quotient: IBigNumber;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemLimbU(B, Quotient, Result));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimbU(PBigNumber(A.FNumber),
@@ -1315,7 +1325,7 @@ var
   Quotient: TLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.DivRemLimbU2(A, Quotient, Result));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimbU2(PBigNumber(B.FNumber), A,
@@ -1335,7 +1345,7 @@ var
   IsMinus: Boolean;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   BytesUsed:= FNumber.GetSize;
 {$ELSE}
   BytesUsed:= TBigNumber.GetSize(PBigNumber(FNumber));
@@ -1345,7 +1355,7 @@ begin
   L:= (BytesUsed * 41) div 17 + 1;
   GetMem(P, L);
   try
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
     HResCheck(FNumber.ToDec(P, L));
 {$ELSE}
     HResCheck(TBigNumber.ToDec(PBigNumber(FNumber), P, L));
@@ -1383,7 +1393,7 @@ var
   I: Integer;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HR:= FNumber.ToHex(nil, L, TwoCompl);
 {$ELSE}
   HR:= TBigNumber.ToHex(PBigNumber(FNumber), nil, L, TwoCompl);
@@ -1391,7 +1401,7 @@ begin
   if HR = TF_E_INVALIDARG then begin
     GetMem(P, L);
     try
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
       HResCheck(FNumber.ToHex(P, L, TwoCompl));
 {$ELSE}
       HResCheck(TBigNumber.ToHex(PBigNumber(FNumber), P, L, TwoCompl));
@@ -1437,7 +1447,7 @@ var
 
 begin
   Result:= nil;
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HR:= FNumber.ToPByte(nil, L);
 {$ELSE}
   HR:= TBigNumber.ToPByte(PBigNumber(FNumber), nil, L);
@@ -1451,7 +1461,7 @@ end;
 
 function BigInteger.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
                               SizeOf(Char), True, TwoCompl) = TF_S_OK;
 {$ELSE}
@@ -1462,7 +1472,7 @@ end;
 
 function BigInteger.GetSign: Integer;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= FNumber.GetSign;
 {$ELSE}
   Result:= TBigNumber.GetSign(PBigNumber(FNumber));
@@ -1471,7 +1481,7 @@ end;
 
 function BigInteger.GetHashCode: Integer;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   Result:= FNumber.GetHashCode;
 {$ELSE}
   Result:= TBigNumber.GetHashCode(PBigNumber(FNumber));
@@ -1602,7 +1612,7 @@ end;
 
 class function BigInteger.Abs(const A: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AbsNumber(Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AbsNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
@@ -1611,7 +1621,7 @@ end;
 
 class function BigCardinal.Pow(const Base: BigCardinal; Value: Cardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Base.FNumber.PowU(Value, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.PowU(PBigNumber(Base.FNumber), Value,
@@ -1621,7 +1631,7 @@ end;
 
 class function BigInteger.Pow(const Base: BigInteger; Value: Cardinal): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Base.FNumber.Pow(Value, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.Pow(PBigNumber(Base.FNumber), Value,
@@ -1631,7 +1641,7 @@ end;
 
 class operator BigInteger.BitwiseAnd(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AndNumber(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AndNumbers(PBigNumber(A.FNumber),
@@ -1641,7 +1651,7 @@ end;
 
 class operator BigInteger.BitwiseOr(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.OrNumber(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.OrNumbers(PBigNumber(A.FNumber),
@@ -1651,7 +1661,7 @@ end;
 
 class operator BigInteger.BitwiseXor(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.XorNumber(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.XorNumbers(PBigNumber(A.FNumber),
@@ -1661,7 +1671,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): TLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToLimb(PBigNumber(Value.FNumber), Result));
@@ -1670,7 +1680,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): TDblLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToDblLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToDblLimb(PBigNumber(Value.FNumber), Result));
@@ -1679,7 +1689,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): TIntLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToIntLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToIntLimb(PBigNumber(Value.FNumber), Result));
@@ -1688,7 +1698,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): TDblIntLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Value.FNumber.ToDblIntLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToDblIntLimb(PBigNumber(Value.FNumber), Result));
@@ -1702,7 +1712,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: BigInteger): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   if (Value.FNumber.GetSign < 0) then
 {$ELSE}
   if (PBigNumber(Value.FNumber).FSign < 0) then
@@ -1712,7 +1722,7 @@ begin
 end;
 
 class operator BigInteger.Explicit(const Value: string): BigInteger;
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
 begin
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
                                SizeOf(Char), True, False));
@@ -1724,7 +1734,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromPByte(Result.FNumber,
 {$ELSE}
   HResCheck(BigNumberFromPByte(PBigNumber(Result.FNumber),
@@ -1824,7 +1834,7 @@ end;
 
 class operator BigInteger.LeftShift(const A: BigInteger; Shift: Cardinal): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ShlNumber(Shift, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ShlNumber(PBigNumber(A.FNumber), Shift,
@@ -1834,7 +1844,7 @@ end;
 
 class operator BigInteger.RightShift(const A: BigInteger; Shift: Cardinal): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ShrNumber(Shift, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ShrNumber(PBigNumber(A.FNumber), Shift,
@@ -1849,7 +1859,7 @@ end;
 
 class operator BigInteger.Implicit(const Value: TLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromLimb(Result.FNumber, Value));
 {$ELSE}
   HResCheck(BigNumberFromLimb(PBigNumber(Result.FNumber), Value));
@@ -1858,7 +1868,7 @@ end;
 
 class operator BigInteger.Implicit(const Value: TDblLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromDblLimb(Result.FNumber, Value));
 {$ELSE}
   HResCheck(BigNumberFromDblLimb(PBigNumber(Result.FNumber), Value));
@@ -1867,7 +1877,7 @@ end;
 
 class operator BigInteger.Implicit(const Value: TIntLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromIntLimb(Result.FNumber, Value));
 {$ELSE}
   HResCheck(BigNumberFromIntLimb(PBigNumber(Result.FNumber), Value));
@@ -1876,7 +1886,7 @@ end;
 
 class operator BigInteger.Implicit(const Value: TDblIntLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BigNumberFromDblIntLimb(Result.FNumber, Value));
 {$ELSE}
   HResCheck(BigNumberFromDblIntLimb(PBigNumber(Result.FNumber), Value));
@@ -1885,7 +1895,7 @@ end;
 
 class operator BigInteger.Add(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AddNumber(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddNumbers(PBigNumber(A.FNumber),
@@ -1895,7 +1905,7 @@ end;
 
 class operator BigInteger.Subtract(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SubNumber(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubNumbers(PBigNumber(A.FNumber),
@@ -1905,7 +1915,7 @@ end;
 
 class operator BigInteger.Multiply(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.MulNumber(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulNumbers(PBigNumber(A.FNumber),
@@ -1918,7 +1928,7 @@ var
   Remainder: IBigNumber;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemNumber(B.FNumber, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemNumbers(PBigNumber(A.FNumber),
@@ -1932,7 +1942,7 @@ var
   Quotient: IBigNumber;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemNumber(B.FNumber, Quotient, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.DivRemNumbers(PBigNumber(A.FNumber),
@@ -1945,7 +1955,7 @@ end;
 class function BigCardinal.DivRem(const Dividend, Divisor: BigCardinal;
                                   var Remainder: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Dividend.FNumber.DivRemNumberU(Divisor.FNumber,
             Result.FNumber, Remainder.FNumber));
 {$ELSE}
@@ -1958,7 +1968,7 @@ end;
 class function BigInteger.DivRem(const Dividend, Divisor: BigInteger;
                var Remainder: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Dividend.FNumber.DivRemNumber(Divisor.FNumber,
             Result.FNumber, Remainder.FNumber));
 {$ELSE}
@@ -1971,7 +1981,7 @@ end;
 class function BigCardinal.DivRem(const Dividend: BigCardinal;
                Divisor: TLimb; var Remainder: TLimb): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Dividend.FNumber.DivRemLimbU(Divisor, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimbU(PBigNumber(Dividend.FNumber), Divisor,
@@ -1982,7 +1992,7 @@ end;
 class function BigCardinal.DivRem(const Dividend: TLimb;
                Divisor: BigCardinal; var Remainder: TLimb): TLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Divisor.FNumber.DivRemLimbU2(Dividend, Result, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimbU2(PBigNumber(Divisor.FNumber), Dividend,
@@ -1992,7 +2002,7 @@ end;
 
 class function BigCardinal.Sqrt(const A: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
@@ -2001,7 +2011,7 @@ end;
 
 class function BigInteger.Sqrt(const A: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
@@ -2010,7 +2020,7 @@ end;
 
 class function BigCardinal.GCD(const A, B: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
@@ -2020,7 +2030,7 @@ end;
 
 class function BigInteger.GCD(const A, B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
@@ -2030,7 +2040,7 @@ end;
 
 class function BigInteger.GCD(const A: BigInteger; const B: BigCardinal): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
@@ -2040,7 +2050,7 @@ end;
 
 class function BigInteger.GCD(const A: BigCardinal; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
@@ -2050,7 +2060,7 @@ end;
 
 class function BigInteger.EGCD(const A, B: BigInteger; var X, Y: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.EGCD(B.FNumber, Result.FNumber, X.FNumber, Y.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.EGCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
@@ -2061,7 +2071,7 @@ end;
 class function BigInteger.ModPow(const BaseValue, ExpValue,
                Modulo: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(BaseValue.FNumber.ModPow(ExpValue.FNumber,
             Modulo.FNumber, Result.FNumber));
 {$ELSE}
@@ -2073,7 +2083,7 @@ end;
 
 class function BigCardinal.ModInverse(const A, Modulo: BigCardinal): BigCardinal;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
@@ -2083,7 +2093,7 @@ end;
 
 class function BigInteger.ModInverse(const A, Modulo: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
@@ -2093,7 +2103,7 @@ end;
 
 class function BigInteger.ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
@@ -2103,7 +2113,7 @@ end;
 
 class function BigInteger.ModInverse(const A: BigCardinal; const Modulo: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.ModInverse(Modulo.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.ModInverse(PBigNumber(A.FNumber),
@@ -2356,7 +2366,7 @@ end;
 
 class operator BigInteger.Add(const A: BigInteger; const B: TLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AddLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddLimb(PBigNumber(A.FNumber), B,
@@ -2366,7 +2376,7 @@ end;
 
 class operator BigInteger.Subtract(const A: BigInteger; const B: TLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SubLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubLimb(PBigNumber(A.FNumber), B,
@@ -2376,7 +2386,7 @@ end;
 
 class operator BigInteger.Multiply(const A: BigInteger; const B: TLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.MulLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulLimb(PBigNumber(A.FNumber), B,
@@ -2389,7 +2399,7 @@ var
   Remainder: BigInteger;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemLimb(B, Result.FNumber, Remainder.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimb(PBigNumber(A.FNumber), B,
@@ -2402,7 +2412,7 @@ var
   Quotient: BigInteger;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemLimb(B, Quotient.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimb(PBigNumber(A.FNumber), B,
@@ -2413,7 +2423,7 @@ end;
 class function BigInteger.DivRem(const Dividend: BigInteger;
                const Divisor: TLimb; var Remainder: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Dividend.FNumber.DivRemLimb(Divisor, Result.FNumber, Remainder.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimb(PBigNumber(Dividend.FNumber), Divisor,
@@ -2425,7 +2435,7 @@ end;
 
 class operator BigInteger.Add(const A: TLimb; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.AddLimb(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddLimb(PBigNumber(B.FNumber), A,
@@ -2435,7 +2445,7 @@ end;
 
 class operator BigInteger.Subtract(const A: TLimb; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.SubLimb2(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubLimb2(PBigNumber(B.FNumber), A,
@@ -2445,7 +2455,7 @@ end;
 
 class operator BigInteger.Multiply(const A: TLimb; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.MulLimb(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulLimb(PBigNumber(B.FNumber), A,
@@ -2458,7 +2468,7 @@ var
   Remainder: TLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.DivRemLimb2(A, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimb2(PBigNumber(B.FNumber), A,
@@ -2471,7 +2481,7 @@ var
   Quotient: BigInteger;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.DivRemLimb2(A, Quotient.FNumber, Result));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimb2(PBigNumber(B.FNumber), A,
@@ -2482,7 +2492,7 @@ end;
 class function BigInteger.DivRem(const Dividend: TLimb;
                const Divisor: BigInteger; var Remainder: TLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Divisor.FNumber.DivRemLimb2(Dividend, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemLimb2(PBigNumber(Divisor.FNumber), Dividend,
@@ -2494,7 +2504,7 @@ end;
 
 class operator BigInteger.Add(const A: BigInteger; const B: TIntLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.AddIntLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddIntLimb(PBigNumber(A.FNumber), B,
@@ -2504,7 +2514,7 @@ end;
 
 class operator BigInteger.Subtract(const A: BigInteger; const B: TIntLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.SubIntLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubIntLimb(PBigNumber(A.FNumber), B,
@@ -2514,7 +2524,7 @@ end;
 
 class operator BigInteger.Multiply(const A: BigInteger; const B: TIntLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.MulIntLimb(B, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulIntLimb(PBigNumber(A.FNumber), B,
@@ -2527,7 +2537,7 @@ var
   Remainder: TIntLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemIntLimb(B, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(A.FNumber), B,
@@ -2540,7 +2550,7 @@ var
   Quotient: BigInteger;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(A.FNumber.DivRemIntLimb(B, Quotient.FNumber, Result));
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(A.FNumber), B,
@@ -2551,7 +2561,7 @@ end;
 class function BigInteger.DivRem(const Dividend: BigInteger;
                const Divisor: TIntLimb; var Remainder: TIntLimb): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Dividend.FNumber.DivRemIntLimb(Divisor, Result.FNumber, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb(PBigNumber(Dividend.FNumber), Divisor,
@@ -2563,7 +2573,7 @@ end;
 
 class operator BigInteger.Add(const A: TIntLimb; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.AddIntLimb(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.AddIntLimb(PBigNumber(B.FNumber), A,
@@ -2573,7 +2583,7 @@ end;
 
 class operator BigInteger.Subtract(const A: TIntLimb; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.SubIntLimb2(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SubIntLimb2(PBigNumber(B.FNumber), A,
@@ -2583,7 +2593,7 @@ end;
 
 class operator BigInteger.Multiply(const A: TIntLimb; const B: BigInteger): BigInteger;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.MulIntLimb(A, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.MulIntLimb(PBigNumber(B.FNumber), A,
@@ -2596,7 +2606,7 @@ var
   Remainder: TIntLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.DivRemIntLimb2(A, Result, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(B.FNumber), A,
@@ -2609,7 +2619,7 @@ var
   Quotient: TIntLimb;
 
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(B.FNumber.DivRemIntLimb2(A, Quotient, Result));
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(B.FNumber), A,
@@ -2620,7 +2630,7 @@ end;
 class function BigInteger.DivRem(const Dividend: TIntLimb;
                const Divisor: BigInteger; var Remainder: TIntLimb): TIntLimb;
 begin
-{$IFDEF TFL_DLL}
+{$IFDEF TFL_INTFCALL}
   HResCheck(Divisor.FNumber.DivRemIntLimb2(Dividend, Result, Remainder));
 {$ELSE}
   HResCheck(TBigNumber.DivRemIntLimb2(PBigNumber(Divisor.FNumber), Dividend,

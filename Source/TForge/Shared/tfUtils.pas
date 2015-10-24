@@ -78,6 +78,7 @@ type
     class function Decr(First, Last: Pointer; Value: Byte): Boolean; overload; static;
     class function Decr(First: Pointer; Count: Cardinal; Value: Byte): Boolean; overload; static;
     class function Add(A: Pointer; LA: Cardinal; B: Pointer; LB: Cardinal): Boolean; overload; static;
+    class function Sub(A: Pointer; LA: Cardinal; B: Pointer; LB: Cardinal): Boolean; overload; static;
 
     class procedure ShiftRight(First, Last: Pointer); overload; static;
     class procedure ShiftRight(First: Pointer; Count: Cardinal); overload; static;
@@ -89,6 +90,13 @@ type
     class procedure ReverseCopy(First, Last, Output: Pointer); overload; static;
     class procedure ReverseCopy(First: Pointer; Count: Cardinal; Output: Pointer); overload; static;
   end;
+
+type
+  TMoveProc = procedure(const Source; var Dest; Count: LongWord);
+
+procedure MoveMem(const Source; var Dest; Count: LongWord);
+procedure MoveXor(const Source; var Dest; Count: LongWord);
+
 {
 type
   TLittleEndian = record
@@ -104,6 +112,97 @@ procedure ReverseBytes(First, Last: Pointer); overload;
 procedure ReverseBytes(First: Pointer; Count: Cardinal); overload;
 }
 implementation
+
+procedure MoveMem(const Source; var Dest; Count: LongWord);
+var
+  S, D: PByte;
+  Cnt1, Cnt2: LongWord;
+
+begin
+  S:= @Source;
+  D:= @Dest;
+  Cnt1:= Count shr 2;
+  Cnt2:= Count and 3;
+
+  if NativeUInt(D) > NativeUInt(S) then begin
+    if Cnt1 > 0 then begin
+      Inc(PLongWord(S), Cnt1);
+      Inc(PLongWord(D), Cnt1);
+      repeat
+        Dec(PLongWord(S));
+        Dec(PLongWord(D));
+        Dec(Cnt1);
+        PLongWord(D)^:= PLongWord(S)^;
+      until Cnt1 = 0;
+    end;
+    while Cnt2 > 0 do begin
+      Dec(S);
+      Dec(D);
+      Dec(Cnt2);
+      D^:= S^;
+    end;
+  end
+  else begin
+    while Cnt1 > 0 do begin
+      PLongWord(D)^:= PLongWord(S)^;
+      Dec(Cnt1);
+      Inc(PLongWord(S));
+      Inc(PLongWord(D));
+    end;
+    while Cnt2 > 0 do begin
+      D^:= S^;
+      Dec(Cnt2);
+      Inc(S);
+      Inc(D);
+    end;
+  end;
+end;
+
+procedure MoveXor(const Source; var Dest; Count: LongWord);
+var
+  S, D: PByte;
+  Cnt1, Cnt2: LongWord;
+
+begin
+  S:= @Source;
+  D:= @Dest;
+  Cnt1:= Count shr 2;
+  Cnt2:= Count and 3;
+
+  if NativeUInt(D) > NativeUInt(S) then begin
+    if Cnt1 > 0 then begin
+      Inc(PLongWord(S), Cnt1);
+      Inc(PLongWord(D), Cnt1);
+      repeat
+        Dec(PLongWord(S));
+        Dec(PLongWord(D));
+        Dec(Cnt1);
+        PLongWord(D)^:= PLongWord(D)^ xor PLongWord(S)^;
+      until Cnt1 = 0;
+    end;
+    while Cnt2 > 0 do begin
+      Dec(S);
+      Dec(D);
+      Dec(Cnt2);
+      D^:= D^ xor S^;
+    end;
+  end
+  else begin
+    while Cnt1 > 0 do begin
+      PLongWord(D)^:= PLongWord(D)^ xor PLongWord(S)^;
+      Dec(Cnt1);
+      Inc(PLongWord(S));
+      Inc(PLongWord(D));
+    end;
+    while Cnt2 > 0 do begin
+      D^:= D^ xor S^;
+      Dec(Cnt2);
+      Inc(S);
+      Inc(D);
+    end;
+  end;
+end;
+
 {
 procedure ReverseCopy(First, Last, Output: Pointer);
 begin
@@ -369,6 +468,43 @@ begin
     Dec(LA);
   end;
   Result:= CarryIn;
+end;
+
+class function TBigEndian.Sub(A: Pointer; LA: Cardinal; B: Pointer; LB: Cardinal): Boolean;
+var
+  BorrowOut, BorrowIn: Boolean;
+  Tmp: Byte;
+
+begin
+  if LB > LA then begin
+    Inc(PByte(B), LB - LA);
+    LB:= LA;
+  end;
+  Inc(PByte(A), LA);
+  Inc(PByte(B), LB);
+  Dec(LA, LB);
+  BorrowIn:= False;
+  while LB > 0 do begin
+    Dec(PByte(B));
+    Dec(PByte(A));
+    Tmp:= PByte(A)^ - PByte(B)^;
+    BorrowOut:= Tmp > PByte(A)^;
+    if BorrowIn then begin
+      BorrowOut:= BorrowOut or (Tmp = 0);
+      Dec(Tmp);
+    end;
+    BorrowIn:= BorrowOut;
+    PByte(A)^:= Tmp;
+    Dec(LB);
+  end;
+  while (LA > 0) and BorrowIn do begin
+    Dec(PByte(A));
+    Tmp:= PByte(A)^;
+    BorrowIn:= Tmp = 0;
+    PByte(A)^:= Tmp - 1;
+    Dec(LA);
+  end;
+  Result:= BorrowIn;
 end;
 
 class procedure TBigEndian.Reverse(First, Last: Pointer);
