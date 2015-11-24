@@ -103,6 +103,22 @@ type
     property BlockSize: Cardinal read GetBlockSize;
   end;
 
+  TKeyStream = record
+  private
+    FKeyStream: IKeyStream;
+  public
+    procedure Free;
+    function IsAssigned: Boolean;
+    procedure Burn;
+
+    function ExpandKey(const AKey: ByteArray): TKeyStream; overload;
+    function ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream; overload;
+    function Skip(AValue: Int64): TKeyStream; // overload;
+
+    procedure Read(var Data; DataLen: LongWord);
+    procedure Crypt(var Data; DataLen: LongWord);
+  end;
+
 type
   ECipherError = class(EForgeError);
 
@@ -587,6 +603,57 @@ class operator TCipher.Explicit(const Name: string): TCipher;
 begin
   HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FAlgorithm));
 end;
+
+{ TKeyStream }
+
+procedure TKeyStream.Free;
+begin
+  FKeyStream:= nil;
+end;
+
+function TKeyStream.IsAssigned: Boolean;
+begin
+  Result:= FKeyStream <> nil;
+end;
+
+procedure TKeyStream.Burn;
+begin
+  FKeyStream.DestroyKey;
+end;
+
+function TKeyStream.ExpandKey(const AKey: ByteArray): TKeyStream;
+begin
+  HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen));
+end;
+
+function TKeyStream.ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream;
+begin
+  HResCheck(FKeyStream.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
+  HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen));
+end;
+
+function TKeyStream.Skip(AValue: Int64): TKeyStream;
+begin
+  HResCheck(FKeyStream.SetKeyParam(TF_KP_INCNO, @AValue, SizeOf(AValue)));
+end;
+
+procedure TKeyStream.Read(var Data; DataLen: LongWord);
+begin
+  HResCheck(FKeyStream.Read(@Data, DataLen));
+end;
+
+procedure TKeyStream.Crypt(var Data; DataLen: LongWord);
+begin
+  HResCheck(FKeyStream.Crypt(@Data, DataLen));
+end;
+
+
+
+
+
+
+
+
 
 {$IFNDEF TFL_DLL}
 initialization

@@ -22,10 +22,10 @@ type
     FRefCount: Integer;
 {$HINTS ON}
     FCipher: ICipherAlgorithm;
+    FBlockSize: LongWord;
 // don't assume that FBlockNo is the rightmost 8 bytes of a block cipher's IV
 //    FBlockNo: UInt64;
     FPos: LongWord;       // 0 .. FBlockSize - 1
-    FBlockSize: LongWord;
     FBlock: TBlock;       // var len
   public
     class function Release(Inst: PKeyStreamEngine): Integer; stdcall; static;
@@ -115,7 +115,8 @@ var
   BurnSize: Integer;
 
 begin
-  BurnSize:= SizeOf(TKeyStreamEngine) - Integer(@PKeyStreamEngine(nil)^.FPos);
+  BurnSize:= SizeOf(TKeyStreamEngine) - Integer(@PKeyStreamEngine(nil)^.FPos)
+                                      + Integer(Inst.FBlockSize);
   FillChar(Inst.FPos, BurnSize, 0);
 end;
 

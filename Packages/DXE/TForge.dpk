@@ -41,7 +41,8 @@ contains
   tfGNumerics in '..\..\Source\TForge\Client\tfGNumerics.pas',
   tfNumerics in '..\..\Source\TForge\Client\tfNumerics.pas',
   arrProcs in '..\..\Source\TForge\Engine\arrProcs.pas',
-  tfNumbers in '..\..\Source\TForge\Engine\tfNumbers.pas';
+  tfNumbers in '..\..\Source\TForge\Engine\tfNumbers.pas',
+  tfCRCs in '..\..\Source\TForge\Client\tfCRCs.pas';
 
 end.
 
