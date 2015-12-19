@@ -1,8 +1,9 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <Package Version="4">
     <PathDelim Value="\"/>
     <Name Value="TForge"/>
+    <Type Value="RunTimeOnly"/>
     <AutoUpdate Value="Manually"/>
     <CompilerOptions>
       <Version Value="11"/>
@@ -12,14 +13,8 @@
         <OtherUnitFiles Value="..\..\Source\TForge\Shared;..\..\Source\TForge\Engine;..\..\Source\TForge\Client"/>
         <UnitOutputDirectory Value="C:\bin\FPC\TForge\$(TargetCPU)-$(TargetOS)"/>
       </SearchPaths>
-      <Other>
-        <CompilerMessages>
-          <MsgFileName Value=""/>
-        </CompilerMessages>
-        <CompilerPath Value="$(CompPath)"/>
-      </Other>
     </CompilerOptions>
-    <Files Count="13">
+    <Files Count="14">
       <Item1>
         <Filename Value="..\..\Source\Include\TFL.inc"/>
         <Type Value="Include"/>
@@ -72,8 +67,11 @@
         <Filename Value="..\..\Source\TForge\Client\tfNumerics.pas"/>
         <UnitName Value="tfNumerics"/>
       </Item13>
+      <Item14>
+        <Filename Value="..\..\Source\TForge\Client\tfCRCs.pas"/>
+        <UnitName Value="tfCRCs"/>
+      </Item14>
     </Files>
-    <Type Value="RunTimeOnly"/>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>
     </UsageOptions>

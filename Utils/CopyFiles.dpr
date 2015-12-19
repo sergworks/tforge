@@ -92,7 +92,7 @@ end;
 
 begin
   try
-    DirIgnoreList:= TIgnoreList.Create('Utils', 'Ports',
+    DirIgnoreList:= TIgnoreList.Create('Utils', 'Ports', 'Misc',
        'backup', '__history', '.hg', 'Debug', 'Release', 'lib');
     ExtIgnoreList:= TIgnoreList.Create('.exe', '.dcu', '.hgignore', '.md',
        '.identcache', '.local', '.lps', '.bak', '.aes', '.rc4');

@@ -406,35 +406,46 @@ function TBlockCipher.SetNonce(Data: PByte; DataLen: LongWord): TF_RESULT;
 var
   L: LongWord;
   Output: PByte;
+  Nonce: UInt64;
 
 begin
   if (Data <> nil) then begin
-    FillChar(FIVector, GetBlockSize(@Self), 0);
     L:= GetBlockSize(@Self);
-
-// IV is considered consisting of 2 parts: Nonce and BlockNo;
-//   BlockNo size is 64 bits (8 bytes);
-//   that said, IV size should be at least 8 + DataLen bytes.
-
-    if L < 16 then begin
-      Result:= TF_E_NOTIMPL;
+    if (L = 0) or (L > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+      Result:= TF_E_UNEXPECTED;
       Exit;
     end;
 
-    if (DataLen = 0) or (DataLen > L - 8) then begin
+// IV is considered consisting of 2 parts: Nonce and BlockNo;
+//   if BlockSize >= 16 (128 bits),
+//     when both Nonce and BlockNo are of 8 bytes (64 bits).
+//   if BlockSize < 16 (128 bits),
+//     when whole IV is BlockNo, and the only valid nonce value is zero.
+//   if BlockSize > 16 (128 bits),
+//     when leftmost L - 16 bytes of IV are zeroed.
+//   BlockNo bytes of IV are zeroed.
+
+    if {(DataLen = 0) or} (DataLen > SizeOf(Nonce)) then begin
       Result:= TF_E_INVALIDARG;
       Exit;
     end;
 
-    Dec(L, 8);
-    Output:= @FIVector;
+    Nonce:= 0;
+    Move(Data^, Nonce, DataLen);
 
-// if IV size > 8 + DataLen bytes, the leftmost bytes are zeroed
-    if L > DataLen then begin
-      L:= DataLen;
-      Inc(Output, L - DataLen);
+    if (L < 16) and (Nonce <> 0) then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
     end;
-    TBigEndian.ReverseCopy(Data, Data + L, Output);
+
+    FillChar(FIVector, L, 0);
+
+    if (L >= 16) then begin
+      Output:= @FIVector;
+      Inc(Output, L - 16);
+      Move(Nonce, Output^, SizeOf(Nonce));
+    end;
+// if L < 16 and nonce is zero, just return success
     Result:= TF_S_OK;
   end
   else

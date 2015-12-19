@@ -330,6 +330,21 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+  IKeyStream = interface(IInterface)
+//    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKey(Key: PByte; KeySize: LongWord; Nonce: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure DestroyKey;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Read(Data: PByte; DataSize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Skip(Dist: Int64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Crypt(Data: PByte; DataSize: LongWord): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
   ICipherServer = interface(IInterface)
     function GetByAlgID(AlgID: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -341,6 +356,7 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
     function GetRC5(BlockSize, Rounds: LongInt;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -348,21 +364,18 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetChaCha20(Rounds: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  end;
 
-  IKeyStream = interface(IInterface)
-    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: PByte; KeySize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Read(Data: PByte; DataSize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Skip(Dist: Int64): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Crypt(Data: PByte; DataSize: LongWord): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKSByAlgID(AlgID: LongInt; var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKSByName(Name: Pointer; CharSize: Integer; var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKSRC5(BlockSize, Rounds: LongInt; var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKSSalsa20(Rounds: LongInt; var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKSChaCha20(Rounds: LongInt; var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
   end;
 
 const

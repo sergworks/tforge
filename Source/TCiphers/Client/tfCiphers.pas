@@ -11,12 +11,10 @@ interface
 
 uses
   SysUtils, Classes, tfTypes, tfBytes, tfConsts, tfExceptions,
-  {$IFDEF TFL_DLL} tfImport {$ELSE} tfCipherServ {$ENDIF};
+  {$IFDEF TFL_DLL} tfImport {$ELSE} tfCipherServ, tfKeyStreams {$ENDIF};
 
 type
   TCipher = record
-  private
-    class var FServer: ICipherServer;
   private
     FAlgorithm: ICipherAlgorithm;
     procedure SetFlagsProc(const Value: LongWord);
@@ -111,18 +109,32 @@ type
     function IsAssigned: Boolean;
     procedure Burn;
 
-    function ExpandKey(const AKey: ByteArray): TKeyStream; overload;
     function ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream; overload;
+    function ExpandKey(AKey: PByte; AKeyLen: LongWord; ANonce: UInt64): TKeyStream; overload;
     function Skip(AValue: Int64): TKeyStream; // overload;
 
     procedure Read(var Data; DataLen: LongWord);
     procedure Crypt(var Data; DataLen: LongWord);
+
+    class function AES: TKeyStream; static;
+    class function DES: TKeyStream; static;
+    class function TripleDES: TKeyStream; static;
+    class function RC5: TKeyStream; overload; static;
+    class function RC5(BlockSize, Rounds: LongWord): TKeyStream; overload; static;
+    class function RC4: TKeyStream; static;
+    class function Salsa20: TKeyStream; overload; static;
+    class function Salsa20(Rounds: LongWord): TKeyStream; overload; static;
+    class function ChaCha20: TKeyStream; overload; static;
+    class function ChaCha20(Rounds: LongWord): TKeyStream; overload; static;
   end;
 
 type
   ECipherError = class(EForgeError);
 
 implementation
+
+var
+  FServer: ICipherServer;
 
 procedure CipherError(ACode: TF_RESULT; const Msg: string = '');
 begin
@@ -621,20 +633,69 @@ begin
   FKeyStream.DestroyKey;
 end;
 
-function TKeyStream.ExpandKey(const AKey: ByteArray): TKeyStream;
+function TKeyStream.ExpandKey(AKey: PByte; AKeyLen: LongWord; ANonce: UInt64): TKeyStream;
 begin
-  HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen));
+  HResCheck(FKeyStream.ExpandKey(AKey, AKeyLen, ANonce));
 end;
 
 function TKeyStream.ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream;
 begin
-  HResCheck(FKeyStream.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
-  HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen));
+  HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen, ANonce));
 end;
 
 function TKeyStream.Skip(AValue: Int64): TKeyStream;
 begin
-  HResCheck(FKeyStream.SetKeyParam(TF_KP_INCNO, @AValue, SizeOf(AValue)));
+  HResCheck(FKeyStream.Skip(AValue));
+end;
+
+class function TKeyStream.AES: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_AES, Result.FKeyStream));
+end;
+
+class function TKeyStream.DES: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_DES, Result.FKeyStream));
+end;
+
+class function TKeyStream.TripleDES: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_3DES, Result.FKeyStream));
+end;
+
+class function TKeyStream.Salsa20: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_SALSA20, Result.FKeyStream));
+end;
+
+class function TKeyStream.Salsa20(Rounds: LongWord): TKeyStream;
+begin
+  HResCheck(FServer.GetKSSalsa20(Rounds, Result.FKeyStream));
+end;
+
+class function TKeyStream.ChaCha20: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FKeyStream));
+end;
+
+class function TKeyStream.ChaCha20(Rounds: LongWord): TKeyStream;
+begin
+  HResCheck(FServer.GetKSChaCha20(Rounds, Result.FKeyStream));
+end;
+
+class function TKeyStream.RC4: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC4, Result.FKeyStream));
+end;
+
+class function TKeyStream.RC5(BlockSize, Rounds: LongWord): TKeyStream;
+begin
+  HResCheck(FServer.GetKSRC5(BlockSize, Rounds, Result.FKeyStream));
+end;
+
+class function TKeyStream.RC5: TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC5, Result.FKeyStream));
 end;
 
 procedure TKeyStream.Read(var Data; DataLen: LongWord);
@@ -657,7 +718,7 @@ end;
 
 {$IFNDEF TFL_DLL}
 initialization
-  GetCipherServer(TCipher.FServer);
+  GetCipherServer(FServer);
 
 {$ENDIF}
 end.

@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
-     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20;
+     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20, tfKeyStreams;
 
 function GetCipherServer(var A: ICipherServer): TF_RESULT;
 
@@ -39,6 +39,23 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetChaCha20(Inst: PCipherServer; Rounds: LongInt;
           var Alg: ICipherAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function GetKSByAlgID(Inst: PCipherServer; AlgID: LongInt;
+          var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetKSByName(Inst: PAlgServer;
+          Name: Pointer; CharSize: Integer; var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function GetKSRC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
+          var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetKSSalsa20(Inst: PCipherServer; Rounds: LongInt;
+          var KS: IKeyStream): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetKSChaCha20(Inst: PCipherServer; Rounds: LongInt;
+          var KS: IKeyStream): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
 
@@ -81,8 +98,63 @@ begin
   Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
 end;
 
+class function TCipherServer.GetKSByAlgID(Inst: PCipherServer; AlgID: Integer;
+                 var KS: IKeyStream): TF_RESULT;
+var
+  Alg: ICipherAlgorithm;
+
+begin
+  Result:= GetByAlgID(Inst, AlgID, Alg);
+  if Result = TF_S_OK then
+    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+end;
+
+class function TCipherServer.GetKSByName(Inst: PAlgServer; Name: Pointer;
+                 CharSize: Integer; var KS: IKeyStream): TF_RESULT;
+var
+  Alg: ICipherAlgorithm;
+
+begin
+  Result:= TAlgServer.GetByName(Inst, Name, CharSize, IInterface(Alg));
+  if Result = TF_S_OK then
+    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+end;
+
+class function TCipherServer.GetKSRC5(Inst: PCipherServer; BlockSize,
+                 Rounds: Integer; var KS: IKeyStream): TF_RESULT;
+var
+  Alg: ICipherAlgorithm;
+
+begin
+  Result:= GetRC5AlgorithmEx(PRC5Algorithm(Alg), BlockSize, Rounds);
+  if Result = TF_S_OK then
+    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+end;
+
+class function TCipherServer.GetKSSalsa20(Inst: PCipherServer; Rounds: Integer;
+                  var KS: IKeyStream): TF_RESULT;
+var
+  Alg: ICipherAlgorithm;
+
+begin
+  Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
+  if Result = TF_S_OK then
+    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+end;
+
+class function TCipherServer.GetKSChaCha20(Inst: PCipherServer; Rounds: Integer;
+                 var KS: IKeyStream): TF_RESULT;
+var
+  Alg: ICipherAlgorithm;
+
+begin
+  Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
+  if Result = TF_S_OK then
+    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+end;
+
 const
-  VTable: array[0..10] of Pointer = (
+  VTable: array[0..15] of Pointer = (
     @TtfRecord.QueryIntf,
     @TtfSingleton.Addref,
     @TtfSingleton.Release,
@@ -94,7 +166,13 @@ const
     @TAlgServer.GetCount,
     @TCipherServer.GetRC5,
     @TCipherServer.GetSalsa20,
-    @TCipherServer.GetChaCha20
+    @TCipherServer.GetChaCha20,
+
+    @TCipherServer.GetKSByAlgID,
+    @TCipherServer.GetKSByName,
+    @TCipherServer.GetKSRC5,
+    @TCipherServer.GetKSSalsa20,
+    @TCipherServer.GetKSChaCha20
   );
 
 var

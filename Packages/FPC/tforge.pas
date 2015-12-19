@@ -8,7 +8,7 @@ interface
 
 uses
   tfLimbs, tfTypes, tfUtils, tfByteVectors, tfRecords, tfBytes, tfConsts, 
-  tfExceptions, tfNumbers, arrProcs, tfAlgServ, tfNumerics;
+  tfExceptions, tfNumbers, arrProcs, tfAlgServ, tfNumerics, tfCRCs;
 
 implementation
 
