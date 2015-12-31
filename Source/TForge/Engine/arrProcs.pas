@@ -354,14 +354,16 @@ end;
 
 {$IFDEF ASM86}
 function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
+{$IFDEF FPC}nostackframe;{$ENDIF}
 asm
-        PUSH  [EAX]
-        POP   [EDX]
-        ADD   [EDX],1
+        PUSH  DWORD [EAX]
+        POP   DWORD [EDX]
+        ADD   DWORD [EDX],1
         DEC   ECX
         JZ    @@Done
         PUSH  ESI
         LEA   ESI,[EAX+4]
+//        MOV   ESI,EAX
 @@Loop:
         LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
         LEA   EDX,[EDX+4]
@@ -1486,6 +1488,62 @@ begin
   end;
 end;
 
+{$IFDEF ASM86}
+function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
+asm
+        PUSH  ESI
+        PUSH  EDI
+        PUSH  EBX
+        PUSH  EBP
+
+        MOV   EDI,ECX     // EDI <-- Res
+        MOV   ESI,EAX     // ESI <-- A
+        MOV   ECX,L
+        XOR   EBX,EBX     // EBX = Carry
+        MOV   EBP,EDX     // EBP <-- Limb
+@@Loop:
+        LODSD             // EAX <-- [ESI], ESI <-- ESI + 4
+//        MOV   EDX,EBP     // Limb
+//        MUL   EDX
+        MUL   EBP
+        ADD   EAX,EBX
+        ADC   EDX,0
+        STOSD             // [EDI] <-- EAX, EDI <-- EDI + 4
+        MOV   EBX,EDX
+        LOOP  @@Loop
+        MOV   [EDI],EBX
+        OR    EBX,EBX
+        SETNZ AL
+
+        POP   EBP
+        POP   EBX
+        POP   EDI
+        POP   ESI
+end;
+
+{$ELSE}
+{$IFDEF ASM64}
+function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
+{$IFDEF FPC}nostackframe;{$ENDIF}
+asm
+        MOV   R10D,EDX    // Limb
+        XOR   R11,R11     // Carry
+@@Loop:
+        MOV   EAX,[RCX]
+        LEA   RCX,[RCX+4]
+        MUL   R10D
+        ADD   EAX,R11D
+        ADC   EDX,0
+        MOV   [R8],EAX
+        LEA   R8,[R8+4]
+        MOV   R11D,EDX
+        DEC   R9D
+        JNE   @@Loop
+        MOV   [R8],EDX
+        OR    EDX,EDX
+        SETNZ AL
+end;
+{$ELSE}
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
 var
   Tmp: TLimbVector;
@@ -1506,6 +1564,8 @@ begin
   Res^:= Carry;
   Result:= Carry <> 0;
 end;
+{$ENDIF}
+{$ENDIF}
 
 // A:= A * Limb;
 // A must have enough space for L + 1 limbs

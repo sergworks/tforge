@@ -126,6 +126,9 @@ type
     class function Salsa20(Rounds: LongWord): TKeyStream; overload; static;
     class function ChaCha20: TKeyStream; overload; static;
     class function ChaCha20(Rounds: LongWord): TKeyStream; overload; static;
+
+    class operator Explicit(const Name: string): TKeyStream;
+    class operator Explicit(AlgID: Integer): TKeyStream;
   end;
 
 type
@@ -636,6 +639,16 @@ end;
 function TKeyStream.ExpandKey(AKey: PByte; AKeyLen: LongWord; ANonce: UInt64): TKeyStream;
 begin
   HResCheck(FKeyStream.ExpandKey(AKey, AKeyLen, ANonce));
+end;
+
+class operator TKeyStream.Explicit(const Name: string): TKeyStream;
+begin
+  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FKeyStream));
+end;
+
+class operator TKeyStream.Explicit(AlgID: Integer): TKeyStream;
+begin
+  HResCheck(FServer.GetKSByAlgID(AlgID, Result.FKeyStream));
 end;
 
 function TKeyStream.ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream;

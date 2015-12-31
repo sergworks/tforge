@@ -67,6 +67,9 @@ type
     procedure Update(const Data; DataSize: LongWord); inline;
     procedure Done(var Digest); inline;
     procedure Burn; inline;
+
+    procedure GetDigest(var Buffer; BufSize: Cardinal);
+
     function DigestSize: LongInt; inline;
     function BlockSize: LongInt; inline;
 
@@ -126,6 +129,13 @@ end;
 procedure THash.Free;
 begin
   FAlgorithm:= nil;
+end;
+
+procedure THash.GetDigest(var Buffer; BufSize: Cardinal);
+begin
+  if BufSize <> DigestSize then
+    HashError(TF_E_INVALIDARG);
+  FAlgorithm.Done(@Buffer);
 end;
 
 function THash.IsAssigned: Boolean;
