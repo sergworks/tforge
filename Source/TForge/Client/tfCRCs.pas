@@ -63,7 +63,7 @@ var
   S: Cardinal;
 
 begin
-  Mask:= $FFFFFFFFFFFFFFFF;
+  Mask:= UInt64($FFFFFFFFFFFFFFFF);
   S:= 32;
   repeat
     Mask:= Mask xor (Mask shl S);

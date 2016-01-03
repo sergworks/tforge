@@ -71,7 +71,7 @@ function arrDec(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
 function arrSelfDec(A: PLimb; L: Cardinal): Boolean;
 
 { Multiplication primitives }
-procedure arrMul(A, B, Res: PLimb; LA, LB: Cardinal);
+function arrMul(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
 function arrSelfMulLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
 
@@ -932,49 +932,6 @@ begin
   Result:= False;
 end;
 
-{
-  Description:
-    Res:= A * B
-  Asserts:
-    LA >= 1, LB >= 1
-    Res must have enough space for LA + LB limbs
-  Remarks:
-    none
-}
-procedure arrMul(A, B, Res: PLimb; LA, LB: Cardinal);
-var
-  PA, PRes: PLimb;
-  Cnt: Integer;
-  TmpB: TLimbVector;
-  TmpRes: TLimbVector;
-  Carry: TLimb;
-
-begin
-  FillChar(Res^, (LA + LB) * SizeOf(TLimb), 0);
-  while LB > 0 do begin
-    if B^ <> 0 then begin
-      TmpB.Value:= B^;
-      PA:= A;
-      PRes:= Res;
-      Cnt:= LA;
-      Carry:= 0;
-      while Cnt > 0 do begin
-        TmpRes.Value:= TmpB.Value * PA^ + Carry;
-        TmpRes.Value:= TmpRes.Value + PRes^;
-        PRes^:= TmpRes.Lo;
-        Inc(PRes);
-        Carry:= TmpRes.Hi;
-        Inc(PA);
-        Dec(Cnt);
-      end;
-      PRes^:= Carry;
-    end;
-    Inc(B);
-    Inc(Res);
-    Dec(LB);
-  end;
-end;
-
 { Bitwise boolean }
 
 procedure arrAnd(A, B, Res: PLimb; L: Cardinal);
@@ -1487,6 +1444,117 @@ begin
     Move(B^, Res^, LB * SizeOf(TLimb));
   end;
 end;
+
+{
+  Description:
+    Res:= A * B
+  Asserts:
+    LA >= 1, LB >= 1
+    Res must have enough space for LA + LB limbs
+  Remarks:
+    none
+}
+{$IFDEF ASM86}
+function arrMul(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
+asm
+        PUSH  ESI
+        PUSH  EDI
+        PUSH  EBX
+        PUSH  EBP
+
+        PUSH  EDX         // B  [SP+12]
+        PUSH  LB
+        PUSH  EAX         // A, [SP+4]
+        PUSH  LA
+
+        MOV   EDI,ECX     // Res
+        MOV   ECX,LA
+//        ADD   ECX,LB
+
+        PUSH  EDI
+        XOR   EAX,EAX
+@@Clear:
+        MOV   [EDI],EAX
+        LEA   EDI,[EDI+4]
+        LOOP  @@Clear
+        POP   EDI
+
+@@ExtLoop:
+        XOR   EBX,EBX       // Carry
+        MOV   ESI,[ESP+12]  // B
+        MOV   EBP,[ESI]
+        LEA   ESI,[ESI+4]   // Inc(B);
+        MOV   [ESP+12],ESI
+        MOV   ECX,[ESP]     // LA
+        MOV   ESI,[ESP+4]   // A
+        PUSH  EDI
+
+@@Loop:
+        LODSD               // EAX <-- [ESI], ESI <-- ESI + 4
+        MUL   EBP
+        ADD   EAX,EBX
+        ADC   EDX,0
+        ADD   EAX,[EDI]
+        ADC   EDX,0
+        STOSD               // [EDI] <-- EAX, EDI <-- EDI + 4
+        MOV   EBX,EDX
+        LOOP  @@Loop
+
+        MOV   [EDI],EBX
+        POP   EDI
+        LEA   EDI,[EDI+4]   // Inc(Res);
+        DEC   [ESP+8]       // Dec(LB);
+        JNZ   @@ExtLoop
+
+        OR    EBX,EBX       // Result:= Carry <> 0
+        SETNZ AL
+
+        ADD   ESP,16
+
+        POP   EBP
+        POP   EBX
+        POP   EDI
+        POP   ESI
+end;
+{$ELSE}
+function arrMul(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
+var
+  PA, PRes: PLimb;
+  Cnt: Integer;
+  TmpB: TLimbVector;
+  TmpRes: TLimbVector;
+  Carry: TLimb;
+
+begin
+//  FillChar(Res^, (LA + LB) * SizeOf(TLimb), 0);
+  FillChar(Res^, LA * SizeOf(TLimb), 0);
+//  while LB > 0 do begin
+  repeat
+    Carry:= 0;
+    if B^ <> 0 then begin
+      TmpB.Value:= B^;
+      PA:= A;
+      PRes:= Res;
+      Cnt:= LA;
+      while Cnt > 0 do begin
+        TmpRes.Value:= TmpB.Value * PA^ + Carry;
+        TmpRes.Value:= TmpRes.Value + PRes^;
+        PRes^:= TmpRes.Lo;
+        Inc(PRes);
+        Carry:= TmpRes.Hi;
+        Inc(PA);
+        Dec(Cnt);
+      end;
+      PRes^:= Carry;
+    end;
+    Inc(B);
+    Inc(Res);
+    Dec(LB);
+//  end;
+  until LB = 0;
+  Result:= Carry <> 0;
+end;
+{$ENDIF}
 
 {$IFDEF ASM86}
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
