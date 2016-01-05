@@ -385,7 +385,7 @@ function arrInc(A: PLimb; Res: PLimb; L: Cardinal): Boolean;
 asm
         MOV   R9D,[RCX]
         MOV   [RDX],R9D
-        ADD   [RDX],1
+        ADD   DWORD [RDX],1
         DEC   R8D
         JZ    @@Done
 @@Loop:
@@ -1517,6 +1517,62 @@ asm
         POP   ESI
 end;
 {$ELSE}
+{$IFDEF ASM64}
+function arrMul(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
+asm
+        PUSH  RSI
+        PUSH  RDI
+        PUSH  RBX
+        PUSH  RBP
+        PUSH  R12
+
+        MOV   R10D,LB       // LB
+        MOV   R11,RDX       // B
+        MOV   R12,RCX       // A
+
+        MOV   ECX,R9D       // LA
+        MOV   RDI,R8        // Res
+        XOR   EAX,EAX
+@@Clear:
+        MOV   [RDI],EAX
+        LEA   RDI,[RDI+4]
+        LOOP  @@Clear
+        MOV   RDI,R8        // Res
+
+@@ExtLoop:
+        XOR   EBX,EBX       // Carry
+        MOV   EBP,[R11]     // B
+        MOV   ECX,R9D       // LA
+        MOV   RSI,R12       // A
+        MOV   RDI,R8        // Res
+
+@@Loop:
+        LODSD               // RAX <-- [RSI], RSI <-- RSI + 4
+        MUL   EBP
+        ADD   EAX,EBX
+        ADC   EDX,0
+        ADD   EAX,[RDI]
+        ADC   EDX,0
+        STOSD               // [RDI] <-- RAX, RDI <-- RDI + 4
+        MOV   EBX,EDX
+        LOOP  @@Loop
+
+        MOV   [RDI],EBX
+        LEA   R11,[R11+4]   // Inc(B);
+        LEA   R8,[R8+4]     // Inc(Res);
+        DEC   R10D          // Dec(LB);
+        JNZ   @@ExtLoop
+
+        OR    EBX,EBX       // Result:= Carry <> 0
+        SETNZ AL
+
+        POP   R12
+        POP   RBP
+        POP   RBX
+        POP   RDI
+        POP   RSI
+end;
+{$ELSE}
 function arrMul(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 var
   PA, PRes: PLimb;
@@ -1554,6 +1610,7 @@ begin
   until LB = 0;
   Result:= Carry <> 0;
 end;
+{$ENDIF}
 {$ENDIF}
 
 {$IFDEF ASM86}
