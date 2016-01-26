@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfNumerics;
@@ -357,6 +357,8 @@ type
     function Next: BigInteger;
     function Prev: BigInteger;
 
+    class function PowerOfTwo(APower: Cardinal): BigInteger; static;
+    function IsPowerOfTwo: Boolean;
 // mutating methods
 //    procedure SelfAdd(const A: BigInteger); overload;
 //    procedure SelfAdd(const A: TLimb); overload;
@@ -699,7 +701,7 @@ end;
 
 function BigCardinal.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-{$IFDEF TFL_INTFCALL}
+{$IFDEF TFL_DLL}
   Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
                               SizeOf(Char), False, TwoCompl) = TF_S_OK;
 {$ELSE}
@@ -779,7 +781,7 @@ end;
 
 class operator BigCardinal.Explicit(const Value: string): BigCardinal;
 begin
-{$IFDEF TFL_INTFCALL}
+{$IFDEF TFL_DLL}
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
                                SizeOf(Char), False, False));
 {$ELSE}
@@ -791,7 +793,7 @@ end;
 class operator BigCardinal.Explicit(const Value: TBytes): BigCardinal;
 begin
   HResCheck(BigNumberFromPByte(
-{$IFDEF TFL_INTFCALL}
+{$IFDEF TFL_DLL}
     Result.FNumber,
 {$ELSE}
     PBigNumber(Result.FNumber),
@@ -1461,7 +1463,7 @@ end;
 
 function BigInteger.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
-{$IFDEF TFL_INTFCALL}
+{$IFDEF TFL_DLL}
   Result:= BigNumberFromPChar(FNumber, Pointer(S), Length(S),
                               SizeOf(Char), True, TwoCompl) = TF_S_OK;
 {$ELSE}
@@ -1488,6 +1490,23 @@ begin
 {$ENDIF}
 end;
 
+function BigInteger.IsPowerOfTwo: Boolean;
+begin
+{$IFDEF TFL_INTFCALL}
+  Result:= FNumber.GetIsPowerOfTwo;
+{$ELSE}
+  Result:= TBigNumber.GetIsPowerOfTwo(PBigNumber(FNumber));
+{$ENDIF}
+end;
+
+class function BigInteger.PowerOfTwo(APower: Cardinal): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(BigNumberPowerOfTwo(Result.FNumber, APower));
+{$ELSE}
+  HResCheck(BigNumberPowerOfTwo(PBigNumber(Result.FNumber), APower));
+{$ENDIF}
+end;
 
 class function BigCardinal.Compare(const A, B: BigCardinal): Integer;
 begin
@@ -1722,7 +1741,7 @@ begin
 end;
 
 class operator BigInteger.Explicit(const Value: string): BigInteger;
-{$IFDEF TFL_INTFCALL}
+{$IFDEF TFL_DLL}
 begin
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
                                SizeOf(Char), True, False));
@@ -1734,7 +1753,7 @@ end;
 
 class operator BigInteger.Explicit(const Value: TBytes): BigInteger;
 begin
-{$IFDEF TFL_INTFCALL}
+{$IFDEF TFL_DLL}
   HResCheck(BigNumberFromPByte(Result.FNumber,
 {$ELSE}
   HResCheck(BigNumberFromPByte(PBigNumber(Result.FNumber),

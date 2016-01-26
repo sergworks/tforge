@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
     <Version Value="9"/>
@@ -37,12 +37,10 @@
       <Unit0>
         <Filename Value="PiBench.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="PiBench"/>
       </Unit0>
       <Unit1>
         <Filename Value="..\Source\PiCalcs.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="PiCalcs"/>
       </Unit1>
     </Units>
   </ProjectOptions>
@@ -57,12 +55,10 @@
       <OtherUnitFiles Value="..\Source;C:\bin\FPC\TForge\$(TargetCPU)-$(TargetOS)\"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Other>
-      <CompilerMessages>
-        <MsgFileName Value=""/>
-      </CompilerMessages>
-      <CompilerPath Value="$(CompPath)"/>
-    </Other>
+    <CodeGeneration>
+      <TargetCPU Value="x86_64"/>
+      <TargetOS Value="win64"/>
+    </CodeGeneration>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

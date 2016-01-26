@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfNumbers;
@@ -112,8 +112,7 @@ type
     class function ShrNumber(A: PBigNumber; Shift: Cardinal; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-// TODO: to be renamed "AssignNumber"
-    class function CopyNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+    class function AssignNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function AbsNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -133,7 +132,7 @@ type
     class function EGCD(A, B: PBigNumber; var G, X, Y: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function ModPow(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): TF_RESULT;
+    class function ModPow(BaseValue, ExpValue, Modulus: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ModInverse(A, M: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -262,6 +261,9 @@ type
 
     class function AllocNumber(var A: PBigNumber; NLimbs: Cardinal = 0): TF_RESULT; static;
 
+    class function AllocPowerOfTwo(var A: PBigNumber;
+                                   APower: Cardinal): TF_RESULT; static;
+
     class function CloneNumber(var A: PBigNumber; B: PBigNumber;
                                 ASign: Integer = 0): TF_RESULT; static;
 
@@ -273,6 +275,15 @@ type
 
     class function DivModLimbU(A: PBigNumber; Limb: TLimb;
                                var Q: PBigNumber; var R: TLimb): TF_RESULT; stdcall; static;
+
+    class function NumBits(A: PBigNumber): Integer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function SetBit(A: PBigNumber; Shift: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function MaskBits(A: PBigNumber; Shift: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     procedure Free; inline;
     class procedure FreeAndNil(var Inst: PBigNumber); static;
@@ -318,6 +329,9 @@ function BigNumberFromPChar(var A: PBigNumber; P: PByte; L: Integer;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function BigNumberAlloc(var A: PBigNumber; ASize: Integer): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+function BigNumberPowerOfTwo(var A: PBigNumber; APower: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 (*
@@ -376,7 +390,7 @@ const
    @TBigNumber.ShlNumber,
    @TBigNumber.ShrNumber,
 
-   @TBigNumber.CopyNumber,
+   @TBigNumber.AssignNumber,
    @TBigNumber.AbsNumber,
    @TBigNumber.NegateNumber,
    @TBigNumber.DuplicateNumber,
@@ -1743,6 +1757,7 @@ begin
   else begin
     Result:= AllocNumber(Tmp, A.FUsed);
     if Result = TF_S_OK then begin
+// todo: copy FSign
 // Copy FUsed and FData fields:
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
       if R <> nil then TtfRecord.Release(R);
@@ -1774,7 +1789,7 @@ begin
   end;
 end;
 
-class function TBigNumber.CopyNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+class function TBigNumber.AssignNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 begin
   if R <> nil then TtfRecord.Release(R);
   R:= A;
@@ -3347,6 +3362,7 @@ begin
     Result:= TF_E_NOMEMORY;
     Exit;
   end;
+  if NLimbs = 0 then NLimbs:= 1;
   BytesRequired:= NLimbs * SizeOf(TLimb) + BigNumPrefixSize;
   BytesRequired:= (BytesRequired + 7) and not 7;
   try
@@ -3360,6 +3376,21 @@ begin
     Result:= TF_S_OK;
   except
     Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
+class function TBigNumber.AllocPowerOfTwo(var A: PBigNumber;
+                                          APower: Cardinal): TF_RESULT;
+var
+  NLimbs: Cardinal;
+
+begin
+  NLimbs:= APower shr TLimbInfo.BitShift + 1;
+  Result:= AllocNumber(A, NLimbs);
+  if Result = TF_S_OK then begin
+    FillChar(A^.FLimbs, NLimbs * SizeOf(TLimb), 0);
+    A^.FUsed:= NLimbs;
+    A^.FLimbs[NLimbs - 1]:= 1 shl (APower and TLimbInfo.BitShiftMask);
   end;
 end;
 
@@ -3406,20 +3437,15 @@ var
 begin
   Result:= Inst.FSign >= 0;
   if Result then begin
-    Count:= Inst.FUsed;
+    Count:= Inst.FUsed - 1;
     P:= @Inst.FLimbs;
-    if Count <= 1 then begin
-      Result:= (P^ <> 0) and (P^ and (P^ - 1) = 0);
-    end
-    else begin
-      repeat
-        Result:= P^ = 0;
-        if not Result then Exit;
-        Inc(P);
-        Dec(Count);
-      until Count = 0;
-      Result:= P^ and (P^ - 1) = 0;
+    while Count > 0 do begin
+      Result:= P^ = 0;
+      if not Result then Exit;
+      Inc(P);
+      Dec(Count);
     end;
+    Result:= P^ and (P^ - 1) = 0;
   end;
 end;
 
@@ -4031,6 +4057,47 @@ begin
   else Inst.FUsed:= Used;
 end;
 
+// OpenSSL: BN_num_bits.
+class function TBigNumber.NumBits(A: PBigNumber): Integer;
+var
+  N: Integer;
+
+begin
+  N:= A.FUsed - 1;
+  Result:= N * SizeOf(TLimb) + SeniorBit(A.FLimbs[N]);
+end;
+
+// OpenSSL: BN_set_bit expands the number A if necessary, SetBit not.
+class function TBigNumber.SetBit(A: PBigNumber; Shift: Cardinal): TF_RESULT;
+var
+  N: Integer;
+
+begin
+  if Shift >= A.FUsed * TLimbInfo.BitSize then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  N:= Shift shr TLimbInfo.BitShift;
+  A.FLimbs[N]:= A.FLimbs[N] or (1 shl (Shift - N shl TLimbInfo.BitShift));
+  Result:= TF_S_OK;
+end;
+
+class function TBigNumber.MaskBits(A: PBigNumber; Shift: Cardinal): TF_RESULT;
+var
+  N: Integer;
+
+begin
+  if Shift >= A.FUsed * TLimbInfo.BitSize then begin
+    Result:= TF_S_FALSE;
+    Exit;
+  end;
+  N:= Shift shr TLimbInfo.BitShift;
+  A.FLimbs[N]:= A.FLimbs[N] and
+    (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize - (Shift - N shl TLimbInfo.BitShift)));
+  A.FUsed:= N + 1;
+  Result:= TF_S_OK;
+end;
+
 class function TBigNumber.AndNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, UsedR: Cardinal;
@@ -4352,7 +4419,7 @@ begin
   TtfRecord.Release(Tmp);
 end;
 
-class function TBigNumber.ModPow(BaseValue, ExpValue, Modulo: PBigNumber; var R: PBigNumber): TF_RESULT;
+class function TBigNumber.ModPow(BaseValue, ExpValue, Modulus: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   Tmp, TmpR, Q: PBigNumber;
   Used, I: Cardinal;
@@ -4365,7 +4432,7 @@ begin
     if R <> nil then TtfRecord.Release(R);
     if BaseValue.IsZero then R:= @BigNumZero
     else R:= @BigNumOne;
-    Result:= S_OK;
+    Result:= TF_S_OK;
     Exit;
   end;
                                   // Assert( ExpValue > 0 )
@@ -4377,7 +4444,7 @@ begin
   Used:= ExpValue.FUsed;
   P:= @ExpValue.FLimbs;
   Sentinel:= P + Used;
-  Result:= S_OK;
+  Result:= TF_S_OK;
   while P <> Sentinel do begin
     I:= 0;
     Limb:= P^;
@@ -4387,8 +4454,8 @@ begin
         Result:= MulNumbers(Tmp, TmpR, TmpR);
         if Result = S_OK then
                                               // TmpR:= TmpR mod Modulo
-          Result:= DivRemNumbersU(TmpR, Modulo, Q, TmpR);
-        if Result <> S_OK then begin
+          Result:= DivRemNumbersU(TmpR, Modulus, Q, TmpR);
+        if Result <> TF_S_OK then begin
           TtfRecord.Release(Tmp);
           TtfRecord.Release(TmpR);
           Exit;
@@ -4396,9 +4463,9 @@ begin
         if Limb = 1 then Break;
       end;
       Result:= MulNumbers(Tmp, Tmp, Tmp);
-      if Result = S_OK then
-        Result:= DivRemNumbersU(Tmp, Modulo, Q, Tmp);
-      if Result <> S_OK then begin
+      if Result = TF_S_OK then
+        Result:= DivRemNumbersU(Tmp, Modulus, Q, Tmp);
+      if Result <> TF_S_OK then begin
         TtfRecord.Release(Tmp);
         TtfRecord.Release(TmpR);
         Exit;
@@ -4410,9 +4477,9 @@ begin
     if P = Sentinel then Break;
     while I < TLimbInfo.BitSize do begin
       Result:= MulNumbers(Tmp, Tmp, Tmp);
-      if Result = S_OK then
-        Result:= DivRemNumbersU(Tmp, Modulo, Q, Tmp);
-      if Result <> S_OK then begin
+      if Result = TF_S_OK then
+        Result:= DivRemNumbersU(Tmp, Modulus, Q, Tmp);
+      if Result <> TF_S_OK then begin
         TtfRecord.Release(Tmp);
         TtfRecord.Release(TmpR);
         Exit;
@@ -4515,6 +4582,18 @@ begin
 end;
 
 // ------------------------------------------------------------- //
+
+function BigNumberPowerOfTwo(var A: PBigNumber; APower: Cardinal): TF_RESULT;
+var
+  Tmp: PBigNumber;
+
+begin
+  Result:= TBigNumber.AllocPowerOfTwo(Tmp, APower);
+  if Result = TF_S_OK then begin
+    if (A <> nil) then TtfRecord.Release(A);
+    A:= Tmp;
+  end;
+end;
 
 function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): TF_RESULT;
 var
