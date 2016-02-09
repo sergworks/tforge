@@ -173,6 +173,7 @@ type
                          TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
     function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
+    class function Parse(const S: string; TwoCompl: Boolean = False): BigInteger; static;
 
     function GetSign: Integer;
     property Sign: Integer read GetSign;
@@ -205,7 +206,8 @@ type
 
     class function Abs(const A: BigInteger): BigInteger; static;
     class function Pow(const Base: BigInteger; Value: Cardinal): BigInteger; overload; static;
-    class function Sqrt(const A: BigInteger): BigInteger; overload; static;
+    class function Sqr(const A: BigInteger): BigInteger; static;
+    class function Sqrt(const A: BigInteger): BigInteger; static;
     class function GCD(const A, B: BigInteger): BigInteger; overload; static;
     class function GCD(const A: BigInteger; const B: BigCardinal): BigInteger; overload; static;
     class function GCD(const A: BigCardinal; const B: BigInteger): BigInteger; overload; static;
@@ -1461,6 +1463,17 @@ begin
   HResCheck(HR);
 end;
 
+class function BigInteger.Parse(const S: string; TwoCompl: Boolean): BigInteger;
+begin
+{$IFDEF TFL_DLL}
+  HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(S), Length(S),
+                               SizeOf(Char), True, TwoCompl));
+{$ELSE}
+  HResCheck(BigNumberFromPChar(PBigNumber(Result.FNumber), Pointer(S), Length(S),
+                              SizeOf(Char), True, TwoCompl));
+{$ENDIF}
+end;
+
 function BigInteger.TryParse(const S: string; TwoCompl: Boolean): Boolean;
 begin
 {$IFDEF TFL_DLL}
@@ -1741,13 +1754,14 @@ begin
 end;
 
 class operator BigInteger.Explicit(const Value: string): BigInteger;
-{$IFDEF TFL_DLL}
 begin
+{$IFDEF TFL_DLL}
   HResCheck(BigNumberFromPChar(Result.FNumber, Pointer(Value), Length(Value),
                                SizeOf(Char), True, False));
 {$ELSE}
-begin
-  HResCheck(TBigNumber.FromString(PBigNumber(Result.FNumber), Value));
+//  HResCheck(TBigNumber.FromString(PBigNumber(Result.FNumber), Value));
+  HResCheck(BigNumberFromPChar(PBigNumber(Result.FNumber), Pointer(Value), Length(Value),
+                              SizeOf(Char), True, False));
 {$ENDIF}
 end;
 
@@ -2025,6 +2039,15 @@ begin
   HResCheck(A.FNumber.SqrtNumber(Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.SqrtNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.Sqr(const A: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FNumber.SqrNumber(Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.SqrNumber(PBigNumber(A.FNumber), PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
 

@@ -89,6 +89,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function MulNumbers(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SqrNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function MulNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DivRemNumbers(A, B: PBigNumber; var Q, R: PBigNumber): TF_RESULT;
@@ -351,7 +353,7 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..77] of Pointer = (
+  BigNumVTable: array[0..78] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -397,6 +399,7 @@ const
    @TBigNumber.Pow,
    @TBigNumber.PowU,
 
+   @TBigNumber.SqrNumber,
    @TBigNumber.SqrtNumber,
    @TBigNumber.GCD,
    @TBigNumber.EGCD,
@@ -1092,6 +1095,35 @@ begin
   end;
 end;
 
+class function TBigNumber.SqrNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+var
+  UsedA, UsedB, Used: Cardinal;
+  Tmp: PBigNumber;
+
+begin
+  if A.IsZero then begin
+    if (R <> nil) then TtfRecord.Release(R);
+    R:= @BigNumZero;
+    Result:= TF_S_OK;
+  end
+  else begin
+    Tmp:= nil;
+
+    UsedA:= A^.FUsed;
+    Used:= UsedA shl 1;
+
+    Result:= AllocNumber(Tmp, Used);
+    if Result <> TF_S_OK then Exit;
+
+    arrSqr(@A.FLimbs, @Tmp.FLimbs, UsedA);
+
+    Tmp.FUsed:= Used;
+    Normalize(Tmp);
+    if (R <> nil) then TtfRecord.Release(R);
+    R:= Tmp;
+  end;
+end;
+
 class function TBigNumber.MulNumbersU(A, B: PBigNumber; var R: PBigNumber): TF_RESULT;
 var
   UsedA, UsedB, Used: Cardinal;
@@ -1483,6 +1515,80 @@ end;
 
 class function TBigNumber.GCD(A, B: PBigNumber; var G: PBigNumber): TF_RESULT;
 var
+  TmpA, TmpB: PBigNumber;
+  TmpQ, TmpR: PBigNumber;
+  Diff: Integer;
+
+procedure CleanUp;
+begin
+  TtfRecord.Release(A);
+  TtfRecord.Release(B);
+  if TmpQ <> nil then TtfRecord.Release(TmpQ);
+  if TmpR <> nil then TtfRecord.Release(TmpR);
+end;
+
+begin
+  if A.IsZero or B.IsZero then begin
+    if (G <> nil) then TtfRecord.Release(G);
+    G:= @BigNumZero;
+    Result:= TF_S_OK;
+    Exit;
+  end;
+
+  Diff:= CompareNumbersU(A, B);
+  if Diff = 0 then begin
+    if (G <> nil) then TtfRecord.Release(G);
+    G:= A;
+    TtfRecord.Addref(A);
+    Result:= TF_S_OK;
+    Exit;
+  end;
+
+  if Diff > 0 then begin
+    TmpA:= A;
+    TmpB:= B;
+  end
+  else begin
+    TmpA:= B;
+    TmpB:= A;
+  end;
+
+  TtfRecord.Addref(TmpA);
+  TtfRecord.Addref(TmpB);
+  TmpQ:= nil;
+  TmpR:= nil;
+
+  repeat
+// Q:= A div B, R:= A mod B;
+    Result:= DivRemNumbersU(TmpA, TmpB, TmpQ, TmpR);
+    TtfRecord.Release(TmpA);
+
+    if Result <> TF_S_OK then begin
+      TtfRecord.Release(TmpB);
+      if TmpQ <> nil then TtfRecord.Release(TmpQ);
+      if TmpR <> nil then TtfRecord.Release(TmpR);
+      Exit;
+    end;
+
+    TtfRecord.Release(TmpQ);
+    TmpQ:= nil;
+
+    if TmpR.IsZero then begin
+      TtfRecord.Release(TmpR);
+      if (G <> nil) then TtfRecord.Release(G);
+      G:= TmpB;
+      Exit;
+    end;
+
+    TmpA:= TmpB;
+    TmpB:= TmpR;
+    TmpR:= nil;
+  until False;
+end;
+
+{
+class function TBigNumber.GCD(A, B: PBigNumber; var G: PBigNumber): TF_RESULT;
+var
   TmpQ, TmpR: PBigNumber;
 
 procedure CleanUp;
@@ -1524,7 +1630,7 @@ begin
   CleanUp;
   Result:= TF_S_OK;
 end;
-
+}
 class function TBigNumber.EGCD(A, B: PBigNumber; var G, X, Y: PBigNumber): TF_RESULT;
 var
   TmpX, TmpY, TmpU, TmpV, TmpQ, TmpR, TmpM, TmpN: PBigNumber;

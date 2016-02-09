@@ -66,7 +66,7 @@ begin
   if Result <> TF_S_OK then Exit;
 
 // setup Shift, R = 2^Shift
-  FShift:= TBigNumber(PBigNumber(FN)).NumBits;
+  FShift:= TBigNumber.NumBits(PBigNumber(FN));
 
 // store R in Tmp
 // Shift + 1 bits needed
@@ -80,7 +80,7 @@ begin
 
 // store Ri in Tmp
 // Ri:= R^(-1) mod N
-  Result:= TBigNumber.ModInverse(Tmp, FN, Tmp);
+  Result:= TBigNumber.ModInverse(Tmp, PBigNumber(FN), Tmp);
   if Result <> TF_S_OK then Exit;
 
 // Tmp:= R * Ri - 1
@@ -91,20 +91,20 @@ begin
 
 // setup Ni
 // Ni:= (R * Ri - 1) div N
-  Result:= TBigNumber.DivRemNumbers(Tmp, FN, FNi, Tmp);
+  Result:= TBigNumber.DivRemNumbers(Tmp, PBigNumber(FN), PBigNumber(FNi), Tmp);
   if Result <> TF_S_OK then Exit;
 
 // setup RR
 // 2 * FShift + 1 bits needed
-  Result:= BigNumberAlloc(FRR,
+  Result:= BigNumberAlloc(PBigNumber(FRR),
             (FShift shl 1 + TLimbInfo.BitSize) shr TLimbInfo.BitShift);
   if Result <> TF_S_OK then Exit;
 
 // RR:= R^2; return code can be ignored cause always TF_S_OK here
-  Result:= TBigNumber.SetBit(FRR, FShift shl 1);
+  Result:= TBigNumber.SetBit(PBigNumber(FRR), FShift shl 1);
   if Result <> TF_S_OK then Exit;
 
-  Result:= TBigNumber.DivRemNumbers(FRR, FN, Tmp, FRR);
+  Result:= TBigNumber.DivRemNumbers(PBigNumber(FRR), PBigNumber(FN), Tmp, PBigNumber(FRR));
 end;
 
 function TMontEngine.Reduce(A: PBigNumber; var T: PBigNumber): TF_RESULT;
@@ -119,12 +119,12 @@ begin
   if Result <> TF_S_OK then Exit;
   TBigNumber.MaskBits(Tmp, FShift);
 
-  Result:= TBigNumber.MulNumbers(Tmp, FNi, Tmp);
+  Result:= TBigNumber.MulNumbers(Tmp, PBigNumber(FNi), Tmp);
   if Result = TF_S_OK then begin
     TBigNumber.MaskBits(Tmp, FShift);
 
 // Tmp:= (A + Tmp*N) div R
-    Result:= TBigNumber.MulNumbers(Tmp, FN, Tmp);
+    Result:= TBigNumber.MulNumbers(Tmp, PBigNumber(FN), Tmp);
     if Result = TF_S_OK then begin
 
       Result:= TBigNumber.AddNumbers(A, Tmp, Tmp);
@@ -134,8 +134,8 @@ begin
         if Result = TF_S_OK then begin
 
 // if Tmp >= N then Tmp:= Tmp - N
-          if TBigNumber.CompareNumbersU(Tmp, FN) >= 0 then
-            Result:= TBigNumber.SubNumbersU(Tmp, FN, Tmp);
+          if TBigNumber.CompareNumbersU(Tmp, PBigNumber(FN)) >= 0 then
+            Result:= TBigNumber.SubNumbersU(Tmp, PBigNumber(FN), Tmp);
         end;
       end;
     end;
@@ -156,7 +156,7 @@ var
 
 begin
   Tmp:= nil;
-  Result:= TBigNumber.MulNumbersU(A, FRR, Tmp);
+  Result:= TBigNumber.MulNumbersU(A, PBigNumber(FRR), Tmp);
   if Result = TF_S_OK then begin
     Result:= Reduce(Tmp, T);
     TtfRecord.Release(Tmp);
@@ -171,8 +171,8 @@ begin
   Tmp:= nil;
   Result:= TBigNumber.AddNumbersU(A, B, Tmp);
   if Result = TF_S_OK then begin
-    if TBigNumber.CompareNumbersU(Tmp, FN) >= 0 then begin
-      Result:= TBigNumber.SubNumbersU(Tmp, FN, T);
+    if TBigNumber.CompareNumbersU(Tmp, PBigNumber(FN)) >= 0 then begin
+      Result:= TBigNumber.SubNumbersU(Tmp, PBigNumber(FN), T);
       TtfRecord.Release(Tmp);
     end
     else begin
@@ -191,7 +191,7 @@ begin
   Result:= TBigNumber.SubNumbers(A, B, Tmp);
   if Result = TF_S_OK then begin
     if Tmp.FSign < 0 then begin
-      Result:= TBigNumber.AddNumbers(Tmp, FN, T);
+      Result:= TBigNumber.AddNumbers(Tmp, PBigNumber(FN), T);
       TtfRecord.Release(Tmp);
     end
     else begin
@@ -223,6 +223,8 @@ var
   P, Sentinel: PLimb;
 
 begin
+{todo:
+
                                   // ExpValue = 0
   if ExpValue.IsZero then begin
     if T <> nil then TtfRecord.Release(T);
@@ -233,6 +235,8 @@ begin
   end;
                                   // Assert( ExpValue > 0 )
   TmpR:= @BigNumOne;
+}
+
   Tmp:= BaseValue;
   TtfRecord.Addref(Tmp);
 //  Q:= nil;

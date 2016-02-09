@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { * ------------------------------------------------------- * }
 { *   # engine unit                                         * }
 { *********************************************************** }
@@ -74,6 +74,8 @@ function arrSelfDec(A: PLimb; L: Cardinal): Boolean;
 function arrMul(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
 function arrSelfMulLimb(A: PLimb; Limb: TLimb; L: Cardinal): Boolean;
+
+function arrSqr(A, Res: PLimb; LA: Cardinal): Boolean;
 
 { Division primitives }
 
@@ -1612,6 +1614,43 @@ begin
 end;
 {$ENDIF}
 {$ENDIF}
+
+function arrSqr(A, Res: PLimb; LA: Cardinal): Boolean;
+var
+  PA, PB, PRes: PLimb;
+  LB, Cnt: Integer;
+  TmpB: TLimbVector;
+  TmpRes: TLimbVector;
+  Carry: TLimb;
+
+begin
+  FillChar(Res^, LA * SizeOf(TLimb), 0);
+  PB:= A;
+  LB:= LA;
+  repeat
+    Carry:= 0;
+    if PB^ <> 0 then begin
+      TmpB.Value:= PB^;
+      PA:= A;
+      PRes:= Res;
+      Cnt:= LA;
+      while Cnt > 0 do begin
+        TmpRes.Value:= TmpB.Value * PA^ + Carry;
+        TmpRes.Value:= TmpRes.Value + PRes^;
+        PRes^:= TmpRes.Lo;
+        Inc(PRes);
+        Carry:= TmpRes.Hi;
+        Inc(PA);
+        Dec(Cnt);
+      end;
+      PRes^:= Carry;
+    end;
+    Inc(PB);
+    Inc(Res);
+    Dec(LB);
+  until LB = 0;
+  Result:= Carry <> 0;
+end;
 
 {$IFDEF ASM86}
 function arrMulLimb(A: PLimb; Limb: TLimb; Res: PLimb; L: Cardinal): Boolean;
