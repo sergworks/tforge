@@ -7,7 +7,7 @@ uses
 
 procedure BigIntExamples;
 var
-  A, B: BigInteger;
+  A, B, C, D, G: BigInteger;
 
 begin
 // Abs
@@ -42,9 +42,24 @@ begin
   A:= 100;
   B:= 80;
   Writeln(BigInteger.GCD(A, B).ToString);    // outputs '20'
+
+  Writeln('BigInteger.EGCD');
+  A:= 200;
+  B:= 80;
+  G:= BigInteger.EGCD(A, B, C, D);
+  Writeln(G.ToString);    // outputs '40'
+  Writeln(C.ToString);    // outputs '1'
+  Writeln(D.ToString);    // outputs '-2'
+
+  Writeln('BigInteger.ModPow');
+  A:= 10;
+  B:= 3;
+  C:= 512;
+  Writeln(BigInteger.ModPow(A, B, C).ToString);    // outputs '488'
 end;
 
 begin
+  ReportMemoryLeaksOnShutdown:= True;
   try
     BigIntExamples;
   except

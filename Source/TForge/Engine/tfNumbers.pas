@@ -1518,7 +1518,7 @@ var
   TmpA, TmpB: PBigNumber;
   TmpQ, TmpR: PBigNumber;
   Diff: Integer;
-
+{
 procedure CleanUp;
 begin
   TtfRecord.Release(A);
@@ -1526,17 +1526,25 @@ begin
   if TmpQ <> nil then TtfRecord.Release(TmpQ);
   if TmpR <> nil then TtfRecord.Release(TmpR);
 end;
+}
 
 begin
-  if A.IsZero or B.IsZero then begin
+{
+  if A.IsZero and B.IsZero then begin
     if (G <> nil) then TtfRecord.Release(G);
     G:= @BigNumZero;
     Result:= TF_S_OK;
     Exit;
   end;
+}
 
   Diff:= CompareNumbersU(A, B);
   if Diff = 0 then begin
+    if A.IsZero then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+
     if (G <> nil) then TtfRecord.Release(G);
     G:= A;
     TtfRecord.Addref(A);
@@ -1554,6 +1562,14 @@ begin
   end;
 
   TtfRecord.Addref(TmpA);
+
+  if TmpB.IsZero then begin
+    if (G <> nil) then TtfRecord.Release(G);
+    G:= TmpA;
+    Result:= TF_S_OK;
+    Exit;
+  end;
+
   TtfRecord.Addref(TmpB);
   TmpQ:= nil;
   TmpR:= nil;
@@ -4564,6 +4580,7 @@ begin
         if Result <> TF_S_OK then begin
           TtfRecord.Release(Tmp);
           TtfRecord.Release(TmpR);
+          if Q <> nil then TtfRecord.Release(Q);
           Exit;
         end;
         if Limb = 1 then Break;
@@ -4574,6 +4591,7 @@ begin
       if Result <> TF_S_OK then begin
         TtfRecord.Release(Tmp);
         TtfRecord.Release(TmpR);
+        if Q <> nil then TtfRecord.Release(Q);
         Exit;
       end;
       Limb:= Limb shr 1;
@@ -4588,12 +4606,14 @@ begin
       if Result <> TF_S_OK then begin
         TtfRecord.Release(Tmp);
         TtfRecord.Release(TmpR);
+        if Q <> nil then TtfRecord.Release(Q);
         Exit;
       end;
       Inc(I);
     end;
   end;
   TtfRecord.Release(Tmp);
+  if Q <> nil then TtfRecord.Release(Q);
   if R <> nil then TtfRecord.Release(R);
   R:= TmpR;
 end;
