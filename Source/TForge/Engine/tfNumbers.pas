@@ -133,6 +133,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EGCD(A, B: PBigNumber; var G, X, Y: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function LCM(A, B: PBigNumber; var G: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function ModPow(BaseValue, ExpValue, Modulus: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -353,7 +355,7 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..78] of Pointer = (
+  BigNumVTable: array[0..79] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -403,6 +405,7 @@ const
    @TBigNumber.SqrtNumber,
    @TBigNumber.GCD,
    @TBigNumber.EGCD,
+   @TBigNumber.LCM,
    @TBigNumber.ModPow,
    @TBigNumber.ModInverse,
 
@@ -1518,15 +1521,6 @@ var
   TmpA, TmpB: PBigNumber;
   TmpQ, TmpR: PBigNumber;
   Diff: Integer;
-{
-procedure CleanUp;
-begin
-  TtfRecord.Release(A);
-  TtfRecord.Release(B);
-  if TmpQ <> nil then TtfRecord.Release(TmpQ);
-  if TmpR <> nil then TtfRecord.Release(TmpR);
-end;
-}
 
 begin
 {
@@ -1600,6 +1594,52 @@ begin
     TmpB:= TmpR;
     TmpR:= nil;
   until False;
+end;
+
+class function TBigNumber.LCM(A, B: PBigNumber; var G: PBigNumber): TF_RESULT;
+var
+  Tmp1, Tmp2: PBigNumber;
+
+begin
+  if A.IsZero then begin
+    if B.IsZero then begin
+      Result:= TF_E_INVALIDARG;
+    end
+    else begin
+      TtfRecord.AddRef(B);
+      if (G <> nil) then TtfRecord.Release(G);
+      G:= B;
+      Result:= TF_S_OK;
+    end;
+    Exit;
+  end;
+  if B.IsZero then begin
+    TtfRecord.AddRef(A);
+    if (G <> nil) then TtfRecord.Release(G);
+    G:= A;
+    Result:= TF_S_OK;
+  end;
+
+  Tmp1:= nil;
+  Result:= GCD(A, B, Tmp1);
+  if Result <> TF_S_OK then Exit;
+
+  Tmp2:= nil;
+  Result:= DivRemNumbersU(A, Tmp1, Tmp1, Tmp2);
+  if Result <> TF_S_OK then begin
+    TtfRecord.Release(Tmp1);
+    Exit;
+  end;
+
+  TtfRecord.Release(Tmp2);
+  Result:= MulNumbersU(B, Tmp1, Tmp1);
+  if Result <> TF_S_OK then begin
+    TtfRecord.Release(Tmp1);
+    Exit;
+  end;
+
+  if (G <> nil) then TtfRecord.Release(G);
+  G:= Tmp1;
 end;
 
 {

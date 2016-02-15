@@ -172,6 +172,7 @@ type
     function ToHexString(Digits: Integer = 0; const Prefix: string = '';
                          TwoCompl: Boolean = False): string;
     function ToBytes: TBytes;
+
     function TryParse(const S: string; TwoCompl: Boolean = False): Boolean;
     class function Parse(const S: string; TwoCompl: Boolean = False): BigInteger; static;
 
@@ -212,6 +213,7 @@ type
     class function GCD(const A: BigInteger; const B: BigCardinal): BigInteger; overload; static;
     class function GCD(const A: BigCardinal; const B: BigInteger): BigInteger; overload; static;
     class function EGCD(const A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
+    class function LCM(const A, B: BigInteger): BigInteger; overload; static;
     class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
     class function ModInverse(const A, Modulo: BigInteger): BigInteger; overload; static;
     class function ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger; overload; static;
@@ -2096,6 +2098,16 @@ begin
   HResCheck(A.FNumber.GCD(B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TBigNumber.GCD(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+            PBigNumber(Result.FNumber)));
+{$ENDIF}
+end;
+
+class function BigInteger.LCM(const A, B: BigInteger): BigInteger;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(A.FNumber.LCM(B.FNumber, Result.FNumber));
+{$ELSE}
+  HResCheck(TBigNumber.LCM(PBigNumber(A.FNumber), PBigNumber(B.FNumber),
             PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;

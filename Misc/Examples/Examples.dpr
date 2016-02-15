@@ -43,6 +43,11 @@ begin
   B:= 80;
   Writeln(BigInteger.GCD(A, B).ToString);    // outputs '20'
 
+  Writeln('BigInteger.LCM');
+  A:= 100;
+  B:= 80;
+  Writeln(BigInteger.LCM(A, B).ToString);    // outputs '400'
+
   Writeln('BigInteger.EGCD');
   A:= 200;
   B:= 80;
@@ -55,7 +60,27 @@ begin
   A:= 10;
   B:= 3;
   C:= 512;
-  Writeln(BigInteger.ModPow(A, B, C).ToString);    // outputs '488'
+  Writeln(BigInteger.ModPow(A, B, C).ToString);    // outputs '488' = 10^3 mod 512
+
+  Writeln('BigInteger.ModInverse');
+  A:= 10;
+  B:= 511;
+  C:= BigInteger.ModInverse(A, B);
+  Writeln(C.ToString);                  // outputs '460'
+  Writeln(((C * A) mod B).ToString);    // outputs '1'
+
+  Writeln('BigInteger.Parse');
+  Writeln(BigInteger.Parse('123').ToString);          // outputs '123'
+  Writeln(BigInteger.Parse('-123').ToString);         // outputs '-123'
+  Writeln(BigInteger.Parse('$80').ToString);          // outputs '128'
+  Writeln(BigInteger.Parse('-$80').ToString);         // outputs '-128'
+  Writeln(BigInteger.Parse('0x80').ToString);         // outputs '128'
+  Writeln(BigInteger.Parse('-0x80').ToString);        // outputs '-128'
+  Writeln(BigInteger.Parse('$80', True).ToString);    // outputs '-128'
+  Writeln(BigInteger.Parse('$080', True).ToString);   // outputs '128'
+  Writeln(BigInteger.Parse('0x80', True).ToString);   // outputs '-128'
+  Writeln(BigInteger.Parse('0x080', True).ToString);  // outputs '128'
+
 end;
 
 begin
