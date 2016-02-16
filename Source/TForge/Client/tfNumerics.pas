@@ -1703,6 +1703,7 @@ begin
 {$ENDIF}
 end;
 
+(* conversion to integer types is redesigned
 class operator BigInteger.Explicit(const Value: BigInteger): TLimb;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -1736,6 +1737,43 @@ begin
   HResCheck(Value.FNumber.ToDblIntLimb(Result));
 {$ELSE}
   HResCheck(TBigNumber.ToDblIntLimb(PBigNumber(Value.FNumber), Result));
+{$ENDIF}
+end;
+*)
+
+class operator BigInteger.Explicit(const Value: BigInteger): TLimb;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(Value.FNumber.GetLimb(Result));
+{$ELSE}
+  HResCheck(TBigNumber.GetLimb(PBigNumber(Value.FNumber), Result));
+{$ENDIF}
+end;
+
+class operator BigInteger.Explicit(const Value: BigInteger): TDblLimb;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(Value.FNumber.GetDblLimb(Result));
+{$ELSE}
+  HResCheck(TBigNumber.GetDblLimb(PBigNumber(Value.FNumber), Result));
+{$ENDIF}
+end;
+
+class operator BigInteger.Explicit(const Value: BigInteger): TIntLimb;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(Value.FNumber.GetLimb(TLimb(Result)));
+{$ELSE}
+  HResCheck(TBigNumber.GetLimb(PBigNumber(Value.FNumber), TLimb(Result)));
+{$ENDIF}
+end;
+
+class operator BigInteger.Explicit(const Value: BigInteger): TDblIntLimb;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(Value.FNumber.GetDblLimb(TDblLimb(Result)));
+{$ELSE}
+  HResCheck(TBigNumber.GetDblLimb(PBigNumber(Value.FNumber), TDblLimb(Result)));
 {$ENDIF}
 end;
 

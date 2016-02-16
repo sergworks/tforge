@@ -81,6 +81,17 @@ begin
   Writeln(BigInteger.Parse('0x80', True).ToString);   // outputs '-128'
   Writeln(BigInteger.Parse('0x080', True).ToString);  // outputs '128'
 
+  Writeln('conversion to integer types');
+  Writeln(Byte(BigInteger.Parse('123')));             // outputs '123'
+  Writeln(ShortInt(BigInteger.Parse('123')));         // outputs '123'
+  Writeln(Byte(BigInteger.Parse('223')));             // outputs '123'
+  Writeln(ShortInt(BigInteger.Parse('223')));         // outputs '-33'
+  Writeln(Byte(BigInteger.Parse('2223')));            // outputs '175'
+  Writeln(ShortInt(BigInteger.Parse('2223')));        // outputs '-81'
+  Writeln(Byte(BigInteger.Parse('$80')));        // outputs '128'
+  Writeln(ShortInt(BigInteger.Parse('$80')));        // outputs '-128'
+  Writeln(UInt64(BigInteger.Parse('$8000000000000000')));
+  Writeln(Int64(BigInteger.Parse('$8000000000000000')));
 end;
 
 begin

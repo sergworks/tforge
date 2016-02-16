@@ -252,6 +252,9 @@ type
     class function ToDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT; static;
     class function ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): TF_RESULT; static;
 
+    class function GetLimb(A: PBigNumber; var Value: TLimb): TF_RESULT; static;
+    class function GetDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT; static;
+
 //    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
 //    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
 
@@ -355,7 +358,7 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..79] of Pointer = (
+  BigNumVTable: array[0..81] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -445,7 +448,9 @@ const
    @TBigNumber.NextNumber,
    @TBigNumber.PrevNumber,
    @TBigNumber.PrevNumberU,
-
+                                  // conversion to integer types
+   @TBigNumber.GetLimb,
+   @TBigNumber.GetDblLimb,
                                   // Double limb support
    @TBigNumber.ToDblLimb,
    @TBigNumber.ToDblIntLimb,
@@ -3081,6 +3086,40 @@ begin
     Value:= A.FLimbs[0];
     Result:= TF_S_OK;
   end;
+end;
+
+class function TBigNumber.GetLimb(A: PBigNumber; var Value: TLimb): TF_RESULT;
+begin
+  if A.FSign >= 0 then begin
+    Value:= A.FLimbs[0];
+  end
+  else begin
+    Value:= TLimb(-TIntLimb(A.FLimbs[0]));
+  end;
+  Result:= TF_S_OK;
+end;
+
+class function TBigNumber.GetDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT;
+var
+  Tmp: TDblLimb;
+
+begin
+  if A.FUsed > 1 then begin
+    Tmp:= PDblLimb(@A.FLimbs)^;
+  end
+  else begin
+    Tmp:= 0;
+    PLimb(@Tmp)^:= A.FLimbs[0];
+  end;
+
+  if A.FSign >= 0 then begin
+    Value:= Tmp;
+  end
+  else begin
+    Value:= TDblLimb(-TDblIntLimb(Tmp));
+  end;
+
+  Result:= TF_S_OK;
 end;
 
 class function TBigNumber.ToDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT;
