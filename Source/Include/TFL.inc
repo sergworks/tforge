@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 {$IFDEF FPC}
@@ -60,8 +60,10 @@
 // -----------------------------------------------------
 
 // build target:
-// TFL_CPU386_WIN32 - intel 386 compatible CPU (32- or 64-bit) on 32-bit Windows
-// TFL_CPUX64_WIN64 - intel 64-bit x86 CPU on 64-bit Windows
+// TFL_CPUX86_32    - intel x86 32- or 64-bit CPU on 32-bit OS
+// TFL_CPUX86_64    - intel x86 64-bit CPU on 64-bit OS
+// TFL_CPUX86_WIN32 - intel x86 32- or 64-bit CPU on 32-bit Windows
+// TFL_CPUX86_WIN64 - intel x86 64-bit CPU on 64-bit Windows
 
 {$IFDEF FPC}
   {$IFDEF CPUX86_64}
@@ -69,21 +71,41 @@
   {$ENDIF}
 {$ENDIF}
 
+{$IFDEF WIN32}
+  {$DEFINE TFL_WINDOWS}
+{$ENDIF}
+
+{$IFDEF WIN64}
+  {$DEFINE TFL_WINDOWS}
+{$ENDIF}
+
+
 {$IFDEF CPU386}
+  {$DEFINE TFL_CPUX86_32}
+  {$IFDEF TFL_LIMB32}
+    {$DEFINE TFL_LIMB32_CPUX86_32}
+  {$ENDIF}
   {$IFDEF WIN32}
-    {$DEFINE TFL_CPUX86_WIN32}		// deprecated - to be removed later
-    {$DEFINE TFL_CPU386_WIN32}
+    {$DEFINE TFL_CPUX86_WIN32}
+    {$DEFINE TFL_CPU386_WIN32}                   // deprecated - to be removed later
     {$IFDEF TFL_LIMB32}
-      {$DEFINE TFL_LIMB32_CPU386_WIN32}
+      {$DEFINE TFL_LIMB32_CPUX86_WIN32}
+      {$DEFINE TFL_LIMB32_CPU386_WIN32}          // deprecated - to be removed later
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
 {$IFDEF CPUX64}
+  {$DEFINE TFL_CPUX86_64}
+  {$IFDEF TFL_LIMB32}
+    {$DEFINE TFL_LIMB32_CPUX86_64}
+  {$ENDIF}
   {$IFDEF WIN64}
-    {$DEFINE TFL_CPUX64_WIN64}
+    {$DEFINE TFL_CPUX86_WIN64}
+    {$DEFINE TFL_CPUX64_WIN64}                   // deprecated - to be removed later
     {$IFDEF TFL_LIMB32}
-      {$DEFINE TFL_LIMB32_CPUX64_WIN64}
+      {$DEFINE TFL_LIMB32_CPUX86_WIN64}
+      {$DEFINE TFL_LIMB32_CPUX64_WIN64}          // deprecated - to be removed later
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}

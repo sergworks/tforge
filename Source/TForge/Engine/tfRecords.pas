@@ -52,28 +52,65 @@ end;
            FRefCount = -1 is reserved for read-only constants
 }
 
-{$IFDEF CPU386}
+{$IFDEF TFL_CPUX86_32}
+{ We assume register calling conventions for any 32-bit OS}
+(*
 function InterlockedAdd(var Addend: Integer; Increment: Integer): Integer;
+{$IFDEF FPC}nostackframe;{$ENDIF}
 asm
       MOV   ECX,EAX
       MOV   EAX,EDX
  LOCK XADD  [ECX],EAX
       ADD   EAX,EDX
 end;
+*)
 
 function tfIncrement(var Value: Integer): Integer;
+{$IFDEF FPC}nostackframe;{$ENDIF}
 asm
-      MOV   EDX,1
-      JMP   InterlockedAdd
+      MOV   ECX,EAX
+      MOV   EAX,1
+ LOCK XADD  [ECX],EAX
+      INC   EAX
 end;
 
 function tfDecrement(var Value: Integer): Integer;
+{$IFDEF FPC}nostackframe;{$ENDIF}
 asm
-      MOV   EDX,-1
-      JMP   InterlockedAdd
+      MOV   ECX,EAX
+      MOV   EAX,-1
+ LOCK XADD  [ECX],EAX
+      DEC   EAX
 end;
 
 {$ELSE}
+{$IFDEF TFL_CPUX86_WIN64}
+(*
+function InterlockedAdd(var Addend: Integer; Increment: Integer): Integer;
+{$IFDEF FPC}nostackframe;{$ENDIF}
+asm
+      MOV   EAX,EDX
+ LOCK XADD  DWORD [RCX],EAX
+      ADD   EAX,EDX
+end;
+*)
+function tfIncrement(var Value: Integer): Integer;
+{$IFDEF FPC}nostackframe;{$ENDIF}
+asm
+      MOV   EAX,1
+ LOCK XADD  DWORD [RCX],EAX
+      INC   EAX
+end;
+
+function tfDecrement(var Value: Integer): Integer;
+{$IFDEF FPC}nostackframe;{$ENDIF}
+asm
+      MOV   EAX,-1
+ LOCK XADD  DWORD [RCX],EAX
+      DEC   EAX
+end;
+{$ELSE}
+
 function tfIncrement(var Value: Integer): Integer;
 begin
   Result:= Value + 1;
@@ -85,6 +122,7 @@ begin
   Result:= Value - 1;
   Value:= Result;
 end;
+{$ENDIF}
 {$ENDIF}
 
 class function TtfRecord.Addref(Inst: Pointer): Integer;

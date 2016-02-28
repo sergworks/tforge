@@ -69,6 +69,8 @@
 			<DCCReference Include="..\..\Source\TForge\Engine\tfNumbers.pas"/>
 			<DCCReference Include="..\..\Source\TForge\Client\tfCRCs.pas"/>
 			<DCCReference Include="..\..\Source\TForge\Engine\tfMont.pas"/>
+			<DCCReference Include="..\..\Source\TForge\Engine\tfLocks.pas"/>
+			<DCCReference Include="..\..\Source\TForge\Engine\tfRandomness.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
