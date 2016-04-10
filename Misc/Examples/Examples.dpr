@@ -3,7 +3,7 @@ program Examples;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfNumerics;
+  SysUtils, tfNumerics, tfRandoms;
 
 procedure BigIntExamples;
 var
@@ -84,7 +84,7 @@ begin
 
   Writeln('BigInteger.TryParse');
   S:= '1234';
-  if A.TryParse(S)
+  if BigInteger.TryParse(S, A)
     then Writeln(A.ToString)
     else Writeln('Error Parsing '+S);
 
@@ -99,12 +99,35 @@ begin
   Writeln(ShortInt(BigInteger.Parse('$80')));         // outputs '-128'
   Writeln(UInt64(BigInteger.Parse('$8000000000000000')));
   Writeln(Int64(BigInteger.Parse('$8000000000000000')));
+
 end;
+
+procedure RandExamples;
+var
+  I, N: Integer;
+  Rand: TRandom;
+
+begin
+  Writeln;
+  Writeln('Random');
+  try
+    for I:= 0 to 11 do begin
+      Rand.GetRand(N, SizeOf(N));
+      Writeln(IntToHex(N, 8));
+    end;
+  finally
+    Rand.Burn;
+  end;
+end;
+
 
 begin
   ReportMemoryLeaksOnShutdown:= True;
   try
     BigIntExamples;
+    RandExamples;
+    RandExamples;
+    RandExamples;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
