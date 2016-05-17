@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfHashes;
@@ -21,14 +21,16 @@ type
     procedure Free;
     function IsAssigned: Boolean;
 
-    procedure Init(AKey: ByteArray); inline;
+    procedure Init(const AKey: ByteArray); inline;
     procedure Update(const Data; DataSize: LongWord); inline;
     procedure Done(var Digest); inline;
     procedure Burn; inline;
-    function DigestSize: LongInt; inline;
 
+    function DigestSize: LongInt; inline;
+    procedure GetDigest(var Buffer; BufSize: Cardinal);
     function Digest: ByteArray;
-    function Copy: THMAC;
+
+    class function Copy(Instance: THMAC): THMAC; static;
 
     class function MD5: THMAC; static;
     class function SHA1: THMAC; static;
@@ -37,13 +39,17 @@ type
     class function SHA224: THMAC; static;
     class function SHA384: THMAC; static;
 
+    class function GetInstance(const Name: string): THMAC; overload; static;
+    class function GetInstance(AlgID: Integer): THMAC; overload; static;
+
     class operator Explicit(const Name: string): THMAC;
     class operator Explicit(AlgID: Integer): THMAC;
 
     function ExpandKey(const Key; KeySize: LongWord): THMAC; overload;
     function ExpandKey(const Key: ByteArray): THMAC; overload;
-    function UpdateData(const Data; DataSize: LongWord): THMAC; overload;
-    function UpdateData(const Bytes: ByteArray): THMAC; overload;
+
+    function UpdateData(const Data; DataSize: LongWord): THMAC;
+    function UpdateByteArray(const Bytes: ByteArray): THMAC;
     function UpdateStream(Stream: TStream; BufSize: Integer = 0): THMAC;
     function UpdateFile(const AFileName: string; BufSize: Integer = 0): THMAC;
 
@@ -74,7 +80,6 @@ type
     function BlockSize: LongInt; inline;
 
     function Digest: ByteArray;
-    function Copy: THash;
 
     class function CRC32: THash; static;
     class function Jenkins1: THash; static;
@@ -86,14 +91,18 @@ type
     class function SHA224: THash; static;
     class function SHA384: THash; static;
 
+    class function Copy(Instance: THash): THash; static;
     class function AlgName(Index: Integer): string; static;
     class function AlgCount: Integer; static;
+
+    class function GetInstance(const Name: string): THash; overload; static;
+    class function GetInstance(AlgID: Integer): THash; overload; static;
 
     class operator Explicit(const Name: string): THash;
     class operator Explicit(AlgID: Integer): THash;
 
-    function UpdateData(const Data; DataSize: LongWord): THash; overload;
-    function UpdateData(const Bytes: ByteArray): THash; overload;
+    function UpdateData(const Data; DataSize: LongWord): THash;
+    function UpdateByteArray(const Bytes: ByteArray): THash;
     function UpdateStream(Stream: TStream; BufSize: Integer = 0): THash;
     function UpdateFile(const AFileName: string; BufSize: Integer = 0): THash;
 
@@ -136,6 +145,16 @@ begin
   if BufSize <> DigestSize then
     HashError(TF_E_INVALIDARG);
   FAlgorithm.Done(@Buffer);
+end;
+
+class function THash.GetInstance(const Name: string): THash;
+begin
+  HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FAlgorithm));
+end;
+
+class function THash.GetInstance(AlgID: Integer): THash;
+begin
+  HResCheck(FServer.GetByAlgID(AlgID, Result.FAlgorithm));
 end;
 
 function THash.IsAssigned: Boolean;
@@ -189,9 +208,9 @@ begin
   FAlgorithm.Done(Result.GetRawData);
 end;
 
-function THash.Copy: THash;
+class function THash.Copy(Instance: THash): THash;
 begin
-  HResCheck(FAlgorithm.Duplicate(Result.FAlgorithm));
+  HResCheck(Instance.FAlgorithm.Duplicate(Result.FAlgorithm));
 end;
 
 class function THash.AlgCount: Integer;
@@ -271,7 +290,7 @@ begin
   Result.FAlgorithm:= FAlgorithm;
 end;
 
-function THash.UpdateData(const Bytes: ByteArray): THash;
+function THash.UpdateByteArray(const Bytes: ByteArray): THash;
 begin
   FAlgorithm.Update(Bytes.RawData, Bytes.Len);
   Result.FAlgorithm:= FAlgorithm;
@@ -338,7 +357,7 @@ begin
   Result:= FAlgorithm <> nil;
 end;
 
-procedure THMAC.Init(AKey: ByteArray);
+procedure THMAC.Init(const AKey: ByteArray);
 begin
   FAlgorithm.Init(AKey.GetRawData, AKey.GetLen);
 end;
@@ -351,6 +370,24 @@ end;
 procedure THMAC.Done(var Digest);
 begin
   FAlgorithm.Done(@Digest);
+end;
+
+class function THMAC.GetInstance(const Name: string): THMAC;
+var
+  HashAlgorithm: IHashAlgorithm;
+
+begin
+  HResCheck(THash.FServer.GetByName(Pointer(Name), SizeOf(Char), HashAlgorithm));
+  HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
+end;
+
+class function THMAC.GetInstance(AlgID: Integer): THMAC;
+var
+  HashAlgorithm: IHashAlgorithm;
+
+begin
+  HResCheck(THash.FServer.GetByAlgID(AlgID, HashAlgorithm));
+  HResCheck(GetHMACAlgorithm(PHMACAlg(Result.FAlgorithm), HashAlgorithm));
 end;
 
 class operator THMAC.Explicit(const Name: string): THMAC;
@@ -381,15 +418,22 @@ begin
   Result:= FAlgorithm.GetDigestSize;
 end;
 
+procedure THMAC.GetDigest(var Buffer; BufSize: Cardinal);
+begin
+  if BufSize <> DigestSize then
+    HashError(TF_E_INVALIDARG);
+  FAlgorithm.Done(@Buffer);
+end;
+
 function THMAC.Digest: ByteArray;
 begin
   Result:= ByteArray.Allocate(DigestSize);
   FAlgorithm.Done(Result.GetRawData);
 end;
 
-function THMAC.Copy: THMAC;
+class function THMAC.Copy(Instance: THMAC): THMAC;
 begin
-  HResCheck(FAlgorithm.Duplicate(Result.FAlgorithm));
+  HResCheck(Instance.FAlgorithm.Duplicate(Result.FAlgorithm));
 end;
 
 class function THMAC.MD5: THMAC;
@@ -473,7 +517,7 @@ begin
   Result.FAlgorithm:= FAlgorithm;
 end;
 
-function THMAC.UpdateData(const Bytes: ByteArray): THMAC;
+function THMAC.UpdateByteArray(const Bytes: ByteArray): THMAC;
 begin
   FAlgorithm.Update(Bytes.RawData, Bytes.Len);
   Result.FAlgorithm:= FAlgorithm;

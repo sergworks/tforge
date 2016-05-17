@@ -53,7 +53,7 @@
 			<DCCReference Include="..\..\Engine\Forge\tfAlgServ.pas"/>
 			<DCCReference Include="..\..\Engine\Forge\tfByteVectors.pas"/>
 			<DCCReference Include="..\..\Engine\OSes\tfWindows.pas"/>
-			<DCCReference Include="..\..\Engine\Forge\tfMontEngines.pas"/>
+			<DCCReference Include="..\..\Engine\Forge\tfMontMath.pas"/>
 			<DCCReference Include="..\..\Engine\Forge\tfNumbers.pas"/>
 			<DCCReference Include="..\..\Engine\Forge\tfRandEngines.pas"/>
 			<DCCReference Include="..\..\Engine\Forge\tfRecords.pas"/>

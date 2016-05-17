@@ -26,3 +26,5 @@ dunit.ini
 *.depend
 *.rst
 *.save
+*.aes
+*.rc4

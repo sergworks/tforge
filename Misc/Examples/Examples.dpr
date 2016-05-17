@@ -3,7 +3,86 @@ program Examples;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfNumerics, tfRandoms;
+  SysUtils, tfNumerics, tfRandoms, tfHashes;
+
+procedure BigCardExamples;
+var
+  A, B, C, D, G: BigCardinal;
+  S: string;
+
+begin
+  Writeln;
+  Writeln('== BigCardinal==');
+  Writeln;
+// DivRem
+  A:= 42;
+  B:= 77;
+
+  A:= BigCardinal.DivRem(B, A, B);
+  Writeln('77 div 42 = ', A.ToString);    // outputs '1'
+  Writeln('77 mod 42 = ', B.ToString);    // outputs '35'
+
+// Pow
+  A:= 10;
+  Writeln(BigCardinal.Pow(A, 5).ToString);    // outputs '100000'
+
+  Writeln(BigCardinal.PowerOfTwo(16).ToString);  // outputs '65536' = 2^16
+  A:= 10;
+  Writeln(BigCardinal.Sqr(A).ToString);    // outputs '100'
+
+  if BigCardinal.PowerOfTwo(16).IsPowerOfTwo
+    then Writeln(BigCardinal.PowerOfTwo(16).ToString + ' is a power of 2');
+
+
+  A:= 100;
+  Writeln(BigInteger.Sqrt(A).ToString);    // outputs '10'
+  A:= 99;
+  Writeln(BigInteger.Sqrt(A).ToString);    // outputs '9'
+
+  Writeln('BigCardinal.GCD');
+  A:= 100;
+  B:= 80;
+  Writeln(BigCardinal.GCD(A, B).ToString);    // outputs '20'
+
+  Writeln('BigCardinal.LCM');
+  A:= 100;
+  B:= 80;
+  Writeln(BigCardinal.LCM(A, B).ToString);    // outputs '400'
+
+  Writeln('BigCardinal.ModPow');
+  A:= 10;
+  B:= 3;
+  C:= 512;
+  Writeln(BigCardinal.ModPow(A, B, C).ToString);    // outputs '488' = 10^3 mod 512
+
+  Writeln('BigCardinal.ModInverse');
+  A:= 10;
+  B:= 511;
+  C:= BigCardinal.ModInverse(A, B);
+  Writeln(C.ToString);                  // outputs '460'
+  Writeln(((C * A) mod B).ToString);    // outputs '1'
+
+  Writeln('BigCardinal.Parse');
+  Writeln(BigCardinal.Parse('123').ToString);          // outputs '123'
+//  Writeln(BigCardinal.Parse('-123').ToString);         // outputs '-123'
+  Writeln(BigCardinal.Parse('$80').ToString);          // outputs '128'
+  Writeln(BigCardinal.Parse('0x80').ToString);         // outputs '128'
+  Writeln(BigCardinal('0x80').ToString);         // outputs '128'
+
+  Writeln('BigCardinal.Next');
+  A:= 10;
+  Writeln(A.Next.ToString);          // outputs '11'
+
+
+  A:= 0;
+  B:= A + 1;
+  C:= A.Next;
+  Assert(B = C);
+
+//  B:= A - 1;
+//  C:= A.Prev;
+//  Assert(B = C);
+end;
 
 procedure BigIntExamples;
 var
@@ -100,6 +179,28 @@ begin
   Writeln(UInt64(BigInteger.Parse('$8000000000000000')));
   Writeln(Int64(BigInteger.Parse('$8000000000000000')));
 
+//PowerOf
+
+end;
+
+procedure PowerOfTwo;
+var
+  Power: Cardinal;
+  Expected, Actual: BigCardinal;
+
+begin
+  Power:= 0;
+  Expected:= 1;
+  while Power < 1024 do begin
+    Actual:= BigCardinal.PowerOfTwo(Power);
+    if Power < 16 then Writeln(Actual.ToString);
+    Assert(Expected = Actual);
+    Assert(Actual.IsPowerOfTwo);
+    Actual:= Actual or 3;
+    Assert(not Actual.IsPowerOfTwo);
+    Inc(Power);
+    Expected:= Expected shl 1;
+  end;
 end;
 
 procedure RandExamples;
@@ -121,13 +222,29 @@ begin
 end;
 
 
+procedure TestAssigned;
+var
+  SHA256: THash;
+
+begin
+  Writeln(SHA256.IsAssigned);     // FALSE
+  SHA256:= THash.SHA256;
+  Writeln(SHA256.IsAssigned);     // TRUE
+  SHA256.Free;
+  Writeln(SHA256.IsAssigned);     // FALSE
+end;
+
+
 begin
   ReportMemoryLeaksOnShutdown:= True;
   try
     BigIntExamples;
-    RandExamples;
-    RandExamples;
-    RandExamples;
+//    RandExamples;
+//    RandExamples;
+//    RandExamples;
+    BigCardExamples;
+    PowerOfTwo;
+    TestAssigned;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

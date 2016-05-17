@@ -87,10 +87,10 @@
   {$ENDIF}
   {$IFDEF WIN32}
     {$DEFINE TFL_CPUX86_WIN32}
-    {$DEFINE TFL_CPU386_WIN32}                   // deprecated - to be removed later
+    {$DEFINE TFL_CPU386_WIN32}
     {$IFDEF TFL_LIMB32}
       {$DEFINE TFL_LIMB32_CPUX86_WIN32}
-      {$DEFINE TFL_LIMB32_CPU386_WIN32}          // deprecated - to be removed later
+      {$DEFINE TFL_LIMB32_CPU386_WIN32}
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}
@@ -102,10 +102,10 @@
   {$ENDIF}
   {$IFDEF WIN64}
     {$DEFINE TFL_CPUX86_WIN64}
-    {$DEFINE TFL_CPUX64_WIN64}                   // deprecated - to be removed later
+    {$DEFINE TFL_CPUX64_WIN64}
     {$IFDEF TFL_LIMB32}
       {$DEFINE TFL_LIMB32_CPUX86_WIN64}
-      {$DEFINE TFL_LIMB32_CPUX64_WIN64}          // deprecated - to be removed later
+      {$DEFINE TFL_LIMB32_CPUX64_WIN64}
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfLimbs;
@@ -15,19 +15,19 @@ interface
 type
   PLimb = ^TLimb;
   PIntLimb = ^TIntLimb;
-  PDblLimb = ^TDblLimb;
-  PDblIntLimb = ^TDblIntLimb;
+  PDLimb = ^TDLimb;
+  PDIntLimb = ^TDIntLimb;
 
 {$IFDEF TFL_LIMB32}
-  TLimb = LongWord;
-  TIntLimb = LongInt;
-  TDblLimb = UInt64;
-  TDblIntLimb = Int64;
+  TLimb = UInt32;
+  TIntLimb = Int32;
+  TDLimb = UInt64;
+  TDIntLimb = Int64;
 
   TLimbVector = record
     case Byte of
       0: (Value: UInt64);
-      1: (Lo, Hi: LongWord);
+      1: (Lo, Hi: UInt32);
   end;
 
   TLimbInfo = record
@@ -45,15 +45,15 @@ type
 {$ENDIF}
 
 {$IFDEF TFL_LIMB16}
-  TLimb = Word;
-  TIntLimb = SmallInt;
-  TDblLimb = LongWord;
-  TDblIntLimb = LongInt;
+  TLimb = UInt16;
+  TIntLimb = Int16;
+  TDLimb = UInt32;
+  TDIntLimb = Int32;
 
   TLimbVector = record
     case Byte of
-      0: (Value: LongWord);
-      1: (Lo, Hi: Word);
+      0: (Value: UInt32);
+      1: (Lo, Hi: UInt16);
   end;
 
   TLimbInfo = record
@@ -68,15 +68,15 @@ type
 {$ENDIF}
 
 {$IFDEF TFL_LIMB8}
-  TLimb = Byte;
-  TIntLimb = ShortInt;
-  TDblLimb = Word;
-  TDblIntLimb = SmallInt;
+  TLimb = UInt8;
+  TIntLimb = Int8;
+  TDLimb = UInt16;
+  TDIntLimb = Int16;
 
   TLimbVector = record
     case Byte of
-      0: (Value: Word);
-      1: (Lo, Hi: Byte);
+      0: (Value: UInt16);
+      1: (Lo, Hi: UInt8);
   end;
 
   TLimbInfo = record

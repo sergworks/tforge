@@ -13,6 +13,14 @@ uses
   tfLimbs;
 
 type
+//  PInt8 = ^Int8;
+//  PUInt8 = ^UInt8;
+//  PInt16 = ^Int16;
+//  PUInt16 = ^UInt16;
+  PInt32 = ^Int32;
+  PUInt32 = ^UInt32;
+
+type
   TF_RESULT = type LongInt;
 
 // Codes returned by TF functions; see also
@@ -230,19 +238,45 @@ type
     function DivRemIntLimb2(Limb: TIntLimb; var Q: TIntLimb; var R: TIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function NextNumber(var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function NextNumberU(var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PrevNumber(var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PrevNumberU(var R: IBigNumber): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function GetLimb(var Value: TLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetDblLimb(var Value: TDblLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetDblLimb(var Value: TDLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function ToDblLimb(var Value: TDblLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ToDblIntLimb(var Value: TDblIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblLimb(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblLimbU(B: TDblLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblIntLimb(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function CompareToDblIntLimbU(B: TDblIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblLimb(var Value: TDLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ToDblIntLimb(var Value: TDIntLimb): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblLimb(B: TDLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblLimbU(B: TDLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblIntLimb(B: TDIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CompareToDblIntLimbU(B: TDIntLimb): Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
+
+type
+  IMont = interface(IInterface)
+    procedure Burn;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Reduce(const A: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Convert(const A: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddNumbers(const A, B: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SubNumbers(const A, B: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function MulNumbers(const A, B: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ModMulNumbers(const A, B: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ModPowNumber(const A, B: IBigNumber; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ModPowLimb(const A: IBigNumber; B: TLimb; var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetRModulus(var Res: IBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
 
 const
                             // Cryptographic Hash Algorithms
@@ -495,7 +529,7 @@ const
   PADDING_ISOIEC   = TF_PADDING_ISOIEC;
 
 
-{ Hash digest helper types }
+{ Hash digests }
 type
                                   // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;

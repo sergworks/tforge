@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfUtils;
@@ -9,9 +9,9 @@ unit tfUtils;
 
 interface
 
-//uses tfLimbs;
+uses tfTypes;
 
-const CRC32Table: array[0..255] of LongWord = (
+const CRC32Table: array[0..255] of UInt32 = (
   $00000000, $77073096, $ee0e612c, $990951ba, $076dc419, $706af48f, $e963a535,
   $9e6495a3, $0edb8832, $79dcb8a4, $e0d5e91e, $97d2d988, $09b64c2b, $7eb17cbd,
   $e7b82d07, $90bf1d91, $1db71064, $6ab020f2, $f3b97148, $84be41de, $1adad47d,
@@ -53,18 +53,18 @@ const CRC32Table: array[0..255] of LongWord = (
 
 type
   TCRC32 = record
-    class function Init: LongWord; inline; static;
-    class function Update(const Data; DataSize: Cardinal; State: LongWord): LongWord; static;
-    class function Done(State: LongWord): LongWord; inline; static;
-    class function Hash(const Data; DataSize: Cardinal): LongWord; static;
+    class function Init: UInt32; inline; static;
+    class function Update(const Data; DataSize: Cardinal; State: UInt32): UInt32; static;
+    class function Done(State: UInt32): UInt32; inline; static;
+    class function Hash(const Data; DataSize: Cardinal): UInt32; static;
   end;
 
 type
   TJenkins1 = record
-    class function Init: LongWord; inline; static;
-    class function Update(const Data; DataSize: Cardinal; State: LongWord): LongWord; static;
-    class function Done(State: LongWord): LongWord; inline; static;
-    class function Hash(const Data; DataSize: Cardinal): LongWord; static;
+    class function Init: UInt32; inline; static;
+    class function Update(const Data; DataSize: Cardinal; State: UInt32): UInt32; static;
+    class function Done(State: UInt32): UInt32; inline; static;
+    class function Hash(const Data; DataSize: Cardinal): UInt32; static;
   end;
 
 type
@@ -92,10 +92,10 @@ type
   end;
 
 type
-  TMoveProc = procedure(const Source; var Dest; Count: LongWord);
+  TMoveProc = procedure(const Source; var Dest; Count: Cardinal);
 
-procedure MoveMem(const Source; var Dest; Count: LongWord);
-procedure MoveXor(const Source; var Dest; Count: LongWord);
+procedure MoveMem(const Source; var Dest; Count: Cardinal);
+procedure MoveXor(const Source; var Dest; Count: Cardinal);
 
 {
 type
@@ -113,10 +113,10 @@ procedure ReverseBytes(First: Pointer; Count: Cardinal); overload;
 }
 implementation
 
-procedure MoveMem(const Source; var Dest; Count: LongWord);
+procedure MoveMem(const Source; var Dest; Count: Cardinal);
 var
   S, D: PByte;
-  Cnt1, Cnt2: LongWord;
+  Cnt1, Cnt2: Cardinal;
 
 begin
   S:= @Source;
@@ -126,13 +126,13 @@ begin
 
   if NativeUInt(D) > NativeUInt(S) then begin
     if Cnt1 > 0 then begin
-      Inc(PLongWord(S), Cnt1);
-      Inc(PLongWord(D), Cnt1);
+      Inc(PUInt32(S), Cnt1);
+      Inc(PUInt32(D), Cnt1);
       repeat
-        Dec(PLongWord(S));
-        Dec(PLongWord(D));
+        Dec(PUInt32(S));
+        Dec(PUInt32(D));
         Dec(Cnt1);
-        PLongWord(D)^:= PLongWord(S)^;
+        PUInt32(D)^:= PUInt32(S)^;
       until Cnt1 = 0;
     end;
     while Cnt2 > 0 do begin
@@ -144,10 +144,10 @@ begin
   end
   else begin
     while Cnt1 > 0 do begin
-      PLongWord(D)^:= PLongWord(S)^;
+      PUInt32(D)^:= PUInt32(S)^;
       Dec(Cnt1);
-      Inc(PLongWord(S));
-      Inc(PLongWord(D));
+      Inc(PUInt32(S));
+      Inc(PUInt32(D));
     end;
     while Cnt2 > 0 do begin
       D^:= S^;
@@ -158,10 +158,10 @@ begin
   end;
 end;
 
-procedure MoveXor(const Source; var Dest; Count: LongWord);
+procedure MoveXor(const Source; var Dest; Count: Cardinal);
 var
   S, D: PByte;
-  Cnt1, Cnt2: LongWord;
+  Cnt1, Cnt2: Cardinal;
 
 begin
   S:= @Source;
@@ -171,13 +171,13 @@ begin
 
   if NativeUInt(D) > NativeUInt(S) then begin
     if Cnt1 > 0 then begin
-      Inc(PLongWord(S), Cnt1);
-      Inc(PLongWord(D), Cnt1);
+      Inc(PUInt32(S), Cnt1);
+      Inc(PUInt32(D), Cnt1);
       repeat
-        Dec(PLongWord(S));
-        Dec(PLongWord(D));
+        Dec(PUInt32(S));
+        Dec(PUInt32(D));
         Dec(Cnt1);
-        PLongWord(D)^:= PLongWord(D)^ xor PLongWord(S)^;
+        PUInt32(D)^:= PUInt32(D)^ xor PUInt32(S)^;
       until Cnt1 = 0;
     end;
     while Cnt2 > 0 do begin
@@ -189,10 +189,10 @@ begin
   end
   else begin
     while Cnt1 > 0 do begin
-      PLongWord(D)^:= PLongWord(D)^ xor PLongWord(S)^;
+      PUInt32(D)^:= PUInt32(D)^ xor PUInt32(S)^;
       Dec(Cnt1);
-      Inc(PLongWord(S));
-      Inc(PLongWord(D));
+      Inc(PUInt32(S));
+      Inc(PUInt32(D));
     end;
     while Cnt2 > 0 do begin
       D^:= D^ xor S^;
@@ -240,31 +240,31 @@ end;
 }
 { TCRC32 }
 
-class function TCRC32.Init: LongWord;
+class function TCRC32.Init: UInt32;
 begin
   Result:= $FFFFFFFF;
 end;
 
-class function TCRC32.Update(const Data; DataSize: Cardinal; State: LongWord): LongWord;
+class function TCRC32.Update(const Data; DataSize: Cardinal; State: UInt32): UInt32;
 var
   P: PByte;
 
 begin
   P:= @Data;
   while DataSize > 0 do begin
-    State:= Crc32Table[Byte(State xor P^)] xor LongWord(State shr 8);
+    State:= Crc32Table[Byte(State xor P^)] xor UInt32(State shr 8);
     Dec(DataSize);
     Inc(P);
   end;
   Result:= State;
 end;
 
-class function TCRC32.Done(State: LongWord): LongWord;
+class function TCRC32.Done(State: UInt32): UInt32;
 begin
   Result:= not State;
 end;
 
-class function TCRC32.Hash(const Data; DataSize: Cardinal): LongWord;
+class function TCRC32.Hash(const Data; DataSize: Cardinal): UInt32;
 var
   P: PByte;
 
@@ -272,7 +272,7 @@ begin
   P:= @Data;
   Result:= $FFFFFFFF;
   while DataSize > 0 do begin
-    Result:= Crc32Table[Byte(Result xor P^)] xor LongWord(Result shr 8);
+    Result:= Crc32Table[Byte(Result xor P^)] xor UInt32(Result shr 8);
     Dec(DataSize);
     Inc(P);
   end;
@@ -281,13 +281,13 @@ end;
 
 { TJenkinsOne }
 
-class function TJenkins1.Init: LongWord;
+class function TJenkins1.Init: UInt32;
 begin
   Result:= 0;
 end;
 
 class function TJenkins1.Update(const Data; DataSize: Cardinal;
-                                  State: LongWord): LongWord;
+                                  State: UInt32): UInt32;
 var
   PData: PByte;
 
@@ -303,7 +303,7 @@ begin
   Result:= State;
 end;
 
-class function TJenkins1.Done(State: LongWord): LongWord;
+class function TJenkins1.Done(State: UInt32): UInt32;
 begin
   State:= State + (State shl 3);
   State:= State xor (State shr 11);
@@ -311,7 +311,7 @@ begin
   Result:= State;
 end;
 
-class function TJenkins1.Hash(const Data; DataSize: Cardinal): LongWord;
+class function TJenkins1.Hash(const Data; DataSize: Cardinal): UInt32;
 var
   PData: PByte;
 

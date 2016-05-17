@@ -32,7 +32,7 @@ contains
   tfAlgServ in '..\..\Engine\Forge\tfAlgServ.pas',
   tfByteVectors in '..\..\Engine\Forge\tfByteVectors.pas',
   tfWindows in '..\..\Engine\OSes\tfWindows.pas',
-  tfMontEngines in '..\..\Engine\Forge\tfMontEngines.pas',
+  tfMontMath in '..\..\Engine\Forge\tfMontMath.pas',
   tfNumbers in '..\..\Engine\Forge\tfNumbers.pas',
   tfRandEngines in '..\..\Engine\Forge\tfRandEngines.pas',
   tfRecords in '..\..\Engine\Forge\tfRecords.pas',

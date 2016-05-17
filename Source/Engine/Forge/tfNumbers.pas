@@ -143,6 +143,8 @@ type
 
     class function NextNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function NextNumberU(A: PBigNumber; var R: PBigNumber): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PrevNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PrevNumberU(A: PBigNumber; var R: PBigNumber): TF_RESULT;
@@ -167,13 +169,13 @@ type
     class function CompareToIntLimbU(A: PBigNumber; B: TIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function CompareToDblLimb(A: PBigNumber; B: TDblLimb): Integer;
+    class function CompareToDblLimb(A: PBigNumber; B: TDLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function CompareToDblLimbU(A: PBigNumber; B: TDblLimb): Integer;
+    class function CompareToDblLimbU(A: PBigNumber; B: TDLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function CompareToDblIntLimb(A: PBigNumber; B: TDblIntLimb): Integer;
+    class function CompareToDblIntLimb(A: PBigNumber; B: TDIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function CompareToDblIntLimbU(A: PBigNumber; B: TDblIntLimb): Integer;
+    class function CompareToDblIntLimbU(A: PBigNumber; B: TDIntLimb): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function AddLimb(A: PBigNumber; Limb: TLimb; var R: PBigNumber): TF_RESULT;
@@ -249,11 +251,11 @@ type
     class function ToLimb(A: PBigNumber; var Value: TLimb): TF_RESULT; static;
     class function ToIntLimb(A: PBigNumber; var Value: TIntLimb): TF_RESULT; static;
 
-    class function ToDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT; static;
-    class function ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): TF_RESULT; static;
+    class function ToDblLimb(A: PBigNumber; var Value: TDLimb): TF_RESULT; static;
+    class function ToDblIntLimb(A: PBigNumber; var Value: TDIntLimb): TF_RESULT; static;
 
     class function GetLimb(A: PBigNumber; var Value: TLimb): TF_RESULT; static;
-    class function GetDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT; static;
+    class function GetDblLimb(A: PBigNumber; var Value: TDLimb): TF_RESULT; static;
 
 //    class function ToCardinal(A: PBigNumber; var Value: Cardinal): HResult; static;
 //    class function ToInteger(A: PBigNumber; var Value: Integer): HResult; static;
@@ -319,12 +321,12 @@ type
 
 function BigNumberFromLimb(var A: PBigNumber; Value: TLimb): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
+function BigNumberFromDblLimb(var A: PBigNumber; Value: TDLimb): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function BigNumberFromIntLimb(var A: PBigNumber; Value: TIntLimb): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
+function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDIntLimb): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function BigNumberFromPByte(var A: PBigNumber;
@@ -339,6 +341,15 @@ function BigNumberAlloc(var A: PBigNumber; ASize: Integer): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function BigNumberPowerOfTwo(var A: PBigNumber; APower: Cardinal): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+procedure SetBigNumberZero(var A: PBigNumber);
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+procedure SetBigNumberOne(var A: PBigNumber);
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+procedure SetBigNumberMinusOne(var A: PBigNumber);
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 (*
@@ -358,7 +369,7 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..81] of Pointer = (
+  BigNumVTable: array[0..82] of Pointer = (
    @TtfRecord.QueryIntf,
    @TtfRecord.Addref,
    @TtfRecord.Release,
@@ -446,6 +457,7 @@ const
    @TBigNumber.DivRemIntLimb2,
 
    @TBigNumber.NextNumber,
+   @TBigNumber.NextNumberU,
    @TBigNumber.PrevNumber,
    @TBigNumber.PrevNumberU,
                                   // conversion to integer types
@@ -574,54 +586,54 @@ begin
   end;
 end;
 
-class function TBigNumber.CompareToDblIntLimb(A: PBigNumber; B: TDblIntLimb): Integer;
+class function TBigNumber.CompareToDblIntLimb(A: PBigNumber; B: TDIntLimb): Integer;
 var
-  Tmp: TDblLimb;
+  Tmp: TDLimb;
 
 begin
   Result:= 2 - A.FUsed;
   if Result = 0 then begin        // A.FUsed = 2
-    Tmp:= PDblLimb(@A.FLimbs)^;
+    Tmp:= PDLimb(@A.FLimbs)^;
     if (A.FSign >= 0) then begin
-      if (B < 0) or (Tmp > TDblLimb(B)) then Result:= 1
-      else if Tmp < TDblLimb(B) then Result:= -1;
+      if (B < 0) or (Tmp > TDLimb(B)) then Result:= 1
+      else if Tmp < TDLimb(B) then Result:= -1;
     end
-    else if (B >= 0) or (Tmp > TDblLimb(-B)) then Result:= -1
-    else if (Tmp < TDblLimb(-B)) then Result:= 1;
+    else if (B >= 0) or (Tmp > TDLimb(-B)) then Result:= -1
+    else if (Tmp < TDLimb(-B)) then Result:= 1;
   end
   else if Result > 0 then begin   // A.FUsed = 1
     Tmp:= A.FLimbs[0];
     if (A.FSign >= 0) then begin
       if (B >= 0) then begin
-        if (Tmp < TDblLimb(B)) then Result:= -1
-        else if (Tmp = TDblLimb(B)) then Result:= 0;
+        if (Tmp < TDLimb(B)) then Result:= -1
+        else if (Tmp = TDLimb(B)) then Result:= 0;
       end;
     end
-    else if (B >= 0) or (Tmp > TDblLimb(-B)) then Result:= -1
-    else if (Tmp = TDblLimb(-B)) then Result:= 0;
+    else if (B >= 0) or (Tmp > TDLimb(-B)) then Result:= -1
+    else if (Tmp = TDLimb(-B)) then Result:= 0;
   end
   else begin                      // A.FUsed > 2
     if (A.FSign >= 0) then Result:= 1;
   end;
 end;
 
-class function TBigNumber.CompareToDblIntLimbU(A: PBigNumber; B: TDblIntLimb): Integer;
+class function TBigNumber.CompareToDblIntLimbU(A: PBigNumber; B: TDIntLimb): Integer;
 var
-  Tmp: TDblLimb;
+  Tmp: TDLimb;
 
 begin
   if B < 0 then Result:= 1
   else begin
     Result:= 2 - A.FUsed;
     if Result = 0 then begin        // A.FUsed = 2
-      Tmp:= PDblLimb(@A.FLimbs)^;
-      if (Tmp > TDblLimb(B)) then Result:= 1
-      else if Tmp < TDblLimb(B) then Result:= -1;
+      Tmp:= PDLimb(@A.FLimbs)^;
+      if (Tmp > TDLimb(B)) then Result:= 1
+      else if Tmp < TDLimb(B) then Result:= -1;
     end
     else if Result > 0 then begin   // A.FUsed = 1
       Tmp:= A.FLimbs[0];
-      if (Tmp < TDblLimb(B)) then Result:= -1
-      else if (Tmp = TDblLimb(B)) then Result:= 0;
+      if (Tmp < TDLimb(B)) then Result:= -1
+      else if (Tmp = TDLimb(B)) then Result:= 0;
     end
   end;
 end;
@@ -639,9 +651,9 @@ begin
   end;
 end;
 
-class function TBigNumber.CompareToDblLimb(A: PBigNumber; B: TDblLimb): Integer;
+class function TBigNumber.CompareToDblLimb(A: PBigNumber; B: TDLimb): Integer;
 var
-  Tmp: TDblLimb;
+  Tmp: TDLimb;
 
 begin
   if (A.FSign < 0) then
@@ -649,7 +661,7 @@ begin
   else begin
     Result:= A.FUsed - 2;
     if Result = 0 then begin
-      Tmp:= PDblLimb(@A.FLimbs)^;
+      Tmp:= PDLimb(@A.FLimbs)^;
       if (Tmp > B) then Result:= 1
       else if (Tmp < B) then Result:= -1;
     end
@@ -661,14 +673,14 @@ begin
   end;
 end;
 
-class function TBigNumber.CompareToDblLimbU(A: PBigNumber; B: TDblLimb): Integer;
+class function TBigNumber.CompareToDblLimbU(A: PBigNumber; B: TDLimb): Integer;
 var
-  Tmp: TDblLimb;
+  Tmp: TDLimb;
 
 begin
   Result:= A.FUsed - 2;
   if Result = 0 then begin
-    Tmp:= PDblLimb(@A.FLimbs)^;
+    Tmp:= PDLimb(@A.FLimbs)^;
     if (Tmp > B) then Result:= 1
     else if (Tmp < B) then Result:= -1;
   end
@@ -2128,6 +2140,24 @@ begin
   end;
 end;
 
+class function TBigNumber.NextNumberU(A: PBigNumber;
+  var R: PBigNumber): TF_RESULT;
+var
+  Tmp: PBigNumber;
+  UsedA: Cardinal;
+
+begin
+  UsedA:= A.FUsed;
+  Result:= AllocNumber(Tmp, UsedA + 1);
+  if Result = TF_S_OK then begin
+    if arrInc(@A.FLimbs, @Tmp.FLimbs, A.FUsed)
+      then Tmp.FUsed:= UsedA + 1
+      else Tmp.FUsed:= UsedA;
+    if R <> nil then TtfRecord.Release(R);
+    R:= Tmp;
+  end;
+end;
+
 (*
 class function TBigNumber.AddDblLimb(A: PBigNumber; B: TDblLimb;
                                      var R: PBigNumber): HResult;
@@ -2538,23 +2568,27 @@ var
 
 begin
   UsedA:= A.FUsed;
-  Result:= AllocNumber(Tmp, UsedA + 1);
-  if Result = TF_S_OK then begin
-    if UsedA > 1 then begin
+  if UsedA > 1 then begin
+    Result:= AllocNumber(Tmp, UsedA);
+    if Result = TF_S_OK then begin
       arrDec(@A.FLimbs, @Tmp.FLimbs, UsedA);
       if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
     end
-    else begin { UsedA = 1 }
-      if A.FLimbs[0] > 0 then begin
+  end
+  else begin { UsedA = 1 }
+    if A.FLimbs[0] = 0 then begin
+      Result:= TF_E_INVALIDARG;
+    end
+    else begin
+      Result:= AllocNumber(Tmp, 1);
+      if Result = TF_S_OK then begin
         Tmp.FLimbs[0]:= A.FLimbs[0] - 1;
       end
-      else begin
-        Result:= TF_E_INVALIDARG;
-        Exit;
-      end;
     end;
+  end;
+  if Result = TF_S_OK then begin
     if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
@@ -3049,28 +3083,28 @@ begin
   end;
 end;
 
-class function TBigNumber.ToDblIntLimb(A: PBigNumber; var Value: TDblIntLimb): TF_RESULT;
+class function TBigNumber.ToDblIntLimb(A: PBigNumber; var Value: TDIntLimb): TF_RESULT;
 const
-  MaxValue = TDblLimb(TLimbInfo.MaxDblIntLimb) + TDblLimb(1);
+  MaxValue = TDLimb(TLimbInfo.MaxDblIntLimb) + TDLimb(1);
 
 var
-  Tmp: TDblLimb;
+  Tmp: TDLimb;
 
 begin
   if A.FUsed = 1 then begin
     if A.FSign >= 0 then
-      Value:= TDblIntLimb(A.FLimbs[0])
+      Value:= TDIntLimb(A.FLimbs[0])
     else
-      Value:= -TDblIntLimb(A.FLimbs[0]);
+      Value:= -TDIntLimb(A.FLimbs[0]);
     Result:= TF_S_OK;
   end
   else if (A.FUsed = 2) then begin
-    Tmp:= PDblLimb(@A.FLimbs)^;
+    Tmp:= PDLimb(@A.FLimbs)^;
     if (Tmp > MaxValue) or ((Tmp = MaxValue) and (A.FSign >= 0)) then
       Result:= TF_E_INVALIDARG
     else begin
-      if A.FSign >= 0 then Value:= TDblIntLimb(Tmp)
-      else Value:= -TDblIntLimb(Tmp);
+      if A.FSign >= 0 then Value:= TDIntLimb(Tmp)
+      else Value:= -TDIntLimb(Tmp);
       Result:= TF_S_OK;
     end;
   end
@@ -3099,13 +3133,13 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TBigNumber.GetDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT;
+class function TBigNumber.GetDblLimb(A: PBigNumber; var Value: TDLimb): TF_RESULT;
 var
-  Tmp: TDblLimb;
+  Tmp: TDLimb;
 
 begin
   if A.FUsed > 1 then begin
-    Tmp:= PDblLimb(@A.FLimbs)^;
+    Tmp:= PDLimb(@A.FLimbs)^;
   end
   else begin
     Tmp:= 0;
@@ -3116,18 +3150,18 @@ begin
     Value:= Tmp;
   end
   else begin
-    Value:= TDblLimb(-TDblIntLimb(Tmp));
+    Value:= TDLimb(-TDIntLimb(Tmp));
   end;
 
   Result:= TF_S_OK;
 end;
 
-class function TBigNumber.ToDblLimb(A: PBigNumber; var Value: TDblLimb): TF_RESULT;
+class function TBigNumber.ToDblLimb(A: PBigNumber; var Value: TDLimb): TF_RESULT;
 begin
   if (A.FUsed > 2) or (A.FSign < 0) then
     Result:= TF_E_INVALIDARG
   else begin
-    Value:= PDblLimb(@A.FLimbs)^;
+    Value:= PDLimb(@A.FLimbs)^;
     Result:= TF_S_OK;
   end;
 end;
@@ -3704,7 +3738,7 @@ class function TBigNumber.FromPCharHex(var A: PBigNumber; S: PChar; L: Integer;
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
    LIMB_SHIFT = 4;
-{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
+{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per uint32 limb
    LIMB_SHIFT = 3;
 {$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
    LIMB_SHIFT = 2;
@@ -4265,7 +4299,7 @@ var
 
 begin
   N:= A.FUsed - 1;
-  Result:= N * SizeOf(TLimb) + SeniorBit(A.FLimbs[N]);
+  Result:= N * SizeOf(TLimb) * 8 + SeniorBit(A.FLimbs[N]);
 end;
 
 // OpenSSL: BN_set_bit expands the number A if necessary, SetBit not.
@@ -4286,6 +4320,7 @@ end;
 class function TBigNumber.MaskBits(A: PBigNumber; Shift: Cardinal): TF_RESULT;
 var
   N: Integer;
+  LimbShift: Integer;
 
 begin
   if Shift >= A.FUsed * TLimbInfo.BitSize then begin
@@ -4293,9 +4328,17 @@ begin
     Exit;
   end;
   N:= Shift shr TLimbInfo.BitShift;
-  A.FLimbs[N]:= A.FLimbs[N] and
-    (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize - (Shift - N shl TLimbInfo.BitShift)));
-  A.FUsed:= N + 1;
+  LimbShift:= Shift and TLimbInfo.BitShiftMask;
+  if LimbShift = 0 then begin
+    A.FUsed:= N;
+  end
+  else begin
+    A.FLimbs[N]:= A.FLimbs[N] and
+      (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize - LimbShift));
+//      (TLimbInfo.MaxLimb shr (TLimbInfo.BitSize - (Shift - N shl TLimbInfo.BitShift)));
+    A.FUsed:= N + 1;
+  end;
+  Normalize(A);
   Result:= TF_S_OK;
 end;
 
@@ -4631,8 +4674,9 @@ begin
                                   // ExpValue = 0
   if ExpValue.IsZero then begin
     if R <> nil then TtfRecord.Release(R);
-    if BaseValue.IsZero then R:= @BigNumZero
-    else R:= @BigNumOne;
+//    if BaseValue.IsZero then R:= @BigNumZero
+//    else
+    R:= @BigNumOne;
     Result:= TF_S_OK;
     Exit;
   end;
@@ -4697,78 +4741,6 @@ begin
   R:= TmpR;
 end;
 
-(*
-class function TBigNumber.QueryIntf(Inst: PBigNumber; const IID: TGUID;
-  out Obj): TF_RESULT;
-begin
-//  if GetInterface(IID, Obj) then
-//    Result := 0
-//  else
-    Result:= TF_E_NOINTERFACE;
-end;
-
-{$IFDEF xxxCPU386}
-function InterlockedAdd(var Addend: Integer; Increment: Integer): Integer;
-asm
-      MOV   ECX,EAX
-      MOV   EAX,EDX
- LOCK XADD  [ECX],EAX
-      ADD   EAX,EDX
-end;
-
-function InterlockedIncrement(var Addend: Integer): Integer;
-asm
-      MOV   EDX,1
-      JMP   InterlockedAdd
-end;
-
-function InterlockedDecrement(var Addend: Integer): Integer;
-asm
-      MOV   EDX,-1
-      JMP   InterlockedAdd
-end;
-
-// !! FRefCount = -1 is used for constants like BigNumZero
-// TBigNumber instances are created with FRefCount = 1
-// if FRefCount = 0 the instance was destroyed
-
-class function TBigNumber.Addref(Inst: PBigNumber): Integer;
-begin
-  if Inst.FRefCount > 0 then
-    Result:= InterlockedIncrement(Inst.FRefCount)
-  else
-    Result:= Inst.FRefCount;
-end;
-
-class function TBigNumber.TtfRecord.Release((Inst: PBigNumber): Integer;
-begin
-  if Inst.FRefCount > 0 then begin
-    Result:= InterlockedDecrement(Inst.FRefCount);
-    if Result = 0 then FreeMem(Inst);
-  end
-  else
-    Result:= Inst.FRefCount;
-end;
-
-{$ELSE}
-class function TBigNumber.Addref(Inst: PBigNumber): Integer;
-begin
-  if Inst.FRefCount > 0 then
-    Inc(Inst.FRefCount);
-  Result:= Inst.FRefCount;
-end;
-
-class function TBigNumber.TtfRecord.Release((Inst: PBigNumber): Integer;
-begin
-  if Inst.FRefCount > 0 then begin
-    Dec(Inst.FRefCount);
-    if Inst.FRefCount = 0 then FreeMem(Inst);
-  end;
-  Result:= Inst.FRefCount;
-end;
-{$ENDIF}
-*)
-
 procedure TBigNumber.Free;
 begin
   if @Self <> nil then TtfRecord.Release(@Self);
@@ -4827,7 +4799,7 @@ begin
   end;
 end;
 
-function BigNumberFromDblLimb(var A: PBigNumber; Value: TDblLimb): TF_RESULT;
+function BigNumberFromDblLimb(var A: PBigNumber; Value: TDLimb): TF_RESULT;
 type
   TLimb2 = array[0..1] of TLimb;
   PLimb2 = ^TLimb2;
@@ -4840,14 +4812,14 @@ begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
   if Result = TF_S_OK then begin
     P:= @Tmp.FLimbs;
-    PDblLimb(P)^:= Value;
+    PDLimb(P)^:= Value;
     if P[1] <> 0 then Tmp.FUsed:= 2;
     if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
 
-function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDblIntLimb): TF_RESULT;
+function BigNumberFromDblIntLimb(var A: PBigNumber; Value: TDIntLimb): TF_RESULT;
 type
   TLimb2 = array[0..1] of TLimb;
   PLimb2 = ^TLimb2;
@@ -4860,7 +4832,7 @@ begin
   Result:= TBigNumber.AllocNumber(Tmp, 2);
   if Result = TF_S_OK then begin
     P:= @Tmp.FLimbs;
-    PDblLimb(P)^:= Abs(Value);
+    PDLimb(P)^:= Abs(Value);
     if P[1] <> 0 then Tmp.FUsed:= 2;
     if Value < 0 then Tmp.FSign:= -1;
     if (A <> nil) then TtfRecord.Release(A);
@@ -4995,13 +4967,13 @@ end;
 
 function GetChar4(P: Pointer; Index: Integer): Cardinal;
 begin
-  Result:= (PLongWord(P) + Index)^;
+  Result:= (PUInt32(P) + Index)^;
 end;
 
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
    LIMB_SHIFT = 4;
-{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
+{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per uint32 limb
    LIMB_SHIFT = 3;
 {$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
    LIMB_SHIFT = 2;
@@ -5209,6 +5181,26 @@ begin
     A:= Tmp;
   end;
 end;
+
+procedure SetBigNumberZero(var A: PBigNumber);
+begin
+  tfFreeInstance(A);
+  A:= @BigNumZero;
+end;
+
+procedure SetBigNumberOne(var A: PBigNumber);
+begin
+  tfFreeInstance(A);
+  A:= @BigNumOne;
+end;
+
+procedure SetBigNumberMinusOne(var A: PBigNumber);
+begin
+  tfFreeInstance(A);
+  A:= @BigNumMinusOne;
+end;
+
+
 (*
 function BigNumberFromPWideChar(var A: PBigNumber;
                P: PWideChar; L: Cardinal; AllowNegative: Boolean): HResult;

@@ -35,10 +35,36 @@ type
 function tfIncrement(var Value: Integer): Integer;
 function tfDecrement(var Value: Integer): Integer;
 
-function ReleaseInstance(Inst: Pointer): Integer;
+function tfAddrefInstance(Inst: Pointer): Integer;
+function tfReleaseInstance(Inst: Pointer): Integer;
+procedure tfFreeInstance(Inst: Pointer);
+function tfTryAllocMem(var P: Pointer; Size: Integer): TF_RESULT;
+function tfTryGetMem(var P: Pointer; Size: Integer): TF_RESULT;
+
 function HashAlgRelease(Inst: Pointer): Integer; stdcall;
 
 implementation
+
+function tfTryAllocMem(var P: Pointer; Size: Integer): TF_RESULT;
+begin
+  try
+    P:= AllocMem(Size);
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
+function tfTryGetMem(var P: Pointer; Size: Integer): TF_RESULT;
+begin
+  try
+    GetMem(P, Size);
+    Result:= TF_S_OK;
+  except
+    Result:= TF_E_OUTOFMEMORY;
+  end;
+end;
+
 
 class function TtfRecord.QueryIntf(Inst: Pointer; const IID: TGUID;
   out Obj): TF_RESULT;
@@ -150,7 +176,20 @@ begin
     Result:= PtfRecord(Inst).FRefCount;
 end;
 
-function ReleaseInstance(Inst: Pointer): Integer;
+function tfAddrefInstance(Inst: Pointer): Integer;
+type
+  TVTable = array[0..2] of Pointer;
+  PVTable = ^TVTable;
+  PPVTable = ^PVTable;
+
+  TAddref = function(Inst: Pointer): Integer; stdcall;
+
+begin
+  Result:= TAddref(PPVTable(Inst)^^[1])(Inst);
+end;
+
+
+function tfReleaseInstance(Inst: Pointer): Integer;
 type
   TVTable = array[0..2] of Pointer;
   PVTable = ^TVTable;
@@ -161,6 +200,12 @@ type
 begin
   Result:= TRelease(PPVTable(Inst)^^[2])(Inst);
 end;
+
+procedure tfFreeInstance(Inst: Pointer);
+begin
+  if Inst <> nil then tfReleaseInstance(Inst);
+end;
+
 
 // release with purging sensitive information for hash algorithms
 function HashAlgRelease(Inst: Pointer): Integer;
