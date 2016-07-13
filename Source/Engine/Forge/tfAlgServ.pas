@@ -163,8 +163,7 @@ begin
       Result:= ByteVectorAlloc(Tmp, I);
       if Result = TF_S_OK then begin
         Move(P^, Tmp.FData, I);
-        if Name <> nil then
-          TtfRecord.Release(Name);
+        tfFreeInstance(Name); //if Name <> nil then TtfRecord.Release(Name);
         Name:= Tmp;
       end;
     end;

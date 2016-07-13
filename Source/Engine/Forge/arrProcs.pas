@@ -144,7 +144,7 @@ begin
 end;
 
 {$IFDEF ASM86}
-function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
+function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 asm
         PUSH  ESI
         PUSH  EDI
@@ -183,7 +183,7 @@ end;
 
 {$ELSE}
 {$IFDEF ASM64}
-function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
+function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 asm
         MOV   R10,RCX       // R10 <-- A
         MOV   ECX,LB        // ECX <-- LB
@@ -218,7 +218,7 @@ asm
 end;
 
 {$ELSE}
-function arrAdd(A, B, Res: PLimb; LA, LB: LongWord): Boolean;
+function arrAdd(A, B, Res: PLimb; LA, LB: Cardinal): Boolean;
 var
   CarryOut, CarryIn: Boolean;
   Tmp: TLimb;
@@ -776,7 +776,7 @@ end;
 function arrSelfSub(A, B: PLimb; LA, LB: Cardinal): Boolean;
 var
   BorrowOut, BorrowIn: Boolean;
-  Tmp: LongWord;
+  Tmp: TLimb;
 
 begin
   Dec(LA, LB);

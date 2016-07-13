@@ -23,7 +23,7 @@ unit tfNumbers;
 
 interface
 
-uses Windows, SysUtils, tfTypes, tfLimbs
+uses {Windows, }SysUtils, tfTypes, tfLimbs
      {$IFDEF LOG}, Loggers{$ENDIF};
 
 type
@@ -50,6 +50,8 @@ type
 
 // -- IBigNumber implementation
 
+    class procedure Burn(A: PBigNumber);
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetHashCode(Inst: PBigNumber): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetLen(Inst: PBigNumber): Integer;
@@ -369,10 +371,11 @@ implementation
 uses tfRecords, tfUtils, arrProcs;
 
 const
-  BigNumVTable: array[0..82] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TtfRecord.Release,
+  BigNumVTable: array[0..83] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
+   @TForgeInstance.Release,
+   @TBigNumber.Burn,
 
    @TBigNumber.GetHashCode,
    @TBigNumber.GetLen,
@@ -725,16 +728,16 @@ begin
         Tmp.FUsed:= UsedA;
 }
     Tmp.FSign:= A.FSign;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); // if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end
 
   else { A <> B } begin
     if (UsedB = 1) and (LimbsB^ = 0) { B = 0 } then begin
       if R <> A then begin
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= A;
-        TtfRecord.AddRef(R);
+        tfAddrefInstance(R); //TtfRecord.AddRef(R);
       end;
       Result:= TF_S_OK;
       Exit;
@@ -742,9 +745,9 @@ begin
 
     if (UsedA = 1) and (LimbsA^ = 0) { A = 0 } then begin
       if R <> B then begin
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= B;
-        TtfRecord.AddRef(R);
+        tfAddrefInstance(R); //TtfRecord.AddRef(R);
       end;
       Result:= TF_S_OK;
       Exit;
@@ -774,7 +777,7 @@ begin
         Tmp.FSign:= B.FSign;
       end;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
 
     end
@@ -784,7 +787,7 @@ begin
       if (UsedA = UsedB) then begin
         Diff:= arrCmp(LimbsA, LimbsB, UsedA);
         if Diff = 0 then begin
-          if (R <> nil) then TtfRecord.Release(R);
+          tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
           R:= @BigNumZero;
           Result:= TF_S_OK;
           Exit;
@@ -801,7 +804,7 @@ begin
         Tmp.FSign:= A.FSign;
         Normalize(Tmp);
 
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= Tmp;
       end
       else begin
@@ -813,7 +816,7 @@ begin
         Tmp.FSign:= B.FSign;
         Normalize(Tmp);
 
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= Tmp;
       end;
     end;
@@ -844,7 +847,7 @@ begin
       else
         Tmp.FUsed:= UsedA;
 }
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end
 
@@ -852,9 +855,9 @@ begin
 
     if (UsedB = 1) and (LimbsB^ = 0) { B = 0 } then begin
       if R <> A then begin
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= A;
-        TtfRecord.AddRef(R);
+        tfAddrefInstance(R); //TtfRecord.AddRef(R);
       end;
       Result:= TF_S_OK;
       Exit;
@@ -862,9 +865,9 @@ begin
 
     if (UsedA = 1) and (LimbsA^ = 0) { A = 0 } then begin
       if R <> B then begin
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= B;
-        TtfRecord.AddRef(R);
+        tfAddrefInstance(R); //TtfRecord.AddRef(R);
       end;
       Result:= TF_S_OK;
       Exit;
@@ -879,7 +882,7 @@ begin
         else
           Tmp.FUsed:= UsedA;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
 
     end
@@ -892,7 +895,7 @@ begin
         else
           Tmp.FUsed:= UsedB;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
     end
   end;
@@ -913,7 +916,7 @@ begin
   LimbsB:= @B.FLimbs;
 
   if A = B then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
     Exit;
@@ -922,9 +925,9 @@ begin
   else { A <> B } begin
     if (UsedB = 1) and (LimbsB^ = 0) { B = 0 } then begin
       if R <> A then begin
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= A;
-        TtfRecord.AddRef(R);
+        tfAddrefInstance(R); //TtfRecord.AddRef(R);
       end;
       Result:= TF_S_OK;
       Exit;
@@ -936,7 +939,7 @@ begin
       if Result = TF_S_OK then begin
         Move(B.FUsed, Tmp.FUsed, FUsedSize + B.FUsed * SizeOf(TLimb));
         Tmp.FSign:= not B.FSign;
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= Tmp;
       end;
       Exit;
@@ -947,7 +950,7 @@ begin
       if (UsedA = UsedB) then begin
         Diff:= arrCmp(@A.FLimbs, @B.FLimbs, UsedA);
         if Diff = 0 then begin
-          if (R <> nil) then TtfRecord.Release(R);
+          tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
           R:= @BigNumZero;
           Result:= TF_S_OK;
           Exit;
@@ -975,7 +978,7 @@ begin
 
       end;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
 
     end {Sign(A) = Sign(B)}
@@ -1004,7 +1007,7 @@ begin
 // знак разности равен знаку первого операнда
       Tmp.FSign:= A.FSign;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
 
     end {Sign(A) <> Sign(B)};
@@ -1026,7 +1029,7 @@ begin
   LimbsB:= @B.FLimbs;
 
   if A = B then begin  { A - B = 0 }
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
     Exit;
@@ -1035,9 +1038,9 @@ begin
   else { A <> B } begin
     if (UsedB = 1) and (LimbsB^ = 0) { B = 0 } then begin
       if R <> A then begin
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= A;
-        TtfRecord.AddRef(R);
+        tfAddrefInstance(R); //TtfRecord.AddRef(R);
       end;
       Result:= TF_S_OK;
       Exit;
@@ -1053,7 +1056,7 @@ begin
     if (UsedA = UsedB) then begin
       Diff:= arrCmp(@A.FLimbs, @B.FLimbs, UsedA);
       if Diff = 0 then begin
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= @BigNumZero;
         Result:= TF_S_OK;
         Exit;
@@ -1068,7 +1071,7 @@ begin
       arrSub(LimbsA, LimbsB, @Tmp.FLimbs, UsedA, UsedB);
       Tmp.FUsed:= UsedA;
       Normalize(Tmp);
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
     end
     else { A < B } begin
@@ -1087,7 +1090,7 @@ var
 
 begin
   if A.IsZero or B.IsZero then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -1110,7 +1113,7 @@ begin
     Tmp.FSign:= A.FSign xor B.FSign;
     Tmp.FUsed:= Used;
     Normalize(Tmp);
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -1122,7 +1125,7 @@ var
 
 begin
   if A.IsZero then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -1139,7 +1142,7 @@ begin
 
     Tmp.FUsed:= Used;
     Normalize(Tmp);
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -1151,7 +1154,7 @@ var
 
 begin
   if A.IsZero or B.IsZero then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -1173,7 +1176,7 @@ begin
 
     Tmp.FUsed:= Used;
     Normalize(Tmp);
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -1210,7 +1213,7 @@ begin
     R:= arrDivModLimb(@A.FLimbs, @Tmp.FLimbs, Used, Limb);
     if Tmp.FLimbs[Used - 1] = 0 then Dec(Used);
     Tmp.FUsed:= Used;
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= Tmp;
   end;
 end;
@@ -1245,9 +1248,9 @@ begin
 
 // if Abs(dividend A) = Abs(divisor B) then Q:= +/-1, R:= 0;
       if Diff = 0 then begin
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= @BigNumZero;
-        if (Q <> nil) then TtfRecord.Release(Q);
+        tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
         if A.FSign xor B.FSign < 0
           then Q:= @BigNumMinusOne
           else Q:= @BigNumOne;
@@ -1260,12 +1263,12 @@ begin
 
 // if dividend (A) < divisor (B) then Q:= 0, R:= A
   if Cond then begin
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= @BigNumZero;
     if (R <> A) then begin
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= A;
-      TtfRecord.AddRef(R);
+      tfAddrefInstance(R); //TtfRecord.AddRef(R);
     end;
     Result:= TF_S_OK;
     Exit;
@@ -1313,13 +1316,12 @@ begin
       else
         Remainder.FSign:= -1;
 
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= Quotient;
 
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Remainder;
 
-//    Result:= S_OK;
     Exit;
   end;
 
@@ -1355,8 +1357,8 @@ begin
   Remainder.FUsed:=
     arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
 
-  TtfRecord.Release(Dividend);
-  TtfRecord.Release(Divisor);
+  tfReleaseInstance(Dividend); //TtfRecord.Release(Dividend);
+  tfReleaseInstance(Divisor);  //TtfRecord.Release(Divisor);
 
   Quotient.FUsed:= UsedQ;
 //  Remainder.FUsed:= UsedB;
@@ -1373,10 +1375,10 @@ begin
   Normalize(Quotient);
   Normalize(Remainder);
 
-  if (Q <> nil) then TtfRecord.Release(Q);
+  tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
   Q:= Quotient;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Remainder;
 end;
 
@@ -1409,9 +1411,9 @@ begin
 
 // if Abs(dividend A) = Abs(divisor B) then Q:= 1, R:= 0;
       if Diff = 0 then begin
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= @BigNumZero;
-        if (Q <> nil) then TtfRecord.Release(Q);
+        tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
         Q:= @BigNumOne;
         Result:= TF_S_OK;
         Exit;
@@ -1422,12 +1424,12 @@ begin
 
 // if dividend (A) < divisor (B) then Q:= 0, R:= A
   if Cond then begin
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= @BigNumZero;
     if (R <> A) then begin
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= A;
-      TtfRecord.AddRef(R);
+      tfAddrefInstance(R); //TtfRecord.AddRef(R);
     end;
     Result:= TF_S_OK;
     Exit;
@@ -1441,7 +1443,7 @@ begin
 
     Result:= AllocNumber(Remainder, 1);
     if Result <> TF_S_OK then begin
-      TtfRecord.Release(Quotient);
+      tfReleaseInstance(Quotient); //TtfRecord.Release(Quotient);
       Exit;
     end;
 
@@ -1457,10 +1459,10 @@ begin
     Quotient.FUsed:= UsedA;
     Remainder.FUsed:= 1;
 
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= Quotient;
 
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Remainder;
 
     Exit;
@@ -1473,7 +1475,7 @@ begin
 
   Result:= AllocNumber(Remainder, UsedB);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(Quotient);
+    tfReleaseInstance(Quotient); //TtfRecord.Release(Quotient);
     Exit;
   end;
 
@@ -1483,8 +1485,8 @@ begin
 
   Result:= AllocNumber(Divisor, UsedB);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(Remainder);
-    TtfRecord.Release(Quotient);
+    tfReleaseInstance(Remainder); //TtfRecord.Release(Remainder);
+    tfReleaseInstance(Quotient); //TtfRecord.Release(Quotient);
     Exit;
   end;
 
@@ -1495,9 +1497,9 @@ begin
 
   Result:= AllocNumber(Dividend, UsedA + 1);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(Divisor);
-    TtfRecord.Release(Remainder);
-    TtfRecord.Release(Quotient);
+    tfReleaseInstance(Divisor);   //TtfRecord.Release(Divisor);
+    tfReleaseInstance(Remainder); //TtfRecord.Release(Remainder);
+    tfReleaseInstance(Quotient);  //TtfRecord.Release(Quotient);
     Exit;
   end;
 
@@ -1517,8 +1519,8 @@ begin
   Remainder.FUsed:=
     arrShrShort(@Dividend.FLimbs, @Remainder.FLimbs, UsedB, Shift);
 
-  TtfRecord.Release(Dividend);
-  TtfRecord.Release(Divisor);
+  tfReleaseInstance(Dividend); //TtfRecord.Release(Dividend);
+  tfReleaseInstance(Divisor);  //TtfRecord.Release(Divisor);
 
   Quotient.FUsed:= UsedQ;
 //  Remainder.FUsed:= UsedB;
@@ -1526,10 +1528,10 @@ begin
   Normalize(Quotient);
   Normalize(Remainder);
 
-  if (Q <> nil) then TtfRecord.Release(Q);
+  tfFreeInstance(Q); //if (Q <> nil) then TtfRecord.Release(Q);
   Q:= Quotient;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Remainder;
 end;
 
@@ -1556,9 +1558,9 @@ begin
       Exit;
     end;
 
-    if (G <> nil) then TtfRecord.Release(G);
+    tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
     G:= A;
-    TtfRecord.Addref(A);
+    tfAddrefInstance(A); //TtfRecord.Addref(A);
     Result:= TF_S_OK;
     Exit;
   end;
@@ -1572,37 +1574,37 @@ begin
     TmpB:= A;
   end;
 
-  TtfRecord.Addref(TmpA);
+  tfAddrefInstance(TmpA); //TtfRecord.Addref(TmpA);
 
   if TmpB.IsZero then begin
-    if (G <> nil) then TtfRecord.Release(G);
+    tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
     G:= TmpA;
     Result:= TF_S_OK;
     Exit;
   end;
 
-  TtfRecord.Addref(TmpB);
+  tfAddrefInstance(TmpB); //TtfRecord.Addref(TmpB);
   TmpQ:= nil;
   TmpR:= nil;
 
   repeat
 // Q:= A div B, R:= A mod B;
     Result:= DivRemNumbersU(TmpA, TmpB, TmpQ, TmpR);
-    TtfRecord.Release(TmpA);
+    tfReleaseInstance(TmpA); //TtfRecord.Release(TmpA);
 
     if Result <> TF_S_OK then begin
-      TtfRecord.Release(TmpB);
-      if TmpQ <> nil then TtfRecord.Release(TmpQ);
-      if TmpR <> nil then TtfRecord.Release(TmpR);
+      tfReleaseInstance(TmpB); //TtfRecord.Release(TmpB);
+      tfFreeInstance(TmpQ); //if TmpQ <> nil then TtfRecord.Release(TmpQ);
+      tfFreeInstance(TmpR); //if TmpR <> nil then TtfRecord.Release(TmpR);
       Exit;
     end;
 
-    TtfRecord.Release(TmpQ);
+    tfReleaseInstance(TmpQ); //TtfRecord.Release(TmpQ);
     TmpQ:= nil;
 
     if TmpR.IsZero then begin
-      TtfRecord.Release(TmpR);
-      if (G <> nil) then TtfRecord.Release(G);
+      tfReleaseInstance(TmpR); //TtfRecord.Release(TmpR);
+      tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
       G:= TmpB;
       Exit;
     end;
@@ -1623,16 +1625,16 @@ begin
       Result:= TF_E_INVALIDARG;
     end
     else begin
-      TtfRecord.AddRef(B);
-      if (G <> nil) then TtfRecord.Release(G);
+      tfAddrefInstance(B); //TtfRecord.AddRef(B);
+      tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
       G:= B;
       Result:= TF_S_OK;
     end;
     Exit;
   end;
   if B.IsZero then begin
-    TtfRecord.AddRef(A);
-    if (G <> nil) then TtfRecord.Release(G);
+    tfAddrefInstance(A); //TtfRecord.AddRef(A);
+    tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
     G:= A;
     Result:= TF_S_OK;
   end;
@@ -1644,18 +1646,18 @@ begin
   Tmp2:= nil;
   Result:= DivRemNumbersU(A, Tmp1, Tmp1, Tmp2);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(Tmp1);
+    tfReleaseInstance(Tmp1); //TtfRecord.Release(Tmp1);
     Exit;
   end;
 
-  TtfRecord.Release(Tmp2);
+  tfReleaseInstance(Tmp2); //TtfRecord.Release(Tmp2);
   Result:= MulNumbersU(B, Tmp1, Tmp1);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(Tmp1);
+    tfReleaseInstance(Tmp1); //TtfRecord.Release(Tmp1);
     Exit;
   end;
 
-  if (G <> nil) then TtfRecord.Release(G);
+  tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
   G:= Tmp1;
 end;
 
@@ -1710,22 +1712,22 @@ var
 
 procedure CleanUp;
 begin
-  TtfRecord.Release(A);
-  TtfRecord.Release(B);
-  if TmpX <> nil then TtfRecord.Release(TmpX);
-  if TmpY <> nil then TtfRecord.Release(TmpY);
-  if TmpU <> nil then TtfRecord.Release(TmpU);
-  if TmpV <> nil then TtfRecord.Release(TmpV);
-  if TmpQ <> nil then TtfRecord.Release(TmpQ);
-  if TmpR <> nil then TtfRecord.Release(TmpR);
-  if TmpM <> nil then TtfRecord.Release(TmpM);
-  if TmpN <> nil then TtfRecord.Release(TmpN);
+  tfReleaseInstance(A); //TtfRecord.Release(A);
+  tfReleaseInstance(B); //TtfRecord.Release(B);
+  tfFreeInstance(TmpX); //if TmpX <> nil then TtfRecord.Release(TmpX);
+  tfFreeInstance(TmpY); //if TmpY <> nil then TtfRecord.Release(TmpY);
+  tfFreeInstance(TmpU); //if TmpU <> nil then TtfRecord.Release(TmpU);
+  tfFreeInstance(TmpV); //if TmpV <> nil then TtfRecord.Release(TmpV);
+  tfFreeInstance(TmpQ); //if TmpQ <> nil then TtfRecord.Release(TmpQ);
+  tfFreeInstance(TmpR); //if TmpR <> nil then TtfRecord.Release(TmpR);
+  tfFreeInstance(TmpM); //if TmpM <> nil then TtfRecord.Release(TmpM);
+  tfFreeInstance(TmpN); //if TmpN <> nil then TtfRecord.Release(TmpN);
 end;
 
 begin
 // interface refs' initialization
-  TtfRecord.Addref(A);
-  TtfRecord.Addref(B);
+  tfAddrefInstance(A); //TtfRecord.Addref(A);
+  tfAddrefInstance(B); //TtfRecord.Addref(B);
 
   TmpX:= nil;
   TmpY:= nil;
@@ -1799,17 +1801,17 @@ begin
       Exit;
     end;
 
-    TtfRecord.Release(B);
+    tfReleaseInstance(B); //TtfRecord.Release(B);
     B:= A;
 //    TmpB.AddRef;
 //    TmpA.TtfRecord.Release(;
     A:= TmpR;
     TmpR:= nil;
 
-    TtfRecord.Release(TmpX);
+    tfReleaseInstance(TmpX); //TtfRecord.Release(TmpX);
     TmpX:= TmpU;
 
-    TtfRecord.Release(TmpY);
+    tfReleaseInstance(TmpY); //TtfRecord.Release(TmpY);
     TmpY:= TmpV;
 
     TmpU:= TmpM;
@@ -1819,17 +1821,17 @@ begin
     TmpN:= nil;
   end;
 
-  if (G <> nil) then TtfRecord.Release(G);
+  tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
   G:= B;
-  TtfRecord.Addref(G);
+  tfAddrefInstance(G); //TtfRecord.Addref(G);
 
-  if (X <> nil) then TtfRecord.Release(X);
+  tfFreeInstance(X); //if (X <> nil) then TtfRecord.Release(X);
   X:= TmpX;
-  TtfRecord.Addref(X);
+  tfAddrefInstance(X); //TtfRecord.Addref(X);
 
-  if (Y <> nil) then TtfRecord.Release(Y);
+  tfFreeInstance(Y); //if (Y <> nil) then TtfRecord.Release(Y);
   Y:= TmpY;
-  TtfRecord.Addref(Y);
+  tfAddrefInstance(Y); //TtfRecord.Addref(Y);
 
   CleanUp;
   Result:= TF_S_OK;
@@ -1846,20 +1848,20 @@ begin
   Result:= EGCD(A, M, TmpG, TmpX, TmpY);
   if Result <> TF_S_OK then Exit;
 
-  TtfRecord.Release(TmpY);
+  tfReleaseInstance(TmpY); //TtfRecord.Release(TmpY);
 // if GCD <> 1
   if (TmpG.FUsed <> 1) or (TmpG.FLimbs[0] <> 1) then begin
-    TtfRecord.Release(TmpG);
-    TtfRecord.Release(TmpX);
+    tfReleaseInstance(TmpG); //TtfRecord.Release(TmpG);
+    tfReleaseInstance(TmpX); //TtfRecord.Release(TmpX);
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
-  TtfRecord.Release(TmpG);
+  tfReleaseInstance(TmpG); //TtfRecord.Release(TmpG);
 
   Result:= TBigNumber.AddNumbers(TmpX, M, TmpX);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(TmpX);
+    tfReleaseInstance(TmpX); //TtfRecord.Release(TmpX);
     Exit;
   end;
 
@@ -1867,14 +1869,14 @@ begin
   TmpR:= nil;
 
   Result:= TBigNumber.DivRemNumbers(TmpX, M, TmpQ, TmpR);
-  TtfRecord.Release(TmpX);
+  tfReleaseInstance(TmpX); //TtfRecord.Release(TmpX);
 
   if Result <> TF_S_OK then begin
     Exit;
   end;
 
-  TtfRecord.Release(TmpQ);
-  if (R <> nil) then TtfRecord.Release(TmpR);
+  tfReleaseInstance(TmpQ); //TtfRecord.Release(TmpQ);
+  tfFreeInstance(TmpR); //if (R <> nil) then TtfRecord.Release(TmpR);
   R:= TmpR;
 end;
 
@@ -1885,9 +1887,9 @@ var
 begin
   if A.FSign >= 0 then begin
     if R <> A then begin
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= A;
-      TtfRecord.AddRef(R);
+      tfAddrefInstance(R); //TtfRecord.AddRef(R);
     end;
     Result:= TF_S_OK;
   end
@@ -1895,7 +1897,7 @@ begin
     Result:= AllocNumber(Tmp, A.FUsed);
     if Result = TF_S_OK then begin
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -1918,7 +1920,7 @@ begin
     else if (ASign < 0) and ((Used > 1) or (Tmp.FLimbs[0] <> 0)) then
       Tmp.FSign:= -1
     else Tmp.FSign:= 0;
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1929,17 +1931,18 @@ var
 
 begin
   if A.IsZero then begin
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
   else begin
     Result:= AllocNumber(Tmp, A.FUsed);
     if Result = TF_S_OK then begin
-// todo: copy FSign
+// Copy FSign
+      Tmp.FSign:= A.FSign;
 // Copy FUsed and FData fields:
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -1951,7 +1954,7 @@ var
 
 begin
   if A.IsZero then begin
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -1960,9 +1963,10 @@ begin
     if Result = TF_S_OK then begin
 // Copy FUsed and FData fields:
       Move(A.FUsed, Tmp.FUsed, A.FUsed * SizeOf(TLimb) + FUsedSize);
+// A <> 0 here
       if A.FSign >= 0 then Tmp.FSign:= -1;
 //      else Tmp.FSign:= 0;
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -1970,10 +1974,15 @@ end;
 
 class function TBigNumber.AssignNumber(A: PBigNumber; var R: PBigNumber): TF_RESULT;
 begin
-  if R <> nil then TtfRecord.Release(R);
+  tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
   R:= A;
-  if A <> nil then TtfRecord.AddRef(A);
+  tfAddrefInstance(A); //if A <> nil then TtfRecord.AddRef(A);
   Result:= TF_S_OK;
+end;
+
+class procedure TBigNumber.Burn(A: PBigNumber);
+begin
+// todo:
 end;
 
 class function TBigNumber.AddIntLimb(A: PBigNumber; Limb: TIntLimb;
@@ -2015,7 +2024,7 @@ begin
         Tmp.FSign:= A.FSign;
       end;
     end;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2098,7 +2107,7 @@ begin
         Tmp.FSign:= -1;
       end;
     end;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2135,7 +2144,7 @@ begin
         Tmp.FSign:= -1;
       end;
     end;
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2153,7 +2162,7 @@ begin
     if arrInc(@A.FLimbs, @Tmp.FLimbs, A.FUsed)
       then Tmp.FUsed:= UsedA + 1
       else Tmp.FUsed:= UsedA;
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2211,7 +2220,7 @@ begin
       then Tmp.FUsed:= UsedA + 1
       else Tmp.FUsed:= UsedA;
 
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2518,7 +2527,7 @@ begin
         Tmp.FUsed:= 1;
       end;
     end;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2555,7 +2564,7 @@ begin
         end;
       end;
     end;
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2589,7 +2598,7 @@ begin
     end;
   end;
   if Result = TF_S_OK then begin
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2629,7 +2638,7 @@ begin
         Tmp.FUsed:= 1;
       end;
     end;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2649,7 +2658,7 @@ begin
       if Result = TF_S_OK then begin
         Tmp.FUsed:= 1;
         Tmp.FLimbs[0]:= A.FLimbs[0] - Limb;
-        if (R <> nil) then TtfRecord.Release(R);
+        tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
         R:= Tmp;
       end;
     end
@@ -2665,7 +2674,7 @@ begin
       if Tmp.FLimbs[UsedA - 1] = 0
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -2750,7 +2759,7 @@ begin
         Tmp.FSign:= A.FSign;
       end;
     end;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2796,7 +2805,7 @@ begin
         Tmp.FSign:= not A.FSign;
       end;
     end;
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -2871,7 +2880,7 @@ begin
     Normalize(Tmp);
   {$IFEND}
   if ASign < 0 then Tmp.FSign:= -1;
-  if (A <> nil) then TtfRecord.Release(A);
+  tfFreeInstance(A); //if (A <> nil) then TtfRecord.Release(A);
   A:= Tmp;
 {$IFEND}
 end;
@@ -2903,7 +2912,7 @@ begin
     Normalize(Tmp);
   {$IFEND}
   if (ASign <= 0) and ((Value < 0) or (ASign < 0)) then Tmp.FSign:= -1;
-  if (A <> nil) then TtfRecord.Release(A);
+  tfFreeInstance(A); //if (A <> nil) then TtfRecord.Release(A);
   A:= Tmp;
   Result:= S_OK;
 {$IFEND}
@@ -3491,7 +3500,7 @@ begin
       end;
     until False;
 
-    TtfRecord.Release(Tmp);
+    tfReleaseInstance(Tmp); //TtfRecord.Release(Tmp);
     L:= I;
     if (P <> nil) and (L >= I) then begin
 // swap digits' string
@@ -3796,7 +3805,7 @@ begin
         'A'..'F': Digit:= 10 + Ord(Ch) - Ord('A');
         'a'..'f': Digit:= 10 + Ord(Ch) - Ord('a');
     else
-        TtfRecord.Release(Tmp);
+        tfReleaseInstance(Tmp); //TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
     end;
@@ -3834,7 +3843,7 @@ begin
   Normalize(Tmp);
   if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
     then Tmp.FSign:= -1;
-  if A <> nil then TtfRecord.Release(A);
+  tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
   A:= Tmp;
 end;
 
@@ -3857,9 +3866,9 @@ var
 begin
   if Shift = 0 then begin
     if R <> A then begin
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= A;
-      TtfRecord.AddRef(R);
+      tfAddrefInstance(R); //TtfRecord.AddRef(R);
     end;
     Result:= TF_S_OK;
   end
@@ -3880,7 +3889,7 @@ begin
       end;
 //      if (Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0) then
       Tmp.FSign:= A.FSign;
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -3895,9 +3904,9 @@ var
 begin
   if Shift = 0 then begin
     if R <> A then begin
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       R:= A;
-      TtfRecord.AddRef(R);
+      tfAddrefInstance(R); //TtfRecord.AddRef(R);
     end;
     Result:= TF_S_OK;
   end
@@ -3905,7 +3914,7 @@ begin
     UsedA:= A.FUsed;
     LimbShift:= Shift shr TLimbInfo.BitShift;
     if LimbShift >= UsedA then begin
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
       if A.FSign < 0
         then R:= @BigNumMinusOne
         else R:= @BigNumZero;
@@ -3924,7 +3933,7 @@ begin
         if (Tmp.FSign < 0) and (Tmp.FUsed = 1) and (Tmp.FLimbs[0] = 0) then
           Tmp.FLimbs[0]:= 1;
 
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= Tmp;
       end;
     end;
@@ -3945,12 +3954,12 @@ begin
     if Result = TF_S_OK then begin
       L:= arrSqrt(@A.FLimbs, @Tmp.FLimbs, A.FUsed);
       if L = 0 then begin
-        TtfRecord.Release(Tmp);
+        tfReleaseInstance(Tmp); //TtfRecord.Release(Tmp);
         Result:= TF_E_OUTOFMEMORY;
       end
       else begin
         Tmp.FUsed:= L;
-        if R <> nil then TtfRecord.Release(R);
+        tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
         R:= Tmp;
       end;
     end;
@@ -3966,7 +3975,7 @@ var
 
 begin
   if (Limb = 0) or ((A.FUsed = 1) and (A.FLimbs[0] = 0)) then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -3982,7 +3991,7 @@ begin
       if A.FSign xor Integer(Limb) < 0 then
         Tmp.FSign:= -1;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -4025,7 +4034,7 @@ var
 
 begin
   if (Limb = 0) then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -4040,7 +4049,7 @@ begin
 
       Tmp.FSign:= A.FSign;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -4053,7 +4062,7 @@ var
 
 begin
   if (Limb = 0) then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
     R:= @BigNumZero;
     Result:= TF_S_OK;
   end
@@ -4066,7 +4075,7 @@ begin
         then Tmp.FUsed:= UsedA + 1
         else Tmp.FUsed:= UsedA;
 
-      if (R <> nil) then TtfRecord.Release(R);
+      tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -4092,7 +4101,7 @@ begin
 
   Result:= AllocNumber(TmpR, 1);
   if Result <> TF_S_OK then begin
-    TtfRecord.Release(TmpQ);
+    tfReleaseInstance(TmpQ);  //TtfRecord.Release(TmpQ);
     Exit;
   end;
 
@@ -4111,9 +4120,9 @@ begin
   end;
   if TmpR.FLimbs[0] <> 0
     then TmpR.FSign:= A.FSign;
-  if (Q <> nil) then TtfRecord.Release(Q);
+  tfFreeInstance(Q);  //if (Q <> nil) then TtfRecord.Release(Q);
   Q:= TmpQ;
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
   R:= TmpR;
 end;
 
@@ -4147,7 +4156,7 @@ begin
     TmpQ.FLimbs[0]:= 0;
     R:= Limb;
   end;
-  if (Q <> nil) then TtfRecord.Release(Q);
+  tfFreeInstance(Q);  //if (Q <> nil) then TtfRecord.Release(Q);
   Q:= TmpQ;
 end;
 
@@ -4177,7 +4186,7 @@ begin
         then Tmp.FUsed:= UsedA - 1
         else Tmp.FUsed:= UsedA;
     end;
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q);  //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= Tmp;
   end;
 end;
@@ -4239,7 +4248,7 @@ begin
 // remainder has the same sign as dividend if nonzero
     if (A.FSign < 0) then R:= -R;
 
-    if (Q <> nil) then TtfRecord.Release(Q);
+    tfFreeInstance(Q);  //if (Q <> nil) then TtfRecord.Release(Q);
     Q:= Tmp;
   end;
 end;
@@ -4396,7 +4405,7 @@ begin
   if Result = TF_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -4417,7 +4426,7 @@ begin
     arrAnd(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedR);
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -4478,7 +4487,7 @@ begin
   if Result = TF_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -4496,7 +4505,7 @@ begin
     if Result = TF_S_OK then begin
       arrOr(@A.FLimbs, @B.FLimbs, @Tmp.FLimbs, UsedA, UsedB);
       Tmp.FUsed:= UsedA;
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end
@@ -4505,7 +4514,7 @@ begin
     if Result = TF_S_OK then begin
       arrOr(@B.FLimbs, @A.FLimbs, @Tmp.FLimbs, UsedB, UsedA);
       Tmp.FUsed:= UsedB;
-      if R <> nil then TtfRecord.Release(R);
+      tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
       R:= Tmp;
     end;
   end;
@@ -4569,7 +4578,7 @@ begin
   if Result = TF_S_OK then begin
     Tmp.FUsed:= UsedR;
     Normalize(Tmp);
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -4595,16 +4604,17 @@ var
 
 begin
   if APower = 0 then begin
-    if R <> nil then TtfRecord.Release(R);
-    if A.IsZero then R:= @BigNumZero
-    else R:= @BigNumOne;
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
+//    if A.IsZero then R:= @BigNumZero
+//    else R:= @BigNumOne;
+    R:= @BigNumOne;
     Result:= TF_S_OK;
     Exit;
   end;
 
   TmpR:= @BigNumOne;
   Tmp:= A;
-  TtfRecord.AddRef(Tmp);
+  tfAddrefInstance(Tmp);  //TtfRecord.AddRef(Tmp);
 
   Result:= TF_S_OK;
   while APower > 0 do begin
@@ -4618,12 +4628,12 @@ begin
     APower:= APower shr 1;
   end;
   if Result = TF_S_OK then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
     R:= TmpR;
   end
   else
-    TtfRecord.Release(TmpR);
-  TtfRecord.Release(Tmp);
+    tfReleaseInstance(TmpR);  //TtfRecord.Release(TmpR);
+  tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
 end;
 
 class function TBigNumber.PowU(A: PBigNumber; APower: Cardinal; var R: PBigNumber): TF_RESULT;
@@ -4632,16 +4642,17 @@ var
 
 begin
   if APower = 0 then begin
-    if R <> nil then TtfRecord.Release(R);
-    if A.IsZero then R:= @BigNumZero
-    else R:= @BigNumOne;
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
+//    if A.IsZero then R:= @BigNumZero
+//    else R:= @BigNumOne;
+    R:= @BigNumOne;
     Result:= TF_S_OK;
     Exit;
   end;
 
   TmpR:= @BigNumOne;
   Tmp:= A;
-  TtfRecord.AddRef(Tmp);
+  tfAddrefInstance(Tmp);  // TtfRecord.AddRef(Tmp);
 
   Result:= TF_S_OK;
   while APower > 0 do begin
@@ -4655,12 +4666,12 @@ begin
     APower:= APower shr 1;
   end;
   if Result = TF_S_OK then begin
-    if (R <> nil) then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if (R <> nil) then TtfRecord.Release(R);
     R:= TmpR;
   end
   else
-    TtfRecord.Release(TmpR);
-  TtfRecord.Release(Tmp);
+    tfReleaseInstance(TmpR);  //TtfRecord.Release(TmpR);
+  tfReleaseInstance(Tmp);    //TtfRecord.Release(Tmp);
 end;
 
 class function TBigNumber.ModPow(BaseValue, ExpValue, Modulus: PBigNumber; var R: PBigNumber): TF_RESULT;
@@ -4673,7 +4684,7 @@ var
 begin
                                   // ExpValue = 0
   if ExpValue.IsZero then begin
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R);  //if R <> nil then TtfRecord.Release(R);
 //    if BaseValue.IsZero then R:= @BigNumZero
 //    else
     R:= @BigNumOne;
@@ -4683,7 +4694,7 @@ begin
                                   // Assert( ExpValue > 0 )
   TmpR:= @BigNumOne;
   Tmp:= BaseValue;
-  TtfRecord.Addref(Tmp);
+  tfAddrefInstance(Tmp);  //TtfRecord.Addref(Tmp);
   Q:= nil;
 
   Used:= ExpValue.FUsed;
@@ -4701,9 +4712,9 @@ begin
                                               // TmpR:= TmpR mod Modulo
           Result:= DivRemNumbersU(TmpR, Modulus, Q, TmpR);
         if Result <> TF_S_OK then begin
-          TtfRecord.Release(Tmp);
-          TtfRecord.Release(TmpR);
-          if Q <> nil then TtfRecord.Release(Q);
+          tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
+          tfReleaseInstance(TmpR);  //TtfRecord.Release(TmpR);
+          tfFreeInstance(Q);       //if Q <> nil then TtfRecord.Release(Q);
           Exit;
         end;
         if Limb = 1 then Break;
@@ -4712,9 +4723,9 @@ begin
       if Result = TF_S_OK then
         Result:= DivRemNumbersU(Tmp, Modulus, Q, Tmp);
       if Result <> TF_S_OK then begin
-        TtfRecord.Release(Tmp);
-        TtfRecord.Release(TmpR);
-        if Q <> nil then TtfRecord.Release(Q);
+        tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
+        tfReleaseInstance(TmpR);  //TtfRecord.Release(TmpR);
+        tfFreeInstance(Q);       //if Q <> nil then TtfRecord.Release(Q);
         Exit;
       end;
       Limb:= Limb shr 1;
@@ -4727,23 +4738,23 @@ begin
       if Result = TF_S_OK then
         Result:= DivRemNumbersU(Tmp, Modulus, Q, Tmp);
       if Result <> TF_S_OK then begin
-        TtfRecord.Release(Tmp);
-        TtfRecord.Release(TmpR);
-        if Q <> nil then TtfRecord.Release(Q);
+        tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
+        tfReleaseInstance(TmpR);  //TtfRecord.Release(TmpR);
+        tfFreeInstance(Q);       //if Q <> nil then TtfRecord.Release(Q);
         Exit;
       end;
       Inc(I);
     end;
   end;
-  TtfRecord.Release(Tmp);
-  if Q <> nil then TtfRecord.Release(Q);
-  if R <> nil then TtfRecord.Release(R);
+  tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
+  tfFreeInstance(Q);       //if Q <> nil then TtfRecord.Release(Q);
+  tfFreeInstance(R);       //if R <> nil then TtfRecord.Release(R);
   R:= TmpR;
 end;
 
 procedure TBigNumber.Free;
 begin
-  if @Self <> nil then TtfRecord.Release(@Self);
+  tfFreeInstance(@Self);   //  if @Self <> nil then TtfRecord.Release(@Self);
 end;
 
 class procedure TBigNumber.FreeAndNil(var Inst: PBigNumber);
@@ -4754,7 +4765,7 @@ begin
   if Inst <> nil then begin
     Tmp:= Inst;
     Inst:= nil;
-    TtfRecord.Release(Tmp);
+    tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
   end;
 end;
 
@@ -4767,7 +4778,7 @@ var
 begin
   Result:= TBigNumber.AllocPowerOfTwo(Tmp, APower);
   if Result = TF_S_OK then begin
-    if (A <> nil) then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -4780,7 +4791,7 @@ begin
   Result:= TBigNumber.AllocNumber(Tmp, 1);
   if Result = TF_S_OK then begin
     Tmp.FLimbs[0]:= Value;
-    if (A <> nil) then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -4794,7 +4805,7 @@ begin
   if Result = TF_S_OK then begin
     Tmp.FLimbs[0]:= Abs(Value);
     if Value < 0 then Tmp.FSign:= -1;
-    if (A <> nil) then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -4814,7 +4825,7 @@ begin
     P:= @Tmp.FLimbs;
     PDLimb(P)^:= Value;
     if P[1] <> 0 then Tmp.FUsed:= 2;
-    if (A <> nil) then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -4835,7 +4846,7 @@ begin
     PDLimb(P)^:= Abs(Value);
     if P[1] <> 0 then Tmp.FUsed:= 2;
     if Value < 0 then Tmp.FSign:= -1;
-    if (A <> nil) then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -4885,7 +4896,7 @@ begin
   if SeniorByte and $80 = 0 then begin
     if SeniorByte = 0 then Dec(L);
     if L = 0 then begin
-      if A <> nil then TtfRecord.Release(A);
+      tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
       A:= @BigNumZero;
       Result:= TF_S_OK;
     end
@@ -4896,7 +4907,7 @@ begin
         Tmp.FLimbs[Used - 1]:= 0;
         Move(P^, Tmp.FLimbs, L);
         Tmp.FUsed:= Used;
-        if A <> nil then TtfRecord.Release(A);
+        tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
         A:= Tmp;
       end;
     end;
@@ -4904,7 +4915,7 @@ begin
   else if AllowNegative then begin { out A < 0 }
     if SeniorByte = $FF then Dec(L);
     if L = 0 then begin
-      if A <> nil then TtfRecord.Release(A);
+      tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
       A:= @BigNumMinusOne;
       Result:= TF_S_OK;
       Exit;
@@ -4920,7 +4931,7 @@ begin
         for I:= 0 to Used - 1 do
           Tmp.FLimbs[I]:= not Tmp.FLimbs[I];
         arrSelfAddLimb(@Tmp^.FLimbs, 1, Used);
-        if A <> nil then TtfRecord.Release(A);
+        tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
         A:= Tmp;
       end;
     end;
@@ -4934,7 +4945,7 @@ function GetChar(P: PByte; Index, Size: Integer): Cardinal;
 begin
   Inc(P, Index * Size);
   if Size = 2 then Result:= PWord(P)^
-  else if Size = 4 then Result:= PLongWord(P)^
+  else if Size = 4 then Result:= PUInt32(P)^
   else Result:= P^;
 end;
 var
@@ -5032,7 +5043,7 @@ begin
         Ord('A')..Ord('F'): Digit:= 10 + Ch - Ord('A');
         Ord('a')..Ord('f'): Digit:= 10 + Ch - Ord('a');
     else
-        TtfRecord.Release(Tmp);
+        tfReleaseInstance(Tmp);  // TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
     end;
@@ -5070,7 +5081,7 @@ begin
   TBigNumber.Normalize(Tmp);
   if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
     then Tmp.FSign:= -1;
-  if A <> nil then TtfRecord.Release(A);
+  tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
   A:= Tmp;
 end;
 
@@ -5156,7 +5167,7 @@ begin
             Inc(Tmp^.FUsed);
         end;
       else
-        TtfRecord.Release(Tmp);
+        tfReleaseInstance(Tmp);  //TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -5165,7 +5176,7 @@ begin
     until I >= L;
     if IsMinus and ((Tmp.FUsed > 1) or (Tmp.FLimbs[0] <> 0))
       then Tmp.FSign:= -1;
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -5177,7 +5188,7 @@ var
 begin
   Result:= TBigNumber.AllocNumber(Tmp, ASize div SizeOf(TLimb));
   if Result = TF_S_OK then begin
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A);  //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -5207,7 +5218,7 @@ function BigNumberFromPWideChar(var A: PBigNumber;
 const
 {$IF SizeOf(TLimb) = 8}         // 16 hex digits per uint64 limb
    LIMB_SHIFT = 4;
-{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per longword limb
+{$ELSEIF SizeOf(TLimb) = 4}     // 8 hex digits per uint32 limb
    LIMB_SHIFT = 3;
 {$ELSEIF SizeOf(TLimb) = 2}     // 4 hex digits per word limb
    LIMB_SHIFT = 2;

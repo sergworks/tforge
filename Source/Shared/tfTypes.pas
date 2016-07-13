@@ -21,7 +21,7 @@ type
   PUInt32 = ^UInt32;
 
 type
-  TF_RESULT = type LongInt;
+  TF_RESULT = type Int32;
 
 // Codes returned by TF functions; see also
 //   http://msdn.microsoft.com/en-us/library/cc231198(v=prot.10).aspx
@@ -63,7 +63,7 @@ type
 type
   IRandom = interface(IInterface)
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetRand(Buf: PByte; BufLen: LongWord): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetRand(Buf: PByte; BufLen: Cardinal): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IBytesEnumerator = interface(IInterface)
@@ -74,6 +74,7 @@ type
   end;
 
   IBytes = interface(IInterface)
+    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetEnum(var R: IBytesEnumerator): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function GetHashCode: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -113,7 +114,6 @@ type
     function Incr: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Decr: TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Fill(Value: Byte);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function ToInt(Data: PByte; L: Cardinal; Reversed: Boolean): TF_RESULT;
@@ -155,6 +155,7 @@ type
 
 type
   IBigNumber = interface(IInterface)
+    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetHashCode: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetLen: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetRawData: PByte;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -302,11 +303,11 @@ const
 type
   IHashAlgorithm = interface(IInterface)
     procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Update(Data: Pointer; DataSize: Cardinal);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetDigestSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetDigestSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -314,44 +315,46 @@ type
 //                {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   IHMACAlgorithm = interface(IInterface)
-    procedure Init(Key: Pointer; KeySize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure Update(Data: Pointer; DataSize: LongWord);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Init(Key: Pointer; KeySize: Cardinal);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    procedure Update(Data: Pointer; DataSize: Cardinal);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetDigestSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetDigestSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Duplicate(var Inst: IHMACAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PBKDF2(Password: Pointer; PassLen: LongWord;
-          Salt: Pointer; SaltLen: LongWord;
-          Rounds, DKLen: Integer; var Key: IBytes): TF_RESULT;
+    function PBKDF2(Password: Pointer; PassLen: Cardinal;
+          Salt: Pointer; SaltLen: Cardinal;
+          Rounds, DKLen: Cardinal; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   ICipherAlgorithm = interface(IInterface)
-    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
+    function SetKeyParam(Param: UInt32; Data: Pointer; DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: Pointer; KeySize: LongWord): TF_RESULT;
+    function ExpandKey(Key: Pointer; KeySize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure BurnKey;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data: PByte; var DataSize: LongWord; BufSize: LongWord;
+    function Encrypt(Data: PByte; var DataSize: Cardinal; BufSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data: PByte; var DataSize: LongWord;
+    function Decrypt(Data: PByte; var DataSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKeyStream(Data: PByte; DataSize: LongWord): TF_RESULT;
+    function GetKeyStream(Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function KeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function KeyCrypt(Data: PByte; DataSize: LongWord;
+    function KeyCrypt(Data: PByte; DataSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyParam(Param: UInt32; Data: Pointer; var DataLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IHashServer = interface(IInterface)
-    function GetByAlgID(AlgID: LongInt; var Alg: IHashAlgorithm): TF_RESULT;
+    function GetByAlgID(AlgID: UInt32; var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetByName(Name: Pointer; CharSize: Integer; var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -365,8 +368,8 @@ type
           const HashAlg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function PBKDF1(HashAlg: IHashAlgorithm;
-          Password: Pointer; PassLen: LongWord;
-          Salt: Pointer; SaltLen: LongWord;
+          Password: Pointer; PassLen: Cardinal;
+          Salt: Pointer; SaltLen: Cardinal;
           Rounds, dkLen: LongWord; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function RegisterHash(Name: Pointer; CharSize: Integer; Getter: THashGetter;
@@ -375,22 +378,23 @@ type
   end;
 
   IKeyStream = interface(IInterface)
+    procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: PByte; KeySize: LongWord; Nonce: UInt64): TF_RESULT;
+    function ExpandKey(Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure DestroyKey;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Read(Data: PByte; DataSize: LongWord): TF_RESULT;
+//    procedure DestroyKey;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Read(Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Skip(Dist: Int64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Crypt(Data: PByte; DataSize: LongWord): TF_RESULT;
+    function Crypt(Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   ICipherServer = interface(IInterface)
-    function GetByAlgID(AlgID: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetByAlgID(AlgID: UInt32; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetByName(Name: Pointer; CharSize: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -401,23 +405,23 @@ type
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function GetRC5(BlockSize, Rounds: LongInt;
+    function GetRC5(BlockSize, Rounds: Cardinal;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetSalsa20(Rounds: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetSalsa20(Rounds: Cardinal; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetChaCha20(Rounds: LongInt; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetChaCha20(Rounds: Cardinal; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function GetKSByAlgID(AlgID: LongInt; var KS: IKeyStream): TF_RESULT;
+    function GetKSByAlgID(AlgID: UInt32; var KS: IKeyStream): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSByName(Name: Pointer; CharSize: Integer; var KS: IKeyStream): TF_RESULT;
+    function GetKSByName(Name: Pointer; CharSize: Cardinal; var KS: IKeyStream): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSRC5(BlockSize, Rounds: LongInt; var KS: IKeyStream): TF_RESULT;
+    function GetKSRC5(BlockSize, Rounds: Cardinal; var KS: IKeyStream): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSSalsa20(Rounds: LongInt; var KS: IKeyStream): TF_RESULT;
+    function GetKSSalsa20(Rounds: Cardinal; var KS: IKeyStream): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSChaCha20(Rounds: LongInt; var KS: IKeyStream): TF_RESULT;
+    function GetKSChaCha20(Rounds: Cardinal; var KS: IKeyStream): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   end;
@@ -533,19 +537,19 @@ const
 type
                                   // 128-bit MD5 digest
   PMD5Digest = ^TMD5Digest;
-  TMD5Digest = array[0..3] of LongWord;
+  TMD5Digest = array[0..3] of UInt32;
                                   // 160-bit SHA1 digest
   PSHA1Digest = ^TSHA1Digest;
-  TSHA1Digest = array[0..4] of LongWord;
+  TSHA1Digest = array[0..4] of UInt32;
                                   // 256-bit SHA256 digest
   PSHA256Digest = ^TSHA256Digest;
-  TSHA256Digest = array[0..7] of LongWord;
+  TSHA256Digest = array[0..7] of UInt32;
                                   // 512-bit SHA512 digest
   PSHA512Digest = ^TSHA512Digest;
   TSHA512Digest = array[0..7] of UInt64;
                                   // 224-bit SHA224 digest
   PSHA224Digest = ^TSHA224Digest;
-  TSHA224Digest = array[0..6] of LongWord;
+  TSHA224Digest = array[0..6] of UInt32;
                                   // 384-bit SHA384 digest
   PSHA384Digest = ^TSHA384Digest;
   TSHA384Digest = array[0..5] of UInt64;

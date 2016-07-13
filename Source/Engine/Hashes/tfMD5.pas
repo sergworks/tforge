@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfMD5;
@@ -37,13 +37,13 @@ type
   public
     class procedure Init(Inst: PMD5Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Update(Inst: PMD5Alg; Data: PByte; DataSize: LongWord);
+    class procedure Update(Inst: PMD5Alg; Data: PByte; DataSize: Cardinal);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PMD5Alg; PDigest: PMD5Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PMD5Alg): LongInt;
+    class function GetDigestSize(Inst: PMD5Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PMD5Alg): LongInt;
+    class function GetBlockSize(Inst: PMD5Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PMD5Alg; var DupInst: PMD5Alg): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -57,8 +57,8 @@ uses tfRecords;
 
 const
   MD5VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @HashAlgRelease,
 
     @TMD5Alg.Init,
@@ -102,7 +102,7 @@ asm
         MOV     ECX,[EDI - 8]       // C:= FData.Digest[2];
         MOV     EDX,[EDI - 4]       // D:= FData.Digest[3];
 
-// function FF(A, B, C, D, X, S: LongWord): LongWord; inline;
+// function FF(A, B, C, D, X, S: UInt32): UInt32; inline;
 // begin
 //  Result:= A + ((B and (C xor D)) xor D) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -284,7 +284,7 @@ asm
         ROL     EBX,22
         ADD     EBX,ECX
 
-//function GG(A, B, C, D, X, S: LongWord): LongWord; inline;
+//function GG(A, B, C, D, X, S: UInt32): UInt32; inline;
 //begin
 //  Result:= A + ((D and (B xor C)) xor C) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -466,7 +466,7 @@ asm
         ROL     EBX,20
         ADD     EBX,ECX
 
-//function HH(A, B, C, D, X, S: LongWord): LongWord; inline;
+//function HH(A, B, C, D, X, S: UInt32): UInt32; inline;
 //begin
 //  Result:= A + (B xor C xor D) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -632,7 +632,7 @@ asm
         ROL     EBX,23
         ADD     EBX,ECX
 
-//function II(A, B, C, D, X, S: LongWord): LongWord; inline;
+//function II(A, B, C, D, X, S: UInt32): UInt32; inline;
 //begin
 //  Result:= A + (C xor (B or not D)) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -862,7 +862,7 @@ asm
         MOV     RCX,[RDI - 8]       // C:= FData.Digest[2];
         MOV     RDX,[RDI - 4]       // D:= FData.Digest[3];
 
-// function FF(A, B, C, D, X, S: LongWord): LongWord; inline;
+// function FF(A, B, C, D, X, S: UInt32): UInt32; inline;
 // begin
 //  Result:= A + ((B and (C xor D)) xor D) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -1044,7 +1044,7 @@ asm
         ROL     EBX,22
         ADD     EBX,ECX
 
-//function GG(A, B, C, D, X, S: LongWord): LongWord; inline;
+//function GG(A, B, C, D, X, S: UInt32): UInt32; inline;
 //begin
 //  Result:= A + ((D and (B xor C)) xor C) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -1226,7 +1226,7 @@ asm
         ROL   EBX,20
         ADD   EBX,ECX
 
-//function HH(A, B, C, D, X, S: LongWord): LongWord; inline;
+//function HH(A, B, C, D, X, S: UInt32): UInt32; inline;
 //begin
 //  Result:= A + (B xor C xor D) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -1392,7 +1392,7 @@ asm
         ROL   EBX,23
         ADD   EBX,ECX
 
-//function II(A, B, C, D, X, S: LongWord): LongWord; inline;
+//function II(A, B, C, D, X, S: UInt32): UInt32; inline;
 //begin
 //  Result:= A + (C xor (B or not D)) + X;
 //  Result:= Rol32(Result, S) + B;
@@ -1596,12 +1596,12 @@ asm
         POP     RSI
 end;
 {$ELSE}
-function Rol32(Value, Shift: LongWord): LongWord; inline;
+function Rol32(Value, Shift: UInt32): UInt32; inline;
 begin
   Result:= (Value shr (32 - Shift)) or (Value shl Shift);
 end;
 
-function FF(A, B, C, D, X, S: LongWord): LongWord; inline;
+function FF(A, B, C, D, X, S: UInt32): UInt32; inline;
 begin
 //  Result:= Rol32(A + ((B and C) or (not B and D)) + X, S) + B;
 //  Result:= Rol32(A + ((B and (C xor D)) xor D) + X, S) + B;
@@ -1609,7 +1609,7 @@ begin
   Result:= Rol32(Result, S) + B;
 end;
 
-function GG(A, B, C, D, X, S: LongWord): LongWord; inline;
+function GG(A, B, C, D, X, S: UInt32): UInt32; inline;
 begin
 //  Result:= Rol32(A + ((B and D) or (C and not D)) + X, S) + B;
 //  Result:= Rol32(A + ((D and (B xor C)) xor C) + X, S) + B;
@@ -1617,14 +1617,14 @@ begin
   Result:= Rol32(Result, S) + B;
 end;
 
-function HH(A, B, C, D, X, S: LongWord): LongWord; inline;
+function HH(A, B, C, D, X, S: UInt32): UInt32; inline;
 begin
 //  Result:= Rol32(A + (B xor C xor D) + X, S) + B;
   Result:= A + (B xor C xor D) + X;
   Result:= Rol32(Result, S) + B;
 end;
 
-function II(A, B, C, D, X, S: LongWord): LongWord; inline;
+function II(A, B, C, D, X, S: UInt32): UInt32; inline;
 begin
 //  Result:= Rol32(A + (C xor (B or not D)) + X, S) + B;
   Result:= A + (C xor (B or not D)) + X;
@@ -1633,8 +1633,8 @@ end;
 
 procedure TMD5Alg.Compress;
 var
-  A, B, C, D: LongWord;
-  Block: array[0..15] of LongWord;
+  A, B, C, D: UInt32;
+  Block: array[0..15] of UInt32;
 
 begin
   Move(FData.Block, Block, SizeOf(Block));
@@ -1735,13 +1735,13 @@ begin
   Inst.FData.Count:= 0;
 end;
 
-class procedure TMD5Alg.Update(Inst: PMD5Alg; Data: PByte; DataSize: LongWord);
+class procedure TMD5Alg.Update(Inst: PMD5Alg; Data: PByte; DataSize: Cardinal);
 var
-  Cnt, Ofs: LongWord;
+  Cnt, Ofs: Cardinal;
 
 begin
   while DataSize > 0 do begin
-    Ofs:= LongWord(Inst.FData.Count) and $3F;
+    Ofs:= Cardinal(Inst.FData.Count) and $3F;
     Cnt:= $40 - Ofs;
     if Cnt > DataSize then Cnt:= DataSize;
     Move(Data^, PByte(@Inst.FData.Block)[Ofs], Cnt);
@@ -1754,17 +1754,17 @@ end;
 
 class procedure TMD5Alg.Done(Inst: PMD5Alg; PDigest: PMD5Digest);
 var
-  Ofs: Integer;
+  Ofs: Cardinal;
 
 begin
-  Ofs:= LongWord(Inst.FData.Count) and $3F;
+  Ofs:= Cardinal(Inst.FData.Count) and $3F;
   Inst.FData.Block[Ofs]:= $80;
   if Ofs >= 56 then
     Inst.Compress;
 
   Inst.FData.Count:= Inst.FData.Count shl 3;
-  PLongWord(@Inst.FData.Block[56])^:= LongWord(Inst.FData.Count);
-  PLongWord(@Inst.FData.Block[60])^:= LongWord(Inst.FData.Count shr 32);
+  PUInt32(@Inst.FData.Block[56])^:= UInt32(Inst.FData.Count);
+  PUInt32(@Inst.FData.Block[60])^:= UInt32(Inst.FData.Count shr 32);
   Inst.Compress;
 
   Move(Inst.FData.Digest, PDigest^, SizeOf(TMD5Digest));
@@ -1772,12 +1772,12 @@ begin
   Init(Inst);
 end;
 
-class function TMD5Alg.GetDigestSize(Inst: PMD5Alg): LongInt;
+class function TMD5Alg.GetDigestSize(Inst: PMD5Alg): Integer;
 begin
   Result:= SizeOf(TMD5Digest);
 end;
 
-class function TMD5Alg.GetBlockSize(Inst: PMD5Alg): LongInt;
+class function TMD5Alg.GetBlockSize(Inst: PMD5Alg): Integer;
 begin
   Result:= 64;
 end;

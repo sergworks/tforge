@@ -37,7 +37,7 @@ type
 var
   CryptLock: TtfLock;
 
-function GenRandom(var Buf; BufSize: LongWord): TF_RESULT;
+function GenRandom(var Buf; BufSize: Cardinal): TF_RESULT;
 
 implementation
 
@@ -58,7 +58,7 @@ end;
 {$endif fpc}
 
 
-function GenRandom(var Buf; BufSize: LongWord): TF_RESULT;
+function GenRandom(var Buf; BufSize: Cardinal): TF_RESULT;
 var
   Provider: HCRYPTPROV;
 

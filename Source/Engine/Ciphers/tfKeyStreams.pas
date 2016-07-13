@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfKeyStreams;
@@ -12,8 +12,8 @@ interface
 uses tfTypes, tfUtils{, tfCipherServ};
 
 type
-  PKeyStreamEngine = ^TKeyStreamEngine;
-  TKeyStreamEngine = record
+  PKeyStreamInstance = ^TKeyStreamInstance;
+  TKeyStreamInstance = record
   private type
     TBlock = array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
   private
@@ -22,28 +22,28 @@ type
     FRefCount: Integer;
 {$HINTS ON}
     FCipher: ICipherAlgorithm;
-    FBlockSize: LongWord;
+    FBlockSize: Cardinal;
 // don't assume that FBlockNo is the rightmost 8 bytes of a block cipher's IV
 //    FBlockNo: UInt64;
-    FPos: LongWord;       // 0 .. FBlockSize - 1
+    FPos: Cardinal;       // 0 .. FBlockSize - 1
     FBlock: TBlock;       // var len
   public
 //    class function NewInstance(Alg: ICipherAlgorithm; BlockSize: Cardinal): PKeyStreamEngine;
-    class function GetInstance(var Inst: PKeyStreamEngine; Alg: ICipherAlgorithm): TF_RESULT; static;
-    class function Release(Inst: PKeyStreamEngine): Integer; stdcall; static;
-    class procedure DestroyKey(Inst: PKeyStreamEngine);
+    class function GetInstance(var Inst: PKeyStreamInstance; Alg: ICipherAlgorithm): TF_RESULT; static;
+//    class function Release(Inst: PKeyStreamInstance): Integer; stdcall; static;
+    class procedure Burn(Inst: PKeyStreamInstance);
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey(Inst: PKeyStreamEngine;
-      Key: PByte; KeySize: LongWord; Nonce: UInt64): TF_RESULT;
+    class function ExpandKey(Inst: PKeyStreamInstance;
+      Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function SetKeyParam(Inst: PKeyStreamEngine; Param: LongWord;
 //      Data: Pointer; DataLen: LongWord): TF_RESULT;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Read(Inst: PKeyStreamEngine; Data: PByte; DataSize: LongWord): TF_RESULT;
+    class function Read(Inst: PKeyStreamInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Skip(Inst: PKeyStreamEngine; Dist: Int64): TF_RESULT;
+    class function Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Crypt(Inst: PKeyStreamEngine; Data: PByte; DataSize: LongWord): TF_RESULT;
+    class function Crypt(Inst: PKeyStreamInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -54,18 +54,20 @@ implementation
 uses tfRecords;
 
 const
-  EngVTable: array[0..7] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TKeyStreamEngine.Release,
+  VTable: array[0..7] of Pointer = (
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
+    @TForgeInstance.SafeRelease,
+//    @TKeyStreamInstance.Release,
+    @TKeyStreamInstance.Burn,
 
 //   @TKeyStreamEngine.SetKeyParam,
-   @TKeyStreamEngine.ExpandKey,
-   @TKeyStreamEngine.DestroyKey,
-   @TKeyStreamEngine.Read,
-   @TKeyStreamEngine.Skip,
-   @TKeyStreamEngine.Crypt
-   );
+    @TKeyStreamInstance.ExpandKey,
+    @TKeyStreamInstance.Read,
+    @TKeyStreamInstance.Skip,
+    @TKeyStreamInstance.Crypt
+  );
+
 (*
 function GetKeyStreamByAlgID(AlgID: LongWord; var A: PKeyStreamEngine): TF_RESULT;
 var
@@ -101,7 +103,7 @@ begin
 end;
 *)
 
-{ TKeyStreamEngine }
+{ TKeyStreamInstance }
 (*
 procedure Burn(Inst: PKeyStreamEngine); inline;
 var
@@ -113,23 +115,27 @@ begin
 end;
 *)
 
-procedure Burn(Inst: PKeyStreamEngine); inline;
+procedure BurnMem(Inst: PKeyStreamInstance); inline;
 var
   BurnSize: Integer;
 
 begin
-  BurnSize:= SizeOf(TKeyStreamEngine) - Integer(@PKeyStreamEngine(nil)^.FPos)
-                                      + Integer(Inst.FBlockSize);
-  FillChar(Inst.FPos, BurnSize, 0);
+  BurnSize:= SizeOf(TKeyStreamInstance) - SizeOf(TKeyStreamInstance.TBlock)
+             + Integer(Inst.FBlockSize) - Integer(@PKeyStreamInstance(nil)^.FCipher);
+
+  FillChar(Inst.FCipher, BurnSize, 0);
 end;
 
-class procedure TKeyStreamEngine.DestroyKey(Inst: PKeyStreamEngine);
+class procedure TKeyStreamInstance.Burn(Inst: PKeyStreamInstance);
 begin
-  Inst.FCipher.BurnKey;
-  Burn(Inst);
+//  Inst.FCipher.BurnKey;
+//  tfFreeInstance(Inst.FCipher);
+  Inst.FCipher:= nil;
+  BurnMem(Inst);
 end;
 
-class function TKeyStreamEngine.Release(Inst: PKeyStreamEngine): Integer;
+{
+class function TKeyStreamInstance.Release(Inst: PKeyStreamInstance): Integer;
 begin
   if Inst.FRefCount > 0 then begin
     Result:= tfDecrement(Inst.FRefCount);
@@ -141,13 +147,14 @@ begin
     end;
   end
   else
-    Result:= PtfRecord(Inst).FRefCount;
+    Result:= Inst.FRefCount;
 end;
+}
 
-class function TKeyStreamEngine.ExpandKey(Inst: PKeyStreamEngine;
-                 Key: PByte; KeySize: LongWord; Nonce: UInt64): TF_RESULT;
+class function TKeyStreamInstance.ExpandKey(Inst: PKeyStreamInstance;
+                 Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
 var
-  Flags: LongWord;
+  Flags: UInt32;
 
 begin
 // for block ciphers; stream ciphers will return error code which is ignored
@@ -158,14 +165,14 @@ begin
   Inst.FPos:= 0;
   Result:= Inst.FCipher.ExpandKey(Key, KeySize);
   if Result = TF_S_OK then
-    Result:= Inst.FCipher.SetKeyParam(TF_KP_INCNO, @Nonce, SizeOf(Nonce));
+    Result:= Inst.FCipher.SetKeyParam(TF_KP_NONCE, @Nonce, SizeOf(Nonce));
 end;
 
-class function TKeyStreamEngine.GetInstance(var Inst: PKeyStreamEngine;
+class function TKeyStreamInstance.GetInstance(var Inst: PKeyStreamInstance;
                  Alg: ICipherAlgorithm): TF_RESULT;
 var
   BlockSize: Cardinal;
-  Tmp: PKeyStreamEngine;
+  Tmp: PKeyStreamInstance;
 
 begin
   BlockSize:= Alg.GetBlockSize;
@@ -174,13 +181,13 @@ begin
     Exit;
   end;
   try
-    Tmp:= AllocMem(SizeOf(TKeyStreamEngine) + BlockSize);
-    Tmp^.FVTable:= @EngVTable;
+    Tmp:= AllocMem(SizeOf(TKeyStreamInstance) + BlockSize);
+    Tmp^.FVTable:= @VTable;
     Tmp^.FRefCount:= 1;
     Tmp^.FCipher:= Alg;
     Tmp^.FBlockSize:= BlockSize;
 //    Result^.FPos:= 0;
-    if Inst <> nil then TKeyStreamEngine.Release(Inst);
+    tfFreeInstance(Inst);   // if Inst <> nil then TKeyStreamInstance.Release(Inst);
     Inst:= Tmp;
     Result:= TF_S_OK;
   except
@@ -273,7 +280,7 @@ end;
 *)
 
 
-class function TKeyStreamEngine.Read(Inst: PKeyStreamEngine; Data: PByte;
+class function TKeyStreamInstance.Read(Inst: PKeyStreamInstance; Data: PByte;
   DataSize: LongWord): TF_RESULT;
 var
   LDataSize: LongWord;
@@ -315,7 +322,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TKeyStreamEngine.Crypt(Inst: PKeyStreamEngine; Data: PByte;
+class function TKeyStreamInstance.Crypt(Inst: PKeyStreamInstance; Data: PByte;
   DataSize: LongWord): TF_RESULT;
 var
   LDataSize: LongWord;
@@ -359,7 +366,7 @@ begin
 end;
 
 
-class function TKeyStreamEngine.Skip(Inst: PKeyStreamEngine; Dist: Int64): TF_RESULT;
+class function TKeyStreamInstance.Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
 var
   NBlocks: UInt64;
   Tail: LongWord;

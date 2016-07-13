@@ -37,7 +37,7 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
-    FValidKey: LongBool;
+    FValidKey: Boolean;
     FDir:      LongWord;
     FMode:     LongWord;
     FPadding:  LongWord;
@@ -86,9 +86,9 @@ uses tfRecords, tfBaseCiphers;
 //  MAX_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  RC5VTable32: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  RC5VTable32: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
    @TBlockCipher.SetKeyParam,
@@ -102,12 +102,13 @@ const
    @TRC5Algorithm.DecryptBlock32,
    @TBlockCipher.GetRand,
    @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt
+   @TBlockCipher.RandCrypt,
+   @TBlockCipher.GetKeyParam
    );
 
-  RC5VTable64: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  RC5VTable64: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
    @TBlockCipher.SetKeyParam,
@@ -121,12 +122,13 @@ const
    @TRC5Algorithm.DecryptBlock64,
    @TBlockCipher.GetRand,
    @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt
+   @TBlockCipher.RandCrypt,
+   @TBlockCipher.GetKeyParam
    );
 
-  RC5VTable128: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  RC5VTable128: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
    @TBlockCipher.SetKeyParam,
@@ -140,7 +142,8 @@ const
    @TRC5Algorithm.DecryptBlock128,
    @TBlockCipher.GetRand,
    @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt
+   @TBlockCipher.RandCrypt,
+   @TBlockCipher.GetKeyParam
    );
 
 procedure BurnKey(Inst: PRC5Algorithm); inline;

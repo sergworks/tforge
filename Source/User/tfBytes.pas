@@ -145,7 +145,6 @@ type
     FVTable: Pointer;
     FRefCount: Integer;
     FCapacity: Integer;         // number of bytes allocated
-//    FBigEndian: Boolean;
     FUsed: Integer;             // number of bytes used
     FData: array[0..0] of Byte;
   end;

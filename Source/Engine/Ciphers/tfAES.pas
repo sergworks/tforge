@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfAES;
@@ -23,14 +23,14 @@ type
     TAESBlock = record
       case Byte of
         0: (Bytes: array[0..15] of Byte);
-        1: (LWords: array[0..3] of LongWord);
+        1: (LWords: array[0..3] of UInt32);
     end;
 
     PExpandedKey = ^TExpandedKey;
     TExpandedKey = record
       case Byte of
         0: (Bytes: array[0 .. (MaxRounds + 2) * SizeOf(TAESBlock) - 1] of Byte);
-        1: (LWords: array[0 .. (MaxRounds + 2) * (SizeOf(TAESBlock) shr 2) - 1] of LongWord);
+        1: (LWords: array[0 .. (MaxRounds + 2) * (SizeOf(TAESBlock) shr 2) - 1] of UInt32);
         2: (Blocks: array[0 .. MaxRounds + 1] of TAESBlock);
     end;
 
@@ -40,16 +40,16 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
-    FValidKey: LongBool;
-    FDir:      LongWord;
-    FMode:     LongWord;
-    FPadding:  LongWord;
+    FValidKey: Boolean;
+    FDir:      UInt32;
+    FMode:     UInt32;
+    FPadding:  UInt32;
 
     FIVector:  TAESBlock;
 {$HINTS ON}
 
     FExpandedKey: TExpandedKey;
-    FRounds: LongWord;
+    FRounds: Cardinal;
 
     class procedure DoRound(const RoundKey: TAESBlock;
                     var State: TAESBlock; Last: Boolean); static;
@@ -80,9 +80,9 @@ const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  AESCipherVTable: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  AESCipherVTable: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TAESAlgorithm.Release,
 
    @TBlockCipher.SetKeyParam,
@@ -96,7 +96,8 @@ const
    @TAESAlgorithm.DecryptBlock,
    @TBlockCipher.GetRand,
    @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt
+   @TBlockCipher.RandCrypt,
+   @TBlockCipher.GetKeyParam
    );
 
 procedure BurnKey(Inst: PAESAlgorithm); inline;
@@ -141,16 +142,16 @@ end;
 
 procedure Xor128(Target: Pointer; Value: Pointer); inline;
 begin
-  PLongWord(Target)^:= PLongWord(Target)^ xor PLongWord(Value)^;
-  Inc(PLongWord(Target));
-  Inc(PLongWord(Value));
-  PLongWord(Target)^:= PLongWord(Target)^ xor PLongWord(Value)^;
-  Inc(PLongWord(Target));
-  Inc(PLongWord(Value));
-  PLongWord(Target)^:= PLongWord(Target)^ xor PLongWord(Value)^;
-  Inc(PLongWord(Target));
-  Inc(PLongWord(Value));
-  PLongWord(Target)^:= PLongWord(Target)^ xor PLongWord(Value)^;
+  PUInt32(Target)^:= PUInt32(Target)^ xor PUInt32(Value)^;
+  Inc(PUInt32(Target));
+  Inc(PUInt32(Value));
+  PUInt32(Target)^:= PUInt32(Target)^ xor PUInt32(Value)^;
+  Inc(PUInt32(Target));
+  Inc(PUInt32(Value));
+  PUInt32(Target)^:= PUInt32(Target)^ xor PUInt32(Value)^;
+  Inc(PUInt32(Target));
+  Inc(PUInt32(Value));
+  PUInt32(Target)^:= PUInt32(Target)^ xor PUInt32(Value)^;
 end;
 
 procedure XorBytes(Target: Pointer; Value: Pointer; Count: Integer); inline;
@@ -160,9 +161,9 @@ var
 begin
   LCount:= Count shr 2;
   while LCount > 0 do begin
-    PLongWord(Target)^:= PLongWord(Target)^ xor PLongWord(Value)^;
-    Inc(PLongWord(Target));
-    Inc(PLongWord(Value));
+    PUInt32(Target)^:= PUInt32(Target)^ xor PUInt32(Value)^;
+    Inc(UInt32(Target));
+    Inc(UInt32(Value));
     Dec(LCount);
   end;
   LCount:= Count and 3;

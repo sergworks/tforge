@@ -13,7 +13,8 @@ unit tfMontMath;
 
 interface
 
-uses tfLimbs, tfRecords, tfTypes, tfNumbers;
+uses
+  tfLimbs, tfTypes, tfNumbers;
 
 type
   PMontInstance = ^TMontInstance;
@@ -53,10 +54,13 @@ function GetMontInstance(var P: PMontInstance; Modulus: PBigNumber): TF_RESULT;
 
 implementation
 
+uses
+  tfRecords;
+
 const
   MontVTable: array[0..12] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @TMontInstance.Release,
 
     @TMontInstance.Burn,
@@ -212,7 +216,7 @@ begin
   tfFreeInstance(Inst.FNi);
   tfFreeInstance(Inst.FRR);
   tfFreeInstance(Inst.FN);
-  Result:= TtfRecord.Release(Inst);
+  Result:= TForgeInstance.Release(Inst);
 end;
 
 class procedure TMontInstance.Burn(Inst: PMontInstance);
@@ -389,13 +393,8 @@ begin
   if Result <> TF_S_OK then Exit;
 
   TmpR:= nil;
-//  SetBigNumberOne(TmpR);
-
-//  Tmp:= BaseValue;
-//  tfAddrefInstance(Tmp);
-
-  Result:= TF_S_OK;
   Limb:= ExpValue;
+
   while Limb > 0 do begin
     if Odd(Limb) then begin
       if TmpR = nil then begin

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfSHA1;
@@ -37,15 +37,15 @@ type
   public
     class procedure Init(Inst: PSHA1Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Update(Inst: PSHA1Alg; Data: PByte; DataSize: LongWord);
+    class procedure Update(Inst: PSHA1Alg; Data: PByte; DataSize: Cardinal);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PSHA1Alg; PDigest: PSHA1Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class procedure Burn(Inst: PSHA1Alg);  -- redirected to Init
 //         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PSHA1Alg): LongInt;
+    class function GetDigestSize(Inst: PSHA1Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PSHA1Alg): LongInt;
+    class function GetBlockSize(Inst: PSHA1Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PSHA1Alg; var DupInst: PSHA1Alg): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -59,8 +59,8 @@ uses tfRecords;
 
 const
   SHA1VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @HashAlgRelease,
 
     @TSHA1Alg.Init,
@@ -92,7 +92,7 @@ end;
 
 { TSHA1Alg }
 
-function Swap32(Value: LongWord): LongWord;
+function Swap32(Value: UInt32): UInt32;
 begin
   Result:= ((Value and $FF) shl 24) or ((Value and $FF00) shl 8) or
            ((Value and $FF0000) shr 8) or ((Value and $FF000000) shr 24);
@@ -3595,12 +3595,12 @@ end;
 procedure TSHA1Alg.Compress;
 type
   PLongArray = ^TLongArray;
-  TLongArray = array[0..15] of LongWord;
+  TLongArray = array[0..15] of UInt32;
 
 var
   W: PLongArray;
-  A, B, C, D, E: LongWord;
-  Tmp: LongWord;
+  A, B, C, D, E: UInt32;
+  Tmp: UInt32;
 
 begin
   W:= @FData.Block;
@@ -4022,13 +4022,13 @@ begin
 end;
 
 class procedure TSHA1Alg.Update(Inst: PSHA1Alg; Data: PByte;
-                                DataSize: LongWord);
+                                DataSize: Cardinal);
 var
-  Cnt, Ofs: LongWord;
+  Cnt, Ofs: Cardinal;
 
 begin
   while DataSize > 0 do begin
-    Ofs:= LongWord(Inst.FData.Count) and $3F;
+    Ofs:= Cardinal(Inst.FData.Count) and $3F;
     Cnt:= $40 - Ofs;
     if Cnt > DataSize then Cnt:= DataSize;
     Move(Data^, PByte(@Inst.FData.Block)[Ofs], Cnt);
@@ -4041,17 +4041,17 @@ end;
 
 class procedure TSHA1Alg.Done(Inst: PSHA1Alg; PDigest: PSHA1Digest);
 var
-  Ofs: LongWord;
+  Ofs: Cardinal;
 
 begin
-  Ofs:= LongWord(Inst.FData.Count) and $3F;
+  Ofs:= Cardinal(Inst.FData.Count) and $3F;
   Inst.FData.Block[Ofs]:= $80;
   if Ofs >= 56 then
     Inst.Compress;
 
   Inst.FData.Count:= Inst.FData.Count shl 3;
-  PLongWord(@Inst.FData.Block[56])^:= Swap32(LongWord(Inst.FData.Count shr 32));
-  PLongWord(@Inst.FData.Block[60])^:= Swap32(LongWord(Inst.FData.Count));
+  PUInt32(@Inst.FData.Block[56])^:= Swap32(UInt32(Inst.FData.Count shr 32));
+  PUInt32(@Inst.FData.Block[60])^:= Swap32(UInt32(Inst.FData.Count));
   Inst.Compress;
 
   Inst.FData.Digest[0]:= Swap32(Inst.FData.Digest[0]);
@@ -4073,12 +4073,12 @@ begin
     DupInst.FData:= Inst.FData;
 end;
 
-class function TSHA1Alg.GetBlockSize(Inst: PSHA1Alg): LongInt;
+class function TSHA1Alg.GetBlockSize(Inst: PSHA1Alg): Integer;
 begin
   Result:= 64;
 end;
 
-class function TSHA1Alg.GetDigestSize(Inst: PSHA1Alg): LongInt;
+class function TSHA1Alg.GetDigestSize(Inst: PSHA1Alg): Integer;
 begin
   Result:= SizeOf(TSHA1Digest);
 end;

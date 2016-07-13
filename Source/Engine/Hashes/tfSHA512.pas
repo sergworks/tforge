@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfSHA512;
@@ -29,13 +29,13 @@ type
   public
     class procedure Init(Inst: PSHA512Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Update(Inst: PSHA512Alg; Data: PByte; DataSize: LongWord);
+    class procedure Update(Inst: PSHA512Alg; Data: PByte; DataSize: Cardinal);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PSHA512Alg; PDigest: PSHA512Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PSHA512Alg): LongInt;
+    class function GetDigestSize(Inst: PSHA512Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PSHA512Alg): LongInt;
+    class function GetBlockSize(Inst: PSHA512Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PSHA512Alg; var DupInst: PSHA512Alg): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -60,7 +60,7 @@ type
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PSHA384Alg; PDigest: PSHA384Digest);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PSHA384Alg): LongInt;
+    class function GetDigestSize(Inst: PSHA384Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 end;
 
@@ -73,8 +73,8 @@ uses tfRecords;
 
 const
   SHA512VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @HashAlgRelease,
 
     @TSHA512Alg.Init,
@@ -88,8 +88,8 @@ const
 
 const
   SHA384VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @HashAlgRelease,
 
     @TSHA384Alg.Init,
@@ -151,7 +151,7 @@ procedure TSHA512Alg.Compress;
 var
   a, b, c, d, e, f, g, h, t1, t2: UInt64;
   W: array[0..79] of UInt64;
-  I: LongWord;
+  I: Cardinal;
 
 begin
   a:= FData.Digest[0]; b:= FData.Digest[1]; c:= FData.Digest[2]; d:= FData.Digest[3];
@@ -836,13 +836,13 @@ begin
   Inst.FData.Count:= 0;
 end;
 
-class procedure TSHA512Alg.Update(Inst: PSHA512Alg; Data: PByte; DataSize: LongWord);
+class procedure TSHA512Alg.Update(Inst: PSHA512Alg; Data: PByte; DataSize: Cardinal);
 var
-  Cnt, Ofs: LongWord;
+  Cnt, Ofs: Cardinal;
 
 begin
   while DataSize > 0 do begin
-    Ofs:= LongWord(Inst.FData.Count) and $7F;
+    Ofs:= Cardinal(Inst.FData.Count) and $7F;
     Cnt:= $80 - Ofs;
     if Cnt > DataSize then Cnt:= DataSize;
     Move(Data^, PByte(@Inst.FData.Block)[Ofs], Cnt);
@@ -855,10 +855,10 @@ end;
 
 class procedure TSHA512Alg.Done(Inst: PSHA512Alg; PDigest: PSHA512Digest);
 var
-  Ofs: LongWord;
+  Ofs: Cardinal;
 
 begin
-  Ofs:= LongWord(Inst.FData.Count) and $7F;
+  Ofs:= Cardinal(Inst.FData.Count) and $7F;
   Inst.FData.Block[Ofs]:= $80;
   if Ofs >= 112 then
     Inst.Compress;
@@ -882,12 +882,12 @@ begin
   Init(Inst);
 end;
 
-class function TSHA512Alg.GetBlockSize(Inst: PSHA512Alg): LongInt;
+class function TSHA512Alg.GetBlockSize(Inst: PSHA512Alg): Integer;
 begin
   Result:= 128;
 end;
 
-class function TSHA512Alg.GetDigestSize(Inst: PSHA512Alg): LongInt;
+class function TSHA512Alg.GetDigestSize(Inst: PSHA512Alg): Integer;
 begin
   Result:= SizeOf(TSHA512Digest);
 end;
@@ -904,10 +904,10 @@ end;
 
 class procedure TSHA384Alg.Done(Inst: PSHA384Alg; PDigest: PSHA384Digest);
 var
-  Ofs: LongWord;
+  Ofs: Cardinal;
 
 begin
-  Ofs:= LongWord(Inst.FData.Count) and $7F;
+  Ofs:= Cardinal(Inst.FData.Count) and $7F;
   Inst.FData.Block[Ofs]:= $80;
   if Ofs >= 112 then
     PSHA512Alg(Inst).Compress;
@@ -929,7 +929,7 @@ begin
   Init(Inst);
 end;
 
-class function TSHA384Alg.GetDigestSize(Inst: PSHA384Alg): LongInt;
+class function TSHA384Alg.GetDigestSize(Inst: PSHA384Alg): Integer;
 begin
   Result:= SizeOf(TSHA384Digest);
 end;

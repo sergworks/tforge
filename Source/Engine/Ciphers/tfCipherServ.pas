@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfCipherServ;
@@ -28,7 +28,7 @@ type
     FCount: Integer;
     FAlgTable: array[0..TABLE_SIZE - 1] of TAlgItem;
 
-    class function GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
+    class function GetByAlgID(Inst: PCipherServer; AlgID: UInt32;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
@@ -59,7 +59,7 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
 
-class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: LongInt;
+class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: UInt32;
                     var Alg: ICipherAlgorithm): TF_RESULT;
 begin
   case AlgID of
@@ -106,7 +106,7 @@ var
 begin
   Result:= GetByAlgID(Inst, AlgID, Alg);
   if Result = TF_S_OK then
-    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSByName(Inst: PAlgServer; Name: Pointer;
@@ -117,7 +117,7 @@ var
 begin
   Result:= TAlgServer.GetByName(Inst, Name, CharSize, IInterface(Alg));
   if Result = TF_S_OK then
-    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSRC5(Inst: PCipherServer; BlockSize,
@@ -128,7 +128,7 @@ var
 begin
   Result:= GetRC5AlgorithmEx(PRC5Algorithm(Alg), BlockSize, Rounds);
   if Result = TF_S_OK then
-    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSSalsa20(Inst: PCipherServer; Rounds: Integer;
@@ -139,7 +139,7 @@ var
 begin
   Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
   if Result = TF_S_OK then
-    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSChaCha20(Inst: PCipherServer; Rounds: Integer;
@@ -150,14 +150,14 @@ var
 begin
   Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
   if Result = TF_S_OK then
-    Result:= TKeyStreamEngine.GetInstance(PKeyStreamEngine(KS), Alg);
+    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
 end;
 
 const
   VTable: array[0..15] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfSingleton.Addref,
-    @TtfSingleton.Release,
+    @TForgeInstance.QueryIntf,
+    @TForgeSingleton.Addref,
+    @TForgeSingleton.Release,
 
     @TCipherServer.GetByAlgID,
     @TAlgServer.GetByName,

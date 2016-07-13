@@ -405,8 +405,8 @@ type
     function Subtract(const A, B: BigInteger): BigInteger;
     function Multiply(const A, B: BigInteger): BigInteger;
     function ModMul(const A, B: BigInteger): BigInteger;
-    function ModPow(const A, B: BigInteger): BigInteger; overload;
-    function ModPow(const A: BigInteger; B: TLimb): BigInteger; overload;
+    function ModPow(const Base, Pow: BigInteger): BigInteger; overload;
+    function ModPow(const Base: BigInteger; Pow: TLimb): BigInteger; overload;
     function GetRModulus: BigInteger;
   end;
 
@@ -3019,23 +3019,23 @@ begin
 {$ENDIF}
 end;
 
-function TMont.ModPow(const A: BigInteger; B: TLimb): BigInteger;
+function TMont.ModPow(const Base: BigInteger; Pow: TLimb): BigInteger;
 begin
 {$IFDEF TFL_INTFCALL}
   HResCheck(FInstance.PowLimb(A.FNumber, B, Result.FNumber));
 {$ELSE}
   HResCheck(TMontInstance.ModPowLimb(PMontInstance(FInstance),
-                 PBigNumber(A.FNumber), B, PBigNumber(Result.FNumber)));
+                 PBigNumber(Base.FNumber), Pow, PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
 
-function TMont.ModPow(const A, B: BigInteger): BigInteger;
+function TMont.ModPow(const Base, Pow: BigInteger): BigInteger;
 begin
 {$IFDEF TFL_INTFCALL}
   HResCheck(FInstance.PowNumber(A.FNumber, B.FNumber, Result.FNumber));
 {$ELSE}
   HResCheck(TMontInstance.ModPowNumber(PMontInstance(FInstance),
-                 PBigNumber(A.FNumber), PBigNumber(B.FNumber),
+                 PBigNumber(Base.FNumber), PBigNumber(Pow.FNumber),
                  PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;

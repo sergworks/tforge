@@ -3,7 +3,11 @@ program Examples;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfNumerics, tfRandoms, tfHashes;
+  SysUtils,
+  tfNumerics,
+  tfRandoms,
+  tfHashes,
+  MontEx in 'MontEx.pas';
 
 procedure BigCardExamples;
 var
@@ -245,6 +249,7 @@ begin
     BigCardExamples;
     PowerOfTwo;
     TestAssigned;
+    MontExamples;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

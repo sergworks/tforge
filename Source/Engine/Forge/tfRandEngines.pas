@@ -31,7 +31,7 @@ type
     class function Release(Inst: PRandEngine): Integer; stdcall; static;
     class procedure Burn(Inst: PRandEngine); static;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    class function GetRand(Inst: PRandEngine; Buf: PByte; BufSize: LongWord): TF_RESULT; static;
+    class function GetRand(Inst: PRandEngine; Buf: PByte; BufSize: Cardinal): TF_RESULT; static;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -43,8 +43,8 @@ uses tfRecords;
 
 const
   PRGVTable: array[0..4] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TRandEngine.Release,
 
    @TRandEngine.Burn,
@@ -95,9 +95,9 @@ class function TRandEngine.Release(Inst: PRandEngine): Integer;
     Result:= Inst.FRefCount;
 end;
 
-class function TRandEngine.GetRand(Inst: PRandEngine; Buf: PByte; BufSize: LongWord): TF_RESULT;
+class function TRandEngine.GetRand(Inst: PRandEngine; Buf: PByte; BufSize: Cardinal): TF_RESULT;
 var
-  N: LongWord;
+  N: Cardinal;
   P: PByte;
 
 begin
@@ -148,13 +148,4 @@ function TRandEngine.Reset: TF_RESULT;
   Dec(FCount);
 end;
 
-{
-class function TRandEngine.SetSeed(Inst: PRandEngine; Buf: PByte;
-  BufSize: LongWord): TF_RESULT;
-begin
-  Result:= TF_E_NOTIMPL;
-end;
-}
-
 end.
-

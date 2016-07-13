@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfDES;
@@ -23,11 +23,11 @@ type
     TDESBlock = record
       case Byte of
         0: (Bytes: array[0..7] of Byte);
-        1: (LWords: array[0..1] of LongWord);
+        1: (LWords: array[0..1] of UInt32);
     end;
 
     PExpandedKey = ^TExpandedKey;
-    TExpandedKey = array[0..31] of LongWord;
+    TExpandedKey = array[0..31] of UInt32;
 
   private
 {$HINTS OFF}                    // -- inherited fields begin --
@@ -35,10 +35,10 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
-    FValidKey: LongBool;
-    FDir:      LongWord;
-    FMode:     LongWord;
-    FPadding:  LongWord;
+    FValidKey: Boolean;
+    FDir:      UInt32;
+    FMode:     UInt32;
+    FPadding:  UInt32;
     FIVector:  TDESBlock;       // -- inherited fields end --
 {$HINTS ON}
 
@@ -48,7 +48,7 @@ type
     class procedure DoEncryptBlock(var SubKeys: TExpandedKey; Data: PByte); static;
   public
     class function Release(Inst: PDESAlgorithm): Integer; stdcall; static;
-    class function ExpandKey(Inst: PDESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey(Inst: PDESAlgorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PDESAlgorithm): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -70,10 +70,10 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
-    FValidKey: LongBool;
-    FDir:      LongWord;
-    FMode:     LongWord;
-    FPadding:  LongWord;
+    FValidKey: Boolean;
+    FDir:      UInt32;
+    FMode:     UInt32;
+    FPadding:  UInt32;
     FIVector:  TDESAlgorithm.TDESBlock;       // -- inherited fields end --
 {$HINTS ON}
 
@@ -81,7 +81,7 @@ type
 
   public
     class function Release(Inst: P3DESAlgorithm): Integer; stdcall; static;
-    class function ExpandKey(Inst: P3DESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey(Inst: P3DESAlgorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function GetBlockSize(Inst: P3DESAlgorithm): Integer;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -108,9 +108,9 @@ const
 { TDESCipher }
 
 const
-  DESCipherVTable: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  DESCipherVTable: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TDESAlgorithm.Release,
 
    @TBlockCipher.SetKeyParam,
@@ -124,12 +124,13 @@ const
    @TDESAlgorithm.EncryptBlock,
    @TBlockCipher.GetRand,
    @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt
+   @TBlockCipher.RandCrypt,
+   @TBlockCipher.GetKeyParam
    );
 
-  TripleDESVTable: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  TripleDESVTable: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @T3DESAlgorithm.Release,
 
    @TBlockCipher.SetKeyParam,
@@ -143,7 +144,8 @@ const
    @T3DESAlgorithm.EncryptBlock,
    @TBlockCipher.GetRand,
    @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt
+   @TBlockCipher.RandCrypt,
+   @TBlockCipher.GetKeyParam
    );
 
 procedure BurnDESKey(Inst: PDESAlgorithm); inline;
@@ -245,7 +247,7 @@ var
   PC1M       : array [0..55] of Byte;
   PC1R       : array [0..55] of Byte;
   KS         : array [0..7] of Byte;
-  I, J, L, M : LongInt;
+  I, J, L, M : Int32;
 
 begin
   {convert PC1 to bits of key}
@@ -279,21 +281,21 @@ begin
 
     {now convert to odd/even interleaved form for use in F}
     if Encryption then begin
-      SubKeys[I * 2] := (LongInt(KS[0]) shl 24) or (LongInt(KS[2]) shl 16) or
-        (LongInt(KS[4]) shl 8) or (LongInt(KS[6]));
-      SubKeys[I * 2 + 1] := (LongInt(KS[1]) shl 24) or (LongInt(KS[3]) shl 16) or
-        (LongInt(KS[5]) shl 8) or (LongInt(KS[7]));
+      SubKeys[I * 2] := (Int32(KS[0]) shl 24) or (Int32(KS[2]) shl 16) or
+        (Int32(KS[4]) shl 8) or (Int32(KS[6]));
+      SubKeys[I * 2 + 1] := (Int32(KS[1]) shl 24) or (Int32(KS[3]) shl 16) or
+        (Int32(KS[5]) shl 8) or (Int32(KS[7]));
     end
     else begin
-      SubKeys[31 - (I * 2 + 1)] := (LongInt(KS[0]) shl 24) or (LongInt(KS[2]) shl 16) or
-        (LongInt(KS[4]) shl 8) or (LongInt(KS[6]));
-      SubKeys[31 - (I * 2)] := (LongInt(KS[1]) shl 24) or (LongInt(KS[3]) shl 16) or
-        (LongInt(KS[5]) shl 8) or (LongInt(KS[7]));
+      SubKeys[31 - (I * 2 + 1)] := (Int32(KS[0]) shl 24) or (Int32(KS[2]) shl 16) or
+        (Int32(KS[4]) shl 8) or (Int32(KS[6]));
+      SubKeys[31 - (I * 2)] := (Int32(KS[1]) shl 24) or (Int32(KS[3]) shl 16) or
+        (Int32(KS[5]) shl 8) or (Int32(KS[7]));
     end;
   end;
 end;
 
-class function TDESAlgorithm.ExpandKey(Inst: PDESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+class function TDESAlgorithm.ExpandKey(Inst: PDESAlgorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
 var
   Encryption: Boolean;
 
@@ -316,7 +318,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function T3DESAlgorithm.ExpandKey(Inst: P3DESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+class function T3DESAlgorithm.ExpandKey(Inst: P3DESAlgorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
 //var
 //  Encryption: Boolean;
 
@@ -362,99 +364,15 @@ begin
   Result:= TF_S_OK;
 end;
 
-(*
-class function TDESAlgorithm.ExpandKey(Inst: PDESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
-const
-  PC1        : array [0..55] of Byte =
-    (56, 48, 40, 32, 24, 16, 8, 0, 57, 49, 41, 33, 25, 17, 9, 1, 58, 50, 42, 34, 26,
-     18, 10, 2, 59, 51, 43, 35, 62, 54, 46, 38, 30, 22, 14, 6, 61, 53, 45, 37, 29, 21,
-     13, 5, 60, 52, 44, 36, 28, 20, 12, 4, 27, 19, 11, 3);
-  PC2        : array [0..47] of Byte =
-    (13, 16, 10, 23, 0, 4, 2, 27, 14, 5, 20, 9, 22, 18, 11, 3, 25, 7,
-     15, 6, 26, 19, 12, 1, 40, 51, 30, 36, 46, 54, 29, 39, 50, 44, 32, 47,
-     43, 48, 38, 55, 33, 52, 45, 41, 49, 35, 28, 31);
-  CTotRot    : array [0..15] of Byte = (1, 2, 4, 6, 8, 10, 12, 14, 15, 17, 19, 21, 23, 25, 27, 28);
-  CBitMask   : array [0..7] of Byte = (128, 64, 32, 16, 8, 4, 2, 1);
-
-var
-  PC1M       : array [0..55] of Byte;
-  PC1R       : array [0..55] of Byte;
-  KS         : array [0..7] of Byte;
-  I, J, L, M : LongInt;
-
-  Encryption: Boolean;
-
-begin
-  if KeySize <> 8 then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-
-  if (Inst.FDir <> TF_KEYDIR_ENCRYPT) and (Inst.FDir <> TF_KEYDIR_DECRYPT) then begin
-    Result:= TF_E_UNEXPECTED;
-    Exit;
-  end;
-
-  Encryption:= (Inst.FDir = TF_KEYDIR_ENCRYPT) or (Inst.FMode = TF_KEYMODE_CTR);
-
-  {convert PC1 to bits of key}
-  for J := 0 to 55 do begin
-    L := PC1[J];
-    M := L mod 8;
-    PC1M[J] := Ord((Key[L div 8] and CBitMask[M]) <> 0);
-  end;
-
-  {key chunk for each iteration}
-  for I := 0 to 15 do begin
-    {rotate PC1 the right amount}
-    for J := 0 to 27 do begin
-      L := J + CTotRot[I];
-      if (L < 28) then begin
-        PC1R[J] := PC1M[L];
-        PC1R[J + 28] := PC1M[L + 28];
-      end else begin
-        PC1R[J] := PC1M[L - 28];
-        PC1R[J + 28] := PC1M[L];
-      end;
-    end;
-
-    {select bits individually}
-    FillChar(KS, SizeOf(KS), 0);
-    for J := 0 to 47 do
-      if Boolean(PC1R[PC2[J]]) then begin
-        L := J div 6;
-        KS[L] := KS[L] or CBitMask[J mod 6] shr 2;
-      end;
-
-    {now convert to odd/even interleaved form for use in F}
-    if Encryption then begin
-      Inst.FSubKeys[I * 2] := (LongInt(KS[0]) shl 24) or (LongInt(KS[2]) shl 16) or
-        (LongInt(KS[4]) shl 8) or (LongInt(KS[6]));
-      Inst.FSubKeys[I * 2 + 1] := (LongInt(KS[1]) shl 24) or (LongInt(KS[3]) shl 16) or
-        (LongInt(KS[5]) shl 8) or (LongInt(KS[7]));
-    end
-    else begin
-      Inst.FSubKeys[31 - (I * 2 + 1)] := (LongInt(KS[0]) shl 24) or (LongInt(KS[2]) shl 16) or
-        (LongInt(KS[4]) shl 8) or (LongInt(KS[6]));
-      Inst.FSubKeys[31 - (I * 2)] := (LongInt(KS[1]) shl 24) or (LongInt(KS[3]) shl 16) or
-        (LongInt(KS[5]) shl 8) or (LongInt(KS[7]));
-    end;
-  end;
-
-  Inst.FValidKey:= True;
-  Result:= TF_S_OK;
-end;
-*)
-
 class function TDESAlgorithm.GetBlockSize(Inst: PDESAlgorithm): Integer;
 begin
   Result:= DES_BLOCK_SIZE;
 end;
 
 const
-  SPBox: array[0..7,0..63] of LongWord = ({$I DES_SPBoxes.inc});
+  SPBox: array[0..7,0..63] of UInt32 = ({$I DES_SPBoxes.inc});
 
-procedure SplitBlock(Block: PByte; var L, R: LongWord);
+procedure SplitBlock(Block: PByte; var L, R: UInt32);
 {$IFDEF ASM86}
 asm
         PUSH    EBX
@@ -496,7 +414,7 @@ begin
 end;
 {$ENDIF}
 
-procedure JoinBlock(const L, R: LongWord; Block: PByte);
+procedure JoinBlock(const L, R: UInt32; Block: PByte);
 {$IFDEF ASM86}
 asm
         PUSH    EBX
@@ -534,9 +452,9 @@ begin
 end;
 {$ENDIF}
 
-  procedure IPerm(var L, R : LongWord);
+  procedure IPerm(var L, R : UInt32);
   var
-    Work : LongWord;
+    Work : UInt32;
   begin
     Work := ((L shr 4) xor R) and $0F0F0F0F;
     R := R xor Work;
@@ -561,9 +479,9 @@ end;
     L := (L shl 1) or (L shr 31);
   end;
 
-  procedure FPerm(var L, R : LongWord);
+  procedure FPerm(var L, R : UInt32);
   var
-    Work : LongWord;
+    Work : UInt32;
   begin
     L := L;
 
@@ -631,8 +549,8 @@ end;
 class procedure TDESAlgorithm.DoEncryptBlock(var SubKeys: TExpandedKey;
                   Data: PByte);
 var
-  I, L, R, Work : LongWord;
-  CPtr          : PLongWord;
+  I, L, R, Work : UInt32;
+  CPtr          : PUInt32;
 
 begin
   SplitBlock(Data, L, R);
@@ -683,8 +601,8 @@ end;
 
 class function TDESAlgorithm.EncryptBlock(Inst: PDESAlgorithm; Data: PByte): TF_RESULT;
 var
-  I, L, R, Work : LongWord;
-  CPtr          : PLongWord;
+  I, L, R, Work : UInt32;
+  CPtr          : PUInt32;
 
 begin
   SplitBlock(Data, L, R);

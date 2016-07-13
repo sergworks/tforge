@@ -37,7 +37,7 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfStreamCipher
-    FValidKey: LongBool;
+    FValidKey: Boolean;
                                 // -- inherited fields end --
     FExpandedKey: TBlock;
     FRounds: Cardinal;          // 2..254
@@ -56,6 +56,9 @@ type
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+      var DataLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 type
@@ -97,8 +100,8 @@ const
   SALSA_BLOCK_SIZE = 64;
 
   Salsa20VTable: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TSalsa20.Release,
 
    @TSalsa20.SetKeyParam,
@@ -116,8 +119,8 @@ const
    );
 
   ChaCha20VTable: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TSalsa20.Release,
 
    @TChaCha20.SetKeyParam,
@@ -336,6 +339,20 @@ end;
 class function TSalsa20.GetBlockSize(Inst: PSalsa20): Integer;
 begin
   Result:= SALSA_BLOCK_SIZE;
+end;
+
+class function TSalsa20.GetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+  var DataLen: Cardinal): TF_RESULT;
+begin
+  if (Param = TF_KP_NONCE) then begin
+    if (DataLen >= SizeOf(UInt64)) then begin
+      Move(Inst.FExpandedKey[6], Data^, SizeOf(UInt64));
+      DataLen:= SizeOf(UInt64);
+      Result:= TF_S_OK;
+      Exit;
+    end
+  end;
+  Result:= TF_E_INVALIDARG;
 end;
 
 class function TSalsa20.KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;

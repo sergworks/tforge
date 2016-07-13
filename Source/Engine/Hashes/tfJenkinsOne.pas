@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfJenkinsOne;
@@ -17,20 +17,20 @@ type
   private
     FVTable: Pointer;
     FRefCount: Integer;
-    FValue: LongWord;
+    FValue: UInt32;
   public
 //    class function Release(Inst: PJenkinsOneAlg): Integer; stdcall; static;
     class procedure Init(Inst: PJenkinsOneAlg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Update(Inst: PJenkinsOneAlg; Data: PByte; DataSize: LongWord);
+    class procedure Update(Inst: PJenkinsOneAlg; Data: PByte; DataSize: Cardinal);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Done(Inst: PJenkinsOneAlg; PDigest: PLongWord);
+    class procedure Done(Inst: PJenkinsOneAlg; PDigest: PUInt32);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class procedure Purge(Inst: PJenkinsOneAlg);  -- redirected to Init
 //         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PJenkinsOneAlg): LongInt;
+    class function GetDigestSize(Inst: PJenkinsOneAlg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PJenkinsOneAlg): LongInt;
+    class function GetBlockSize(Inst: PJenkinsOneAlg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PJenkinsOneAlg; var DupInst: PJenkinsOneAlg): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -44,8 +44,8 @@ uses tfRecords, tfUtils;
 
 const
   VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @HashAlgRelease,
 
     @TJenkinsOneAlg.Init,
@@ -83,7 +83,7 @@ begin
 end;
 
 class procedure TJenkinsOneAlg.Update(Inst: PJenkinsOneAlg;
-                                      Data: PByte; DataSize: LongWord);
+                                      Data: PByte; DataSize: Cardinal);
 begin
   while DataSize > 0 do begin
     Inst.FValue:= Inst.FValue + Data^;
@@ -94,7 +94,7 @@ begin
   end;
 end;
 
-class procedure TJenkinsOneAlg.Done(Inst: PJenkinsOneAlg; PDigest: PLongWord);
+class procedure TJenkinsOneAlg.Done(Inst: PJenkinsOneAlg; PDigest: PUInt32);
 var
   P, PD: PByte;
   L: Integer;
@@ -118,12 +118,12 @@ begin
   Inst.FValue:= 0;
 end;
 
-class function TJenkinsOneAlg.GetDigestSize(Inst: PJenkinsOneAlg): LongInt;
+class function TJenkinsOneAlg.GetDigestSize(Inst: PJenkinsOneAlg): Integer;
 begin
-  Result:= SizeOf(LongWord);
+  Result:= SizeOf(UInt32);
 end;
 
-class function TJenkinsOneAlg.GetBlockSize(Inst: PJenkinsOneAlg): LongInt;
+class function TJenkinsOneAlg.GetBlockSize(Inst: PJenkinsOneAlg): Integer;
 begin
   Result:= 0;
 end;

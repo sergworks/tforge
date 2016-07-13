@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { * ------------------------------------------------------- * }
 { *  documentation: RFC2104                                 * }
 { * ------------------------------------------------------- * }
@@ -30,21 +30,21 @@ type
     class function Release(Inst: PHMACAlg): Integer; stdcall; static;
     class procedure Init(Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Update(Inst: PHMACAlg; Data: Pointer; DataSize: LongWord);
+    class procedure Update(Inst: PHMACAlg; Data: Pointer; DataSize: Cardinal);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Done(Inst: PHMACAlg; PDigest: Pointer);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure Burn(Inst: PHMACAlg);
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PHMACAlg): LongInt;
+    class function GetDigestSize(Inst: PHMACAlg): Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class function GetBlockSize(Inst: PHMACAlg): LongInt;
+//    class function GetBlockSize(Inst: PHMACAlg): Integer;
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PHMACAlg; var DupInst: PHMACAlg): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PBKDF2(Inst: PHMACAlg;
-          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
-          Rounds, dkLen: LongWord; var Key: PByteVector): TF_RESULT;
+          Password: Pointer; PassLen: Cardinal; Salt: Pointer; SaltLen: Cardinal;
+          Rounds, dkLen: Cardinal; var Key: PByteVector): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -57,8 +57,8 @@ uses tfRecords;
 
 const
   HMACVTable: array[0..9] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @THMACAlg.Release,
 
    @THMACAlg.Init,
@@ -130,7 +130,7 @@ begin
     end;
   end
   else
-    Result:= PtfRecord(Inst).FRefCount;
+    Result:= Inst.FRefCount;
 end;
 
 class procedure THMACAlg.Init(Inst: PHMACAlg; Key: Pointer; KeySize: Cardinal);
@@ -168,7 +168,7 @@ begin
   Inst.FHash.Update(@Inst.FKey.FData, BlockSize);
 end;
 
-class procedure THMACAlg.Update(Inst: PHMACAlg; Data: Pointer; DataSize: LongWord);
+class procedure THMACAlg.Update(Inst: PHMACAlg; Data: Pointer; DataSize: Cardinal);
 begin
   Inst.FHash.Update(Data, DataSize);
 end;
@@ -221,13 +221,13 @@ begin
 end;
 
 {
-class function THMACAlg.GetBlockSize(Inst: PHMACAlg): LongInt;
+class function THMACAlg.GetBlockSize(Inst: PHMACAlg): Integer;
 begin
   Result:= 0;
 end;
 }
 
-class function THMACAlg.GetDigestSize(Inst: PHMACAlg): LongInt;
+class function THMACAlg.GetDigestSize(Inst: PHMACAlg): Integer;
 begin
   Result:= Inst.FHash.GetDigestSize;
 end;
@@ -241,7 +241,7 @@ end;
 const
   BigEndianOne = $01000000;
 
-function BigEndianInc(Value: LongWord): LongWord; inline;
+function BigEndianInc(Value: UInt32): UInt32; inline;
 begin
   Result:= Value + BigEndianOne;
   if Result shr 24 = 0 then begin
@@ -256,17 +256,18 @@ begin
 end;
 
 class function THMACAlg.PBKDF2(Inst: PHMACAlg; Password: Pointer;
-  PassLen: LongWord; Salt: Pointer; SaltLen, Rounds, dkLen: LongWord;
+  PassLen: Cardinal; Salt: Pointer; SaltLen, Rounds, dkLen: Cardinal;
   var Key: PByteVector): TF_RESULT;
 
 const
   MAX_DIGEST_SIZE = 128;   // = 1024 bits
 
 var
-  hLen: LongWord;
+  hLen: Cardinal;
   Digest: array[0 .. MAX_DIGEST_SIZE - 1] of Byte;
   Tmp: PByteVector;
-  Count, L, N, LRounds: LongWord;
+  Count: UInt32;
+  L, N, LRounds: Cardinal;
   PData, P1, P2: PByte;
 
 
@@ -294,9 +295,9 @@ begin
       P2:= @Digest;
       L:= hLen shr 2;
       while L > 0 do begin
-        PLongWord(P1)^:= PLongWord(P1)^ xor PLongWord(P2)^;
-        Inc(PLongWord(P1));
-        Inc(PLongWord(P2));
+        PUInt32(P1)^:= PUInt32(P1)^ xor PUInt32(P2)^;
+        Inc(PUInt32(P1));
+        Inc(PUInt32(P2));
         Dec(L);
       end;
       L:= hLen and 3;
@@ -315,9 +316,9 @@ begin
         P2:= @Digest;
         L:= hLen shr 2;
         while L > 0 do begin
-          PLongWord(P1)^:= PLongWord(P1)^ xor PLongWord(P2)^;
-          Inc(PLongWord(P1));
-          Inc(PLongWord(P2));
+          PUInt32(P1)^:= PUInt32(P1)^ xor PUInt32(P2)^;
+          Inc(PUInt32(P1));
+          Inc(PUInt32(P2));
           Dec(L);
         end;
         L:= hLen and 3;
@@ -369,7 +370,7 @@ begin
       end;
     end;
   end;
-  if Key <> nil then TtfRecord.Release(Key);
+  tfFreeInstance(Key);  //if Key <> nil then TtfRecord.Release(Key);
   Key:= Tmp;
 end;
 

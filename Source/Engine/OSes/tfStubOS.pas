@@ -11,11 +11,11 @@ interface
 
 uses tfTypes;
 
-function GenRandom(var Buf; BufSize: LongWord): TF_RESULT;
+function GenRandom(var Buf; BufSize: Cardinal): TF_RESULT;
 
 implementation
 
-function GenRandom(var Buf; BufSize: LongWord): TF_RESULT;
+function GenRandom(var Buf; BufSize: Cardinal): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;

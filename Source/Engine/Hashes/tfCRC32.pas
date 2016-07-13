@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2014         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfCRC32;
@@ -17,20 +17,20 @@ type
   private
     FVTable: Pointer;
     FRefCount: Integer;
-    FValue: LongWord;
+    FValue: UInt32;
   public
 //    class function Release(Inst: PCRC32Alg): Integer; stdcall; static;
     class procedure Init(Inst: PCRC32Alg);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Update(Inst: PCRC32Alg; Data: PByte; DataSize: LongWord);
+    class procedure Update(Inst: PCRC32Alg; Data: PByte; DataSize: Cardinal);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure Done(Inst: PCRC32Alg; PDigest: PLongWord);
+    class procedure Done(Inst: PCRC32Alg; PDigest: PUInt32);
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class procedure Purge(Inst: PCRC32Alg);  -- redirected to Init
 //         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetDigestSize(Inst: PCRC32Alg): LongInt;
+    class function GetDigestSize(Inst: PCRC32Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PCRC32Alg): LongInt;
+    class function GetBlockSize(Inst: PCRC32Alg): Integer;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Duplicate(Inst: PCRC32Alg; var DupInst: PCRC32Alg): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -47,8 +47,8 @@ const
 
 const
   VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfRecord.Addref,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
     @HashAlgRelease,
 //    @TCRC32Alg.Release,
 
@@ -84,21 +84,21 @@ begin
   Inst.FValue:= CRC32_INIT_VALUE;
 end;
 
-class procedure TCRC32Alg.Update(Inst: PCRC32Alg; Data: PByte; DataSize: LongWord);
+class procedure TCRC32Alg.Update(Inst: PCRC32Alg; Data: PByte; DataSize: Cardinal);
 var
-  Tmp: LongWord;
+  Tmp: UInt32;
 
 begin
   Tmp:= Inst.FValue;
   while DataSize > 0 do begin
-    Tmp:= Crc32Table[Byte(Tmp xor Data^)] xor LongWord(Tmp shr 8);
+    Tmp:= Crc32Table[Byte(Tmp xor Data^)] xor UInt32(Tmp shr 8);
     Dec(DataSize);
     Inc(Data);
   end;
   Inst.FValue:= Tmp;
 end;
 
-class procedure TCRC32Alg.Done(Inst: PCRC32Alg; PDigest: PLongWord);
+class procedure TCRC32Alg.Done(Inst: PCRC32Alg; PDigest: PUint32);
 var
   P, PD: PByte;
   L: Integer;
@@ -125,12 +125,12 @@ begin
     DupInst.FValue:= Inst.FValue;
 end;
 
-class function TCRC32Alg.GetDigestSize(Inst: PCRC32Alg): LongInt;
+class function TCRC32Alg.GetDigestSize(Inst: PCRC32Alg): Integer;
 begin
-  Result:= SizeOf(LongWord);
+  Result:= SizeOf(UInt32);
 end;
 
-class function TCRC32Alg.GetBlockSize(Inst: PCRC32Alg): LongInt;
+class function TCRC32Alg.GetBlockSize(Inst: PCRC32Alg): Integer;
 begin
   Result:= 0;
 end;

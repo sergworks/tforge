@@ -28,7 +28,7 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfStreamCipher
-    FValidKey: LongBool;
+    FValidKey: Boolean;
                                 // -- inherited fields end --
     FState:    TState;
 {$HINTS ON}
@@ -52,9 +52,9 @@ implementation
 uses tfRecords, tfBaseCiphers;
 
 const
-  RC4VTable: array[0..14] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+  RC4VTable: array[0..15] of Pointer = (
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TRC4Algorithm.Release,
 
    @TStreamCipher.SetKeyParam,
@@ -68,7 +68,8 @@ const
    @TStreamCipher.EncryptBlock,
    @TStreamCipher.GetRand,
    @TRC4Algorithm.RandBlock,
-   @TStreamCipher.RandCrypt
+   @TStreamCipher.RandCrypt,
+   @TStreamCipher.GetKeyParam
    );
 
 function GetRC4Algorithm(var A: PRC4Algorithm): TF_RESULT;

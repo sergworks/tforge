@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfHashServ;
@@ -43,7 +43,7 @@ type
     FAlgTable: array[0..63] of TAlgItem;
     FCount: Integer;
 *)
-    class function GetByAlgID(Inst: PHashServer; AlgID: LongInt;
+    class function GetByAlgID(Inst: PHashServer; AlgID: Integer;
           var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
@@ -51,8 +51,8 @@ type
           const HashAlg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
-          Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
-          Rounds, dkLen: LongWord; var Key: PByteVector): TF_RESULT;
+          Password: Pointer; PassLen: Cardinal; Salt: Pointer; SaltLen: Cardinal;
+          Rounds, dkLen: Cardinal; var Key: PByteVector): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 (*
     class function GetByName(Inst: PHashServer; AName: Pointer; CharSize: Integer;
@@ -75,9 +75,9 @@ type
 
 const
   VTable: array[0..9] of Pointer = (
-    @TtfRecord.QueryIntf,
-    @TtfSingleton.Addref,
-    @TtfSingleton.Release,
+    @TForgeInstance.QueryIntf,
+    @TForgeSingleton.Addref,
+    @TForgeSingleton.Release,
 
     @THashServer.GetByAlgID,
     @TAlgServer.GetByName,
@@ -151,14 +151,14 @@ end;
 { THashServer }
 
 class function THashServer.PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
-  Password: Pointer; PassLen: LongWord; Salt: Pointer; SaltLen: LongWord;
-  Rounds, dkLen: LongWord; var Key: PByteVector): TF_RESULT;
+  Password: Pointer; PassLen: Cardinal; Salt: Pointer; SaltLen: Cardinal;
+  Rounds, dkLen: Cardinal; var Key: PByteVector): TF_RESULT;
 
 const
   MAX_DIGEST_SIZE = 128;   // = 1024 bits
 
 var
-  hLen: LongWord;
+  hLen: Cardinal;
   Digest: array[0 .. MAX_DIGEST_SIZE - 1] of Byte;
 
 begin

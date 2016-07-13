@@ -33,6 +33,7 @@ type
 
     function SetNonce(const Value: ByteArray): TCipher; overload;
     function SetNonce(const Value: UInt64): TCipher; overload;
+    function GetNonce: UInt64;
 //    function SetBlockNo(const Value: ByteArray): TCipher; overload;
 //    function SetBlockNo(const Value: UInt64): TCipher; overload;
 
@@ -115,6 +116,7 @@ type
 
     procedure Read(var Data; DataLen: LongWord);
     procedure Crypt(var Data; DataLen: LongWord);
+    function KeyStream(ASize: Cardinal): ByteArray;
 
     class function AES: TKeyStream; static;
     class function DES: TKeyStream; static;
@@ -170,6 +172,15 @@ end;
 procedure TCipher.GetKeyStream(var Data; DataSize: LongWord);
 begin
   HResCheck(FAlgorithm.GetKeyStream(@Data, DataSize));
+end;
+
+function TCipher.GetNonce: UInt64;
+var
+  DataLen: Cardinal;
+
+begin
+  DataLen:= SizeOf(UInt64);
+  HResCheck(FAlgorithm.GetKeyParam(TF_KP_NONCE, @Result, DataLen));
 end;
 
 function TCipher.KeyStream(DataSize: LongWord): ByteArray;
@@ -631,9 +642,15 @@ begin
   Result:= FKeyStream <> nil;
 end;
 
+function TKeyStream.KeyStream(ASize: Cardinal): ByteArray;
+begin
+  Result:= ByteArray.Allocate(ASize);
+  HResCheck(FKeyStream.Read(Result.GetRawData, ASize));
+end;
+
 procedure TKeyStream.Burn;
 begin
-  FKeyStream.DestroyKey;
+  FKeyStream.Burn;
 end;
 
 function TKeyStream.ExpandKey(AKey: PByte; AKeyLen: LongWord; ANonce: UInt64): TKeyStream;
@@ -654,6 +671,7 @@ end;
 function TKeyStream.ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream;
 begin
   HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen, ANonce));
+  Result:= Self;
 end;
 
 function TKeyStream.Skip(AValue: Int64): TKeyStream;

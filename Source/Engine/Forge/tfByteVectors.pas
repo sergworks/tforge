@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfByteVectors;
@@ -188,9 +188,10 @@ uses tfRecords, tfUtils;
 
 const
   ByteVecVTable: array[0..40] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
-   @TtfRecord.Release,
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
+   @TForgeInstance.Release,
+   @TByteVector.Burn,
 
    @TByteVector.GetEnum,
 
@@ -229,7 +230,6 @@ const
    @TByteVector.Incr,
    @TByteVector.Decr,
 
-   @TByteVector.Burn,
    @TByteVector.Fill,
 
    @TByteVector.ToInt,
@@ -246,8 +246,8 @@ const
 
 const
   ByteVecEnumVTable: array[0..5] of Pointer = (
-   @TtfRecord.QueryIntf,
-   @TtfRecord.Addref,
+   @TForgeInstance.QueryIntf,
+   @TForgeInstance.Addref,
    @TByteVectorEnum.Release,
    @TByteVectorEnum.GetCurrent,
    @TByteVectorEnum.MoveNext,
@@ -358,7 +358,7 @@ begin
       until N = 0;
     end;
   end;
-  if R <> nil then TtfRecord.Release(R);
+  tfFreeInstance(R);  //  if R <> nil then TtfRecord.Release(R);
   R:= Tmp;
   Result:= TF_S_OK;
 end;
@@ -402,7 +402,7 @@ begin
       until N = 0;
     end;
   end;
-  if R <> nil then TtfRecord.Release(R);
+  tfFreeInstance(R); // if R <> nil then TtfRecord.Release(R);
   R:= Tmp;
   Result:= TF_S_OK;
 end;
@@ -495,7 +495,7 @@ begin
   Move(B.FData, P^, UsedB);
   Tmp.FUsed:= UsedA + UsedB;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -524,7 +524,7 @@ begin
       Inc(PTmp);
       Dec(LUsed);
     end;
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= Tmp;
   end;
 end;
@@ -605,7 +605,7 @@ begin
 
   Tmp.FUsed:= UsedA - L;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -645,7 +645,7 @@ begin
     Dec(UsedR);
   end;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -678,7 +678,7 @@ begin
     Dec(UsedR);
   end;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -712,7 +712,7 @@ begin
     Dec(UsedR);
   end;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -746,7 +746,7 @@ begin
     Dec(UsedR);
   end;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -780,16 +780,16 @@ begin
     Dec(UsedR);
   end;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
 class function TByteVector.AssignBytes(A: PByteVector;
                            var R: PByteVector): TF_RESULT;
 begin
-  if R <> nil then TtfRecord.Release(R);
+  tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
   R:= A;
-  if A <> nil then TtfRecord.AddRef(A);
+  tfAddrefInstance(A); //if A <> nil then TtfRecord.AddRef(A);
   Result:= TF_S_OK;
 end;
 
@@ -846,7 +846,7 @@ var
 begin
   UsedA:= A.FUsed;
   if (UsedA = 0) then begin
-    if R <> nil then TtfRecord.Release(R);
+    tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
     R:= @ZeroVector;
     Result:= TF_S_OK;
     Exit;
@@ -887,7 +887,7 @@ begin
 // last #0 is not included in the length
   Tmp.FUsed:= NativeInt(PTmp) - NativeInt(@Tmp.FData) - 1;
 
-  if R <> nil then TtfRecord.Release(R);
+  tfFreeInstance(R); //if R <> nil then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -912,7 +912,7 @@ begin
   P^:= B;
   Tmp.FUsed:= UsedA + 1;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -1017,7 +1017,7 @@ begin
 
   Tmp.FUsed:= UsedA + 1;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -1051,7 +1051,7 @@ begin
   Move(P^, PA^, L);
   Tmp.FUsed:= UsedA + L;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -1089,7 +1089,7 @@ begin
   Move(A.FData[Index], PTmp^, UsedA - Index);
   Tmp.FUsed:= UsedA + L;
 
-  if (R <> nil) then TtfRecord.Release(R);
+  tfFreeInstance(R); //if (R <> nil) then TtfRecord.Release(R);
   R:= Tmp;
 end;
 
@@ -1119,7 +1119,7 @@ var
 begin
   Result:= TByteVector.AllocVector(Tmp, ASize);
   if Result = TF_S_OK then begin
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1132,7 +1132,7 @@ begin
   Result:= TByteVector.AllocVector(Tmp, ASize);
   if Result = TF_S_OK then begin
     FillChar(Tmp.FData, ASize, Filler);
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1150,7 +1150,7 @@ begin
       L:= A.FUsed;
       if L > ASize then L:= ASize;
       Move(A.FData, Tmp.FData, L);
-      TtfRecord.Release(A);
+      tfReleaseInstance(A); //TtfRecord.Release(A);
     end;
     A:= Tmp;
   end;
@@ -1183,7 +1183,7 @@ begin
   if Result = TF_S_OK then begin
     Move(P^, Tmp.FData, L);
 //    Tmp.FUsed:= L;
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1201,7 +1201,7 @@ begin
       if Reversed then TBigEndian.ReverseCopy(P, P + L, @Tmp.FData)
       else Move(P^, Tmp.FData, L);
     end;
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1249,7 +1249,7 @@ begin
     Exit;
   end;
   if L = 0 then begin
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= @ZeroVector;
     Result:= TF_S_OK;
     Exit;
@@ -1262,14 +1262,14 @@ begin
     repeat
       B:= P^;
       if not GetNibble(B) then begin
-        TtfRecord.Release(Tmp);
+        tfReleaseInstance(Tmp); // TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
       Inc(P, CharSize);
       Nibble:= P^;
       if not GetNibble(Nibble) then begin
-        TtfRecord.Release(Tmp);
+        tfReleaseInstance(Tmp); // TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1278,7 +1278,7 @@ begin
       Inc(P, CharSize);
       Dec(L);
     until L = 0;
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1334,7 +1334,7 @@ begin
     if IsHex then begin
       B:= P^;
       if not GetNibble(B) then begin
-        if Tmp <> nil then TtfRecord.Release(Tmp);
+        tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1342,7 +1342,7 @@ begin
       Dec(L);
       Nibble:= P^;
       if not GetNibble(Nibble) then begin
-        if Tmp <> nil then TtfRecord.Release(Tmp);
+        tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1354,7 +1354,7 @@ begin
 
 // next byte should not be a valid hex digit
       if (L > 0) and GetNibble(Nibble) then begin
-        if Tmp <> nil then TtfRecord.Release(Tmp);
+        tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1368,7 +1368,7 @@ begin
           ValueExists:= True;
           Value:= Value * 10 + (B - ASCII_ZERO);
           if Value > 255 then begin
-            if Tmp <> nil then TtfRecord.Release(Tmp);
+            tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
             Result:= TF_E_INVALIDARG;
             Exit;
           end;
@@ -1383,7 +1383,7 @@ begin
         Inc(TmpSize, SizeOf(Buffer));
         Result:= ByteVectorRealloc(Tmp, TmpSize);
         if Result <> TF_S_OK then begin
-          if Tmp <> nil then TtfRecord.Release(Tmp);
+          tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
           Exit;
         end;
         TmpP:= PByte(@Tmp.FData) + TmpSize - SizeOf(Buffer);
@@ -1395,7 +1395,7 @@ begin
 //       Inc(State);
     end
     else begin
-      if Tmp <> nil then TtfRecord.Release(Tmp);
+      tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
       Result:= TF_E_INVALIDARG;
       Exit;
     end;
@@ -1420,7 +1420,7 @@ begin
     Inc(TmpSize, BufCount);
     Result:= ByteVectorRealloc(Tmp, TmpSize);
     if Result <> TF_S_OK then begin
-      if Tmp <> nil then TtfRecord.Release(Tmp);
+      tfFreeInstance(Tmp); //if Tmp <> nil then TtfRecord.Release(Tmp);
       Exit;
     end;
     TmpP:= PByte(@Tmp.FData) + TmpSize - BufCount;
@@ -1428,7 +1428,7 @@ begin
 //    BufCount:= 0;
   end;
 
-  if A <> nil then TtfRecord.Release(A);
+  tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
   if Tmp = nil then begin
     A:= @ZeroVector;
   end
@@ -1514,7 +1514,7 @@ var
 
 begin
   if L = 0 then begin
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= @ZeroVector;
     Result:= TF_S_OK;
     Exit;
@@ -1535,20 +1535,20 @@ begin
       if L > 0 then begin
         B:= P^;
         if not GetNibble(B) then begin
-          TtfRecord.Release(Tmp);
+          tfReleaseInstance(Tmp); //TtfRecord.Release(Tmp);
           Result:= TF_E_INVALIDARG;
           Exit;
         end;
         Inc(P, CharSize);
         Dec(L);
         if L = 0 then begin
-          TtfRecord.Release(Tmp);
+          tfReleaseInstance(Tmp); //TtfRecord.Release(Tmp);
           Result:= TF_E_INVALIDARG;
           Exit;
         end;
         Nibble:= P^;
         if not GetNibble(Nibble) then begin
-          TtfRecord.Release(Tmp);
+          tfReleaseInstance(Tmp); //TtfRecord.Release(Tmp);
           Result:= TF_E_INVALIDARG;
           Exit;
         end;
@@ -1560,7 +1560,7 @@ begin
       end;
     until L = 0;
     Tmp.FUsed:= Cnt;
-    if A <> nil then TtfRecord.Release(A);
+    tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
@@ -1573,7 +1573,7 @@ begin
   Result:= TByteVector.AllocVector(Tmp, 1);
   if Result = TF_S_OK then begin
     Tmp.FData[0]:= Value;
-    if (A <> nil) then TtfRecord.Release(A);
+    tfFreeInstance(A); //if (A <> nil) then TtfRecord.Release(A);
     A:= Tmp;
   end;
 end;
