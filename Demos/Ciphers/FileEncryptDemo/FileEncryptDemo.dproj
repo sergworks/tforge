@@ -1,8 +1,8 @@
 ﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 		<PropertyGroup>
-			<ProjectGuid>{EC3C165C-D868-419E-9846-43744DF6E58B}</ProjectGuid>
+			<ProjectGuid>{B3279CFD-60E5-4AA3-8692-CCE31B718CDB}</ProjectGuid>
 			<ProjectVersion>12.3</ProjectVersion>
-			<MainSource>Examples.dpr</MainSource>
+			<MainSource>FileEncryptDemo.dpr</MainSource>
 			<Base>True</Base>
 			<Config Condition="'$(Config)'==''">Debug</Config>
 			<Platform>Win32</Platform>
@@ -42,11 +42,11 @@
 			<DCC_DebugInformation>false</DCC_DebugInformation>
 		</PropertyGroup>
 		<ItemGroup>
-			<DelphiCompile Include="Examples.dpr">
+			<DelphiCompile Include="FileEncryptDemo.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="MontEx.pas"/>
-			<DCCReference Include="StreamCipherEx.pas"/>
+			<DCCReference Include="Source\EncryptedStreams.pas"/>
+			<DCCReference Include="Source\Demos.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
@@ -94,7 +94,7 @@
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Source>
-						<Source Name="MainSource">Examples.dpr</Source>
+						<Source Name="MainSource">FileEncryptDemo.dpr</Source>
 					</Source>
 				</Delphi.Personality>
 				<Platforms>

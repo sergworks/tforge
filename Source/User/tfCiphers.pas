@@ -46,6 +46,8 @@ type
     function ExpandKey(const AKey: ByteArray; AFlags: LongWord): TCipher; overload;
     function ExpandKey(const AKey: ByteArray; AFlags: LongWord;
                        const AIV: ByteArray): TCipher; overload;
+    function ExpandKey(const AKey: ByteArray; AFlags: LongWord;
+                       const ANonce: UInt64): TCipher; overload;
 
     procedure Burn;
 
@@ -62,8 +64,11 @@ type
     function EncryptBlock(const Data, Key: ByteArray): ByteArray;
     function DecryptBlock(const Data, Key: ByteArray): ByteArray;
 
-    function EncryptData(const Data: ByteArray): ByteArray;
-    function DecryptData(const Data: ByteArray): ByteArray;
+    function EncryptData(const Data: ByteArray): ByteArray; deprecated;
+    function DecryptData(const Data: ByteArray): ByteArray; deprecated;
+
+    function EncryptByteArray(const Data: ByteArray): ByteArray;
+    function DecryptByteArray(const Data: ByteArray): ByteArray;
 
     procedure EncryptStream(InStream, OutStream: TStream; BufSize: LongWord = 0);
     procedure DecryptStream(InStream, OutStream: TStream; BufSize: LongWord = 0);
@@ -102,35 +107,50 @@ type
     property BlockSize: Cardinal read GetBlockSize;
   end;
 
-  TKeyStream = record
+  TStreamCipher = record
   private
-    FKeyStream: IKeyStream;
+    FInstance: IStreamCipher;
+    function GetNonce: UInt64;
+    procedure SetNonceProc(Nonce: UInt64);
   public
     procedure Free;
     function IsAssigned: Boolean;
     procedure Burn;
 
-    function ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream; overload;
-    function ExpandKey(AKey: PByte; AKeyLen: LongWord; ANonce: UInt64): TKeyStream; overload;
-    function Skip(AValue: Int64): TKeyStream; // overload;
+    function ExpandKey(const AKey: ByteArray): TStreamCipher; overload;
+    function ExpandKey(const AKey: ByteArray; ANonce: UInt64): TStreamCipher; overload;
+    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; ANonce: UInt64): TStreamCipher; overload;
+    function Skip(AValue: Int64): TStreamCipher;
+// ? not todo:
+//    function SetNonce(const Value: UInt64): TKeyStream; overload;
 
-    procedure Read(var Data; DataLen: LongWord);
-    procedure Crypt(var Data; DataLen: LongWord);
+    procedure Read(var Data; DataLen: Cardinal);
     function KeyStream(ASize: Cardinal): ByteArray;
 
-    class function AES: TKeyStream; static;
-    class function DES: TKeyStream; static;
-    class function TripleDES: TKeyStream; static;
-    class function RC5: TKeyStream; overload; static;
-    class function RC5(BlockSize, Rounds: LongWord): TKeyStream; overload; static;
-    class function RC4: TKeyStream; static;
-    class function Salsa20: TKeyStream; overload; static;
-    class function Salsa20(Rounds: LongWord): TKeyStream; overload; static;
-    class function ChaCha20: TKeyStream; overload; static;
-    class function ChaCha20(Rounds: LongWord): TKeyStream; overload; static;
+    procedure Apply(var Data; DataLen: Cardinal);
+//    procedure ApplyTo(const InData; var OutData; DataLen: Cardinal);
 
-    class operator Explicit(const Name: string): TKeyStream;
-    class operator Explicit(AlgID: Integer): TKeyStream;
+    function ApplyToByteArray(const Data: ByteArray): ByteArray;
+    procedure ApplyToStream(InStream, OutStream: TStream; BufSize: Cardinal = 0);
+    procedure ApplyToFile(const InName, OutName: string; BufSize: Cardinal = 0);
+
+    class function GetInstance(const Name: string): TStreamCipher; static;
+
+    class function AES: TStreamCipher; static;
+    class function DES: TStreamCipher; static;
+    class function TripleDES: TStreamCipher; static;
+    class function RC5: TStreamCipher; overload; static;
+    class function RC5(BlockSize, Rounds: Cardinal): TStreamCipher; overload; static;
+    class function RC4: TStreamCipher; static;
+    class function Salsa20: TStreamCipher; overload; static;
+    class function Salsa20(Rounds: Cardinal): TStreamCipher; overload; static;
+    class function ChaCha20: TStreamCipher; overload; static;
+    class function ChaCha20(Rounds: Cardinal): TStreamCipher; overload; static;
+
+    class operator Explicit(const Name: string): TStreamCipher;
+//    class operator Explicit(AlgID: Integer): TStreamCipher;
+
+    property Nonce: UInt64 read GetNonce write SetNonceProc;
   end;
 
 type
@@ -242,6 +262,15 @@ begin
   Result:= Self;
 end;
 
+function TCipher.ExpandKey(const AKey: ByteArray; AFlags: LongWord;
+                           const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+  HResCheck(FAlgorithm.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
+  HResCheck(FAlgorithm.ExpandKey(AKey.RawData, AKey.Len));
+  Result:= Self;
+end;
+
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: LongWord; AFlags: LongWord): TCipher;
 begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
@@ -317,6 +346,32 @@ begin
 
   Result:= Data.Copy;
   FAlgorithm.DecryptBlock(Result.RawData);
+end;
+
+function TCipher.EncryptByteArray(const Data: ByteArray): ByteArray;
+var
+  L0, L1: LongWord;
+
+begin
+  L0:= Data.GetLen;
+  L1:= L0;
+  if (FAlgorithm.Encrypt(nil, L1, 0, True) <> TF_E_INVALIDARG) or (L1 <= 0)
+    then CipherError(TF_E_UNEXPECTED);
+
+  Result:= Data;
+  Result.ReAllocate(L1);
+  HResCheck(FAlgorithm.Encrypt(Result.RawData, L0, L1, True));
+end;
+
+function TCipher.DecryptByteArray(const Data: ByteArray): ByteArray;
+var
+  L: LongWord;
+
+begin
+  L:= Data.GetLen;
+  Result:= Data.Copy;
+  HResCheck(FAlgorithm.Decrypt(Result.RawData, L, True));
+  Result.SetLen(L);
 end;
 
 function TCipher.EncryptData(const Data: ByteArray): ByteArray;
@@ -632,120 +687,208 @@ end;
 
 { TKeyStream }
 
-procedure TKeyStream.Free;
+procedure TStreamCipher.Free;
 begin
-  FKeyStream:= nil;
+  FInstance:= nil;
 end;
 
-function TKeyStream.IsAssigned: Boolean;
+function TStreamCipher.IsAssigned: Boolean;
 begin
-  Result:= FKeyStream <> nil;
+  Result:= FInstance <> nil;
 end;
 
-function TKeyStream.KeyStream(ASize: Cardinal): ByteArray;
+function TStreamCipher.KeyStream(ASize: Cardinal): ByteArray;
 begin
   Result:= ByteArray.Allocate(ASize);
-  HResCheck(FKeyStream.Read(Result.GetRawData, ASize));
+  HResCheck(FInstance.Read(Result.GetRawData, ASize));
 end;
 
-procedure TKeyStream.Burn;
+procedure TStreamCipher.Burn;
 begin
-  FKeyStream.Burn;
+  FInstance.Burn;
 end;
 
-function TKeyStream.ExpandKey(AKey: PByte; AKeyLen: LongWord; ANonce: UInt64): TKeyStream;
+function TStreamCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; ANonce: UInt64): TStreamCipher;
 begin
-  HResCheck(FKeyStream.ExpandKey(AKey, AKeyLen, ANonce));
-end;
-
-class operator TKeyStream.Explicit(const Name: string): TKeyStream;
-begin
-  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FKeyStream));
-end;
-
-class operator TKeyStream.Explicit(AlgID: Integer): TKeyStream;
-begin
-  HResCheck(FServer.GetKSByAlgID(AlgID, Result.FKeyStream));
-end;
-
-function TKeyStream.ExpandKey(const AKey: ByteArray; ANonce: UInt64): TKeyStream;
-begin
-  HResCheck(FKeyStream.ExpandKey(AKey.GetRawData, AKey.GetLen, ANonce));
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen, ANonce));
   Result:= Self;
 end;
 
-function TKeyStream.Skip(AValue: Int64): TKeyStream;
+function TStreamCipher.ExpandKey(const AKey: ByteArray; ANonce: UInt64): TStreamCipher;
 begin
-  HResCheck(FKeyStream.Skip(AValue));
+  HResCheck(FInstance.ExpandKey(AKey.GetRawData, AKey.GetLen, ANonce));
+  Result:= Self;
 end;
 
-class function TKeyStream.AES: TKeyStream;
+function TStreamCipher.ExpandKey(const AKey: ByteArray): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_AES, Result.FKeyStream));
+  HResCheck(FInstance.ExpandKey(AKey.GetRawData, AKey.GetLen, 0));
+  Result:= Self;
 end;
 
-class function TKeyStream.DES: TKeyStream;
+class operator TStreamCipher.Explicit(const Name: string): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_DES, Result.FKeyStream));
+  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
 end;
 
-class function TKeyStream.TripleDES: TKeyStream;
+(*  don't want to expose
+class operator TStreamCipher.Explicit(AlgID: Integer): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_3DES, Result.FKeyStream));
+  HResCheck(FServer.GetKSByAlgID(AlgID, Result.FInstance));
+end;
+*)
+
+function TStreamCipher.Skip(AValue: Int64): TStreamCipher;
+begin
+  HResCheck(FInstance.Skip(AValue));
 end;
 
-class function TKeyStream.Salsa20: TKeyStream;
+class function TStreamCipher.AES: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_SALSA20, Result.FKeyStream));
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_AES, Result.FInstance));
 end;
 
-class function TKeyStream.Salsa20(Rounds: LongWord): TKeyStream;
+class function TStreamCipher.DES: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSSalsa20(Rounds, Result.FKeyStream));
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_DES, Result.FInstance));
 end;
 
-class function TKeyStream.ChaCha20: TKeyStream;
+class function TStreamCipher.TripleDES: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FKeyStream));
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_3DES, Result.FInstance));
 end;
 
-class function TKeyStream.ChaCha20(Rounds: LongWord): TKeyStream;
+class function TStreamCipher.Salsa20: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSChaCha20(Rounds, Result.FKeyStream));
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_SALSA20, Result.FInstance));
 end;
 
-class function TKeyStream.RC4: TKeyStream;
+class function TStreamCipher.Salsa20(Rounds: Cardinal): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC4, Result.FKeyStream));
+  HResCheck(FServer.GetKSSalsa20(Rounds, Result.FInstance));
 end;
 
-class function TKeyStream.RC5(BlockSize, Rounds: LongWord): TKeyStream;
+class function TStreamCipher.GetInstance(const Name: string): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSRC5(BlockSize, Rounds, Result.FKeyStream));
+  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
 end;
 
-class function TKeyStream.RC5: TKeyStream;
+function TStreamCipher.GetNonce: UInt64;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC5, Result.FKeyStream));
+  HResCheck(FInstance.GetNonce(Result));
 end;
 
-procedure TKeyStream.Read(var Data; DataLen: LongWord);
+procedure TStreamCipher.SetNonceProc(Nonce: UInt64);
 begin
-  HResCheck(FKeyStream.Read(@Data, DataLen));
+  HResCheck(FInstance.SetNonce(Nonce));
 end;
 
-procedure TKeyStream.Crypt(var Data; DataLen: LongWord);
+class function TStreamCipher.ChaCha20: TStreamCipher;
 begin
-  HResCheck(FKeyStream.Crypt(@Data, DataLen));
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FInstance));
 end;
 
+class function TStreamCipher.ChaCha20(Rounds: Cardinal): TStreamCipher;
+begin
+  HResCheck(FServer.GetKSChaCha20(Rounds, Result.FInstance));
+end;
 
+class function TStreamCipher.RC4: TStreamCipher;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC4, Result.FInstance));
+end;
 
+class function TStreamCipher.RC5(BlockSize, Rounds: Cardinal): TStreamCipher;
+begin
+  HResCheck(FServer.GetKSRC5(BlockSize, Rounds, Result.FInstance));
+end;
 
+class function TStreamCipher.RC5: TStreamCipher;
+begin
+  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC5, Result.FInstance));
+end;
 
+procedure TStreamCipher.Read(var Data; DataLen: Cardinal);
+begin
+  HResCheck(FInstance.Read(@Data, DataLen));
+end;
 
+procedure TStreamCipher.Apply(var Data; DataLen: Cardinal);
+begin
+  HResCheck(FInstance.Apply(@Data, DataLen));
+end;
 
+function TStreamCipher.ApplyToByteArray(const Data: ByteArray): ByteArray;
+var
+  L: Cardinal;
 
+begin
+  L:= Data.GetLen;
+  Result:= Data;
+  Result.ReAllocate(L);
+  HResCheck(FInstance.Apply(Result.RawData, L));
+end;
+
+procedure TStreamCipher.ApplyToFile(const InName, OutName: string;
+  BufSize: Cardinal);
+var
+  InStream, OutStream: TStream;
+
+begin
+  InStream:= TFileStream.Create(InName, fmOpenRead or fmShareDenyWrite);
+  try
+    OutStream:= TFileStream.Create(OutName, fmCreate);
+    try
+      ApplyToStream(InStream, OutStream, BufSize);
+    finally
+      OutStream.Free;
+    end;
+  finally
+    InStream.Free;
+  end;
+end;
+
+procedure TStreamCipher.ApplyToStream(InStream, OutStream: TStream;
+  BufSize: Cardinal);
+const
+  MIN_BUFSIZE = 4 * 1024;
+  MAX_BUFSIZE = 4 * 1024 * 1024;
+  DEFAULT_BUFSIZE = 16 * 1024;
+  PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
+
+var
+  DataSize: Cardinal;
+  Data, PData: PByte;
+  N: Integer;
+  Cnt: Cardinal;
+
+begin
+  if (BufSize < MIN_BUFSIZE) or (BufSize > MAX_BUFSIZE)
+    then BufSize:= DEFAULT_BUFSIZE
+    else BufSize:= (BufSize + PAD_BUFSIZE - 1)
+                         and not (PAD_BUFSIZE - 1);
+  GetMem(Data, BufSize);
+  try
+    repeat
+      Cnt:= BufSize;
+      PData:= Data;
+      repeat
+        N:= InStream.Read(PData^, Cnt);
+        if N <= 0 then Break;
+        Inc(PData, N);
+        Dec(Cnt, N);
+      until (Cnt = 0);
+      DataSize:= BufSize - Cnt;
+      if DataSize > 0 then begin
+        Apply(Data^, DataSize);
+        OutStream.WriteBuffer(Data^, DataSize);
+        FillChar(Data^, DataSize, 0);
+      end;
+    until Cnt > 0;
+  finally
+    FreeMem(Data);
+  end;
+end;
 
 {$IFNDEF TFL_DLL}
 initialization

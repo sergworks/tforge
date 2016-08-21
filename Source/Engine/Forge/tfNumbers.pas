@@ -1876,7 +1876,8 @@ begin
   end;
 
   tfReleaseInstance(TmpQ); //TtfRecord.Release(TmpQ);
-  tfFreeInstance(TmpR); //if (R <> nil) then TtfRecord.Release(TmpR);
+//  tfFreeInstance(TmpR);    //if (R <> nil) then TtfRecord.Release(TmpR);
+  tfFreeInstance(R);    //if (R <> nil) then TtfRecord.Release(R);
   R:= TmpR;
 end;
 

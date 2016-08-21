@@ -57,19 +57,19 @@ const
    @TForgeInstance.Addref,
    @TRC4Algorithm.Release,
 
-   @TStreamCipher.SetKeyParam,
+   @TBaseStreamCipher.SetKeyParam,
    @TRC4Algorithm.ExpandKey,
    @TRC4Algorithm.DestroyKey,
    @TRC4Algorithm.DuplicateKey,
    @TRC4Algorithm.GetBlockSize,
-   @TStreamCipher.Encrypt,
-   @TStreamCipher.Decrypt,
-   @TStreamCipher.EncryptBlock,
-   @TStreamCipher.EncryptBlock,
-   @TStreamCipher.GetRand,
+   @TBaseStreamCipher.Encrypt,
+   @TBaseStreamCipher.Decrypt,
+   @TBaseStreamCipher.EncryptBlock,
+   @TBaseStreamCipher.EncryptBlock,
+   @TBaseStreamCipher.GetRand,
    @TRC4Algorithm.RandBlock,
-   @TStreamCipher.RandCrypt,
-   @TStreamCipher.GetKeyParam
+   @TBaseStreamCipher.RandCrypt,
+   @TBaseStreamCipher.GetKeyParam
    );
 
 function GetRC4Algorithm(var A: PRC4Algorithm): TF_RESULT;

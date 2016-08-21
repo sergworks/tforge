@@ -91,19 +91,19 @@ const
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
-   @TBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.SetKeyParam,
    @TRC5Algorithm.ExpandKey32,
    @TRC5Algorithm.DestroyKey,
    @TRC5Algorithm.DuplicateKey,
    @TRC5Algorithm.GetBlockSize,
-   @TBlockCipher.Encrypt,
-   @TBlockCipher.Decrypt,
+   @TBaseBlockCipher.Encrypt,
+   @TBaseBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock32,
    @TRC5Algorithm.DecryptBlock32,
-   @TBlockCipher.GetRand,
-   @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt,
-   @TBlockCipher.GetKeyParam
+   @TBaseBlockCipher.GetRand,
+   @TBaseBlockCipher.RandBlock,
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetKeyParam
    );
 
   RC5VTable64: array[0..15] of Pointer = (
@@ -111,19 +111,19 @@ const
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
-   @TBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.SetKeyParam,
    @TRC5Algorithm.ExpandKey64,
    @TRC5Algorithm.DestroyKey,
    @TRC5Algorithm.DuplicateKey,
    @TRC5Algorithm.GetBlockSize,
-   @TBlockCipher.Encrypt,
-   @TBlockCipher.Decrypt,
+   @TBaseBlockCipher.Encrypt,
+   @TBaseBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock64,
    @TRC5Algorithm.DecryptBlock64,
-   @TBlockCipher.GetRand,
-   @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt,
-   @TBlockCipher.GetKeyParam
+   @TBaseBlockCipher.GetRand,
+   @TBaseBlockCipher.RandBlock,
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetKeyParam
    );
 
   RC5VTable128: array[0..15] of Pointer = (
@@ -131,19 +131,19 @@ const
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
-   @TBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.SetKeyParam,
    @TRC5Algorithm.ExpandKey128,
    @TRC5Algorithm.DestroyKey,
    @TRC5Algorithm.DuplicateKey,
    @TRC5Algorithm.GetBlockSize,
-   @TBlockCipher.Encrypt,
-   @TBlockCipher.Decrypt,
+   @TBaseBlockCipher.Encrypt,
+   @TBaseBlockCipher.Decrypt,
    @TRC5Algorithm.EncryptBlock128,
    @TRC5Algorithm.DecryptBlock128,
-   @TBlockCipher.GetRand,
-   @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt,
-   @TBlockCipher.GetKeyParam
+   @TBaseBlockCipher.GetRand,
+   @TBaseBlockCipher.RandBlock,
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetKeyParam
    );
 
 procedure BurnKey(Inst: PRC5Algorithm); inline;

@@ -45,6 +45,10 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Crypt(Inst: PKeyStreamInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SetNonce(Inst: PKeyStreamInstance; Nonce: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetNonce(Inst: PKeyStreamInstance; var Nonce: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 //function GetKeyStreamByAlgID(AlgID: LongWord; var A: PKeyStreamEngine): TF_RESULT;
@@ -54,7 +58,7 @@ implementation
 uses tfRecords;
 
 const
-  VTable: array[0..7] of Pointer = (
+  VTable: array[0..9] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
@@ -65,7 +69,9 @@ const
     @TKeyStreamInstance.ExpandKey,
     @TKeyStreamInstance.Read,
     @TKeyStreamInstance.Skip,
-    @TKeyStreamInstance.Crypt
+    @TKeyStreamInstance.Crypt,
+    @TKeyStreamInstance.SetNonce,
+    @TKeyStreamInstance.GetNonce
   );
 
 (*
@@ -365,6 +371,22 @@ begin
   Result:= TF_S_OK;
 end;
 
+
+class function TKeyStreamInstance.SetNonce(Inst: PKeyStreamInstance;
+  Nonce: UInt64): TF_RESULT;
+begin
+  Result:= Inst.FCipher.SetKeyParam(TF_KP_NONCE, @Nonce, SizeOf(Nonce));
+end;
+
+class function TKeyStreamInstance.GetNonce(Inst: PKeyStreamInstance;
+  var Nonce: UInt64): TF_RESULT;
+var
+  L: Cardinal;
+
+begin
+  L:= SizeOf(Nonce);
+  Result:= Inst.FCipher.GetKeyParam(TF_KP_NONCE, @Nonce, L);
+end;
 
 class function TKeyStreamInstance.Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
 var

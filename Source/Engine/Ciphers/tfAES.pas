@@ -85,19 +85,19 @@ const
    @TForgeInstance.Addref,
    @TAESAlgorithm.Release,
 
-   @TBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.SetKeyParam,
    @TAESAlgorithm.ExpandKey,
    @TAESAlgorithm.DestroyKey,
    @TAESAlgorithm.DuplicateKey,
    @TAESAlgorithm.GetBlockSize,
-   @TBlockCipher.Encrypt,
-   @TBlockCipher.Decrypt,
+   @TBaseBlockCipher.Encrypt,
+   @TBaseBlockCipher.Decrypt,
    @TAESAlgorithm.EncryptBlock,
    @TAESAlgorithm.DecryptBlock,
-   @TBlockCipher.GetRand,
-   @TBlockCipher.RandBlock,
-   @TBlockCipher.RandCrypt,
-   @TBlockCipher.GetKeyParam
+   @TBaseBlockCipher.GetRand,
+   @TBaseBlockCipher.RandBlock,
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetKeyParam
    );
 
 procedure BurnKey(Inst: PAESAlgorithm); inline;

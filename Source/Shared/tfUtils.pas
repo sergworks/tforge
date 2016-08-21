@@ -170,21 +170,19 @@ begin
   Cnt2:= Count and 3;
 
   if NativeUInt(D) > NativeUInt(S) then begin
-    if Cnt1 > 0 then begin
-      Inc(PUInt32(S), Cnt1);
-      Inc(PUInt32(D), Cnt1);
-      repeat
-        Dec(PUInt32(S));
-        Dec(PUInt32(D));
-        Dec(Cnt1);
-        PUInt32(D)^:= PUInt32(D)^ xor PUInt32(S)^;
-      until Cnt1 = 0;
-    end;
+    Inc(S, Count);
+    Inc(D, Count);
     while Cnt2 > 0 do begin
       Dec(S);
       Dec(D);
       Dec(Cnt2);
       D^:= D^ xor S^;
+    end;
+    while Cnt1 > 0 do begin
+      Dec(PUInt32(S));
+      Dec(PUInt32(D));
+      Dec(Cnt1);
+      PUInt32(D)^:= PUInt32(D)^ xor PUInt32(S)^;
     end;
   end
   else begin

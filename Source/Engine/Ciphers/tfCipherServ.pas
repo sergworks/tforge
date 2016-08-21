@@ -42,20 +42,20 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function GetKSByAlgID(Inst: PCipherServer; AlgID: LongInt;
-          var KS: IKeyStream): TF_RESULT;
+          var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKSByName(Inst: PAlgServer;
-          Name: Pointer; CharSize: Integer; var KS: IKeyStream): TF_RESULT;
+          Name: Pointer; CharSize: Integer; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function GetKSRC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
-          var KS: IKeyStream): TF_RESULT;
+          var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKSSalsa20(Inst: PCipherServer; Rounds: LongInt;
-          var KS: IKeyStream): TF_RESULT;
+          var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKSChaCha20(Inst: PCipherServer; Rounds: LongInt;
-          var KS: IKeyStream): TF_RESULT;
+          var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
 
@@ -99,7 +99,7 @@ begin
 end;
 
 class function TCipherServer.GetKSByAlgID(Inst: PCipherServer; AlgID: Integer;
-                 var KS: IKeyStream): TF_RESULT;
+                 var KS: IStreamCipher): TF_RESULT;
 var
   Alg: ICipherAlgorithm;
 
@@ -110,7 +110,7 @@ begin
 end;
 
 class function TCipherServer.GetKSByName(Inst: PAlgServer; Name: Pointer;
-                 CharSize: Integer; var KS: IKeyStream): TF_RESULT;
+                 CharSize: Integer; var KS: IStreamCipher): TF_RESULT;
 var
   Alg: ICipherAlgorithm;
 
@@ -121,7 +121,7 @@ begin
 end;
 
 class function TCipherServer.GetKSRC5(Inst: PCipherServer; BlockSize,
-                 Rounds: Integer; var KS: IKeyStream): TF_RESULT;
+                 Rounds: Integer; var KS: IStreamCipher): TF_RESULT;
 var
   Alg: ICipherAlgorithm;
 
@@ -132,7 +132,7 @@ begin
 end;
 
 class function TCipherServer.GetKSSalsa20(Inst: PCipherServer; Rounds: Integer;
-                  var KS: IKeyStream): TF_RESULT;
+                  var KS: IStreamCipher): TF_RESULT;
 var
   Alg: ICipherAlgorithm;
 
@@ -143,7 +143,7 @@ begin
 end;
 
 class function TCipherServer.GetKSChaCha20(Inst: PCipherServer; Rounds: Integer;
-                 var KS: IKeyStream): TF_RESULT;
+                 var KS: IStreamCipher): TF_RESULT;
 var
   Alg: ICipherAlgorithm;
 

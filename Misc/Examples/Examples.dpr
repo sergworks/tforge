@@ -7,7 +7,8 @@ uses
   tfNumerics,
   tfRandoms,
   tfHashes,
-  MontEx in 'MontEx.pas';
+  MontEx in 'MontEx.pas',
+  StreamCipherEx in 'StreamCipherEx.pas';
 
 procedure BigCardExamples;
 var
@@ -250,6 +251,7 @@ begin
     PowerOfTwo;
     TestAssigned;
     MontExamples;
+    StreamCipherExamples;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

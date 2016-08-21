@@ -109,13 +109,13 @@ const
    @TSalsa20.DestroyKey,
    @TSalsa20.DuplicateKey,
    @TSalsa20.GetBlockSize,
-   @TStreamCipher.Encrypt,
-   @TStreamCipher.Decrypt,
-   @TStreamCipher.EncryptBlock,
-   @TStreamCipher.EncryptBlock,
-   @TStreamCipher.GetRand,
+   @TBaseStreamCipher.Encrypt,
+   @TBaseStreamCipher.Decrypt,
+   @TBaseStreamCipher.EncryptBlock,
+   @TBaseStreamCipher.EncryptBlock,
+   @TBaseStreamCipher.GetRand,
    @TSalsa20.KeyBlock,
-   @TStreamCipher.RandCrypt
+   @TBaseStreamCipher.RandCrypt
    );
 
   ChaCha20VTable: array[0..14] of Pointer = (
@@ -128,13 +128,13 @@ const
    @TSalsa20.DestroyKey,
    @TChaCha20.DuplicateKey,
    @TSalsa20.GetBlockSize,
-   @TStreamCipher.Encrypt,
-   @TStreamCipher.Decrypt,
-   @TStreamCipher.EncryptBlock,
-   @TStreamCipher.EncryptBlock,
-   @TStreamCipher.GetRand,
+   @TBaseStreamCipher.Encrypt,
+   @TBaseStreamCipher.Decrypt,
+   @TBaseStreamCipher.EncryptBlock,
+   @TBaseStreamCipher.EncryptBlock,
+   @TBaseStreamCipher.GetRand,
    @TChaCha20.KeyBlock,
-   @TStreamCipher.RandCrypt
+   @TBaseStreamCipher.RandCrypt
    );
 
 function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;

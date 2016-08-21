@@ -370,26 +370,26 @@ type
     function PBKDF1(HashAlg: IHashAlgorithm;
           Password: Pointer; PassLen: Cardinal;
           Salt: Pointer; SaltLen: Cardinal;
-          Rounds, dkLen: LongWord; var Key: IBytes): TF_RESULT;
+          Rounds, dkLen: Cardinal; var Key: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 //    function RegisterHash(Name: Pointer; CharSize: Integer; Getter: THashGetter;
 //          var Index: Integer): TF_RESULT;
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  IKeyStream = interface(IInterface)
+  IStreamCipher = interface(IInterface)
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function SetKeyParam(Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ExpandKey(Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    procedure DestroyKey;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Read(Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Skip(Dist: Int64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Crypt(Data: PByte; DataSize: Cardinal): TF_RESULT;
+    function Apply(Data: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetNonce(Nonce: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetNonce(var Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -413,15 +413,15 @@ type
     function GetChaCha20(Rounds: Cardinal; var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-    function GetKSByAlgID(AlgID: UInt32; var KS: IKeyStream): TF_RESULT;
+    function GetKSByAlgID(AlgID: UInt32; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSByName(Name: Pointer; CharSize: Cardinal; var KS: IKeyStream): TF_RESULT;
+    function GetKSByName(Name: Pointer; CharSize: Cardinal; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSRC5(BlockSize, Rounds: Cardinal; var KS: IKeyStream): TF_RESULT;
+    function GetKSRC5(BlockSize, Rounds: Cardinal; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSSalsa20(Rounds: Cardinal; var KS: IKeyStream): TF_RESULT;
+    function GetKSSalsa20(Rounds: Cardinal; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKSChaCha20(Rounds: Cardinal; var KS: IKeyStream): TF_RESULT;
+    function GetKSChaCha20(Rounds: Cardinal; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   end;
