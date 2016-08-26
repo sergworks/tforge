@@ -57,7 +57,7 @@ type
                     var State: TAESBlock; First: Boolean); static;
   public
     class function Release(Inst: PAESAlgorithm): Integer; stdcall; static;
-    class function ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PAESAlgorithm): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -216,12 +216,12 @@ const
     $17, $2B, $04, $7E, $BA, $77, $D6, $26, $E1, $69, $14, $63, $55, $21, $0C, $7D);
 
 const
-  RCon : array[1..TAESAlgorithm.MaxRounds] of LongWord =
+  RCon : array[1..TAESAlgorithm.MaxRounds] of UInt32 =
    ($00000001, $00000002, $00000004, $00000008, $00000010, $00000020, $00000040,
     $00000080, $0000001B, $00000036, $0000006C, $000000D8, $000000AB, $0000004D);
 
 const
-  RDL_T0 : array[Byte] of LongWord =
+  RDL_T0 : array[Byte] of UInt32 =
     ($A56363C6, $847C7CF8, $997777EE, $8D7B7BF6, $0DF2F2FF, $BD6B6BD6, $B16F6FDE, $54C5C591,
      $50303060, $03010102, $A96767CE, $7D2B2B56, $19FEFEE7, $62D7D7B5, $E6ABAB4D, $9A7676EC,
      $45CACA8F, $9D82821F, $40C9C989, $877D7DFA, $15FAFAEF, $EB5959B2, $C947478E, $0BF0F0FB,
@@ -256,7 +256,7 @@ const
      $C3414182, $B0999929, $772D2D5A, $110F0F1E, $CBB0B07B, $FC5454A8, $D6BBBB6D, $3A16162C);
 
 const
-  RDL_T1 : array[Byte] of LongWord =
+  RDL_T1 : array[Byte] of UInt32 =
     ($6363C6A5, $7C7CF884, $7777EE99, $7B7BF68D, $F2F2FF0D, $6B6BD6BD, $6F6FDEB1, $C5C59154,
      $30306050, $01010203, $6767CEA9, $2B2B567D, $FEFEE719, $D7D7B562, $ABAB4DE6, $7676EC9A,
      $CACA8F45, $82821F9D, $C9C98940, $7D7DFA87, $FAFAEF15, $5959B2EB, $47478EC9, $F0F0FB0B,
@@ -291,7 +291,7 @@ const
      $414182C3, $999929B0, $2D2D5A77, $0F0F1E11, $B0B07BCB, $5454A8FC, $BBBB6DD6, $16162C3A);
 
 const
-  RDL_T2 : array[Byte] of LongWord =
+  RDL_T2 : array[Byte] of UInt32 =
     ($63C6A563, $7CF8847C, $77EE9977, $7BF68D7B, $F2FF0DF2, $6BD6BD6B, $6FDEB16F, $C59154C5,
      $30605030, $01020301, $67CEA967, $2B567D2B, $FEE719FE, $D7B562D7, $AB4DE6AB, $76EC9A76,
      $CA8F45CA, $821F9D82, $C98940C9, $7DFA877D, $FAEF15FA, $59B2EB59, $478EC947, $F0FB0BF0,
@@ -326,7 +326,7 @@ const
      $4182C341, $9929B099, $2D5A772D, $0F1E110F, $B07BCBB0, $54A8FC54, $BB6DD6BB, $162C3A16);
 
 const
-  RDL_T3 : array[Byte] of LongWord =
+  RDL_T3 : array[Byte] of UInt32 =
     ($C6A56363, $F8847C7C, $EE997777, $F68D7B7B, $FF0DF2F2, $D6BD6B6B, $DEB16F6F, $9154C5C5,
      $60503030, $02030101, $CEA96767, $567D2B2B, $E719FEFE, $B562D7D7, $4DE6ABAB, $EC9A7676,
      $8F45CACA, $1F9D8282, $8940C9C9, $FA877D7D, $EF15FAFA, $B2EB5959, $8EC94747, $FB0BF0F0,
@@ -361,7 +361,7 @@ const
      $82C34141, $29B09999, $5A772D2D, $1E110F0F, $7BCBB0B0, $A8FC5454, $6DD6BBBB, $2C3A1616);
 
 const
-  RDL_InvT0 : array[Byte] of LongWord =
+  RDL_InvT0 : array[Byte] of UInt32 =
     ($00000000, $0B0D090E, $161A121C, $1D171B12, $2C342438, $27392D36, $3A2E3624, $31233F2A,
      $58684870, $5365417E, $4E725A6C, $457F5362, $745C6C48, $7F516546, $62467E54, $694B775A,
      $B0D090E0, $BBDD99EE, $A6CA82FC, $ADC78BF2, $9CE4B4D8, $97E9BDD6, $8AFEA6C4, $81F3AFCA,
@@ -396,7 +396,7 @@ const
      $92B479A7, $99B970A9, $84AE6BBB, $8FA362B5, $BE805D9F, $B58D5491, $A89A4F83, $A397468D);
 
 const
-  RDL_InvT1 : array[Byte] of LongWord =
+  RDL_InvT1 : array[Byte] of UInt32 =
     ($00000000, $0D090E0B, $1A121C16, $171B121D, $3424382C, $392D3627, $2E36243A, $233F2A31,
      $68487058, $65417E53, $725A6C4E, $7F536245, $5C6C4874, $5165467F, $467E5462, $4B775A69,
      $D090E0B0, $DD99EEBB, $CA82FCA6, $C78BF2AD, $E4B4D89C, $E9BDD697, $FEA6C48A, $F3AFCA81,
@@ -431,7 +431,7 @@ const
      $B479A792, $B970A999, $AE6BBB84, $A362B58F, $805D9FBE, $8D5491B5, $9A4F83A8, $97468DA3);
 
 const
-  RDL_InvT2 : array[Byte] of LongWord =
+  RDL_InvT2 : array[Byte] of UInt32 =
     ($00000000, $090E0B0D, $121C161A, $1B121D17, $24382C34, $2D362739, $36243A2E, $3F2A3123,
      $48705868, $417E5365, $5A6C4E72, $5362457F, $6C48745C, $65467F51, $7E546246, $775A694B,
      $90E0B0D0, $99EEBBDD, $82FCA6CA, $8BF2ADC7, $B4D89CE4, $BDD697E9, $A6C48AFE, $AFCA81F3,
@@ -466,7 +466,7 @@ const
      $79A792B4, $70A999B9, $6BBB84AE, $62B58FA3, $5D9FBE80, $5491B58D, $4F83A89A, $468DA397);
 
 const
-  RDL_InvT3 : array[Byte] of LongWord =
+  RDL_InvT3 : array[Byte] of UInt32 =
     ($00000000, $0E0B0D09, $1C161A12, $121D171B, $382C3424, $3627392D, $243A2E36, $2A31233F,
      $70586848, $7E536541, $6C4E725A, $62457F53, $48745C6C, $467F5165, $5462467E, $5A694B77,
      $E0B0D090, $EEBBDD99, $FCA6CA82, $F2ADC78B, $D89CE4B4, $D697E9BD, $C48AFEA6, $CA81F3AF,
@@ -503,7 +503,7 @@ const
 type
   TRDLVector = record
     case Byte of
-      0 : (LWord: LongWord);
+      0 : (LWord: UInt32);
       1 : (Bytes: array[0..3] of Byte);
     end;
 
@@ -582,7 +582,7 @@ var
   r : TRDLVectors;
   e : TRDLVector;
 begin
-  Xor128(PLongWord(@State), PLongWord(@RoundKey));
+  Xor128(PUInt32(@State), PUInt32(@RoundKey));
   for i := 0 to 3 do begin
     if not First then begin
       e.LWord:= RDL_InvT0[TRDlVectors(State)[i].Bytes[0]] xor
@@ -603,11 +603,11 @@ begin
   State := TAESBlock(r);
 end;
 
-class function TAESAlgorithm.ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+class function TAESAlgorithm.ExpandKey(Inst: PAESAlgorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
 var
-  I: LongWord;
+  I: Cardinal;
   Temp: TRDLVector;
-  Nk: LongWord;
+  Nk: Cardinal;
 
 begin
 //  if (KeySize = 128) or (KeySize = 192) or (KeySize = 256) then begin

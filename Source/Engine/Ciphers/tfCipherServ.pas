@@ -31,30 +31,30 @@ type
     class function GetByAlgID(Inst: PCipherServer; AlgID: UInt32;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetRC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
+    class function GetRC5(Inst: PCipherServer; BlockSize, Rounds: Integer;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetSalsa20(Inst: PCipherServer; Rounds: LongInt;
+    class function GetSalsa20(Inst: PCipherServer; Rounds: Integer;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetChaCha20(Inst: PCipherServer; Rounds: LongInt;
+    class function GetChaCha20(Inst: PCipherServer; Rounds: Integer;
           var Alg: ICipherAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function GetKSByAlgID(Inst: PCipherServer; AlgID: LongInt;
+    class function GetKSByAlgID(Inst: PCipherServer; AlgID: UInt32;
           var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKSByName(Inst: PAlgServer;
           Name: Pointer; CharSize: Integer; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function GetKSRC5(Inst: PCipherServer; BlockSize, Rounds: LongInt;
+    class function GetKSRC5(Inst: PCipherServer; BlockSize, Rounds: Integer;
           var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKSSalsa20(Inst: PCipherServer; Rounds: LongInt;
+    class function GetKSSalsa20(Inst: PCipherServer; Rounds: Integer;
           var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKSChaCha20(Inst: PCipherServer; Rounds: LongInt;
+    class function GetKSChaCha20(Inst: PCipherServer; Rounds: Integer;
           var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
    end;
@@ -98,7 +98,7 @@ begin
   Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
 end;
 
-class function TCipherServer.GetKSByAlgID(Inst: PCipherServer; AlgID: Integer;
+class function TCipherServer.GetKSByAlgID(Inst: PCipherServer; AlgID: UInt32;
                  var KS: IStreamCipher): TF_RESULT;
 var
   Alg: ICipherAlgorithm;

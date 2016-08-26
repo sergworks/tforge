@@ -28,17 +28,14 @@ type
     FPos: Cardinal;       // 0 .. FBlockSize - 1
     FBlock: TBlock;       // var len
   public
-//    class function NewInstance(Alg: ICipherAlgorithm; BlockSize: Cardinal): PKeyStreamEngine;
     class function GetInstance(var Inst: PKeyStreamInstance; Alg: ICipherAlgorithm): TF_RESULT; static;
-//    class function Release(Inst: PKeyStreamInstance): Integer; stdcall; static;
     class procedure Burn(Inst: PKeyStreamInstance);
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function Duplicate(Inst: PKeyStreamInstance; var NewInst: PKeyStreamInstance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ExpandKey(Inst: PKeyStreamInstance;
       Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class function SetKeyParam(Inst: PKeyStreamEngine; Param: LongWord;
-//      Data: Pointer; DataLen: LongWord): TF_RESULT;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Read(Inst: PKeyStreamInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
@@ -51,21 +48,20 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-//function GetKeyStreamByAlgID(AlgID: LongWord; var A: PKeyStreamEngine): TF_RESULT;
+//function GetKeyStreamByAlgID(AlgID: UInt32; var A: PKeyStreamEngine): TF_RESULT;
 
 implementation
 
 uses tfRecords;
 
 const
-  VTable: array[0..9] of Pointer = (
+  VTable: array[0..10] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
 //    @TKeyStreamInstance.Release,
     @TKeyStreamInstance.Burn,
-
-//   @TKeyStreamEngine.SetKeyParam,
+    @TKeyStreamInstance.Duplicate,
     @TKeyStreamInstance.ExpandKey,
     @TKeyStreamInstance.Read,
     @TKeyStreamInstance.Skip,
@@ -75,7 +71,7 @@ const
   );
 
 (*
-function GetKeyStreamByAlgID(AlgID: LongWord; var A: PKeyStreamEngine): TF_RESULT;
+function GetKeyStreamByAlgID(AlgID: UInt32; var A: PKeyStreamEngine): TF_RESULT;
 var
   Server: ICipherServer;
   Alg: ICipherAlgorithm;
@@ -213,20 +209,14 @@ begin
 //  Result^.FPos:= 0;
 end;
 
-class function TKeyStreamEngine.SetKeyParam(Inst: PKeyStreamEngine;
-                 Param: LongWord; Data: Pointer; DataLen: LongWord): TF_RESULT;
-begin
-  Inst.FPos:= 0;
-  Result:= Inst.FCipher.SetKeyParam(Param, Data, DataLen);
-end;
 *)
 (*
 class function TKeyStreamEngine.Read(Inst: PKeyStreamEngine; Data: PByte;
-  DataSize: LongWord): TF_RESULT;
+  DataSize: Cardinal): TF_RESULT;
 var
-  LBlockSize: LongWord;
-  LDataSize: LongWord;
-  LPos: LongWord;
+  LBlockSize: Cardinal;
+  LDataSize: Cardinal;
+  LPos: Cardinal;
   LBlockNo: UInt64;
 
 begin
@@ -287,9 +277,9 @@ end;
 
 
 class function TKeyStreamInstance.Read(Inst: PKeyStreamInstance; Data: PByte;
-  DataSize: LongWord): TF_RESULT;
+  DataSize: Cardinal): TF_RESULT;
 var
-  LDataSize: LongWord;
+  LDataSize: Cardinal;
 
 begin
 // read current block's tail
@@ -329,9 +319,9 @@ begin
 end;
 
 class function TKeyStreamInstance.Crypt(Inst: PKeyStreamInstance; Data: PByte;
-  DataSize: LongWord): TF_RESULT;
+  DataSize: Cardinal): TF_RESULT;
 var
-  LDataSize: LongWord;
+  LDataSize: Cardinal;
 
 begin
 // read current block's tail
@@ -371,6 +361,28 @@ begin
   Result:= TF_S_OK;
 end;
 
+class function TKeyStreamInstance.Duplicate(Inst: PKeyStreamInstance;
+               var NewInst: PKeyStreamInstance): TF_RESULT;
+var
+  CipherInst: ICipherAlgorithm;
+  TmpInst: PKeyStreamInstance;
+
+begin
+  Result:= Inst.FCipher.DuplicateKey(CipherInst);
+  if Result = TF_S_OK then begin
+    TmpInst:= nil;
+    Result:= GetInstance(TmpInst, CipherInst);
+    if Result = TF_S_OK then begin
+      TmpInst.FBlockSize:= Inst.FBlockSize;
+      TmpInst.FPos:= Inst.FPos;
+      Move(Inst.FBlock, TmpInst.FBlock, Inst.FBlockSize);
+      tfFreeInstance(NewInst);
+      NewInst:= TmpInst;
+    end
+    else
+      CipherInst:= nil;
+  end;
+end;
 
 class function TKeyStreamInstance.SetNonce(Inst: PKeyStreamInstance;
   Nonce: UInt64): TF_RESULT;
@@ -391,19 +403,19 @@ end;
 class function TKeyStreamInstance.Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
 var
   NBlocks: UInt64;
-  Tail: LongWord;
+  Tail: Cardinal;
 
 begin
   if Dist >= 0 then begin
     Tail:= Inst.FBlockSize - Inst.FPos;
     if Dist < Tail then begin
-      Inst.FPos:= Inst.FPos + LongWord(Dist);
+      Inst.FPos:= Inst.FPos + Cardinal(Dist);
     end
     else begin
       NBlocks:= (UInt64(Dist) - Tail) div Inst.FBlockSize + 1;
       Result:= Inst.FCipher.SetKeyParam(TF_KP_INCNO, @NBlocks, SizeOf(NBlocks));
       if Result <> TF_S_OK then Exit;
-      Inst.FPos:= Inst.FPos + LongWord(UInt64(Dist) mod Inst.FBlockSize);
+      Inst.FPos:= Inst.FPos + Cardinal(UInt64(Dist) mod Inst.FBlockSize);
       if Inst.FPos >= Inst.FBlockSize then
         Inst.FPos:= Inst.FPos - Inst.FBlockSize;
     end;
@@ -411,14 +423,14 @@ begin
   else begin
     Dist:= -Dist;
     if Dist <= Inst.FPos then begin
-      Inst.FPos:= Inst.FPos - LongWord(Dist);
+      Inst.FPos:= Inst.FPos - Cardinal(Dist);
     end
     else begin
       NBlocks:= (UInt64(Dist) - Inst.FPos) div Inst.FBlockSize;
       Result:= Inst.FCipher.SetKeyParam(TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
       if Result <> TF_S_OK then Exit;
 // Inst.FPos is unsigned
-      Inst.FPos:= Inst.FPos - LongWord(UInt64(Dist) mod Inst.FBlockSize);
+      Inst.FPos:= Inst.FPos - Cardinal(UInt64(Dist) mod Inst.FBlockSize);
       if Inst.FPos >= Inst.FBlockSize then
         Inst.FPos:= Inst.FPos + Inst.FBlockSize;
     end;

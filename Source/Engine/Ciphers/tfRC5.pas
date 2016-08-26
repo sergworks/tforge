@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfRC5;
@@ -25,7 +25,7 @@ type
     TRC5Block = record
       case Byte of
         0: (Word16: array[0..1] of Word);
-        1: (Word32: array[0..1] of LongWord);
+        1: (Word32: array[0..1] of UInt32);
         2: (Word64: array[0..1] of UInt64);
     end;
 
@@ -38,23 +38,23 @@ type
     FRefCount: Integer;
                                 // from tfBlockCipher
     FValidKey: Boolean;
-    FDir:      LongWord;
-    FMode:     LongWord;
-    FPadding:  LongWord;
+    FDir:      UInt32;
+    FMode:     UInt32;
+    FPadding:  UInt32;
     FIVector:  TRC5Block;       // -- inherited fields end --
 {$HINTS ON}
-    FBlockSize: LongWord;       // 4, 8, 16
-    FRounds: LongWord;          // 0..255
+    FBlockSize: Cardinal;       // 4, 8, 16
+    FRounds: Cardinal;          // 0..255
 
     FSubKeys: TDummy;
 
   public
     class function Release(Inst: PRC5Algorithm): Integer; stdcall; static;
-    class function ExpandKey32(Inst: PRC5Algorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey32(Inst: PRC5Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey64(Inst: PRC5Algorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey64(Inst: PRC5Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey128(Inst: PRC5Algorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey128(Inst: PRC5Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PRC5Algorithm): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -255,7 +255,7 @@ begin
   Result:= (Value shl Shift) or (Value shr (16 - Shift));
 end;
 
-function Rol32(Value: LongWord; Shift: Cardinal): LongWord; inline;
+function Rol32(Value: UInt32; Shift: Cardinal): UInt32; inline;
 begin
   Result:= (Value shl Shift) or (Value shr (32 - Shift));
 end;
@@ -270,7 +270,7 @@ begin
   Result:= (Value shr Shift) or (Value shl (16 - Shift));
 end;
 
-function Ror32(Value: LongWord; Shift: Cardinal): LongWord; inline;
+function Ror32(Value: UInt32; Shift: Cardinal): UInt32; inline;
 begin
   Result:= (Value shr Shift) or (Value shl (32 - Shift));
 end;
@@ -312,7 +312,7 @@ end;
 class function TRC5Algorithm.EncryptBlock64(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
-  RC5Word = LongWord;
+  RC5Word = UInt32;
 
 var
   A, B: RC5Word;
@@ -401,7 +401,7 @@ end;
 class function TRC5Algorithm.DecryptBlock64(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
-  RC5Word = LongWord;
+  RC5Word = UInt32;
 
 var
   A, B: RC5Word;
@@ -461,7 +461,7 @@ begin
 end;
 
 class function TRC5Algorithm.ExpandKey32(Inst: PRC5Algorithm; Key: PByte;
-  KeySize: LongWord): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 
 type
   RC5Word = Word;         // RC5 "word" size = 2 bytes
@@ -521,10 +521,10 @@ begin
 end;
 
 class function TRC5Algorithm.ExpandKey64(Inst: PRC5Algorithm; Key: PByte;
-  KeySize: LongWord): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 
 type
-  RC5Word = LongWord;     // RC5 "word" size = 4 bytes
+  RC5Word = UInt32;     // RC5 "word" size = 4 bytes
   PWArray = ^TWArray;
   TWArray = array[0..$FFFF] of RC5Word;
 
@@ -581,7 +581,7 @@ begin
 end;
 
 class function TRC5Algorithm.ExpandKey128(Inst: PRC5Algorithm; Key: PByte;
-  KeySize: LongWord): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 type
   RC5Word = UInt64;       // RC5 "word" size = 8 bytes
   PWArray = ^TWArray;

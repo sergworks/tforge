@@ -14,21 +14,21 @@ uses
 
 type
   PSalsaBlock = ^TSalsaBlock;
-  TSalsaBlock = array[0..15] of LongWord;
+  TSalsaBlock = array[0..15] of UInt32;
 
   PSalsa20 = ^TSalsa20;
   TSalsa20 = record
   private type
     PKey = ^TKey;
-    TKey = array[0..7] of LongWord;    // 256-bit key
+    TKey = array[0..7] of UInt32;    // 256-bit key
 
     PBlock = ^TBlock;
-    TBlock = array[0..15] of LongWord;
+    TBlock = array[0..15] of UInt32;
 
     TNonce = record
       case Byte of
         0: (Value: UInt64);
-        1: (Words: array[0..1] of LongWord);
+        1: (Words: array[0..1] of UInt32);
     end;
 
   private
@@ -44,15 +44,15 @@ type
 {$HINTS ON}
   public
     class function Release(Inst: PSalsa20): Integer; stdcall; static;
-    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PSalsa20): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DestroyKey(Inst: PSalsa20);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetKeyParam(Inst: PSalsa20; Param: LongWord; Data: Pointer;
-          DataLen: LongWord): TF_RESULT;
+    class function SetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+          DataLen: Cardinal): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -64,12 +64,12 @@ type
 type
   TChaCha20 = record
   public
-    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetKeyParam(Inst: PSalsa20; Param: LongWord; Data: Pointer;
-          DataLen: LongWord): TF_RESULT;
+    class function SetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+          DataLen: Cardinal): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -84,12 +84,12 @@ function GetChaCha20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
 type
   TChaChaPRG = record
   private type
-    TBlock = array[0..15] of LongWord;
+    TBlock = array[0..15] of UInt32;
   private
     FExpandedKey: TBlock;
   public
-    function Init(Seed: PByte; SeedSize: LongWord): TF_RESULT;
-    function GetKeyStream(Buf: PByte; BufSize: LongWord): TF_RESULT;
+    function Init(Seed: PByte; SeedSize: Cardinal): TF_RESULT;
+    function GetKeyStream(Buf: PByte; BufSize: Cardinal): TF_RESULT;
   end;
 
 implementation
@@ -237,7 +237,7 @@ end;
 
 procedure SalsaDoubleRound(x: TSalsa20.PBlock);
 var
-  y: LongWord;
+  y: UInt32;
 
 begin
   y := x[ 0] + x[12]; x[ 4] := x[ 4] xor ((y shl 07) or (y shr (32-07)));
@@ -276,7 +276,7 @@ end;
 
 procedure ChaChaDoubleRound(x: TSalsa20.PBlock);
 var
-  a, b, c, d: LongWord;
+  a, b, c, d: UInt32;
 
 begin
   a := x[0];   b := x[4];      c := x[8];      d:= x[12];
@@ -387,7 +387,7 @@ begin
 end;
 
 class function TSalsa20.ExpandKey(Inst: PSalsa20; Key: PByte;
-  KeySize: LongWord): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 begin
   if (KeySize <> 16) and (KeySize <> 32) then begin
     Result:= TF_E_INVALIDARG;
@@ -416,12 +416,12 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TSalsa20.SetKeyParam(Inst: PSalsa20; Param: LongWord;
-  Data: Pointer; DataLen: LongWord): TF_RESULT;
+class function TSalsa20.SetKeyParam(Inst: PSalsa20; Param: UInt32;
+  Data: Pointer; DataLen: Cardinal): TF_RESULT;
 
 type
   TUInt64Rec = record
-    Lo, Hi: LongWord;
+    Lo, Hi: UInt32;
   end;
 
 var
@@ -494,7 +494,7 @@ begin
 end;
 
 class function TChaCha20.ExpandKey(Inst: PSalsa20; Key: PByte;
-  KeySize: LongWord): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 begin
   if (KeySize <> 16) and (KeySize <> 32) then begin
     Result:= TF_E_INVALIDARG;
@@ -546,11 +546,11 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TChaCha20.SetKeyParam(Inst: PSalsa20; Param: LongWord;
-  Data: Pointer; DataLen: LongWord): TF_RESULT;
+class function TChaCha20.SetKeyParam(Inst: PSalsa20; Param: UInt32;
+  Data: Pointer; DataLen: Cardinal): TF_RESULT;
 type
   TUInt64Rec = record
-    Lo, Hi: LongWord;
+    Lo, Hi: UInt32;
   end;
 
 var
@@ -609,7 +609,7 @@ end;
 
 { TChaChaPRG }
 
-function TChaChaPRG.Init(Seed: PByte; SeedSize: LongWord): TF_RESULT;
+function TChaChaPRG.Init(Seed: PByte; SeedSize: Cardinal): TF_RESULT;
 begin
   if (SeedSize <> 24) and (SeedSize <> 40) then begin
     Result:= TF_E_INVALIDARG;
@@ -640,7 +640,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-function TChaChaPRG.GetKeyStream(Buf: PByte; BufSize: LongWord): TF_RESULT;
+function TChaChaPRG.GetKeyStream(Buf: PByte; BufSize: Cardinal): TF_RESULT;
 var
   N: Cardinal;
 
@@ -658,8 +658,8 @@ begin
       Dec(N);
     until N = 0;
     repeat
-      PLongWord(Buf)^:= PLongWord(Buf)^ + FExpandedKey[N];
-      Inc(PLongWord(Buf));
+      PUInt32(Buf)^:= PUInt32(Buf)^ + FExpandedKey[N];
+      Inc(PUInt32(Buf));
       Inc(N);
     until N = 16;
     Inc(FExpandedKey[12]);

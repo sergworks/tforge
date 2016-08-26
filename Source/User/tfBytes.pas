@@ -33,6 +33,7 @@ type
 
     class function Allocate(ASize: Cardinal): ByteArray; overload; static;
     class function Allocate(ASize: Cardinal; Filler: Byte): ByteArray; overload; static;
+    class function AllocateRand(ASize: Cardinal): ByteArray; static;
     procedure ReAllocate(ASize: Cardinal);
     class function FromBytes(const A: array of Byte): ByteArray; static;
     class function FromText(const S: string): ByteArray; static;
@@ -283,6 +284,15 @@ begin
   HResCheck(ByteVectorAllocEx(Result.FBytes, ASize, Filler));
 {$ELSE}
   HResCheck(ByteVectorAllocEx(PByteVector(Result.FBytes), ASize, Filler));
+{$ENDIF}
+end;
+
+class function ByteArray.AllocateRand(ASize: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(ByteVectorAllocRand(Result.FBytes, ASize));
+{$ELSE}
+  HResCheck(ByteVectorAllocRand(PByteVector(Result.FBytes), ASize));
 {$ENDIF}
 end;
 

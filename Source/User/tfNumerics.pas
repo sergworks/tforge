@@ -224,14 +224,16 @@ type
     class function Sqr(const A: BigInteger): BigInteger; static;
     class function Sqrt(const A: BigInteger): BigInteger; static;
     class function GCD(const A, B: BigInteger): BigInteger; overload; static;
-    class function GCD(const A: BigInteger; const B: BigCardinal): BigInteger; overload; static;
-    class function GCD(const A: BigCardinal; const B: BigInteger): BigInteger; overload; static;
     class function EGCD(const A, B: BigInteger; var X, Y: BigInteger): BigInteger; static;
     class function LCM(const A, B: BigInteger): BigInteger; overload; static;
     class function ModPow(const BaseValue, ExpValue, Modulo: BigInteger): BigInteger; static;
     class function ModInverse(const A, Modulo: BigInteger): BigInteger; overload; static;
-    class function ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger; overload; static;
-    class function ModInverse(const A: BigCardinal; const Modulo: BigInteger): BigInteger; overload; static;
+
+// removed because lead to overload ambiguity with hardcoded constants
+//    class function GCD(const A: BigInteger; const B: BigCardinal): BigInteger; overload; static;
+//    class function GCD(const A: BigCardinal; const B: BigInteger): BigInteger; overload; static;
+//    class function ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger; overload; static;
+//    class function ModInverse(const A: BigCardinal; const Modulo: BigInteger): BigInteger; overload; static;
 
     class function DivRem(const Dividend, Divisor: BigInteger;
                           var Remainder: BigInteger): BigInteger; overload; static;
@@ -2242,6 +2244,7 @@ begin
 {$ENDIF}
 end;
 
+(*
 class function BigInteger.GCD(const A: BigInteger; const B: BigCardinal): BigInteger;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -2261,6 +2264,7 @@ begin
             PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
+*)
 
 class function BigInteger.LCM(const A, B: BigInteger): BigInteger;
 begin
@@ -2328,6 +2332,7 @@ begin
 {$ENDIF}
 end;
 
+(*
 class function BigInteger.ModInverse(const A: BigInteger; const Modulo: BigCardinal): BigInteger;
 begin
 {$IFDEF TFL_INTFCALL}
@@ -2347,6 +2352,7 @@ begin
             PBigNumber(Modulo.FNumber), PBigNumber(Result.FNumber)));
 {$ENDIF}
 end;
+*)
 
 class operator BigInteger.Equal(const A: BigInteger; const B: TLimb): Boolean;
 begin

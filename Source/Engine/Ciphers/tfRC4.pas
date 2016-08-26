@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2015         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
 unit tfRC4;
@@ -34,7 +34,7 @@ type
 {$HINTS ON}
   public
     class function Release(Inst: PRC4Algorithm): Integer; stdcall; static;
-    class function ExpandKey(Inst: PRC4Algorithm; Key: PByte; KeySize: LongWord): TF_RESULT;
+    class function ExpandKey(Inst: PRC4Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PRC4Algorithm): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -131,9 +131,9 @@ begin
 end;
 
 class function TRC4Algorithm.ExpandKey(Inst: PRC4Algorithm; Key: PByte;
-  KeySize: LongWord): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 var
-  I: LongWord;
+  I: Cardinal;
   J, Tmp: Byte;
 
 begin

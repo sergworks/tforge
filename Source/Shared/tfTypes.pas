@@ -379,6 +379,8 @@ type
 
   IStreamCipher = interface(IInterface)
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Duplicate(var Key: IStreamCipher): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ExpandKey(Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Read(Data: PByte; DataSize: Cardinal): TF_RESULT;

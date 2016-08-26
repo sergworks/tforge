@@ -37,6 +37,8 @@ type
 
 function GetRandInstance(var Inst: PRandEngine): TF_RESULT;
 
+function GetRand(Buf: PByte; BufSize: Cardinal): TF_RESULT;
+
 implementation
 
 uses tfRecords;
@@ -50,6 +52,27 @@ const
    @TRandEngine.Burn,
    @TRandEngine.GetRand
    );
+
+var
+  RandGen: TRandEngine;
+
+// GetRand is threadsafe
+function GetRand(Buf: PByte; BufSize: Cardinal): TF_RESULT;
+begin
+{$IFDEF TFL_WINDOWS}
+  Result:= CryptLock.Acquire;
+  if Result = TF_S_OK then begin
+    if RandGen.FVTable = nil then begin
+      RandGen.FVTable:= @PRGVTable;
+      RandGen.FRefCount:= -1;
+    end;
+    Result:= TRandEngine.GetRand(@RandGen, Buf, BufSize);
+    CryptLock.Resease;
+  end;
+{$ELSE}
+  Result:= TF_E_NOTIMPL;
+{$ENDIF}
+end;
 
 function GetRandInstance(var Inst: PRandEngine): TF_RESULT;
 var

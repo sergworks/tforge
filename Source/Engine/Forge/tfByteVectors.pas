@@ -153,6 +153,9 @@ function ByteVectorAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
 function ByteVectorAllocEx(var A: PByteVector; ASize: Cardinal; Filler: Byte): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
+function ByteVectorAllocRand(var A: PByteVector; ASize: Cardinal): TF_RESULT;
+  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
 function ByteVectorReAlloc(var A: PByteVector; ASize: Cardinal): TF_RESULT;
   {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
@@ -184,7 +187,7 @@ function ByteVectorFromByte(var A: PByteVector; Value: Byte): TF_RESULT;
 
 implementation
 
-uses tfRecords, tfUtils;
+uses tfRecords, tfUtils, tfRandEngines;
 
 const
   ByteVecVTable: array[0..40] of Pointer = (
@@ -1134,6 +1137,21 @@ begin
     FillChar(Tmp.FData, ASize, Filler);
     tfFreeInstance(A); //if A <> nil then TtfRecord.Release(A);
     A:= Tmp;
+  end;
+end;
+
+function ByteVectorAllocRand(var A: PByteVector; ASize: Cardinal): TF_RESULT;
+var
+  Tmp: PByteVector;
+
+begin
+  Result:= TByteVector.AllocVector(Tmp, ASize);
+  if Result = TF_S_OK then begin
+    Result:= GetRand(@Tmp.FData, ASize);
+    if Result = TF_S_OK then begin
+      tfFreeInstance(A);
+      A:= Tmp;
+    end;
   end;
 end;
 

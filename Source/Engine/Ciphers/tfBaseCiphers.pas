@@ -126,7 +126,7 @@ type
   TBlockFunc = function(Inst: Pointer; Data: PByte): TF_RESULT;
                  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-  TGetBlockSizeFunc = function(Inst: PBaseBlockCipher): LongInt;
+  TGetBlockSizeFunc = function(Inst: PBaseBlockCipher): Integer;
                  {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   TGetRandFunc = function(Inst: PBaseStreamCipher;
@@ -153,7 +153,7 @@ begin
   Result:= PPVTable(Inst)^^[13];    // 13 is 'RandBlock' index
 end;
 
-function GetBlockSize(Inst: Pointer): LongInt; inline;
+function GetBlockSize(Inst: Pointer): Integer; inline;
 begin
   Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[7])(Inst);
 end;
