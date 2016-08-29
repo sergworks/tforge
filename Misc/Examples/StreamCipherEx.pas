@@ -295,6 +295,38 @@ begin
     Assert(Buffer1[I] = Buffer2[I]);
 end;
 
+procedure SkipExample;
+const
+  HexKey = '000102030405060708090A0B0C0D0E0F';
+  Nonce = 42;
+
+var
+  KeyStream, KeyStream1, KeyStream2: ByteArray;
+  StreamCipher: TStreamCipher;
+  Key: ByteArray;
+
+
+begin
+  Writeln;
+  Writeln('=== TStreamCipher.Skip example ===');
+  Key:= ByteArray.ParseHex(HexKey);
+  StreamCipher:= TStreamCipher.AES.ExpandKey(Key, Nonce);
+
+// generate 120 bytes of keystream
+  KeyStream:= StreamCipher.KeyStream(120);
+  Writeln(KeyStream.ToHex);
+
+  StreamCipher.Skip(-90);
+  KeyStream1:= StreamCipher.KeyStream(30);
+  Writeln(KeyStream.Copy(30, 30).ToHex);
+  Writeln(KeyStream1.ToHex);
+  Assert(KeyStream1 = KeyStream.Copy(30, 30));
+
+  StreamCipher.Skip(30);
+  KeyStream2:= StreamCipher.KeyStream(30);
+  Assert(KeyStream2 = KeyStream.Copy(90, 30));
+end;
+
 procedure StreamCipherExamples;
 begin
   ApplyExample;
@@ -306,6 +338,7 @@ begin
   CopyExample;
   KeyStreamExample;
   GetKeyStreamExample;
+  SkipExample;
 end;
 
 end.

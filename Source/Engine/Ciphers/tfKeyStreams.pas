@@ -280,10 +280,17 @@ class function TKeyStreamInstance.Read(Inst: PKeyStreamInstance; Data: PByte;
   DataSize: Cardinal): TF_RESULT;
 var
   LDataSize: Cardinal;
+  NBlocks: Cardinal;
 
 begin
 // read current block's tail
   if Inst.FPos > 0 then begin
+    NBlocks:= 1;
+    Result:= Inst.FCipher.SetKeyParam(TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
+    if Result <> TF_S_OK then Exit;
+    Result:= Inst.FCipher.GetKeyStream(@Inst.FBlock, Inst.FBlockSize);
+    if Result <> TF_S_OK then Exit;
+
     LDataSize:= Inst.FBlockSize - Inst.FPos;
     if LDataSize > DataSize
       then LDataSize:= DataSize;
@@ -322,10 +329,17 @@ class function TKeyStreamInstance.Crypt(Inst: PKeyStreamInstance; Data: PByte;
   DataSize: Cardinal): TF_RESULT;
 var
   LDataSize: Cardinal;
+  NBlocks: Cardinal;
 
 begin
 // read current block's tail
   if Inst.FPos > 0 then begin
+    NBlocks:= 1;
+    Result:= Inst.FCipher.SetKeyParam(TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
+    if Result <> TF_S_OK then Exit;
+    Result:= Inst.FCipher.GetKeyStream(@Inst.FBlock, Inst.FBlockSize);
+    if Result <> TF_S_OK then Exit;
+
     LDataSize:= Inst.FBlockSize - Inst.FPos;
     if LDataSize > DataSize
       then LDataSize:= DataSize;
@@ -403,39 +417,49 @@ end;
 class function TKeyStreamInstance.Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
 var
   NBlocks: UInt64;
+  NBytes: Cardinal;
   Tail: Cardinal;
+  ZeroIn, ZeroOut: Boolean;
 
 begin
   if Dist >= 0 then begin
     Tail:= Inst.FBlockSize - Inst.FPos;
-    if Dist < Tail then begin
-      Inst.FPos:= Inst.FPos + Cardinal(Dist);
-    end
-    else begin
-      NBlocks:= (UInt64(Dist) - Tail) div Inst.FBlockSize + 1;
-      Result:= Inst.FCipher.SetKeyParam(TF_KP_INCNO, @NBlocks, SizeOf(NBlocks));
-      if Result <> TF_S_OK then Exit;
-      Inst.FPos:= Inst.FPos + Cardinal(UInt64(Dist) mod Inst.FBlockSize);
-      if Inst.FPos >= Inst.FBlockSize then
-        Inst.FPos:= Inst.FPos - Inst.FBlockSize;
+    NBlocks:= UInt64(Dist) div Inst.FBlockSize;
+    NBytes:= UInt64(Dist) mod Inst.FBlockSize;
+    ZeroIn:= Inst.FPos = 0;
+    Inc(Inst.FPos, NBytes);
+    if Inst.FPos >= Inst.FBlockSize then begin
+      Inc(NBlocks);
+      Dec(Inst.FPos, Inst.FBlockSize);
     end;
+    ZeroOut:= Inst.FPos = 0;
+    if ZeroIn <> ZeroOut then begin
+      if ZeroIn then Inc(NBlocks)
+      else Dec(NBlocks);
+    end;
+    if NBlocks = 0 then Result:= TF_S_OK
+    else
+      Result:= Inst.FCipher.SetKeyParam(TF_KP_INCNO, @NBlocks, SizeOf(NBlocks));
   end
   else begin
     Dist:= -Dist;
-    if Dist <= Inst.FPos then begin
-      Inst.FPos:= Inst.FPos - Cardinal(Dist);
-    end
-    else begin
-      NBlocks:= (UInt64(Dist) - Inst.FPos) div Inst.FBlockSize;
-      Result:= Inst.FCipher.SetKeyParam(TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
-      if Result <> TF_S_OK then Exit;
-// Inst.FPos is unsigned
-      Inst.FPos:= Inst.FPos - Cardinal(UInt64(Dist) mod Inst.FBlockSize);
-      if Inst.FPos >= Inst.FBlockSize then
-        Inst.FPos:= Inst.FPos + Inst.FBlockSize;
+    NBlocks:= UInt64(Dist) div Inst.FBlockSize;
+    NBytes:= UInt64(Dist) mod Inst.FBlockSize;
+    ZeroIn:= Inst.FPos = 0;
+    if NBytes > Inst.FPos then begin
+      Inc(NBlocks);
+      Inst.FPos:= Inst.FPos + Inst.FBlockSize;
     end;
+    Dec(Inst.FPos, NBytes);
+    ZeroOut:= Inst.FPos = 0;
+    if ZeroIn <> ZeroOut then begin
+      if ZeroIn then Dec(NBlocks)
+      else Inc(NBlocks);
+    end;
+    if NBlocks = 0 then Result:= TF_S_OK
+    else
+      Result:= Inst.FCipher.SetKeyParam(TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
   end;
-  Result:= TF_S_OK;
 end;
 
 end.
