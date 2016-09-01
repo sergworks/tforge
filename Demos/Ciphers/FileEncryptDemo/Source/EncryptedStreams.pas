@@ -8,7 +8,7 @@ type
   TEncryptedStream = class(TStream)
   protected
     FStream: TStream;
-    FKeyStream: TKeyStream;
+    FKeyStream: TStreamCipher;
     function NonceSize: Integer; virtual;
   public
     function Read(var Buffer; Count: Int32): Int32; override;
@@ -18,7 +18,7 @@ type
 
   TEncryptedFileStream = class(TEncryptedStream)
   public
-    constructor Create(const AFileName: string; Mode: Word; AKeyStream: TKeyStream);
+    constructor Create(const AFileName: string; Mode: Word; AStreamCipher: TStreamCipher);
     destructor Destroy; override;
   end;
 
@@ -76,14 +76,14 @@ end;
 { TEncryptedFileStream }
 
 constructor TEncryptedFileStream.Create(const AFileName: string; Mode: Word;
-  AKeyStream: TKeyStream);
+  AStreamCipher: TStreamCipher);
 var
   LNonceSize: Integer;
   LNonce: UInt64;
 
 begin
   FStream:= TFileStream.Create(AFileName, Mode);
-  FKeyStream:= AKeyStream;
+  FKeyStream:= AStreamCipher;
   LNonceSize:= NonceSize;
   if LNonceSize > SizeOf(UInt64) then
     raise EStreamError.Create('Invalid Nonce Size');

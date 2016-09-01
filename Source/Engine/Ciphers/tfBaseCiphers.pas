@@ -60,7 +60,7 @@ type
     class function SetKeyParam(Inst: Pointer; Param: UInt32; Data: Pointer;
       DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyParam(Inst: Pointer; Param: UInt32; Data: Pointer;
+    class function GetKeyParam(Inst: PBaseBlockCipher; Param: UInt32; Data: Pointer;
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Encrypt(Inst: Pointer; Data: PByte; var DataSize: Cardinal;
@@ -119,7 +119,7 @@ implementation
 { TBlockCipher }
 
 type
-  TVTable = array[0..13] of Pointer;
+  TVTable = array[0..15] of Pointer;
   PVTable = ^TVTable;
   PPVTable = ^PVTable;
 
@@ -135,27 +135,27 @@ type
 
 function GetEncryptFunc(Inst: Pointer): Pointer; inline;
 begin
-  Result:= PPVTable(Inst)^^[10];     // 10 is 'EncryptBlock' index
+  Result:= PPVTable(Inst)^^[11];     // 11 is 'EncryptBlock' index
 end;
 
 function GetDecryptFunc(Inst: Pointer): Pointer; inline;
 begin
-  Result:= PPVTable(Inst)^^[11];    // 11 is 'DecryptBlock' index
+  Result:= PPVTable(Inst)^^[12];    // 12 is 'DecryptBlock' index
 end;
 
 function GetRandFunc(Inst: Pointer): Pointer; inline;
 begin
-  Result:= PPVTable(Inst)^^[12];    // 12 is 'GetRand' index
+  Result:= PPVTable(Inst)^^[13];    // 13 is 'GetKeyStream' index
 end;
 
 function GetRandBlockFunc(Inst: Pointer): Pointer; inline;
 begin
-  Result:= PPVTable(Inst)^^[13];    // 13 is 'RandBlock' index
+  Result:= PPVTable(Inst)^^[14];    // 14 is 'KeyBlock' index
 end;
 
 function GetBlockSize(Inst: Pointer): Integer; inline;
 begin
-  Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[7])(Inst);
+  Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[8])(Inst);
 end;
 
 procedure XorBytes(Target: Pointer; Value: Pointer; Count: Integer);
@@ -321,7 +321,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TBaseBlockCipher.GetKeyParam(Inst: Pointer; Param: UInt32;
+class function TBaseBlockCipher.GetKeyParam(Inst: PBaseBlockCipher; Param: UInt32;
   Data: Pointer; var DataLen: Cardinal): TF_RESULT;
 var
   LBlocksize: Cardinal;
@@ -343,7 +343,7 @@ begin
         Result:= TF_E_NOTIMPL;
         Exit;
       end;
-      P:= @PBaseBlockCipher(Inst).FIVector;
+      P:= @Inst.FIVector;
       while LBlockSize > 16 do begin
         if P^ <> 0 then begin
           Result:= TF_E_UNEXPECTED;
@@ -360,11 +360,12 @@ begin
   else begin
     if DataLen = SizeOf(UInt32) then begin
 //      LData:= PUInt32(Data)^;
+      Result:= TF_S_OK;
       case Param of
-        TF_KP_DIR: Result:= TF_E_NOTIMPL; // PBlockCipher(Inst).SetDir(LData);
-        TF_KP_MODE: Result:= TF_E_NOTIMPL; // PBlockCipher(Inst).SetMode(LData);
-        TF_KP_PADDING: Result:= TF_E_NOTIMPL; // PBlockCipher(Inst).SetPadding(LData);
-        TF_KP_FLAGS: Result:= TF_E_NOTIMPL; // PBlockCipher(Inst).SetFlags(LData);
+        TF_KP_DIR: PUInt32(Data)^:= Inst.FDir;
+        TF_KP_MODE: PUInt32(Data)^:= Inst.FMode;
+        TF_KP_PADDING: PUInt32(Data)^:= Inst.FPadding;
+//        TF_KP_FLAGS: Result:= TF_E_NOTIMPL; // PBlockCipher(Inst).SetFlags(LData);
       else
         Result:= TF_E_INVALIDARG;
       end;

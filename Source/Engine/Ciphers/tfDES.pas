@@ -113,10 +113,11 @@ const
    @TForgeInstance.Addref,
    @TDESAlgorithm.Release,
 
-   @TBaseBlockCipher.SetKeyParam,
-   @TDESAlgorithm.ExpandKey,
    @TDESAlgorithm.DestroyKey,
    @TDESAlgorithm.DuplicateKey,
+   @TDESAlgorithm.ExpandKey,
+   @TBaseBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.GetKeyParam,
    @TDESAlgorithm.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
@@ -124,8 +125,7 @@ const
    @TDESAlgorithm.EncryptBlock,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetKeyParam
+   @TBaseBlockCipher.RandCrypt
    );
 
   TripleDESVTable: array[0..15] of Pointer = (
@@ -133,10 +133,11 @@ const
    @TForgeInstance.Addref,
    @T3DESAlgorithm.Release,
 
-   @TBaseBlockCipher.SetKeyParam,
-   @T3DESAlgorithm.ExpandKey,
    @T3DESAlgorithm.DestroyKey,
    @T3DESAlgorithm.DuplicateKey,
+   @T3DESAlgorithm.ExpandKey,
+   @TBaseBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.GetKeyParam,
    @TDESAlgorithm.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
@@ -144,8 +145,7 @@ const
    @T3DESAlgorithm.EncryptBlock,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetKeyParam
+   @TBaseBlockCipher.RandCrypt
    );
 
 procedure BurnDESKey(Inst: PDESAlgorithm); inline;

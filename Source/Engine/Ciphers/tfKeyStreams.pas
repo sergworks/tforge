@@ -12,8 +12,8 @@ interface
 uses tfTypes, tfUtils{, tfCipherServ};
 
 type
-  PKeyStreamInstance = ^TKeyStreamInstance;
-  TKeyStreamInstance = record
+  PStreamCipherInstance = ^TStreamCipherInstance;
+  TStreamCipherInstance = record
   private type
     TBlock = array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
   private
@@ -21,30 +21,30 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
 {$HINTS ON}
-    FCipher: ICipherAlgorithm;
+    FCipher: ICipher;
     FBlockSize: Cardinal;
 // don't assume that FBlockNo is the rightmost 8 bytes of a block cipher's IV
 //    FBlockNo: UInt64;
     FPos: Cardinal;       // 0 .. FBlockSize - 1
     FBlock: TBlock;       // var len
   public
-    class function GetInstance(var Inst: PKeyStreamInstance; Alg: ICipherAlgorithm): TF_RESULT; static;
-    class procedure Burn(Inst: PKeyStreamInstance);
+    class function GetInstance(var Inst: PStreamCipherInstance; Alg: ICipher): TF_RESULT; static;
+    class procedure Burn(Inst: PStreamCipherInstance);
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Duplicate(Inst: PKeyStreamInstance; var NewInst: PKeyStreamInstance): TF_RESULT;
+    class function Duplicate(Inst: PStreamCipherInstance; var NewInst: PStreamCipherInstance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey(Inst: PKeyStreamInstance;
+    class function ExpandKey(Inst: PStreamCipherInstance;
       Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Read(Inst: PKeyStreamInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
+    class function Read(Inst: PStreamCipherInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
+    class function Skip(Inst: PStreamCipherInstance; Dist: Int64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Crypt(Inst: PKeyStreamInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
+    class function Crypt(Inst: PStreamCipherInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetNonce(Inst: PKeyStreamInstance; Nonce: UInt64): TF_RESULT;
+    class function SetNonce(Inst: PStreamCipherInstance; Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetNonce(Inst: PKeyStreamInstance; var Nonce: UInt64): TF_RESULT;
+    class function GetNonce(Inst: PStreamCipherInstance; var Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -60,14 +60,14 @@ const
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
 //    @TKeyStreamInstance.Release,
-    @TKeyStreamInstance.Burn,
-    @TKeyStreamInstance.Duplicate,
-    @TKeyStreamInstance.ExpandKey,
-    @TKeyStreamInstance.Read,
-    @TKeyStreamInstance.Skip,
-    @TKeyStreamInstance.Crypt,
-    @TKeyStreamInstance.SetNonce,
-    @TKeyStreamInstance.GetNonce
+    @TStreamCipherInstance.Burn,
+    @TStreamCipherInstance.Duplicate,
+    @TStreamCipherInstance.ExpandKey,
+    @TStreamCipherInstance.SetNonce,
+    @TStreamCipherInstance.GetNonce,
+    @TStreamCipherInstance.Skip,
+    @TStreamCipherInstance.Read,
+    @TStreamCipherInstance.Crypt
   );
 
 (*
@@ -117,18 +117,18 @@ begin
 end;
 *)
 
-procedure BurnMem(Inst: PKeyStreamInstance); inline;
+procedure BurnMem(Inst: PStreamCipherInstance); inline;
 var
   BurnSize: Integer;
 
 begin
-  BurnSize:= SizeOf(TKeyStreamInstance) - SizeOf(TKeyStreamInstance.TBlock)
-             + Integer(Inst.FBlockSize) - Integer(@PKeyStreamInstance(nil)^.FCipher);
+  BurnSize:= SizeOf(TStreamCipherInstance) - SizeOf(TStreamCipherInstance.TBlock)
+             + Integer(Inst.FBlockSize) - Integer(@PStreamCipherInstance(nil)^.FCipher);
 
   FillChar(Inst.FCipher, BurnSize, 0);
 end;
 
-class procedure TKeyStreamInstance.Burn(Inst: PKeyStreamInstance);
+class procedure TStreamCipherInstance.Burn(Inst: PStreamCipherInstance);
 begin
 //  Inst.FCipher.BurnKey;
 //  tfFreeInstance(Inst.FCipher);
@@ -153,7 +153,7 @@ begin
 end;
 }
 
-class function TKeyStreamInstance.ExpandKey(Inst: PKeyStreamInstance;
+class function TStreamCipherInstance.ExpandKey(Inst: PStreamCipherInstance;
                  Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
 var
   Flags: UInt32;
@@ -170,11 +170,11 @@ begin
     Result:= Inst.FCipher.SetKeyParam(TF_KP_NONCE, @Nonce, SizeOf(Nonce));
 end;
 
-class function TKeyStreamInstance.GetInstance(var Inst: PKeyStreamInstance;
-                 Alg: ICipherAlgorithm): TF_RESULT;
+class function TStreamCipherInstance.GetInstance(var Inst: PStreamCipherInstance;
+                 Alg: ICipher): TF_RESULT;
 var
   BlockSize: Cardinal;
-  Tmp: PKeyStreamInstance;
+  Tmp: PStreamCipherInstance;
 
 begin
   BlockSize:= Alg.GetBlockSize;
@@ -183,7 +183,7 @@ begin
     Exit;
   end;
   try
-    Tmp:= AllocMem(SizeOf(TKeyStreamInstance) + BlockSize);
+    Tmp:= AllocMem(SizeOf(TStreamCipherInstance) + BlockSize);
     Tmp^.FVTable:= @VTable;
     Tmp^.FRefCount:= 1;
     Tmp^.FCipher:= Alg;
@@ -276,7 +276,7 @@ end;
 *)
 
 
-class function TKeyStreamInstance.Read(Inst: PKeyStreamInstance; Data: PByte;
+class function TStreamCipherInstance.Read(Inst: PStreamCipherInstance; Data: PByte;
   DataSize: Cardinal): TF_RESULT;
 var
   LDataSize: Cardinal;
@@ -325,7 +325,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TKeyStreamInstance.Crypt(Inst: PKeyStreamInstance; Data: PByte;
+class function TStreamCipherInstance.Crypt(Inst: PStreamCipherInstance; Data: PByte;
   DataSize: Cardinal): TF_RESULT;
 var
   LDataSize: Cardinal;
@@ -375,14 +375,14 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TKeyStreamInstance.Duplicate(Inst: PKeyStreamInstance;
-               var NewInst: PKeyStreamInstance): TF_RESULT;
+class function TStreamCipherInstance.Duplicate(Inst: PStreamCipherInstance;
+               var NewInst: PStreamCipherInstance): TF_RESULT;
 var
-  CipherInst: ICipherAlgorithm;
-  TmpInst: PKeyStreamInstance;
+  CipherInst: ICipher;
+  TmpInst: PStreamCipherInstance;
 
 begin
-  Result:= Inst.FCipher.DuplicateKey(CipherInst);
+  Result:= Inst.FCipher.Duplicate(CipherInst);
   if Result = TF_S_OK then begin
     TmpInst:= nil;
     Result:= GetInstance(TmpInst, CipherInst);
@@ -398,13 +398,13 @@ begin
   end;
 end;
 
-class function TKeyStreamInstance.SetNonce(Inst: PKeyStreamInstance;
+class function TStreamCipherInstance.SetNonce(Inst: PStreamCipherInstance;
   Nonce: UInt64): TF_RESULT;
 begin
   Result:= Inst.FCipher.SetKeyParam(TF_KP_NONCE, @Nonce, SizeOf(Nonce));
 end;
 
-class function TKeyStreamInstance.GetNonce(Inst: PKeyStreamInstance;
+class function TStreamCipherInstance.GetNonce(Inst: PStreamCipherInstance;
   var Nonce: UInt64): TF_RESULT;
 var
   L: Cardinal;
@@ -414,7 +414,7 @@ begin
   Result:= Inst.FCipher.GetKeyParam(TF_KP_NONCE, @Nonce, L);
 end;
 
-class function TKeyStreamInstance.Skip(Inst: PKeyStreamInstance; Dist: Int64): TF_RESULT;
+class function TStreamCipherInstance.Skip(Inst: PStreamCipherInstance; Dist: Int64): TF_RESULT;
 var
   NBlocks: UInt64;
   NBytes: Cardinal;

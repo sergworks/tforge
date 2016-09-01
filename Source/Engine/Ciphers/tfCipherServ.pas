@@ -29,16 +29,16 @@ type
     FAlgTable: array[0..TABLE_SIZE - 1] of TAlgItem;
 
     class function GetByAlgID(Inst: PCipherServer; AlgID: UInt32;
-          var Alg: ICipherAlgorithm): TF_RESULT;
+          var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRC5(Inst: PCipherServer; BlockSize, Rounds: Integer;
-          var Alg: ICipherAlgorithm): TF_RESULT;
+          var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetSalsa20(Inst: PCipherServer; Rounds: Integer;
-          var Alg: ICipherAlgorithm): TF_RESULT;
+          var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetChaCha20(Inst: PCipherServer; Rounds: Integer;
-          var Alg: ICipherAlgorithm): TF_RESULT;
+          var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function GetKSByAlgID(Inst: PCipherServer; AlgID: UInt32;
@@ -60,7 +60,7 @@ type
    end;
 
 class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: UInt32;
-                    var Alg: ICipherAlgorithm): TF_RESULT;
+                    var Alg: ICipher): TF_RESULT;
 begin
   case AlgID of
 // block ciphers
@@ -81,19 +81,19 @@ begin
 end;
 
 class function TCipherServer.GetRC5(Inst: PCipherServer; BlockSize,
-               Rounds: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
+               Rounds: Integer; var Alg: ICipher): TF_RESULT;
 begin
   Result:= GetRC5AlgorithmEx(PRC5Algorithm(Alg), BlockSize, Rounds);
 end;
 
 class function TCipherServer.GetSalsa20(Inst: PCipherServer; Rounds: Integer;
-  var Alg: ICipherAlgorithm): TF_RESULT;
+  var Alg: ICipher): TF_RESULT;
 begin
   Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
 end;
 
 class function TCipherServer.GetChaCha20(Inst: PCipherServer; Rounds: Integer;
-  var Alg: ICipherAlgorithm): TF_RESULT;
+  var Alg: ICipher): TF_RESULT;
 begin
   Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
 end;
@@ -101,56 +101,56 @@ end;
 class function TCipherServer.GetKSByAlgID(Inst: PCipherServer; AlgID: UInt32;
                  var KS: IStreamCipher): TF_RESULT;
 var
-  Alg: ICipherAlgorithm;
+  Alg: ICipher;
 
 begin
   Result:= GetByAlgID(Inst, AlgID, Alg);
   if Result = TF_S_OK then
-    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSByName(Inst: PAlgServer; Name: Pointer;
                  CharSize: Integer; var KS: IStreamCipher): TF_RESULT;
 var
-  Alg: ICipherAlgorithm;
+  Alg: ICipher;
 
 begin
   Result:= TAlgServer.GetByName(Inst, Name, CharSize, IInterface(Alg));
   if Result = TF_S_OK then
-    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSRC5(Inst: PCipherServer; BlockSize,
                  Rounds: Integer; var KS: IStreamCipher): TF_RESULT;
 var
-  Alg: ICipherAlgorithm;
+  Alg: ICipher;
 
 begin
   Result:= GetRC5AlgorithmEx(PRC5Algorithm(Alg), BlockSize, Rounds);
   if Result = TF_S_OK then
-    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSSalsa20(Inst: PCipherServer; Rounds: Integer;
                   var KS: IStreamCipher): TF_RESULT;
 var
-  Alg: ICipherAlgorithm;
+  Alg: ICipher;
 
 begin
   Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
   if Result = TF_S_OK then
-    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
 
 class function TCipherServer.GetKSChaCha20(Inst: PCipherServer; Rounds: Integer;
                  var KS: IStreamCipher): TF_RESULT;
 var
-  Alg: ICipherAlgorithm;
+  Alg: ICipher;
 
 begin
   Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
   if Result = TF_S_OK then
-    Result:= TKeyStreamInstance.GetInstance(PKeyStreamInstance(KS), Alg);
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
 
 const

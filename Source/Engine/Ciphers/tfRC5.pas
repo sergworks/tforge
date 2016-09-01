@@ -91,10 +91,11 @@ const
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
-   @TBaseBlockCipher.SetKeyParam,
-   @TRC5Algorithm.ExpandKey32,
    @TRC5Algorithm.DestroyKey,
    @TRC5Algorithm.DuplicateKey,
+   @TRC5Algorithm.ExpandKey32,
+   @TBaseBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.GetKeyParam,
    @TRC5Algorithm.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
@@ -102,8 +103,7 @@ const
    @TRC5Algorithm.DecryptBlock32,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetKeyParam
+   @TBaseBlockCipher.RandCrypt
    );
 
   RC5VTable64: array[0..15] of Pointer = (
@@ -111,10 +111,11 @@ const
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
-   @TBaseBlockCipher.SetKeyParam,
-   @TRC5Algorithm.ExpandKey64,
    @TRC5Algorithm.DestroyKey,
    @TRC5Algorithm.DuplicateKey,
+   @TRC5Algorithm.ExpandKey64,
+   @TBaseBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.GetKeyParam,
    @TRC5Algorithm.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
@@ -122,8 +123,7 @@ const
    @TRC5Algorithm.DecryptBlock64,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetKeyParam
+   @TBaseBlockCipher.RandCrypt
    );
 
   RC5VTable128: array[0..15] of Pointer = (
@@ -131,10 +131,11 @@ const
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
 
-   @TBaseBlockCipher.SetKeyParam,
-   @TRC5Algorithm.ExpandKey128,
    @TRC5Algorithm.DestroyKey,
    @TRC5Algorithm.DuplicateKey,
+   @TRC5Algorithm.ExpandKey128,
+   @TBaseBlockCipher.SetKeyParam,
+   @TBaseBlockCipher.GetKeyParam,
    @TRC5Algorithm.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
@@ -142,8 +143,7 @@ const
    @TRC5Algorithm.DecryptBlock128,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetKeyParam
+   @TBaseBlockCipher.RandCrypt
    );
 
 procedure BurnKey(Inst: PRC5Algorithm); inline;

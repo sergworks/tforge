@@ -328,31 +328,6 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
-  ICipherAlgorithm = interface(IInterface)
-    function SetKeyParam(Param: UInt32; Data: Pointer; DataLen: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: Pointer; KeySize: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    procedure BurnKey;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DuplicateKey(var Key: ICipherAlgorithm): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetBlockSize: LongInt;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data: PByte; var DataSize: Cardinal; BufSize: Cardinal;
-             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data: PByte; var DataSize: Cardinal;
-             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKeyStream(Data: PByte; DataSize: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function KeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function KeyCrypt(Data: PByte; DataSize: Cardinal;
-             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKeyParam(Param: UInt32; Data: Pointer; var DataLen: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-  end;
-
   IHashServer = interface(IInterface)
     function GetByAlgID(AlgID: UInt32; var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -377,30 +352,55 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+  ICipher = interface(IInterface)
+    procedure Burn;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Duplicate(var Inst: ICipher): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKey(Key: Pointer; KeySize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetKeyParam(Param: UInt32; Data: Pointer; DataLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyParam(Param: UInt32; Data: Pointer; var DataLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Encrypt(Data: PByte; var DataSize: Cardinal; BufSize: Cardinal;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decrypt(Data: PByte; var DataSize: Cardinal;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyStream(Data: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function KeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function KeyCrypt(Data: PByte; DataSize: Cardinal;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+
   IStreamCipher = interface(IInterface)
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Duplicate(var Key: IStreamCipher): TF_RESULT;
+    function Duplicate(var Inst: IStreamCipher): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ExpandKey(Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Read(Data: PByte; DataSize: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Skip(Dist: Int64): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Apply(Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SetNonce(Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetNonce(var Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Skip(Dist: Int64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyStream(Data: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Apply(Data: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   ICipherServer = interface(IInterface)
-    function GetByAlgID(AlgID: UInt32; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetByAlgID(AlgID: UInt32; var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByName(Name: Pointer; CharSize: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetByName(Name: Pointer; CharSize: Integer; var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByIndex(Index: Integer; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetByIndex(Index: Integer; var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -408,11 +408,11 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function GetRC5(BlockSize, Rounds: Cardinal;
-          var Alg: ICipherAlgorithm): TF_RESULT;
+          var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetSalsa20(Rounds: Cardinal; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetSalsa20(Rounds: Cardinal; var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetChaCha20(Rounds: Cardinal; var Alg: ICipherAlgorithm): TF_RESULT;
+    function GetChaCha20(Rounds: Cardinal; var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
     function GetKSByAlgID(AlgID: UInt32; var KS: IStreamCipher): TF_RESULT;

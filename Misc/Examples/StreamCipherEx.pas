@@ -327,6 +327,36 @@ begin
   Assert(KeyStream2 = KeyStream.Copy(90, 30));
 end;
 
+procedure NonceExample;
+const
+  HexKey = '000102030405060708090A0B0C0D0E0F';
+  Nonce = 42;
+
+var
+  KeyStream1, KeyStream2: ByteArray;
+  StreamCipher: TStreamCipher;
+  Key: ByteArray;
+
+
+begin
+  Writeln;
+  Writeln('=== TStreamCipher.Nonce example ===');
+  Key:= ByteArray.ParseHex(HexKey);
+  StreamCipher:= TStreamCipher.AES.ExpandKey(Key);
+  Writeln('Nonce = ', StreamCipher.Nonce);
+  StreamCipher.Nonce:= Nonce;
+  Writeln('Nonce = ', StreamCipher.Nonce);
+
+// generate 60 bytes of keystream
+  KeyStream1:= StreamCipher.KeyStream(60);
+  Writeln(KeyStream1.ToHex);
+
+  KeyStream2:= TStreamCipher.AES.ExpandKey(Key, Nonce).KeyStream(60);
+  Writeln(KeyStream2.ToHex);
+
+  Assert(KeyStream1 = KeyStream2);
+end;
+
 procedure StreamCipherExamples;
 begin
   ApplyExample;
@@ -339,6 +369,7 @@ begin
   KeyStreamExample;
   GetKeyStreamExample;
   SkipExample;
+  NonceExample;
 end;
 
 end.
