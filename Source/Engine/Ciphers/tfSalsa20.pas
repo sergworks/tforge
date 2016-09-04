@@ -102,7 +102,7 @@ uses tfRecords, tfUtils, tfBaseCiphers;
 const
   SALSA_BLOCK_SIZE = 64;
 
-  Salsa20VTable: array[0..15] of Pointer = (
+  Salsa20VTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TSalsa20.Release,
@@ -119,10 +119,11 @@ const
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.GetRand,
    @TSalsa20.KeyBlock,
-   @TBaseStreamCipher.RandCrypt
+   @TBaseStreamCipher.RandCrypt,
+   @TBaseStreamCipher.GetIsBlockCipher
    );
 
-  ChaCha20VTable: array[0..15] of Pointer = (
+  ChaCha20VTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TSalsa20.Release,
@@ -139,7 +140,8 @@ const
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.GetRand,
    @TChaCha20.KeyBlock,
-   @TBaseStreamCipher.RandCrypt
+   @TBaseStreamCipher.RandCrypt,
+   @TBaseStreamCipher.GetIsBlockCipher
    );
 
 function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;

@@ -25,6 +25,7 @@ type
 //    class function Create(const Alg: ICipherAlgorithm): TCipher; static;
     procedure Free;
     function IsAssigned: Boolean;
+    function IsBlockCipher: Boolean;
 
 //    function SetFlags(AFlags: UInt32): TCipher; overload;
 
@@ -218,6 +219,11 @@ end;
 function TCipher.IsAssigned: Boolean;
 begin
   Result:= FInstance <> nil;
+end;
+
+function TCipher.IsBlockCipher: Boolean;
+begin
+  Result:= FInstance.GetIsBlockCipher;
 end;
 
 class function TCipher.GetInstance(const Name: string): TCipher;

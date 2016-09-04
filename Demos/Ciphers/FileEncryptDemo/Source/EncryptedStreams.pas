@@ -33,14 +33,14 @@ end;
 
 function TEncryptedStream.Read(var Buffer; Count: Int32): Int32;
 begin
-  FStream.Read(Buffer, Count);
+  Result:= FStream.Read(Buffer, Count);
   FKeyStream.Apply(Buffer, Count);
 end;
 
 function TEncryptedStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
 var
-  LSkip: Int64;
-  OldPos: Int64;
+//  LSkip: Int64;
+  OldPos, NewPos: Int64;
 
 begin
   OldPos:= FStream.Position;
@@ -52,8 +52,9 @@ begin
   if Result < NonceSize then
     raise EStreamError.Create('Seek Error');
 
+  NewPos:= FStream.Position;
+  FKeyStream.Skip(NewPos - OldPos);
   Result:= Result - NonceSize;
-  FKeyStream.Skip(Result - OldPos);
 end;
 
 function TEncryptedStream.Write(const Buffer; Count: Int32): Int32;
@@ -61,12 +62,15 @@ var
   Buf: Pointer;
 
 begin
-  if Count <= 0 then Exit;
+  if Count <= 0 then begin
+    Result:= 0;
+    Exit;
+  end;
   GetMem(Buf, Count);
   try
     Move(Buffer, Buf^, Count);
     FKeyStream.Apply(Buf^, Count);
-    FStream.Write(Buf^, Count);
+    Result:= FStream.Write(Buf^, Count);
   finally
     FillChar(Buf^, Count, 0);
     FreeMem(Buf);

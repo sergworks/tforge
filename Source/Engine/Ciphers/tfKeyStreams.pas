@@ -366,7 +366,8 @@ begin
 
 // read last incomplete block
   if DataSize > 0 then begin
-    Result:= Inst.FCipher.KeyCrypt(@Inst.FBlock, Inst.FBlockSize, False);
+//    Result:= Inst.FCipher.KeyCrypt(@Inst.FBlock, Inst.FBlockSize, False);
+    Result:= Inst.FCipher.GetKeyStream(@Inst.FBlock, Inst.FBlockSize);
     if Result <> TF_S_OK then Exit;
     MoveXor(PByte(@Inst.FBlock)^, Data^, DataSize);
     Inst.FPos:= DataSize;

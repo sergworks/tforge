@@ -1,14 +1,17 @@
-program Examples;
+unit MiscEx;
 
-{$APPTYPE CONSOLE}
+interface
 
 uses
-  SysUtils,
-  tfNumerics,
-  tfRandoms,
-  tfHashes,
-  MontEx in 'MontEx.pas',
-  StreamCipherEx in 'StreamCipherEx.pas';
+  SysUtils, tfNumerics, tfRandoms, tfHashes;
+
+procedure BigCardExamples;
+procedure BigIntExamples;
+procedure PowerOfTwo;
+procedure RandExamples;
+procedure TestAssigned;
+
+implementation
 
 procedure BigCardExamples;
 var
@@ -239,22 +242,4 @@ begin
   Writeln(SHA256.IsAssigned);     // FALSE
 end;
 
-
-begin
-  ReportMemoryLeaksOnShutdown:= True;
-  try
-    BigIntExamples;
-//    RandExamples;
-//    RandExamples;
-//    RandExamples;
-    BigCardExamples;
-    PowerOfTwo;
-    TestAssigned;
-    MontExamples;
-    StreamCipherExamples;
-  except
-    on E: Exception do
-      Writeln(E.ClassName, ': ', E.Message);
-  end;
-  Readln;
 end.

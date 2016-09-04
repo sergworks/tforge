@@ -86,7 +86,7 @@ uses tfRecords, tfBaseCiphers;
 //  MAX_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  RC5VTable32: array[0..15] of Pointer = (
+  RC5VTable32: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
@@ -103,10 +103,11 @@ const
    @TRC5Algorithm.DecryptBlock32,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetIsBlockCipher
    );
 
-  RC5VTable64: array[0..15] of Pointer = (
+  RC5VTable64: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
@@ -123,10 +124,11 @@ const
    @TRC5Algorithm.DecryptBlock64,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetIsBlockCipher
    );
 
-  RC5VTable128: array[0..15] of Pointer = (
+  RC5VTable128: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC5Algorithm.Release,
@@ -143,7 +145,8 @@ const
    @TRC5Algorithm.DecryptBlock128,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetIsBlockCipher
    );
 
 procedure BurnKey(Inst: PRC5Algorithm); inline;

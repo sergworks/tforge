@@ -76,6 +76,8 @@ type
     class function RandCrypt(Inst: Pointer; Data: PByte; DataSize: Cardinal;
       Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetIsBlockCipher(Inst: Pointer): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 type
@@ -112,6 +114,9 @@ type
 //   and VTable entries for EncryptBlock/DecryptBlock should be filled anyway
     class function EncryptBlock(Inst: Pointer; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
+    class function GetIsBlockCipher(Inst: Pointer): Boolean;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 implementation
@@ -319,6 +324,11 @@ begin
     end;
   end;
   Result:= TF_S_OK;
+end;
+
+class function TBaseBlockCipher.GetIsBlockCipher(Inst: Pointer): Boolean;
+begin
+  Result:= True;
 end;
 
 class function TBaseBlockCipher.GetKeyParam(Inst: PBaseBlockCipher; Param: UInt32;
@@ -1481,6 +1491,11 @@ begin
   XorBytes(Data, @Block, L);
   FillChar(Block, L, 0);
   Result:= TF_S_OK;
+end;
+
+class function TBaseStreamCipher.GetIsBlockCipher(Inst: Pointer): Boolean;
+begin
+  Result:= False;
 end;
 
 class function TBaseStreamCipher.GetKeyParam(Inst: Pointer; Param: UInt32;

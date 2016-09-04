@@ -108,7 +108,7 @@ const
 { TDESCipher }
 
 const
-  DESCipherVTable: array[0..15] of Pointer = (
+  DESCipherVTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TDESAlgorithm.Release,
@@ -125,10 +125,11 @@ const
    @TDESAlgorithm.EncryptBlock,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetIsBlockCipher
    );
 
-  TripleDESVTable: array[0..15] of Pointer = (
+  TripleDESVTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @T3DESAlgorithm.Release,
@@ -145,7 +146,8 @@ const
    @T3DESAlgorithm.EncryptBlock,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt
+   @TBaseBlockCipher.RandCrypt,
+   @TBaseBlockCipher.GetIsBlockCipher
    );
 
 procedure BurnDESKey(Inst: PDESAlgorithm); inline;

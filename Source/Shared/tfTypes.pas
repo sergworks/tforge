@@ -375,6 +375,7 @@ type
     function KeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function KeyCrypt(Data: PByte; DataSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IStreamCipher = interface(IInterface)

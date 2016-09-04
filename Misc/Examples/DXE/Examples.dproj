@@ -45,8 +45,9 @@
 			<DelphiCompile Include="Examples.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="MontEx.pas"/>
-			<DCCReference Include="StreamCipherEx.pas"/>
+			<DCCReference Include="..\Source\MontEx.pas"/>
+			<DCCReference Include="..\Source\StreamCipherEx.pas"/>
+			<DCCReference Include="..\Source\MiscEx.pas"/>
 			<BuildConfiguration Include="Release">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>

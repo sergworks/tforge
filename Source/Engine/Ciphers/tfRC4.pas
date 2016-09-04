@@ -52,7 +52,7 @@ implementation
 uses tfRecords, tfBaseCiphers;
 
 const
-  RC4VTable: array[0..15] of Pointer = (
+  RC4VTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC4Algorithm.Release,
@@ -69,7 +69,8 @@ const
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.GetRand,
    @TRC4Algorithm.RandBlock,
-   @TBaseStreamCipher.RandCrypt
+   @TBaseStreamCipher.RandCrypt,
+   @TBaseStreamCipher.GetIsBlockCipher
    );
 
 function GetRC4Algorithm(var A: PRC4Algorithm): TF_RESULT;

@@ -4,12 +4,12 @@ program FileEncryptDemo;
 
 uses
   SysUtils,
-  EncryptedStreams in 'Source\EncryptedStreams.pas',
-  Demos in 'Source\Demos.pas';
+  EncryptedStreams in '..\Source\EncryptedStreams.pas',
+  Demos in '..\Source\Demos.pas';
 
 begin
   try
-    { TODO -oUser -cConsole Main : Insert code here }
+    TestAll;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
