@@ -1447,6 +1447,7 @@ var
   Cnt: UInt64;
   RandBlock: TBlockFunc;
   LBlockSize: Cardinal;
+  LData: UInt64;
 
 begin
   if Param = TF_KP_INCNO{_LE} then begin
@@ -1468,6 +1469,15 @@ begin
     end;
     FillChar(Block, LBlockSize, 0);
     Result:= TF_S_OK;
+  end
+  else if Param = TF_KP_NONCE then begin
+// only zero nonces allowed for stream ciphers without nonce support
+    Result:= TF_E_INVALIDARG;
+    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
+      LData:= 0;
+      Move(Data^, LData, DataLen);
+      if LData = 0 then Result:= TF_S_OK;
+    end;
   end
   else
     Result:= TF_E_INVALIDARG;

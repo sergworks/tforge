@@ -448,6 +448,7 @@ begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
+
   if (Param = TF_KP_NONCE) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
       Inst.FExpandedKey[6]:= 0;
@@ -462,6 +463,7 @@ begin
       Result:= TF_E_INVALIDARG;
     Exit;
   end;
+
   if (Param = TF_KP_INCNO) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
 
@@ -481,9 +483,32 @@ begin
     end
     else
       Result:= TF_E_INVALIDARG;
-  end
-  else
-    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  if (Param = TF_KP_DECNO) then begin
+    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
+
+// Salsa20 uses little-endian block numbers
+      Tmp1:= 0;
+      TUInt64Rec(Tmp).Lo:= Inst.FExpandedKey[8];
+      TUInt64Rec(Tmp).Hi:= Inst.FExpandedKey[9];
+
+      Move(Data^, Tmp1, DataLen);
+
+      Tmp:= Tmp - Tmp1;
+
+      Inst.FExpandedKey[8]:= TUInt64Rec(Tmp).Lo;
+      Inst.FExpandedKey[9]:= TUInt64Rec(Tmp).Hi;
+
+      Result:= TF_S_OK;
+    end
+    else
+      Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  Result:= TF_E_INVALIDARG;
 //    Result:= TF_E_NOTIMPL;
 end;
 
@@ -592,6 +617,7 @@ begin
     end;
     Exit;
   end;
+
   if (Param = TF_KP_NONCE) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
       Inst.FExpandedKey[14]:= 0;
@@ -606,6 +632,7 @@ begin
       Result:= TF_E_INVALIDARG;
     Exit;
   end;
+
   if (Param = TF_KP_INCNO) then begin
     if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
 // Salsa20 uses little-endian block numbers
@@ -625,6 +652,27 @@ begin
       Result:= TF_E_INVALIDARG;
     Exit;
   end;
+
+  if (Param = TF_KP_DECNO) then begin
+    if (DataLen > 0) and (DataLen <= SizeOf(UInt64)) then begin
+// Salsa20 uses little-endian block numbers
+      Tmp1:= 0;
+      TUInt64Rec(Tmp).Lo:= Inst.FExpandedKey[12];
+      TUInt64Rec(Tmp).Hi:= Inst.FExpandedKey[13];
+
+      Move(Data^, Tmp1, DataLen);
+
+      Tmp:= Tmp - Tmp1;
+
+      Inst.FExpandedKey[12]:= TUInt64Rec(Tmp).Lo;
+      Inst.FExpandedKey[13]:= TUInt64Rec(Tmp).Hi;
+      Result:= TF_S_OK;
+    end
+    else
+      Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
   Result:= TF_E_INVALIDARG;
 end;
 
