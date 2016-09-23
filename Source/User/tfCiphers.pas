@@ -54,9 +54,9 @@ type
     procedure Burn;
 
     procedure Encrypt(var Data; var DataSize: Cardinal;
-                      BufSize: Cardinal; Last: Boolean); // overload;
+                      BufSize: Cardinal; Last: Boolean);
     procedure Decrypt(var Data; var DataSize: Cardinal;
-                      Last: Boolean); // overload;
+                      Last: Boolean);
     procedure Apply(var Data; DataSize: Cardinal;
                         Last: Boolean);
 
@@ -478,10 +478,10 @@ const
   PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
 
 var
-  OutBufSize, DataSize: LongWord;
+  OutBufSize, DataSize: Cardinal;
   Data, PData: PByte;
   N: Integer;
-  Cnt: LongWord;
+  Cnt: Cardinal;
   Last: Boolean;
 
 begin

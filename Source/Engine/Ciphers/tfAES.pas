@@ -163,8 +163,8 @@ begin
   LCount:= Count shr 2;
   while LCount > 0 do begin
     PUInt32(Target)^:= PUInt32(Target)^ xor PUInt32(Value)^;
-    Inc(UInt32(Target));
-    Inc(UInt32(Value));
+    Inc(PUInt32(Target));
+    Inc(PUInt32(Value));
     Dec(LCount);
   end;
   LCount:= Count and 3;

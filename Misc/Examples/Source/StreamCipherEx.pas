@@ -9,6 +9,42 @@ procedure StreamCipherExamples;
 
 implementation
 
+procedure MotivationExample;
+const
+  Nonce = 42;
+
+var
+  Cipher: TCipher;
+  StreamCipher: TStreamCipher;
+  Key: ByteArray;
+  KeyStream, KeyStream1, KeyStream2: ByteArray;
+
+begin
+  Writeln('=== Motivation Example ===');
+// create 128-bit AES key:
+  Key:= ByteArray.AllocateRand(16);
+
+// generate 16 bytes of keystream:
+  KeyStream:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce).KeyStream(16);
+  Writeln(KeyStream.ToHex);
+
+// generate 8 + 8 bytes of keystream:
+  Cipher:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce);
+// Warning - KeyStream1:= Cipher.KeyStream(8) + Cipher.KeyStream(8) is wrong
+//   because the compiler does not evaluate the summands in order
+  KeyStream1:= Cipher.KeyStream(8);
+  KeyStream1:= KeyStream1 + Cipher.KeyStream(8);
+  Writeln(KeyStream1.ToHex);
+  Assert(KeyStream <> KeyStream1);
+
+// generate 8 + 8 bytes of keystream using TStreamCipher instance:
+  StreamCipher:= TStreamCipher.AES.ExpandKey(Key, Nonce);
+  KeyStream2:= StreamCipher.KeyStream(8);
+  KeyStream2:= KeyStream2 + StreamCipher.KeyStream(8);
+  Writeln(KeyStream2.ToHex);
+  Assert(KeyStream = KeyStream2);
+end;
+
 procedure ApplyExample;
 const
   HexKey = '000102030405060708090A0B0C0D0E0F';
@@ -359,6 +395,7 @@ end;
 
 procedure StreamCipherExamples;
 begin
+  MotivationExample;
   ApplyExample;
   ApplyToExample;
   ApplyToByteArrayExample;

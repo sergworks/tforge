@@ -38,6 +38,7 @@ type
     class function FromBytes(const A: array of Byte): ByteArray; static;
     class function FromText(const S: string): ByteArray; static;
     class function FromAnsi(const S: RawByteString): ByteArray; static;
+    class function FromMem(P: Pointer; Count: Cardinal): ByteArray; static;
     class function Parse(const S: string; Delimiter: Char = #0): ByteArray; static;
     class function TryParse(const S: string; var R: ByteArray): Boolean; overload; static;
     class function TryParse(const S: string; Delimiter: Char; var R: ByteArray): Boolean; overload; static;
@@ -351,6 +352,15 @@ begin
   HResCheck(ByteVectorFromPByteEx(Result.FBytes, @Data, DataLen, Reversed));
 {$ELSE}
   HResCheck(ByteVectorFromPByteEx(PByteVector(Result.FBytes), @Data, DataLen, Reversed));
+{$ENDIF}
+end;
+
+class function ByteArray.FromMem(P: Pointer; Count: Cardinal): ByteArray;
+begin
+{$IFDEF TFL_INTFCALL}
+  HResCheck(ByteVectorFromPByte(Result.FBytes, P, Count));
+{$ELSE}
+  HResCheck(ByteVectorFromPByte(PByteVector(Result.FBytes), P, Count));
 {$ENDIF}
 end;
 

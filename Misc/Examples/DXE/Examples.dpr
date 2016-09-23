@@ -6,7 +6,8 @@ uses
   SysUtils,
   MontEx in '..\Source\MontEx.pas',
   StreamCipherEx in '..\Source\StreamCipherEx.pas',
-  MiscEx in '..\Source\MiscEx.pas';
+  MiscEx in '..\Source\MiscEx.pas',
+  CipherEx in '..\Source\CipherEx.pas';
 
 begin
   ReportMemoryLeaksOnShutdown:= True;
@@ -17,6 +18,7 @@ begin
     PowerOfTwo;
     TestAssigned;
     MontExamples;
+    CipherExamples;
     StreamCipherExamples;
   except
     on E: Exception do

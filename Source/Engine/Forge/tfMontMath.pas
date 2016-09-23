@@ -26,7 +26,7 @@ type
     FRR: PBigNumber;        // R^2 mod N, to convert to montgomery form
     FNi: PBigNumber;        // R*Ri - N*Ni = 1
 
-    class function Release(Inst: PMontInstance): Integer; stdcall; static;
+//    class function Release(Inst: PMontInstance): Integer; stdcall; static;
 
     class procedure Burn(Inst: PMontInstance);
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}static;
@@ -61,7 +61,8 @@ const
   MontVTable: array[0..12] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
-    @TMontInstance.Release,
+    @TForgeInstance.SafeRelease,
+//    @TMontInstance.Release,
 
     @TMontInstance.Burn,
     @TMontInstance.Reduce,
@@ -210,7 +211,7 @@ end;
 *)
 
 { TMontEngine }
-
+(*
 class function TMontInstance.Release(Inst: PMontInstance): Integer;
 begin
   tfFreeInstance(Inst.FNi);
@@ -218,6 +219,7 @@ begin
   tfFreeInstance(Inst.FN);
   Result:= TForgeInstance.Release(Inst);
 end;
+*)
 
 class procedure TMontInstance.Burn(Inst: PMontInstance);
 var
