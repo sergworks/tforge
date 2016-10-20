@@ -160,7 +160,7 @@ var
 
 begin
 // for block ciphers; stream ciphers will return error code which is ignored
-  Flags:= CTR_ENCRYPT;
+  Flags:= TF_CTR_ENCRYPT;
   Inst.FCipher.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags));
 
 //  Inst.FBlockNo:= 0;

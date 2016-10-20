@@ -14,6 +14,45 @@ uses
   {$IFDEF TFL_DLL} tfImport {$ELSE} tfCipherServ, tfKeyStreams {$ENDIF};
 
 type
+  TCipherFlags = record
+  private
+    FFlags: UInt32;
+  public
+    class operator BitwiseOr(const A, B: TCipherFlags): TCipherFlags; inline;
+    class operator BitwiseOr(const A: TCipherFlags; const B: UInt32): TCipherFlags; inline;
+    class operator BitwiseOr(const A: UInt32; const B: TCipherFlags): TCipherFlags; inline;
+
+    class operator Equal(const A, B: TCipherFlags): Boolean; inline;
+    class operator Equal(const A: TCipherFlags; const B: UInt32): Boolean; inline;
+    class operator Equal(const A: UInt32; const B: TCipherFlags): Boolean; inline;
+    class operator NotEqual(const A, B: TCipherFlags): Boolean; inline;
+    class operator NotEqual(const A: TCipherFlags; const B: UInt32): Boolean; inline;
+    class operator NotEqual(const A: UInt32; const B: TCipherFlags): Boolean; inline;
+
+    class operator Explicit(const Value: UInt32): TCipherFlags; inline;
+  end;
+
+const
+  ECB_ENCRYPT: TCipherFlags = (FFlags: TF_ECB_ENCRYPT);
+  ECB_DECRYPT: TCipherFlags = (FFlags: TF_ECB_DECRYPT);
+
+  CBC_ENCRYPT: TCipherFlags = (FFlags: TF_CBC_ENCRYPT);
+  CBC_DECRYPT: TCipherFlags = (FFlags: TF_ECB_DECRYPT);
+
+  CTR_ENCRYPT: TCipherFlags = (FFlags: TF_CTR_ENCRYPT);
+  CTR_DECRYPT: TCipherFlags = (FFlags: TF_CTR_DECRYPT);
+
+  PADDING_DEFAULT  = TF_PADDING_DEFAULT;
+  PADDING_NONE     = TF_PADDING_NONE;
+  PADDING_ZERO     = TF_PADDING_ZERO;
+  PADDING_ANSI     = TF_PADDING_ANSI;
+  PADDING_PKCS     = TF_PADDING_PKCS;
+  PADDING_ISO10126 = TF_PADDING_ISO10126;
+  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
+
+
+
+type
   TCipher = record
   private
     FInstance: ICipher;
@@ -178,6 +217,58 @@ begin
     CipherError(Value);
 end;
 
+{ TCipherFlags }
+
+class operator TCipherFlags.BitwiseOr(const A, B: TCipherFlags): TCipherFlags;
+begin
+  Result.FFlags:= A.FFlags or B.FFlags;
+end;
+
+class operator TCipherFlags.BitwiseOr(const A: TCipherFlags; const B: UInt32): TCipherFlags;
+begin
+  Result.FFlags:= A.FFlags or B;
+end;
+
+class operator TCipherFlags.BitwiseOr(const A: UInt32; const B: TCipherFlags): TCipherFlags;
+begin
+  Result.FFlags:= A or B.FFlags;
+end;
+
+class operator TCipherFlags.Equal(const A: TCipherFlags; const B: UInt32): Boolean;
+begin
+  Result:= A.FFlags = B;
+end;
+
+class operator TCipherFlags.Equal(const A, B: TCipherFlags): Boolean;
+begin
+  Result:= A.FFlags = B.FFlags;
+end;
+
+class operator TCipherFlags.Equal(const A: UInt32; const B: TCipherFlags): Boolean;
+begin
+  Result:= A = B.FFlags;
+end;
+
+class operator TCipherFlags.Explicit(const Value: UInt32): TCipherFlags;
+begin
+  Result.FFlags:= Value;
+end;
+
+class operator TCipherFlags.NotEqual(const A, B: TCipherFlags): Boolean;
+begin
+  Result:= A.FFlags <> B.FFlags;
+end;
+
+class operator TCipherFlags.NotEqual(const A: TCipherFlags; const B: UInt32): Boolean;
+begin
+  Result:= A.FFlags <> B;
+end;
+
+class operator TCipherFlags.NotEqual(const A: UInt32; const B: TCipherFlags): Boolean;
+begin
+  Result:= A <> B.FFlags;
+end;
+
 { TCipher }
 (*
 class function TCipher.Create(const Alg: ICipherAlgorithm): TCipher;
@@ -337,7 +428,7 @@ end;
 
 function TCipher.EncryptBlock(const Data, Key: ByteArray): ByteArray;
 var
-  Flags: LongWord;
+  Flags: UInt32;
   BlockSize: Integer;
 
 begin
@@ -345,7 +436,7 @@ begin
   if (BlockSize = 0) or (BlockSize <> Data.GetLen) then
     CipherError(TF_E_UNEXPECTED);
 
-  Flags:= ECB_ENCRYPT;
+  Flags:= TF_ECB_ENCRYPT;
   HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
   HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len));
 
@@ -355,7 +446,7 @@ end;
 
 function TCipher.DecryptBlock(const Data, Key: ByteArray): ByteArray;
 var
-  Flags: LongWord;
+  Flags: UInt32;
   BlockSize: Integer;
 
 begin
@@ -363,7 +454,7 @@ begin
   if (BlockSize = 0) or (BlockSize <> Data.GetLen) then
     CipherError(TF_E_UNEXPECTED);
 
-  Flags:= ECB_DECRYPT;
+  Flags:= TF_ECB_DECRYPT;
   HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
   HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len));
 
@@ -388,7 +479,7 @@ end;
 
 function TCipher.DecryptByteArray(const Data: ByteArray): ByteArray;
 var
-  L: LongWord;
+  L: Cardinal;
 
 begin
   L:= Data.GetLen;
@@ -399,7 +490,7 @@ end;
 
 function TCipher.EncryptData(const Data: ByteArray): ByteArray;
 var
-  L0, L1: LongWord;
+  L0, L1: Cardinal;
 
 begin
   L0:= Data.GetLen;
