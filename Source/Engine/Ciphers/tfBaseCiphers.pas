@@ -35,12 +35,11 @@ type
     FIVector:  TBlock;                // var len = block size
 
 
-    function SetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
     function SetNonce(Data: PByte; DataLen: Cardinal): TF_RESULT;
     function SetDir(Data: UInt32): TF_RESULT;
     function SetMode(Data: UInt32): TF_RESULT;
     function SetPadding(Data: UInt32): TF_RESULT;
-    function SetFlags(Data: UInt32): TF_RESULT;
+//    function SetFlags(Data: UInt32): TF_RESULT;
     function IncBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
     function DecBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
 
@@ -57,6 +56,10 @@ type
     function DecryptCTR(Data: PByte; var DataSize: Cardinal;
              Last: Boolean): TF_RESULT;
   public
+    function SetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+    function GetFlags: UInt32;
+    function SetFlags(Data: UInt32): TF_RESULT;
+
     class function SetKeyParam(Inst: Pointer; Param: UInt32; Data: Pointer;
       DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -475,7 +478,7 @@ end;
 function TBaseBlockCipher.SetNonce(Data: PByte; DataLen: Cardinal): TF_RESULT;
 var
   LBlockSize: Cardinal;
-  Output: PByte;
+//  Output: PByte;
   Nonce: UInt64;
 
 begin
@@ -488,11 +491,11 @@ begin
 
 // IV is considered consisting of 2 parts: Nonce and BlockNo;
 //   if BlockSize >= 16 (128 bits),
-//     when both Nonce and BlockNo are of 8 bytes (64 bits).
+//     then both Nonce and BlockNo are of 8 bytes (64 bits).
 //   if BlockSize < 16 (128 bits),
-//     when whole IV is BlockNo, and the only valid nonce value is zero.
+//     then whole IV is BlockNo, and the only valid nonce value is zero.
 //   if BlockSize > 16 (128 bits),
-//     when leftmost L - 16 bytes of IV are zeroed.
+//     then BlockSize - 16 bytes of IV between Nonce and BlockNo are zeroed.
 //   BlockNo bytes of IV are zeroed.
 
     if {(DataLen = 0) or} (DataLen > SizeOf(Nonce)) then begin
@@ -511,11 +514,12 @@ begin
     FillChar(FIVector, LBlockSize, 0);
 
     if (LBlockSize >= 16) then begin
-      Output:= @FIVector;
-      Inc(Output, LBlockSize - 16);
-      Move(Nonce, Output^, SizeOf(Nonce));
+//      Output:= @FIVector;
+//      Inc(Output, LBlockSize - 16);
+//      Move(Nonce, Output^, SizeOf(Nonce));
+      Move(Nonce, FIVector, SizeOf(Nonce));
     end;
-// if L < 16 and nonce is zero, just return success
+// if LBlockSize < 16 and nonce is zero, just return success
     Result:= TF_S_OK;
   end
   else
@@ -673,9 +677,15 @@ begin
   Result:= TF_S_OK;
 end;
 
+function TBaseBlockCipher.GetFlags: UInt32;
+begin
+  Result:= FDir or FMode or FPadding;
+end;
+
 function TBaseBlockCipher.SetFlags(Data: UInt32): TF_RESULT;
 begin
-  Result:= TF_S_FALSE;
+//  Result:= TF_S_FALSE;
+  Result:= TF_E_INVALIDARG;
 {
   if Data and TF_KEYDIR_BASE <> 0 then
     Result:= SetDir(Data and TF_KEYDIR_MASK);
@@ -720,7 +730,9 @@ begin
     Result:= PBaseBlockCipher(Inst).DecBlockNo(Data, DataLen);
   end
   else begin
-    if DataLen = SizeOf(UInt32) then begin
+    Result:= TF_E_INVALIDARG;
+  end;
+(*    if DataLen = SizeOf(UInt32) then begin
       LData:= PUInt32(Data)^;
       case Param of
         TF_KP_DIR: Result:= PBaseBlockCipher(Inst).SetDir(LData);
@@ -736,7 +748,7 @@ begin
 
 // setting flags invalidates key
     PBaseBlockCipher(Inst).FValidKey:= False;
-  end;
+  end; *)
 end;
 
 function TBaseBlockCipher.EncryptCBC(Data: PByte; var DataSize: Cardinal;

@@ -42,9 +42,11 @@ type
     FExpandedKey: TBlock;
     FRounds: Cardinal;          // 2..254
 {$HINTS ON}
+    class function SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
   public
     class function Release(Inst: PSalsa20): Integer; stdcall; static;
-    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal): TF_RESULT;
+    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PSalsa20): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -64,7 +66,9 @@ type
 type
   TChaCha20 = record
   public
-    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal): TF_RESULT;
+    class function SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
+    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -394,8 +398,11 @@ begin
 end;
 
 class function TSalsa20.ExpandKey(Inst: PSalsa20; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 begin
+  Result:= TSalsa20.SetIV(Inst, IV, IVSize);
+  if Result <> TF_S_OK then Exit;
+
   if (KeySize <> 16) and (KeySize <> 32) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -423,6 +430,20 @@ begin
   Result:= TF_S_OK;
 end;
 
+class function TSalsa20.SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT;
+begin
+  if (DataLen = SizeOf(UInt64)) then begin
+    Move(Data^, Inst.FExpandedKey[6], SizeOf(UInt64));
+                                    // 64-byte block number
+    Inst.FExpandedKey[8]:= 0;
+    Inst.FExpandedKey[9]:= 0;
+
+    Result:= TF_S_OK;
+  end
+  else
+    Result:= TF_E_INVALIDARG;
+end;
+
 class function TSalsa20.SetKeyParam(Inst: PSalsa20; Param: UInt32;
   Data: Pointer; DataLen: Cardinal): TF_RESULT;
 
@@ -436,6 +457,7 @@ var
 
 begin
   if (Param = TF_KP_IV) then begin
+{
     if (DataLen = SizeOf(UInt64)) then begin
       Move(Data^, Inst.FExpandedKey[6], SizeOf(UInt64));
                                       // 64-byte block number
@@ -446,6 +468,8 @@ begin
       Exit;
     end;
     Result:= TF_E_INVALIDARG;
+}
+    Result:= TSalsa20.SetIV(Inst, Data, DataLen);
     Exit;
   end;
 
@@ -526,8 +550,11 @@ begin
 end;
 
 class function TChaCha20.ExpandKey(Inst: PSalsa20; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 begin
+  Result:= TChaCha20.SetIV(Inst, IV, IVSize);
+  if Result <> TF_S_OK then Exit;
+
   if (KeySize <> 16) and (KeySize <> 32) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -592,6 +619,21 @@ begin
   Result:= TF_S_OK;
 end;
 
+class function TChaCha20.SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT;
+begin
+  if (DataLen = SizeOf(UInt64)) then begin
+    Move(Data^, Inst.FExpandedKey[14], SizeOf(UInt64));
+                                    // 64-byte block number
+    Inst.FExpandedKey[12]:= 0;
+    Inst.FExpandedKey[13]:= 0;
+
+    Result:= TF_S_OK;
+  end
+  else begin
+    Result:= TF_E_INVALIDARG;
+  end;
+end;
+
 class function TChaCha20.SetKeyParam(Inst: PSalsa20; Param: UInt32;
   Data: Pointer; DataLen: Cardinal): TF_RESULT;
 type
@@ -604,6 +646,8 @@ var
 
 begin
   if (Param = TF_KP_IV) then begin
+    Result:= TChaCha20.SetIV(Inst, Data, DataLen);
+{
     if (DataLen = SizeOf(UInt64)) then begin
       Move(Data^, Inst.FExpandedKey[14], SizeOf(UInt64));
                                       // 64-byte block number
@@ -615,6 +659,7 @@ begin
     else begin
       Result:= TF_E_INVALIDARG;
     end;
+}
     Exit;
   end;
 

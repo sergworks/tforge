@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
 { *********************************************************** }
 
 unit tfTypes;
@@ -22,6 +22,8 @@ type
 
 type
   TF_RESULT = type Int32;
+  TF_AlgID = UInt32;
+  TAlgID = TF_AlgID;
 
 // Codes returned by TF functions; see also
 //   http://msdn.microsoft.com/en-us/library/cc231198(v=prot.10).aspx
@@ -280,6 +282,11 @@ type
 
 
 const
+  TF_ENGINE_STD   = $00000000;
+  TF_ENGINE_OSSL  = $80000000;
+  TF_ENGINE_MASK  = $B0000000;
+
+  TF_ALGID_MASK   = $FFFF;
                             // Cryptographic Hash Algorithms
   TF_ALG_MD5      = $1001;
   TF_ALG_SHA1     = $1002;
@@ -329,13 +336,13 @@ type
   end;
 
   IHashServer = interface(IInterface)
-    function GetByAlgID(AlgID: UInt32; var Alg: IHashAlgorithm): TF_RESULT;
+//    function GetByAlgID(AlgID: UInt32; var Alg: IHashAlgorithm): TF_RESULT;
+//          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetByName(Name: Pointer; CharSize: Integer; var Alg: TF_AlgID): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByName(Name: Pointer; CharSize: Integer; var Alg: IHashAlgorithm): TF_RESULT;
+    function GetByIndex(Index: Integer; var Alg: TF_AlgID): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByIndex(Index: Integer; var Alg: IHashAlgorithm): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
+    function GetName(Index: Integer; var Name: Pointer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -357,7 +364,8 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Duplicate(var Inst: ICipher): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: Pointer; KeySize: Cardinal): TF_RESULT;
+    function ExpandKey(Key: Pointer; KeySize: Cardinal;
+             IV: Pointer; IVSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SetKeyParam(Param: UInt32; Data: Pointer; DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

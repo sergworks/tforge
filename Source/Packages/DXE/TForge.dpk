@@ -64,6 +64,8 @@ contains
   tfHashes in '..\..\User\tfHashes.pas',
   tfNumerics in '..\..\User\tfNumerics.pas',
   tfRandoms in '..\..\User\tfRandoms.pas',
-  tfStubOS in '..\..\Engine\OSes\tfStubOS.pas';
+  tfStubOS in '..\..\Engine\OSes\tfStubOS.pas',
+  tfEVPCiphers in '..\..\Engine\Ciphers\tfEVPCiphers.pas',
+  tfOpenSSL in '..\..\Engine\Forge\tfOpenSSL.pas';
 
 end.

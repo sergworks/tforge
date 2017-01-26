@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
 { *********************************************************** }
 
 unit tfKeyStreams;
@@ -157,17 +157,35 @@ class function TStreamCipherInstance.ExpandKey(Inst: PStreamCipherInstance;
                  Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
 var
   Flags: UInt32;
+  BlockSize: Cardinal;
+  Block: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
 
 begin
 // for block ciphers; stream ciphers will return error code which is ignored
-  Flags:= TF_CTR_ENCRYPT;
-  Inst.FCipher.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags));
+//  Flags:= TF_CTR_ENCRYPT;
+//  Inst.FCipher.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags));
 
 //  Inst.FBlockNo:= 0;
   Inst.FPos:= 0;
-  Result:= Inst.FCipher.ExpandKey(Key, KeySize);
-  if Result = TF_S_OK then
-    Result:= Inst.FCipher.SetKeyParam(TF_KP_NONCE, @Nonce, SizeOf(Nonce));
+
+  BlockSize:= Inst.FCipher.GetBlockSize;
+  if BlockSize < SizeOf(Nonce) then begin
+    if Nonce = 0 then
+      Result:= Inst.FCipher.ExpandKey(Key, KeySize, nil, 0)
+    else
+      Result:= TF_E_INVALIDARG;
+  end
+  else if BlockSize = SizeOf(Nonce) then begin
+    Result:= Inst.FCipher.ExpandKey(Key, KeySize, @Nonce, BlockSize);
+  end
+  else if BlockSize <= TF_MAX_CIPHER_BLOCK_SIZE then begin
+    FillChar(Block, TF_MAX_CIPHER_BLOCK_SIZE, 0);
+    Move(Nonce, Block, SizeOf(Nonce));
+    Result:= Inst.FCipher.ExpandKey(Key, KeySize, @Block, BlockSize);
+    FillChar(Block, TF_MAX_CIPHER_BLOCK_SIZE, 0);
+  end
+  else
+    Result:= TF_E_UNEXPECTED;
 end;
 
 class function TStreamCipherInstance.GetInstance(var Inst: PStreamCipherInstance;

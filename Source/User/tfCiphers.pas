@@ -11,36 +11,21 @@ interface
 
 uses
   SysUtils, Classes, tfTypes, tfBytes, tfConsts, tfExceptions,
-  {$IFDEF TFL_DLL} tfImport {$ELSE} tfCipherServ, tfKeyStreams {$ENDIF};
-
-type
-  TCipherFlags = record
-  private
-    FFlags: UInt32;
-  public
-    class operator BitwiseOr(const A, B: TCipherFlags): TCipherFlags; inline;
-    class operator BitwiseOr(const A: TCipherFlags; const B: UInt32): TCipherFlags; inline;
-    class operator BitwiseOr(const A: UInt32; const B: TCipherFlags): TCipherFlags; inline;
-
-    class operator Equal(const A, B: TCipherFlags): Boolean; inline;
-    class operator Equal(const A: TCipherFlags; const B: UInt32): Boolean; inline;
-    class operator Equal(const A: UInt32; const B: TCipherFlags): Boolean; inline;
-    class operator NotEqual(const A, B: TCipherFlags): Boolean; inline;
-    class operator NotEqual(const A: TCipherFlags; const B: UInt32): Boolean; inline;
-    class operator NotEqual(const A: UInt32; const B: TCipherFlags): Boolean; inline;
-
-    class operator Explicit(const Value: UInt32): TCipherFlags; inline;
-  end;
+  {$IFDEF TFL_DLL}
+    tfImport
+  {$ELSE}
+    tfAES, tfDES, tfRC5, tfCipherServ, tfKeyStreams
+  {$ENDIF};
 
 const
-  ECB_ENCRYPT: TCipherFlags = (FFlags: TF_ECB_ENCRYPT);
-  ECB_DECRYPT: TCipherFlags = (FFlags: TF_ECB_DECRYPT);
+  ECB_ENCRYPT = TF_ECB_ENCRYPT;
+  ECB_DECRYPT = TF_ECB_DECRYPT;
 
-  CBC_ENCRYPT: TCipherFlags = (FFlags: TF_CBC_ENCRYPT);
-  CBC_DECRYPT: TCipherFlags = (FFlags: TF_ECB_DECRYPT);
+  CBC_ENCRYPT = TF_CBC_ENCRYPT;
+  CBC_DECRYPT = TF_ECB_DECRYPT;
 
-  CTR_ENCRYPT: TCipherFlags = (FFlags: TF_CTR_ENCRYPT);
-  CTR_DECRYPT: TCipherFlags = (FFlags: TF_CTR_DECRYPT);
+  CTR_ENCRYPT = TF_CTR_ENCRYPT;
+  CTR_DECRYPT = TF_CTR_DECRYPT;
 
   PADDING_DEFAULT  = TF_PADDING_DEFAULT;
   PADDING_NONE     = TF_PADDING_NONE;
@@ -49,7 +34,6 @@ const
   PADDING_PKCS     = TF_PADDING_PKCS;
   PADDING_ISO10126 = TF_PADDING_ISO10126;
   PADDING_ISOIEC   = TF_PADDING_ISOIEC;
-
 
 
 type
@@ -77,18 +61,29 @@ type
 //    function SetBlockNo(const Value: ByteArray): TCipher; overload;
 //    function SetBlockNo(const Value: UInt64): TCipher; overload;
 
-    function ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
-
-    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32): TCipher; overload;
-    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32;
+// key + IV
+    function ExpandKey(AKey: PByte; AKeyLen: Cardinal;
                        AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
-
-    function ExpandKey(const AKey: ByteArray): TCipher; overload;
-    function ExpandKey(const AKey: ByteArray; AFlags: UInt32): TCipher; overload;
-    function ExpandKey(const AKey: ByteArray; AFlags: UInt32;
+    function ExpandKey(const AKey: ByteArray;
                        const AIV: ByteArray): TCipher; overload;
-    function ExpandKey(const AKey: ByteArray; AFlags: UInt32;
+// key + Nonce
+    function ExpandKey(AKey: PByte; AKeyLen: Cardinal;
                        const ANonce: UInt64): TCipher; overload;
+    function ExpandKey(const AKey: ByteArray;
+                       const ANonce: UInt64): TCipher; overload;
+// key only (zeroed IV)
+    function ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
+    function ExpandKey(const AKey: ByteArray): TCipher; overload;
+
+//    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32): TCipher; overload;
+//    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32;
+//                       AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
+
+//    function ExpandKey(const AKey: ByteArray; AFlags: UInt32): TCipher; overload;
+//    function ExpandKey(const AKey: ByteArray; AFlags: UInt32;
+//                       const AIV: ByteArray): TCipher; overload;
+//    function ExpandKey(const AKey: ByteArray; AFlags: UInt32;
+//                       const ANonce: UInt64): TCipher; overload;
 
     procedure Burn;
 
@@ -123,11 +118,11 @@ type
 
     class function GetInstance(const Name: string): TCipher; static;
 
-    class function AES: TCipher; static;
-    class function DES: TCipher; static;
-    class function TripleDES: TCipher; static;
-    class function RC5: TCipher; overload; static;
-    class function RC5(BlockSize, Rounds: Cardinal): TCipher; overload; static;
+    class function AES(AFlags: UInt32): TCipher; static;
+    class function DES(AFlags: UInt32): TCipher; static;
+    class function TripleDES(AFlags: UInt32): TCipher; static;
+    class function RC5(AFlags: UInt32): TCipher; overload; static;
+    class function RC5(AFlags: UInt32; BlockSize, Rounds: Cardinal): TCipher; overload; static;
     class function RC4: TCipher; static;
     class function Salsa20: TCipher; overload; static;
     class function Salsa20(Rounds: Cardinal): TCipher; overload; static;
@@ -146,11 +141,11 @@ type
 //    property Flags: UInt32 write SetFlagsProc;
 
 // todo:
-//    property Dir: UInt32 read GetDir write SetDir;
-//    property Mode: UInt32 read GetMode write SetMode;
-//    property Padding: UInt32 read GetPadding write SetPadding;
+//    property Dir: UInt32 read GetDir;
+//    property Mode: UInt32 read GetMode;
+//    property Padding: UInt32 read GetPadding;
 //    property IV: ByteArray read GetIV write SetIVProc;
-    property Nonce: UInt64 read GetNonce write SetNonceProc;
+//    property Nonce: UInt64 read GetNonce write SetNonceProc;
     property BlockSize: Cardinal read GetBlockSize;
   end;
 
@@ -217,6 +212,7 @@ begin
     CipherError(Value);
 end;
 
+(*
 { TCipherFlags }
 
 class operator TCipherFlags.BitwiseOr(const A, B: TCipherFlags): TCipherFlags;
@@ -268,7 +264,7 @@ class operator TCipherFlags.NotEqual(const A: UInt32; const B: TCipherFlags): Bo
 begin
   Result:= A <> B.FFlags;
 end;
-
+*)
 { TCipher }
 (*
 class function TCipher.Create(const Alg: ICipherAlgorithm): TCipher;
@@ -322,19 +318,22 @@ begin
   HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FInstance));
 end;
 
-class function TCipher.AES: TCipher;
+class function TCipher.AES(AFlags: UInt32): TCipher;
 begin
-  HResCheck(FServer.GetByAlgID(TF_ALG_AES, Result.FInstance));
+//  HResCheck(FServer.GetByAlgID(TF_ALG_AES, Result.FInstance));
+  HResCheck(GetAESInstance(PAESInstance(Result.FInstance), AFlags));
 end;
 
-class function TCipher.DES: TCipher;
+class function TCipher.DES(AFlags: UInt32): TCipher;
 begin
-  HResCheck(FServer.GetByAlgID(TF_ALG_DES, Result.FInstance));
+//  HResCheck(FServer.GetByAlgID(TF_ALG_DES, Result.FInstance));
+  HResCheck(GetDESInstance(PDESInstance(Result.FInstance), AFlags));
 end;
 
-class function TCipher.TripleDES: TCipher;
+class function TCipher.TripleDES(AFlags: UInt32): TCipher;
 begin
-  HResCheck(FServer.GetByAlgID(TF_ALG_3DES, Result.FInstance));
+//  HResCheck(FServer.GetByAlgID(TF_ALG_3DES, Result.FInstance));
+  HResCheck(Get3DESInstance(P3DESInstance(Result.FInstance), AFlags));
 end;
 
 class function TCipher.RC4: TCipher;
@@ -342,67 +341,100 @@ begin
   HResCheck(FServer.GetByAlgID(TF_ALG_RC4, Result.FInstance));
 end;
 
-class function TCipher.RC5: TCipher;
+class function TCipher.RC5(AFlags: UInt32): TCipher;
 begin
-  HResCheck(FServer.GetByAlgID(TF_ALG_RC5, Result.FInstance));
+//  HResCheck(FServer.GetByAlgID(TF_ALG_RC5, Result.FInstance));
+  HResCheck(GetRC5Instance(PRC5Instance(Result.FInstance), AFlags));
 end;
 
-class function TCipher.RC5(BlockSize, Rounds: Cardinal): TCipher;
+class function TCipher.RC5(AFlags: UInt32; BlockSize, Rounds: Cardinal): TCipher;
 begin
-  HResCheck(FServer.GetRC5(BlockSize, Rounds, Result.FInstance));
+//  HResCheck(FServer.GetRC5(BlockSize, Rounds, Result.FInstance));
+  HResCheck(GetRC5InstanceEx(PRC5Instance(Result.FInstance), AFlags, BlockSize, Rounds));
 end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher;
 begin
-  HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen, nil, 0));
   Result:= Self;
 end;
 
 function TCipher.ExpandKey(const AKey: ByteArray): TCipher;
 begin
-  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len, nil, 0));
   Result:= Self;
 end;
 
-function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32): TCipher;
+(*
+function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher;
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
   HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
   Result:= Self;
 end;
+*)
 
-function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32;
+function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; {AFlags: UInt32;}
                            AIV: Pointer; AIVLen: Cardinal): TCipher;
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
-  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
-  HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen, AIV, AIVLen));
   Result:= Self;
 end;
-
+(*
 function TCipher.ExpandKey(const AKey: ByteArray; AFlags: UInt32): TCipher;
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
   HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
   Result:= Self;
 end;
+*)
 
-function TCipher.ExpandKey(const AKey: ByteArray; AFlags: UInt32;
+function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
                            const AIV: ByteArray): TCipher;
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
-  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
-  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
+  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
   Result:= Self;
 end;
 
-function TCipher.ExpandKey(const AKey: ByteArray; AFlags: UInt32;
+function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; const ANonce: UInt64): TCipher;
+var
+  LBlockSize: Cardinal;
+  LBlock: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
+
+begin
+  LBlockSize:= GetBlockSize;
+  if LBlockSize < SizeOf(ANonce) then begin
+    if ANonce = 0 then
+      Result:= ExpandKey(AKey, AKeyLen, nil, 0)
+    else
+      CipherError(TF_E_INVALIDARG);
+  end
+  else if LBlockSize = SizeOf(ANonce) then begin
+    Result:= ExpandKey(AKey, AKeyLen, @ANonce, SizeOf(ANonce));
+  end
+  else if LBlockSize <= TF_MAX_CIPHER_BLOCK_SIZE then begin
+    FillChar(LBlock, LBlockSize, 0);
+    Move(ANonce, LBlock, SizeOf(ANonce));
+    Result:= ExpandKey(AKey, AKeyLen, @LBlock, BlockSize);
+    FillChar(LBlock, LBlockSize, 0);
+  end
+  else
+    CipherError(TF_E_UNEXPECTED);
+
+//  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+  Result:= Self;
+end;
+
+function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
                            const ANonce: UInt64): TCipher;
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
-  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
-  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
-  Result:= Self;
+//  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
+  ExpandKey(AKey.GetRawData, AKey.GetLen, ANonce);
 end;
 
 procedure TCipher.Burn;
@@ -438,7 +470,7 @@ begin
 
   Flags:= TF_ECB_ENCRYPT;
   HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
-  HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len));
+  HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len, nil, 0));
 
   Result:= Data.Copy();
   FInstance.EncryptBlock(Result.RawData);
@@ -456,7 +488,7 @@ begin
 
   Flags:= TF_ECB_DECRYPT;
   HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
-  HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len));
+  HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len, nil, 0));
 
   Result:= Data.Copy;
   FInstance.DecryptBlock(Result.RawData);

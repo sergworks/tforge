@@ -15,6 +15,10 @@ uses tfRecords, tfTypes, tfAlgServ, tfByteVectors,
      tfHMAC;
 
 function GetHashServer(var A: IHashServer): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+function GetHashInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 implementation
 
@@ -42,10 +46,10 @@ type
     FVTable: PPointer;
     FAlgTable: array[0..63] of TAlgItem;
     FCount: Integer;
-*)
     class function GetByAlgID(Inst: PHashServer; AlgID: Integer;
           var Alg: IHashAlgorithm): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+*)
     class function GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
 //          Key: Pointer; KeySize: Cardinal;
           const HashAlg: IHashAlgorithm): TF_RESULT;
@@ -74,21 +78,17 @@ type
   end;
 
 const
-  VTable: array[0..9] of Pointer = (
+  VTable: array[0..8] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeSingleton.Addref,
     @TForgeSingleton.Release,
 
-    @THashServer.GetByAlgID,
+//    @THashServer.GetByAlgID,
     @TAlgServer.GetByName,
     @TAlgServer.GetByIndex,
     @TAlgServer.GetName,
     @TAlgServer.GetCount,
 
-//    @THashServer.GetByName,
-//    @THashServer.GetByIndex,
-//    @THashServer.GetName,
-//    @THashServer.GetCount,
     @THashServer.GetHMAC,
     @THashServer.PBKDF1
 //    @THashServer.RegisterHash,
@@ -130,14 +130,14 @@ begin
   Instance.FCapacity:= THashServer.TABLE_SIZE;
 //  Instance.FCount:= 0;
 
-  TAlgServer.AddTableItem(@Instance, MD5_LITERAL, @GetMD5Algorithm);
-  TAlgServer.AddTableItem(@Instance, SHA1_LITERAL, @GetSHA1Algorithm);
-  TAlgServer.AddTableItem(@Instance, SHA256_LITERAL, @GetSHA256Algorithm);
-  TAlgServer.AddTableItem(@Instance, SHA512_LITERAL, @GetSHA512Algorithm);
-  TAlgServer.AddTableItem(@Instance, SHA224_LITERAL, @GetSHA224Algorithm);
-  TAlgServer.AddTableItem(@Instance, SHA384_LITERAL, @GetSHA384Algorithm);
-  TAlgServer.AddTableItem(@Instance, CRC32_LITERAL, @GetCRC32Algorithm);
-  TAlgServer.AddTableItem(@Instance, JENKINS1_LITERAL, @GetJenkinsOneAlgorithm);
+  TAlgServer.AddTableItem(@Instance, Pointer(MD5_LITERAL), TF_ALG_MD5);
+  TAlgServer.AddTableItem(@Instance, Pointer(SHA1_LITERAL), TF_ALG_SHA1);
+  TAlgServer.AddTableItem(@Instance, Pointer(SHA256_LITERAL), TF_ALG_SHA256);
+  TAlgServer.AddTableItem(@Instance, Pointer(SHA512_LITERAL), TF_ALG_SHA512);
+  TAlgServer.AddTableItem(@Instance, Pointer(SHA224_LITERAL), TF_ALG_SHA224);
+  TAlgServer.AddTableItem(@Instance, Pointer(SHA384_LITERAL), TF_ALG_SHA384);
+  TAlgServer.AddTableItem(@Instance, Pointer(CRC32_LITERAL), TF_ALG_CRC32);
+  TAlgServer.AddTableItem(@Instance, Pointer(JENKINS1_LITERAL), TF_ALG_JENKINS1);
 end;
 
 function GetHashServer(var A: IHashServer): TF_RESULT;
@@ -181,24 +181,37 @@ begin
   Result:= ByteVectorFromPByte(Key, @Digest, dkLen);
 end;
 
-class function THashServer.GetByAlgID(Inst: PHashServer; AlgID: Integer;
-        var Alg: IHashAlgorithm): TF_RESULT;
+function GetStdInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
 begin
-  Result:= TF_S_OK;
   case AlgID of
-    TF_ALG_MD5: GetMD5Algorithm(PMD5Alg(Alg));
-    TF_ALG_SHA1: GetSHA1Algorithm(PSHA1Alg(Alg));
-    TF_ALG_SHA256: GetSHA256Algorithm(PSHA256Alg(Alg));
-    TF_ALG_SHA512: GetSHA512Algorithm(PSHA512Alg(Alg));
-    TF_ALG_SHA224: GetSHA224Algorithm(PSHA224Alg(Alg));
-    TF_ALG_SHA384: GetSHA384Algorithm(PSHA384Alg(Alg));
+    TF_ALG_MD5: Result:= GetMD5Algorithm(PMD5Alg(Alg));
+    TF_ALG_SHA1: Result:= GetSHA1Algorithm(PSHA1Alg(Alg));
+    TF_ALG_SHA256: Result:= GetSHA256Algorithm(PSHA256Alg(Alg));
+    TF_ALG_SHA512: Result:= GetSHA512Algorithm(PSHA512Alg(Alg));
+    TF_ALG_SHA224: Result:= GetSHA224Algorithm(PSHA224Alg(Alg));
+    TF_ALG_SHA384: Result:= GetSHA384Algorithm(PSHA384Alg(Alg));
   else
     case AlgID of
-      TF_ALG_CRC32: GetCRC32Algorithm(PCRC32Alg(Alg));
-      TF_ALG_JENKINS1: GetJenkinsOneAlgorithm(PJenkinsOneAlg(Alg));
+      TF_ALG_CRC32: Result:= GetCRC32Algorithm(PCRC32Alg(Alg));
+      TF_ALG_JENKINS1: Result:= GetJenkinsOneAlgorithm(PJenkinsOneAlg(Alg));
     else
       Result:= TF_E_INVALIDARG;
     end;
+  end;
+end;
+
+function GetOSSLInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+begin
+      Result:= TF_E_INVALIDARG;
+end;
+
+function GetHashInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+begin
+  case AlgID and TF_ENGINE_MASK of
+    TF_ENGINE_STD:  Result:= GetStdInstance(AlgID and not TF_ENGINE_MASK, Alg);
+    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID and not TF_ENGINE_MASK, Alg);
+  else
+    Result:= TF_E_INVALIDARG;
   end;
 end;
 

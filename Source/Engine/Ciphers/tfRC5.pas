@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
 { *********************************************************** }
 
 unit tfRC5;
@@ -14,8 +14,8 @@ uses
   tfTypes;
 
 type
-  PRC5Algorithm = ^TRC5Algorithm;
-  TRC5Algorithm = record
+  PRC5Instance = ^TRC5Instance;
+  TRC5Instance = record
   private const
     MAX_ROUNDS = 255;
     MAX_KEYLEN = 255;
@@ -49,34 +49,37 @@ type
     FSubKeys: TDummy;
 
   public
-    class function Release(Inst: PRC5Algorithm): Integer; stdcall; static;
-    class function ExpandKey32(Inst: PRC5Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
+    class function Release(Inst: PRC5Instance): Integer; stdcall; static;
+    class function ExpandKey32(Inst: PRC5Instance; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey64(Inst: PRC5Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
+    class function ExpandKey64(Inst: PRC5Instance; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey128(Inst: PRC5Algorithm; Key: PByte; KeySize: Cardinal): TF_RESULT;
+    class function ExpandKey128(Inst: PRC5Instance; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PRC5Algorithm): Integer;
+    class function GetBlockSize(Inst: PRC5Instance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DuplicateKey(Inst: PRC5Algorithm; var Key: PRC5Algorithm): TF_RESULT;
+    class function DuplicateKey(Inst: PRC5Instance; var Key: PRC5Instance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DestroyKey(Inst: PRC5Algorithm);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptBlock32(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+    class procedure DestroyKey(Inst: PRC5Instance);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptBlock32(Inst: PRC5Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptBlock64(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+    class function EncryptBlock64(Inst: PRC5Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptBlock128(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+    class function EncryptBlock128(Inst: PRC5Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DecryptBlock32(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+    class function DecryptBlock32(Inst: PRC5Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DecryptBlock64(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+    class function DecryptBlock64(Inst: PRC5Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DecryptBlock128(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+    class function DecryptBlock128(Inst: PRC5Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-function GetRC5Algorithm(var A: PRC5Algorithm): TF_RESULT;
-function GetRC5AlgorithmEx(var A: PRC5Algorithm; BlockSize, Rounds: Integer): TF_RESULT;
+function GetRC5Instance(var A: PRC5Instance; Flags: UInt32): TF_RESULT;
+function GetRC5InstanceEx(var A: PRC5Instance; Flags: UInt32; BlockSize, Rounds: Integer): TF_RESULT;
 
 implementation
 
@@ -89,18 +92,18 @@ const
   RC5VTable32: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
-   @TRC5Algorithm.Release,
+   @TRC5Instance.Release,
 
-   @TRC5Algorithm.DestroyKey,
-   @TRC5Algorithm.DuplicateKey,
-   @TRC5Algorithm.ExpandKey32,
+   @TRC5Instance.DestroyKey,
+   @TRC5Instance.DuplicateKey,
+   @TRC5Instance.ExpandKey32,
    @TBaseBlockCipher.SetKeyParam,
    @TBaseBlockCipher.GetKeyParam,
-   @TRC5Algorithm.GetBlockSize,
+   @TRC5Instance.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
-   @TRC5Algorithm.EncryptBlock32,
-   @TRC5Algorithm.DecryptBlock32,
+   @TRC5Instance.EncryptBlock32,
+   @TRC5Instance.DecryptBlock32,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
@@ -110,18 +113,18 @@ const
   RC5VTable64: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
-   @TRC5Algorithm.Release,
+   @TRC5Instance.Release,
 
-   @TRC5Algorithm.DestroyKey,
-   @TRC5Algorithm.DuplicateKey,
-   @TRC5Algorithm.ExpandKey64,
+   @TRC5Instance.DestroyKey,
+   @TRC5Instance.DuplicateKey,
+   @TRC5Instance.ExpandKey64,
    @TBaseBlockCipher.SetKeyParam,
    @TBaseBlockCipher.GetKeyParam,
-   @TRC5Algorithm.GetBlockSize,
+   @TRC5Instance.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
-   @TRC5Algorithm.EncryptBlock64,
-   @TRC5Algorithm.DecryptBlock64,
+   @TRC5Instance.EncryptBlock64,
+   @TRC5Instance.DecryptBlock64,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
@@ -131,25 +134,25 @@ const
   RC5VTable128: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
-   @TRC5Algorithm.Release,
+   @TRC5Instance.Release,
 
-   @TRC5Algorithm.DestroyKey,
-   @TRC5Algorithm.DuplicateKey,
-   @TRC5Algorithm.ExpandKey128,
+   @TRC5Instance.DestroyKey,
+   @TRC5Instance.DuplicateKey,
+   @TRC5Instance.ExpandKey128,
    @TBaseBlockCipher.SetKeyParam,
    @TBaseBlockCipher.GetKeyParam,
-   @TRC5Algorithm.GetBlockSize,
+   @TRC5Instance.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,
-   @TRC5Algorithm.EncryptBlock128,
-   @TRC5Algorithm.DecryptBlock128,
+   @TRC5Instance.EncryptBlock128,
+   @TRC5Instance.DecryptBlock128,
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
    @TBaseBlockCipher.GetIsBlockCipher
    );
 
-procedure BurnKey(Inst: PRC5Algorithm); inline;
+procedure BurnKey(Inst: PRC5Instance); inline;
 var
   BurnSize: Integer;
   TmpBlockSize: Integer;
@@ -162,10 +165,10 @@ begin
 //  end;
   TmpBlockSize:= Inst.FBlockSize;
   TmpRounds:= Inst.FRounds;
-  BurnSize:= SizeOf(TRC5Algorithm)
-             - SizeOf(TRC5Algorithm.TDummy)
+  BurnSize:= SizeOf(TRC5Instance)
+             - SizeOf(TRC5Instance.TDummy)
              + (TmpRounds + 1) * TmpBlockSize
-             - Integer(@PRC5Algorithm(nil)^.FValidKey);
+             - Integer(@PRC5Instance(nil)^.FValidKey);
 //  BurnSize:= Integer(@PRC5Algorithm(nil)^.FSubKeys)
 //           - Integer(@PRC5Algorithm(nil)^.FValidKey);
   FillChar(Inst.FValidKey, BurnSize, 0);
@@ -176,7 +179,7 @@ begin
 //  end;
 end;
 
-class function TRC5Algorithm.Release(Inst: PRC5Algorithm): Integer;
+class function TRC5Instance.Release(Inst: PRC5Instance): Integer;
 begin
   if Inst.FRefCount > 0 then begin
     Result:= tfDecrement(Inst.FRefCount);
@@ -190,17 +193,18 @@ begin
     Result:= Inst.FRefCount;
 end;
 
-function GetRC5Algorithm(var A: PRC5Algorithm): TF_RESULT;
+function GetRC5Instance(var A: PRC5Instance; Flags: UInt32): TF_RESULT;
 begin
-  Result:= GetRC5AlgorithmEx(A,   // "standard" RC5:
-                             8,   //   64-bit block (8 bytes)
-                             12   //   12 rounds
+  Result:= GetRC5InstanceEx(A,
+                             Flags, // "standard" RC5:
+                             8,     //   64-bit block (8 bytes)
+                             12     //   12 rounds
                               );
 end;
 
-function GetRC5AlgorithmEx(var A: PRC5Algorithm; BlockSize, Rounds: Integer): TF_RESULT;
+function GetRC5InstanceEx(var A: PRC5Instance; Flags: UInt32; BlockSize, Rounds: Integer): TF_RESULT;
 var
-  Tmp: PRC5Algorithm;
+  Tmp: PRC5Instance;
 
 begin
   if ((BlockSize <> 4) and (BlockSize <> 8) and (BlockSize <> 16))
@@ -211,8 +215,8 @@ begin
     end;
 //  BlockSize:= BlockSize shr 3;
   try
-    Tmp:= AllocMem(SizeOf(TRC5Algorithm)
-                   - SizeOf(TRC5Algorithm.TDummy)
+    Tmp:= AllocMem(SizeOf(TRC5Instance)
+                   - SizeOf(TRC5Instance.TDummy)
                    + (Rounds + 1) * BlockSize);
     case BlockSize of
       4: Tmp^.FVTable:= @RC5VTable32;
@@ -220,10 +224,17 @@ begin
      16: Tmp^.FVTable:= @RC5VTable128;
     end;
     Tmp^.FRefCount:= 1;
+
+    Result:= PBaseBlockCipher(Tmp).SetFlags(Flags);
+    if Result <> TF_S_OK then begin
+      FreeMem(Tmp);
+      Exit;
+    end;
+
     Tmp^.FBlockSize:= BlockSize;
     Tmp^.FRounds:= Rounds;
 
-    if A <> nil then TRC5Algorithm.Release(A);
+    if A <> nil then TRC5Instance.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
   except
@@ -231,20 +242,21 @@ begin
   end;
 end;
 
-class procedure TRC5Algorithm.DestroyKey(Inst: PRC5Algorithm);
+class procedure TRC5Instance.DestroyKey(Inst: PRC5Instance);
 begin
   BurnKey(Inst);
 end;
 
-class function TRC5Algorithm.DuplicateKey(Inst: PRC5Algorithm;
-  var Key: PRC5Algorithm): TF_RESULT;
+class function TRC5Instance.DuplicateKey(Inst: PRC5Instance;
+  var Key: PRC5Instance): TF_RESULT;
 begin
-  Result:= GetRC5AlgorithmEx(Key, Inst.FBlockSize, Inst.FRounds);
+  Result:= GetRC5InstanceEx(Key, PBaseBlockCipher(Inst).GetFlags,
+                                  Inst.FBlockSize, Inst.FRounds);
   if Result = TF_S_OK then begin
     Key.FValidKey:= Inst.FValidKey;
-    Key.FDir:= Inst.FDir;
-    Key.FMode:= Inst.FMode;
-    Key.FPadding:= Inst.FPadding;
+//    Key.FDir:= Inst.FDir;
+//    Key.FMode:= Inst.FMode;
+//    Key.FPadding:= Inst.FPadding;
     Key.FIVector:= Inst.FIVector;
     Key.FRounds:= Inst.FRounds;
     Key.FBlockSize:= Inst.FBlockSize;
@@ -283,7 +295,7 @@ begin
   Result:= (Value shr Shift) or (Value shl (64 - Shift));
 end;
 
-class function TRC5Algorithm.EncryptBlock32(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+class function TRC5Instance.EncryptBlock32(Inst: PRC5Instance; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
   RC5Word = Word;
@@ -312,7 +324,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.EncryptBlock64(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+class function TRC5Instance.EncryptBlock64(Inst: PRC5Instance; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
   RC5Word = UInt32;
@@ -341,7 +353,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.EncryptBlock128(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+class function TRC5Instance.EncryptBlock128(Inst: PRC5Instance; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
   RC5Word = UInt64;
@@ -370,7 +382,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.DecryptBlock32(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+class function TRC5Instance.DecryptBlock32(Inst: PRC5Instance; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
   RC5Word = Word;
@@ -401,7 +413,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.DecryptBlock64(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+class function TRC5Instance.DecryptBlock64(Inst: PRC5Instance; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
   RC5Word = UInt32;
@@ -432,7 +444,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.DecryptBlock128(Inst: PRC5Algorithm; Data: PByte): TF_RESULT;
+class function TRC5Instance.DecryptBlock128(Inst: PRC5Instance; Data: PByte): TF_RESULT;
 type
   PRC5Word = ^RC5Word;
   RC5Word = UInt64;
@@ -463,8 +475,8 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.ExpandKey32(Inst: PRC5Algorithm; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+class function TRC5Instance.ExpandKey32(Inst: PRC5Instance; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 
 type
   RC5Word = Word;         // RC5 "word" size = 2 bytes
@@ -486,6 +498,9 @@ var
   NSteps: Integer;
 
 begin
+  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
+  if Result <> TF_S_OK then Exit;
+
   if (KeySize > 255) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -523,8 +538,8 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.ExpandKey64(Inst: PRC5Algorithm; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+class function TRC5Instance.ExpandKey64(Inst: PRC5Instance; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 
 type
   RC5Word = UInt32;     // RC5 "word" size = 4 bytes
@@ -546,6 +561,9 @@ var
   NSteps: Integer;
 
 begin
+  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
+  if Result <> TF_S_OK then Exit;
+
   if (KeySize > 255) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -583,8 +601,8 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.ExpandKey128(Inst: PRC5Algorithm; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+class function TRC5Instance.ExpandKey128(Inst: PRC5Instance; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 type
   RC5Word = UInt64;       // RC5 "word" size = 8 bytes
   PWArray = ^TWArray;
@@ -605,6 +623,9 @@ var
   NSteps: Integer;
 
 begin
+  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
+  if Result <> TF_S_OK then Exit;
+
   if (KeySize > 255) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -642,7 +663,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Algorithm.GetBlockSize(Inst: PRC5Algorithm): Integer;
+class function TRC5Instance.GetBlockSize(Inst: PRC5Instance): Integer;
 begin
   Result:= Inst.FBlockSize;
 end;
