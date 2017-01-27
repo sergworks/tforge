@@ -73,15 +73,15 @@ function GetStdInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
   case AlgID and TF_ALGID_MASK of
 // block ciphers
-    TF_ALG_AES: Result:= GetAESInstance(PAESInstance(Alg), AlgID shr 16);
-    TF_ALG_DES: Result:= GetDESInstance(PDESInstance(Alg), AlgID shr 16);
-    TF_ALG_RC5: Result:= GetRC5Instance(PRC5Instance(Alg), AlgID shr 16);
-    TF_ALG_3DES: Result:= Get3DESInstance(P3DESInstance(Alg), AlgID shr 16);
+    TF_ALG_AES: Result:= GetAESInstance(PAESInstance(Alg), AlgID);
+    TF_ALG_DES: Result:= GetDESInstance(PDESInstance(Alg), AlgID);
+    TF_ALG_RC5: Result:= GetRC5Instance(PRC5Instance(Alg), AlgID);
+    TF_ALG_3DES: Result:= Get3DESInstance(P3DESInstance(Alg), AlgID);
 
 // stream ciphers
-    TF_ALG_RC4: Result:= GetRC4Algorithm(PRC4Algorithm(Alg));
-    TF_ALG_SALSA20: Result:= GetSalsa20Algorithm(PSalsa20(Alg));
-    TF_ALG_CHACHA20: Result:= GetChaCha20Algorithm(PSalsa20(Alg));
+    TF_ALG_RC4: Result:= GetRC4Instance(PRC4Instance(Alg));
+    TF_ALG_SALSA20: Result:= GetSalsa20Instance(PSalsa20Instance(Alg));
+    TF_ALG_CHACHA20: Result:= GetChaCha20Instance(PSalsa20Instance(Alg));
   else
     Result:= TF_E_INVALIDARG;
   end;
@@ -149,13 +149,13 @@ end;
 class function TCipherServer.GetSalsa20(Inst: PCipherServer; Rounds: Integer;
   var Alg: ICipher): TF_RESULT;
 begin
-  Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
+  Result:= GetSalsa20InstanceEx(PSalsa20Instance(Alg), Rounds);
 end;
 
 class function TCipherServer.GetChaCha20(Inst: PCipherServer; Rounds: Integer;
   var Alg: ICipher): TF_RESULT;
 begin
-  Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
+  Result:= GetChaCha20InstanceEx(PSalsa20Instance(Alg), Rounds);
 end;
 
 (*
@@ -201,7 +201,7 @@ var
   Alg: ICipher;
 
 begin
-  Result:= GetSalsa20AlgorithmEx(PSalsa20(Alg), Rounds);
+  Result:= GetSalsa20InstanceEx(PSalsa20Instance(Alg), Rounds);
   if Result = TF_S_OK then
     Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
@@ -212,7 +212,7 @@ var
   Alg: ICipher;
 
 begin
-  Result:= GetChaCha20AlgorithmEx(PSalsa20(Alg), Rounds);
+  Result:= GetChaCha20InstanceEx(PSalsa20Instance(Alg), Rounds);
   if Result = TF_S_OK then
     Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;

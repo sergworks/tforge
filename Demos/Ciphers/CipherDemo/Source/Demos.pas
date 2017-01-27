@@ -51,17 +51,17 @@ begin
   Writeln('--- ECB mode test ---');
   Writeln(' Plaintext  : ', PTextA.ToHex);
 
-  CText:= TCipher.AES.ExpandKey(Key, ECB_ENCRYPT).EncryptData(PTextA);
+  CText:= TCipher.AES(ECB_ENCRYPT).ExpandKey(Key).EncryptByteArray(PTextA);
   Writeln(' Ciphertext : ', CText.ToHex);
 
-  PTextB:= TCipher.AES.ExpandKey(Key, ECB_DECRYPT).DecryptData(CText);
+  PTextB:= TCipher.AES(ECB_DECRYPT).ExpandKey(Key).DecryptByteArray(CText);
   Writeln(' Decrypted  : ', PTextB.ToHex);
 
   Assert(PTextA = PTextB);
 
 // 'manual' implementation of ECB encryption
-  CText1:= TCipher.AES.EncryptBlock(ByteArray.ParseHex(PlainText1), Key);
-  CText2:= TCipher.AES.EncryptBlock(ByteArray.ParseHex(PlainText2), Key);
+  CText1:= TCipher.EncryptBlock(ALG_AES, ByteArray.ParseHex(PlainText1), Key);
+  CText2:= TCipher.EncryptBlock(ALG_AES, ByteArray.ParseHex(PlainText2), Key);
 
   Assert(CText1 = ByteArray.ParseHex(CipherText1));
   Assert(CText2 = ByteArray.ParseHex(CipherText2));
@@ -70,8 +70,8 @@ begin
 //   we need only 2 first blocks to check
   Assert(CText.Copy(0, 32) = CText1 + CText2);
 
-  PText1:= TCipher.AES.DecryptBlock(CText1, Key);
-  PText2:= TCipher.AES.DecryptBlock(CText2, Key);
+  PText1:= TCipher.DecryptBlock(ALG_AES, CText1, Key);
+  PText2:= TCipher.DecryptBlock(ALG_AES, CText2, Key);
 
   Assert(PTextA = PText1 + PText2);
 end;
@@ -89,26 +89,25 @@ begin
   IV:= ByteArray.ParseHex(HexIV);
   PTextA:= ByteArray.ParseHex(PlainText1 + PlainText2);
 
-  CText:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV).EncryptData(PTextA);
-  PTextB:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV).DecryptData(CText);
-
   Writeln('--- CBC mode test ---');
   Writeln(' Plaintext  : ', PTextA.ToHex);
+  CText:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, IV).EncryptByteArray(PTextA);
   Writeln(' Ciphertext : ', CText.ToHex);
+  PTextB:= TCipher.AES(CBC_DECRYPT).ExpandKey(Key, IV).DecryptByteArray(CText);
   Writeln(' Decrypted  : ', PTextB.ToHex);
 
   Assert(PTextA = PTextB);
 
 // 'manual' implementation of CBC encryption
-  CText1:= TCipher.AES.EncryptBlock(ByteArray.ParseHex(PlainText1) xor IV, Key);
-  CText2:= TCipher.AES.EncryptBlock(ByteArray.ParseHex(PlainText2) xor CText1, Key);
+  CText1:= TCipher.EncryptBlock(ALG_AES, ByteArray.ParseHex(PlainText1) xor IV, Key);
+  CText2:= TCipher.EncryptBlock(ALG_AES, ByteArray.ParseHex(PlainText2) xor CText1, Key);
 
 // CText contains additional 3rd padding block,
 //   we need only 2 first blocks to check
   Assert(CText.Copy(0, 32) = CText1 + CText2);
 
-  PText1:= TCipher.AES.DecryptBlock(CText1, Key) xor IV;
-  PText2:= TCipher.AES.DecryptBlock(CText2, Key) xor CText1;
+  PText1:= TCipher.DecryptBlock(ALG_AES, CText1, Key) xor IV;
+  PText2:= TCipher.DecryptBlock(ALG_AES, CText2, Key) xor CText1;
 
   Assert(PTextA = PText1 + PText2);
 end;
@@ -126,8 +125,8 @@ begin
   IV:= ByteArray.ParseHex(HexIV);
   PTextA:= ByteArray.ParseHex(PlainText1 + PlainText2);
 
-  CText:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, IV).EncryptData(PTextA);
-  PTextB:= TCipher.AES.ExpandKey(Key, CTR_DECRYPT, IV).DecryptData(CText);
+  CText:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, IV).EncryptByteArray(PTextA);
+  PTextB:= TCipher.AES(CTR_DECRYPT).ExpandKey(Key, IV).DecryptByteArray(CText);
 
   Writeln('--- CTR mode test ---');
   Writeln(' Plaintext  : ', PTextA.ToHex);
@@ -141,18 +140,18 @@ begin
   TmpIV:= IV.Copy();
   Writeln(' IV  : ', TmpIV.ToHex);
 
-  CText1:= TCipher.AES.EncryptBlock(TmpIV, Key) xor ByteArray.ParseHex(PlainText1);
+  CText1:= TCipher.EncryptBlock(ALG_AES, TmpIV, Key) xor ByteArray.ParseHex(PlainText1);
   TmpIV.Incr();
   Writeln(' IV  : ', TmpIV.ToHex);
-  CText2:= TCipher.AES.EncryptBlock(TmpIV, Key) xor ByteArray.ParseHex(PlainText2);
+  CText2:= TCipher.EncryptBlock(ALG_AES, TmpIV, Key) xor ByteArray.ParseHex(PlainText2);
 
   Writeln(' Ciphertext : ', (CText1 + CText2).ToHex);
   Assert(CText.Copy(0, 32) = CText1 + CText2);
 
   TmpIV:= IV.Copy();
-  PText1:= TCipher.AES.EncryptBlock(TmpIV, Key) xor CText1;
+  PText1:= TCipher.EncryptBlock(ALG_AES, TmpIV, Key) xor CText1;
   TmpIV.Incr();
-  PText2:= TCipher.AES.EncryptBlock(TmpIV, Key) xor CText2;
+  PText2:= TCipher.EncryptBlock(ALG_AES, TmpIV, Key) xor CText2;
 
   Writeln(' Plaintext  : ', (PText1 + PText2).ToHex);
   Assert(PTextA = PText1 + PText2);
@@ -166,9 +165,9 @@ begin
   Writeln;
   Writeln('-- Running CBCDemo --');
   Writeln('PlainText:  ', PlainText.ToHex);
-  CipherText:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV).EncryptData(PlainText);
+  CipherText:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, IV).EncryptByteArray(PlainText);
   Writeln('CipherText: ', CipherText.ToHex);
-  PlainText2:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV).DecryptData(CipherText);
+  PlainText2:= TCipher.AES(CBC_DECRYPT).ExpandKey(Key, IV).DecryptByteArray(CipherText);
   Writeln('PlainText:  ', PlainText2.ToHex);
   Assert(PlainText = PlainText2);
   Writeln('-- Done CBCDemo --');
@@ -182,9 +181,9 @@ begin
   Writeln;
   Writeln('-- Running CTRDemo --');
   Writeln('PlainText:  ', PlainText.ToHex);
-  CipherText:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, IV).EncryptData(PlainText);
+  CipherText:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, IV).EncryptByteArray(PlainText);
   Writeln('CipherText: ', CipherText.ToHex);
-  PlainText2:= TCipher.AES.ExpandKey(Key, CTR_DECRYPT, IV).DecryptData(CipherText);
+  PlainText2:= TCipher.AES(CTR_DECRYPT).ExpandKey(Key, IV).DecryptByteArray(CipherText);
   Writeln('PlainText:  ', PlainText2.ToHex);
   Assert(PlainText = PlainText2);
   Writeln('-- Done CTRDemo --');
@@ -194,9 +193,9 @@ procedure CBCFileDemo(const FileName: string; const IV, Key: ByteArray);
 begin
   Writeln;
   Writeln('-- Running CBCFileDemo --');
-  TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV)
+  TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, IV)
              .EncryptFile(FileName, FileName + '.aes');
-  TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV)
+  TCipher.AES(CBC_DECRYPT).ExpandKey(Key, IV)
              .DecryptFile(FileName + '.aes', FileName + '.bak');
   Writeln('-- Done CBCFileDemo --');
 end;
@@ -208,13 +207,13 @@ var
 begin
   Writeln;
   Writeln('-- Running CBCFileDemo 2 --');
-  Cipher:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, IV);
+  Cipher:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, IV);
   try
     Cipher.EncryptFile(FileName, FileName + '.aes');
   finally
     Cipher.Burn;
   end;
-  Cipher:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, IV);
+  Cipher:= TCipher.AES(CBC_DECRYPT).ExpandKey(Key, IV);
   try
     Cipher.DecryptFile(FileName + '.aes', FileName + '.bak');
   finally
@@ -232,9 +231,9 @@ begin
   Writeln('-- Running BlockDemo --');
   Writeln('Block:     ', Block.ToHex);
   Writeln('Key:       ', Key.ToHex);
-  CipherText:= TCipher.DES.EncryptBlock(Block, Key);
+  CipherText:= TCipher.EncryptBlock(ALG_DES, Block, Key);
   Writeln('Encrypted: ', CipherText.ToHex);
-  PlainText:= TCipher.DES.DecryptBlock(CipherText, Key);
+  PlainText:= TCipher.DecryptBlock(ALG_DES, CipherText, Key);
   Writeln('Decrypted: ', PlainText.ToHex);
   Assert(PlainText = Block);
   Writeln('-- Done BlockDemo --');
@@ -249,9 +248,11 @@ begin
   Writeln('-- Running RC5BlockDemo --');
   Writeln('Block:     ', Block.ToHex);
   Writeln('Key:       ', Key.ToHex);
-  CipherText:= TCipher.RC5(Block.Len, 20).EncryptBlock(Block, Key);
+  CipherText:= TCipher.RC5(ECB_ENCRYPT or PADDING_NONE, Block.Len, 20).ExpandKey(Key)
+                      .EncryptByteArray(Block);
   Writeln('Encrypted: ', CipherText.ToHex);
-  PlainText:= TCipher.RC5(Block.Len, 20).DecryptBlock(CipherText, Key);
+  PlainText:= TCipher.RC5(ECB_DECRYPT or PADDING_NONE, Block.Len, 20).ExpandKey(Key)
+                     .DecryptByteArray(CipherText);
   Writeln('Decrypted: ', PlainText.ToHex);
   Assert(PlainText = Block);
   Writeln('-- Done RC5BlockDemo --');
@@ -267,7 +268,7 @@ var
 begin
   Writeln;
   Writeln('-- Running RandDemo --');
-  Cipher:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT);
+  Cipher:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key);
   for I:= 0 to 9 do begin
     Rand:= LongWord(Cipher.KeyStream(SizeOf(Rand)));
     Writeln(I:3, ': ', Rand);

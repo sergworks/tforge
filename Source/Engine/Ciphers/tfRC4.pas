@@ -13,8 +13,8 @@ uses
   tfTypes;
 
 type
-  PRC4Algorithm = ^TRC4Algorithm;
-  TRC4Algorithm = record
+  PRC4Instance = ^TRC4Instance;
+  TRC4Instance = record
   private type
     PState = ^TState;
     TState = record
@@ -33,20 +33,20 @@ type
     FState:    TState;
 {$HINTS ON}
   public
-    class function Release(Inst: PRC4Algorithm): Integer; stdcall; static;
-    class function ExpandKey(Inst: PRC4Algorithm; Key: PByte; KeySize: Cardinal;
+    class function Release(Inst: PRC4Instance): Integer; stdcall; static;
+    class function ExpandKey(Inst: PRC4Instance; Key: PByte; KeySize: Cardinal;
           IV: Pointer; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PRC4Algorithm): Integer;
+    class function GetBlockSize(Inst: PRC4Instance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DuplicateKey(Inst: PRC4Algorithm; var Key: PRC4Algorithm): TF_RESULT;
+    class function DuplicateKey(Inst: PRC4Instance; var Key: PRC4Instance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DestroyKey(Inst: PRC4Algorithm);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function RandBlock(Inst: PRC4Algorithm; Data: PByte): TF_RESULT;
+    class procedure DestroyKey(Inst: PRC4Instance);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function RandBlock(Inst: PRC4Instance; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-function GetRC4Algorithm(var A: PRC4Algorithm): TF_RESULT;
+function GetRC4Instance(var A: PRC4Instance): TF_RESULT;
 
 implementation
 
@@ -56,35 +56,35 @@ const
   RC4VTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
-   @TRC4Algorithm.Release,
+   @TRC4Instance.Release,
 
-   @TRC4Algorithm.DestroyKey,
-   @TRC4Algorithm.DuplicateKey,
-   @TRC4Algorithm.ExpandKey,
+   @TRC4Instance.DestroyKey,
+   @TRC4Instance.DuplicateKey,
+   @TRC4Instance.ExpandKey,
    @TBaseStreamCipher.SetKeyParam,
    @TBaseStreamCipher.GetKeyParam,
-   @TRC4Algorithm.GetBlockSize,
+   @TRC4Instance.GetBlockSize,
    @TBaseStreamCipher.Encrypt,
    @TBaseStreamCipher.Decrypt,
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.GetRand,
-   @TRC4Algorithm.RandBlock,
+   @TRC4Instance.RandBlock,
    @TBaseStreamCipher.RandCrypt,
    @TBaseStreamCipher.GetIsBlockCipher
    );
 
-function GetRC4Algorithm(var A: PRC4Algorithm): TF_RESULT;
+function GetRC4Instance(var A: PRC4Instance): TF_RESULT;
 var
-  Tmp: PRC4Algorithm;
+  Tmp: PRC4Instance;
 
 begin
   try
-    Tmp:= AllocMem(SizeOf(TRC4Algorithm));
+    Tmp:= AllocMem(SizeOf(TRC4Instance));
     Tmp^.FVTable:= @RC4VTable;
     Tmp^.FRefCount:= 1;
 
-    if A <> nil then TRC4Algorithm.Release(A);
+    if A <> nil then TRC4Instance.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
   except
@@ -94,17 +94,17 @@ end;
 
 { TRC4Algorithm }
 
-procedure BurnKey(Inst: PRC4Algorithm); inline;
+procedure BurnKey(Inst: PRC4Instance); inline;
 var
   BurnSize: Integer;
 
 begin
-  BurnSize:= SizeOf(TRC4Algorithm)
-             - Integer(@PRC4Algorithm(nil)^.FValidKey);
+  BurnSize:= SizeOf(TRC4Instance)
+             - Integer(@PRC4Instance(nil)^.FValidKey);
   FillChar(Inst.FValidKey, BurnSize, 0);
 end;
 
-class function TRC4Algorithm.Release(Inst: PRC4Algorithm): Integer;
+class function TRC4Instance.Release(Inst: PRC4Instance): Integer;
 begin
   if Inst.FRefCount > 0 then begin
     Result:= tfDecrement(Inst.FRefCount);
@@ -117,22 +117,22 @@ begin
     Result:= Inst.FRefCount;
 end;
 
-class procedure TRC4Algorithm.DestroyKey(Inst: PRC4Algorithm);
+class procedure TRC4Instance.DestroyKey(Inst: PRC4Instance);
 begin
   BurnKey(Inst);
 end;
 
-class function TRC4Algorithm.DuplicateKey(Inst: PRC4Algorithm;
-  var Key: PRC4Algorithm): TF_RESULT;
+class function TRC4Instance.DuplicateKey(Inst: PRC4Instance;
+  var Key: PRC4Instance): TF_RESULT;
 begin
-  Result:= GetRC4Algorithm(Key);
+  Result:= GetRC4Instance(Key);
   if Result = TF_S_OK then begin
     Key.FValidKey:= Inst.FValidKey;
     Key.FState:= Inst.FState;
   end;
 end;
 
-class function TRC4Algorithm.ExpandKey(Inst: PRC4Algorithm; Key: PByte;
+class function TRC4Instance.ExpandKey(Inst: PRC4Instance; Key: PByte;
   KeySize: Cardinal; IV: Pointer; IVSize: Cardinal): TF_RESULT;
 var
   I: Cardinal;
@@ -165,12 +165,12 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC4Algorithm.GetBlockSize(Inst: PRC4Algorithm): Integer;
+class function TRC4Instance.GetBlockSize(Inst: PRC4Instance): Integer;
 begin
   Result:= 1;
 end;
 
-class function TRC4Algorithm.RandBlock(Inst: PRC4Algorithm; Data: PByte): TF_RESULT;
+class function TRC4Instance.RandBlock(Inst: PRC4Instance; Data: PByte): TF_RESULT;
 var
   Tmp: Byte;
   State: PState;

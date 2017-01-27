@@ -282,10 +282,6 @@ type
 
 
 const
-  TF_ENGINE_STD   = $00000000;
-  TF_ENGINE_OSSL  = $80000000;
-  TF_ENGINE_MASK  = $B0000000;
-
   TF_ALGID_MASK   = $FFFF;
                             // Cryptographic Hash Algorithms
   TF_ALG_MD5      = $1001;
@@ -463,38 +459,33 @@ const
 //  TF_KP_INCNO_LE     = TF_KP_LE + TF_KP_INCNO;
 
 // Key Flags bits:
-//     0002            0040           0800
-//  0  1 | 2  3  4  5  6 | 7  8  9 10 11 |
-//  DIR  | MODE          | PADDING       |
+//    0002               0080         0800          8000
+//  0  1 | 2  3  4  5  6  7 | 8  9 10 11 | 12 13 14 15 |
+//  DIR  | MODE             | PADDING    | ENGINE
 
                           // KP_DIR values
                           //   01 - encrypt only
                           //   10 - decrypt only
                           //   11 - encrypt & decrypt
-  TF_KEYDIR_SHIFT = 0;
-  TF_KEYDIR_BASE  = 1;
-//  TF_KEYDIR_BASE  = $0002;
-  TF_KEYDIR_MASK  = $0003;
+  TF_KEYDIR_SHIFT = 16;
+//  TF_KEYDIR_BASE  = $10000;
+  TF_KEYDIR_MASK  = $00030000;
 
-  TF_KEYDIR_ENCRYPT = TF_KEYDIR_BASE;
-  TF_KEYDIR_DECRYPT = TF_KEYDIR_BASE + 1;
+  TF_KEYDIR_ENCRYPT = 1 shl TF_KEYDIR_SHIFT;
+  TF_KEYDIR_DECRYPT = 2 shl TF_KEYDIR_SHIFT;
   TF_KEYDIR_ALL = TF_KEYDIR_ENCRYPT or TF_KEYDIR_DECRYPT;
 
                           // TF_KP_MODE values
                           //   00001 - ECB
                           //   00010 - CBC
                           //   00011 - CTR
-  TF_KEYMODE_SHIFT = 2;
-  TF_KEYMODE_BASE  = 4;
-  TF_KEYMODE_MASK  = $003C;
+  TF_KEYMODE_SHIFT = 18;
+//  TF_KEYMODE_BASE  = $40000;
+  TF_KEYMODE_MASK  = $007C0000;
 
-//  TF_KEYMODE_ECB = TF_KEYMODE_BASE + 1 shl TF_KEYMODE_SHIFT;
-//  TF_KEYMODE_CBC = TF_KEYMODE_BASE + 2 shl TF_KEYMODE_SHIFT;
-//  TF_KEYMODE_CTR = TF_KEYMODE_BASE + 3 shl TF_KEYMODE_SHIFT;
-
-  TF_KEYMODE_ECB = TF_KEYMODE_BASE;
-  TF_KEYMODE_CBC = TF_KEYMODE_BASE + 1 shl TF_KEYMODE_SHIFT;
-  TF_KEYMODE_CTR = TF_KEYMODE_BASE + 2 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_ECB = 1 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CBC = 2 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CTR = 3 shl TF_KEYMODE_SHIFT;
 
   TF_KEYMODE_MIN = TF_KEYMODE_ECB;
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
@@ -505,25 +496,30 @@ const
                           //   00101 - ZERO
                           //   00111 - ANSI
                           //   ...
-  TF_PADDING_SHIFT = 8;
-  TF_PADDING_BASE  = 128;
-  TF_PADDING_MASK  = $0F80;
+  TF_PADDING_SHIFT = 24;
+//  TF_PADDING_BASE  = 128;
+  TF_PADDING_MASK  = $0F000000;
 
-  TF_PADDING_DEFAULT  = TF_PADDING_BASE;
-  TF_PADDING_NONE     = TF_PADDING_BASE + 1 shl TF_PADDING_SHIFT;
+  TF_PADDING_DEFAULT  = 0;
+  TF_PADDING_NONE     = 1 shl TF_PADDING_SHIFT;
                                               // XX 00 00 00 00
-  TF_PADDING_ZERO     = TF_PADDING_BASE + 2 shl TF_PADDING_SHIFT;
+  TF_PADDING_ZERO     = 2 shl TF_PADDING_SHIFT;
                                               // XX 00 00 00 04
-  TF_PADDING_ANSI     = TF_PADDING_BASE + 3 shl TF_PADDING_SHIFT;
+  TF_PADDING_ANSI     = 3 shl TF_PADDING_SHIFT;
                                               // XX 04 04 04 04
-  TF_PADDING_PKCS     = TF_PADDING_BASE + 4 shl TF_PADDING_SHIFT;
+  TF_PADDING_PKCS     = 4 shl TF_PADDING_SHIFT;
                                               // XX ?? ?? ?? 04
-  TF_PADDING_ISO10126 = TF_PADDING_BASE + 5 shl TF_PADDING_SHIFT;
+  TF_PADDING_ISO10126 = 5 shl TF_PADDING_SHIFT;
                                               // XX 80 00 00 00
-  TF_PADDING_ISOIEC   = TF_PADDING_BASE + 6 shl TF_PADDING_SHIFT;
+  TF_PADDING_ISOIEC   = 6 shl TF_PADDING_SHIFT;
 
-  TF_PADDING_MIN = TF_PADDING_DEFAULT;
+  TF_PADDING_MIN = TF_PADDING_NONE;
   TF_PADDING_MAX = TF_PADDING_ISOIEC;
+
+  TF_ENGINE_SHIFT   = 28;
+  TF_ENGINE_STD     = 0;
+  TF_ENGINE_OSSL    = 1 shl TF_ENGINE_SHIFT;
+  TF_ENGINE_MASK    = $F0000000;
 
   TF_ECB_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;
   TF_ECB_DECRYPT = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;

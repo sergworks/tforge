@@ -16,8 +16,8 @@ type
   PSalsaBlock = ^TSalsaBlock;
   TSalsaBlock = array[0..15] of UInt32;
 
-  PSalsa20 = ^TSalsa20;
-  TSalsa20 = record
+  PSalsa20Instance = ^TSalsa20Instance;
+  TSalsa20Instance = record
   private type
     PKey = ^TKey;
     TKey = array[0..7] of UInt32;    // 256-bit key
@@ -42,23 +42,23 @@ type
     FExpandedKey: TBlock;
     FRounds: Cardinal;          // 2..254
 {$HINTS ON}
-    class function SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
+    class function SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
   public
-    class function Release(Inst: PSalsa20): Integer; stdcall; static;
-    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal;
+    class function Release(Inst: PSalsa20Instance): Integer; stdcall; static;
+    class function ExpandKey(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
           IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetBlockSize(Inst: PSalsa20): Integer;
+    class function GetBlockSize(Inst: PSalsa20Instance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
+    class function DuplicateKey(Inst: PSalsa20Instance; var Key: PSalsa20Instance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DestroyKey(Inst: PSalsa20);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+    class procedure DestroyKey(Inst: PSalsa20Instance);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
           DataLen: Cardinal): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
+    class function KeyBlock(Inst: PSalsa20Instance; Data: TSalsa20Instance.PBlock): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+    class function GetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
@@ -66,27 +66,27 @@ type
 type
   TChaCha20 = record
   public
-    class function SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
-    class function ExpandKey(Inst: PSalsa20; Key: PByte; KeySize: Cardinal;
+    class function SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
+    class function ExpandKey(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
           IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
+    class function DuplicateKey(Inst: PSalsa20Instance; var Key: PSalsa20Instance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+    class function SetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
           DataLen: Cardinal): TF_RESULT;
          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
+    class function KeyBlock(Inst: PSalsa20Instance; Data: TSalsa20Instance.PBlock): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+    class function GetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;
-function GetSalsa20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
+function GetSalsa20Instance(var A: PSalsa20Instance): TF_RESULT;
+function GetSalsa20InstanceEx(var A: PSalsa20Instance; Rounds: Integer): TF_RESULT;
 
-function GetChaCha20Algorithm(var A: PSalsa20): TF_RESULT;
-function GetChaCha20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
+function GetChaCha20Instance(var A: PSalsa20Instance): TF_RESULT;
+function GetChaCha20InstanceEx(var A: PSalsa20Instance; Rounds: Integer): TF_RESULT;
 
 type
   TChaChaPRG = record
@@ -109,20 +109,20 @@ const
   Salsa20VTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
-   @TSalsa20.Release,
+   @TSalsa20Instance.Release,
 
-   @TSalsa20.DestroyKey,
-   @TSalsa20.DuplicateKey,
-   @TSalsa20.ExpandKey,
-   @TSalsa20.SetKeyParam,
-   @TSalsa20.GetKeyParam,
-   @TSalsa20.GetBlockSize,
+   @TSalsa20Instance.DestroyKey,
+   @TSalsa20Instance.DuplicateKey,
+   @TSalsa20Instance.ExpandKey,
+   @TSalsa20Instance.SetKeyParam,
+   @TSalsa20Instance.GetKeyParam,
+   @TSalsa20Instance.GetBlockSize,
    @TBaseStreamCipher.Encrypt,
    @TBaseStreamCipher.Decrypt,
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.EncryptBlock,
    @TBaseStreamCipher.GetRand,
-   @TSalsa20.KeyBlock,
+   @TSalsa20Instance.KeyBlock,
    @TBaseStreamCipher.RandCrypt,
    @TBaseStreamCipher.GetIsBlockCipher
    );
@@ -130,14 +130,14 @@ const
   ChaCha20VTable: array[0..16] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
-   @TSalsa20.Release,
+   @TSalsa20Instance.Release,
 
-   @TSalsa20.DestroyKey,
+   @TSalsa20Instance.DestroyKey,
    @TChaCha20.DuplicateKey,
    @TChaCha20.ExpandKey,
    @TChaCha20.SetKeyParam,
    @TChaCha20.GetKeyParam,
-   @TSalsa20.GetBlockSize,
+   @TSalsa20Instance.GetBlockSize,
    @TBaseStreamCipher.Encrypt,
    @TBaseStreamCipher.Decrypt,
    @TBaseStreamCipher.EncryptBlock,
@@ -148,14 +148,14 @@ const
    @TBaseStreamCipher.GetIsBlockCipher
    );
 
-function GetSalsa20Algorithm(var A: PSalsa20): TF_RESULT;
+function GetSalsa20Instance(var A: PSalsa20Instance): TF_RESULT;
 begin
-  Result:= GetSalsa20AlgorithmEx(A, 20);
+  Result:= GetSalsa20InstanceEx(A, 20);
 end;
 
-function GetSalsa20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
+function GetSalsa20InstanceEx(var A: PSalsa20Instance; Rounds: Integer): TF_RESULT;
 var
-  Tmp: PSalsa20;
+  Tmp: PSalsa20Instance;
 
 begin
   if (Rounds < 1) or (Rounds > 255) or Odd(Rounds) then begin
@@ -163,12 +163,12 @@ begin
     Exit;
   end;
   try
-    Tmp:= AllocMem(SizeOf(TSalsa20));
+    Tmp:= AllocMem(SizeOf(TSalsa20Instance));
     Tmp^.FVTable:= @Salsa20VTable;
     Tmp^.FRefCount:= 1;
     Tmp^.FRounds:= Rounds shr 1;
 
-    if A <> nil then TSalsa20.Release(A);
+    if A <> nil then TSalsa20Instance.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
   except
@@ -176,14 +176,14 @@ begin
   end;
 end;
 
-function GetChaCha20Algorithm(var A: PSalsa20): TF_RESULT;
+function GetChaCha20Instance(var A: PSalsa20Instance): TF_RESULT;
 begin
-  Result:= GetChaCha20AlgorithmEx(A, 20);
+  Result:= GetChaCha20InstanceEx(A, 20);
 end;
 
-function GetChaCha20AlgorithmEx(var A: PSalsa20; Rounds: Integer): TF_RESULT;
+function GetChaCha20InstanceEx(var A: PSalsa20Instance; Rounds: Integer): TF_RESULT;
 var
-  Tmp: PSalsa20;
+  Tmp: PSalsa20Instance;
 
 begin
   if (Rounds < 1) or (Rounds > 255) or Odd(Rounds) then begin
@@ -191,12 +191,12 @@ begin
     Exit;
   end;
   try
-    Tmp:= AllocMem(SizeOf(TSalsa20));
+    Tmp:= AllocMem(SizeOf(TSalsa20Instance));
     Tmp^.FVTable:= @ChaCha20VTable;
     Tmp^.FRefCount:= 1;
     Tmp^.FRounds:= Rounds shr 1;
 
-    if A <> nil then TSalsa20.Release(A);
+    if A <> nil then TSalsa20Instance.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
   except
@@ -218,17 +218,17 @@ const
 
 { TSalsa20 }
 
-procedure BurnKey(Inst: PSalsa20); inline;
+procedure BurnKey(Inst: PSalsa20Instance); inline;
 var
   BurnSize: Integer;
 
 begin
-  BurnSize:= SizeOf(TSalsa20)
-             - Integer(@PSalsa20(nil)^.FValidKey);
+  BurnSize:= SizeOf(TSalsa20Instance)
+             - Integer(@PSalsa20Instance(nil)^.FValidKey);
   FillChar(Inst.FValidKey, BurnSize, 0);
 end;
 
-class function TSalsa20.Release(Inst: PSalsa20): Integer;
+class function TSalsa20Instance.Release(Inst: PSalsa20Instance): Integer;
 begin
   if Inst.FRefCount > 0 then begin
     Result:= tfDecrement(Inst.FRefCount);
@@ -241,12 +241,12 @@ begin
     Result:= Inst.FRefCount;
 end;
 
-class procedure TSalsa20.DestroyKey(Inst: PSalsa20);
+class procedure TSalsa20Instance.DestroyKey(Inst: PSalsa20Instance);
 begin
   BurnKey(Inst);
 end;
 
-procedure SalsaDoubleRound(x: TSalsa20.PBlock);
+procedure SalsaDoubleRound(x: TSalsa20Instance.PBlock);
 var
   y: UInt32;
 
@@ -285,7 +285,7 @@ begin
   y := x[14] + x[13]; x[15] := x[15] xor ((y shl 18) or (y shr (32-18)));
 end;
 
-procedure ChaChaDoubleRound(x: TSalsa20.PBlock);
+procedure ChaChaDoubleRound(x: TSalsa20Instance.PBlock);
 var
   a, b, c, d: UInt32;
 
@@ -347,12 +347,12 @@ begin
   x[3] := a;   x[4] := b;      x[9] := c;      x[14] := d;
 end;
 
-class function TSalsa20.GetBlockSize(Inst: PSalsa20): Integer;
+class function TSalsa20Instance.GetBlockSize(Inst: PSalsa20Instance): Integer;
 begin
   Result:= SALSA_BLOCK_SIZE;
 end;
 
-class function TSalsa20.GetKeyParam(Inst: PSalsa20; Param: UInt32; Data: Pointer;
+class function TSalsa20Instance.GetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
   var DataLen: Cardinal): TF_RESULT;
 begin
   if (Param = TF_KP_NONCE) then begin
@@ -366,7 +366,7 @@ begin
   Result:= TF_E_INVALIDARG;
 end;
 
-class function TSalsa20.KeyBlock(Inst: PSalsa20; Data: TSalsa20.PBlock): TF_RESULT;
+class function TSalsa20Instance.KeyBlock(Inst: PSalsa20Instance; Data: TSalsa20Instance.PBlock): TF_RESULT;
 var
   N: Cardinal;
 
@@ -387,9 +387,9 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TSalsa20.DuplicateKey(Inst: PSalsa20; var Key: PSalsa20): TF_RESULT;
+class function TSalsa20Instance.DuplicateKey(Inst: PSalsa20Instance; var Key: PSalsa20Instance): TF_RESULT;
 begin
-  Result:= GetSalsa20AlgorithmEx(Key, Inst.FRounds shl 1);
+  Result:= GetSalsa20InstanceEx(Key, Inst.FRounds shl 1);
   if Result = TF_S_OK then begin
     Key.FValidKey:= Inst.FValidKey;
     Key.FExpandedKey:= Inst.FExpandedKey;
@@ -397,10 +397,10 @@ begin
   end;
 end;
 
-class function TSalsa20.ExpandKey(Inst: PSalsa20; Key: PByte;
+class function TSalsa20Instance.ExpandKey(Inst: PSalsa20Instance; Key: PByte;
   KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 begin
-  Result:= TSalsa20.SetIV(Inst, IV, IVSize);
+  Result:= TSalsa20Instance.SetIV(Inst, IV, IVSize);
   if Result <> TF_S_OK then Exit;
 
   if (KeySize <> 16) and (KeySize <> 32) then begin
@@ -430,7 +430,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TSalsa20.SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT;
+class function TSalsa20Instance.SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT;
 begin
   if (DataLen = SizeOf(UInt64)) then begin
     Move(Data^, Inst.FExpandedKey[6], SizeOf(UInt64));
@@ -444,7 +444,7 @@ begin
     Result:= TF_E_INVALIDARG;
 end;
 
-class function TSalsa20.SetKeyParam(Inst: PSalsa20; Param: UInt32;
+class function TSalsa20Instance.SetKeyParam(Inst: PSalsa20Instance; Param: UInt32;
   Data: Pointer; DataLen: Cardinal): TF_RESULT;
 
 type
@@ -469,7 +469,7 @@ begin
     end;
     Result:= TF_E_INVALIDARG;
 }
-    Result:= TSalsa20.SetIV(Inst, Data, DataLen);
+    Result:= TSalsa20Instance.SetIV(Inst, Data, DataLen);
     Exit;
   end;
 
@@ -538,10 +538,10 @@ end;
 
 { TChaCha20 }
 
-class function TChaCha20.DuplicateKey(Inst: PSalsa20;
-  var Key: PSalsa20): TF_RESULT;
+class function TChaCha20.DuplicateKey(Inst: PSalsa20Instance;
+  var Key: PSalsa20Instance): TF_RESULT;
 begin
-  Result:= GetChaCha20AlgorithmEx(Key, Inst.FRounds shl 1);
+  Result:= GetChaCha20InstanceEx(Key, Inst.FRounds shl 1);
   if Result = TF_S_OK then begin
     Key.FValidKey:= Inst.FValidKey;
     Key.FExpandedKey:= Inst.FExpandedKey;
@@ -549,7 +549,7 @@ begin
   end;
 end;
 
-class function TChaCha20.ExpandKey(Inst: PSalsa20; Key: PByte;
+class function TChaCha20.ExpandKey(Inst: PSalsa20Instance; Key: PByte;
   KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 begin
   Result:= TChaCha20.SetIV(Inst, IV, IVSize);
@@ -583,7 +583,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TChaCha20.GetKeyParam(Inst: PSalsa20; Param: UInt32;
+class function TChaCha20.GetKeyParam(Inst: PSalsa20Instance; Param: UInt32;
   Data: Pointer; var DataLen: Cardinal): TF_RESULT;
 begin
   if (Param = TF_KP_NONCE) then begin
@@ -597,13 +597,13 @@ begin
   Result:= TF_E_INVALIDARG;
 end;
 
-class function TChaCha20.KeyBlock(Inst: PSalsa20;
-  Data: TSalsa20.PBlock): TF_RESULT;
+class function TChaCha20.KeyBlock(Inst: PSalsa20Instance;
+  Data: TSalsa20Instance.PBlock): TF_RESULT;
 var
   N: Cardinal;
 
 begin
-  Move(Inst.FExpandedKey, Data^, SizeOf(TSalsa20.TBlock));
+  Move(Inst.FExpandedKey, Data^, SizeOf(TSalsa20Instance.TBlock));
   N:= Inst.FRounds;
   repeat
     ChaChaDoubleRound(Data);
@@ -619,7 +619,7 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TChaCha20.SetIV(Inst: PSalsa20; Data: Pointer; DataLen: Cardinal): TF_RESULT;
+class function TChaCha20.SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT;
 begin
   if (DataLen = SizeOf(UInt64)) then begin
     Move(Data^, Inst.FExpandedKey[14], SizeOf(UInt64));
@@ -634,7 +634,7 @@ begin
   end;
 end;
 
-class function TChaCha20.SetKeyParam(Inst: PSalsa20; Param: UInt32;
+class function TChaCha20.SetKeyParam(Inst: PSalsa20Instance; Param: UInt32;
   Data: Pointer; DataLen: Cardinal): TF_RESULT;
 type
   TUInt64Rec = record
@@ -768,7 +768,7 @@ begin
     Move(FExpandedKey, Buf^, SizeOf(FExpandedKey));
     N:= 10;
     repeat
-      ChaChaDoubleRound(TSalsa20.PBlock(Buf));
+      ChaChaDoubleRound(TSalsa20Instance.PBlock(Buf));
       Dec(N);
     until N = 0;
     repeat
