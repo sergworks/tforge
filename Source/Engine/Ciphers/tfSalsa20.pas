@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
 { *********************************************************** }
 
 unit tfSalsa20;
@@ -36,7 +36,8 @@ type
                                 // from tfRecord
     FVTable:   Pointer;
     FRefCount: Integer;
-                                // from tfStreamCipher
+                                // from tfBaseStreamCipher
+    FAlgID:    UInt32;
     FValidKey: Boolean;
                                 // -- inherited fields end --
     FExpandedKey: TBlock;
@@ -45,8 +46,7 @@ type
     class function SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
   public
     class function Release(Inst: PSalsa20Instance): Integer; stdcall; static;
-    class function ExpandKey(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PSalsa20Instance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -61,14 +61,19 @@ type
     class function GetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyIV(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyNonce(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
+          Nonce: UInt64): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 type
   TChaCha20 = record
   public
     class function SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT; static;
-    class function ExpandKey(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DuplicateKey(Inst: PSalsa20Instance; var Key: PSalsa20Instance): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -80,6 +85,12 @@ type
     class function GetKeyParam(Inst: PSalsa20Instance; Param: UInt32; Data: Pointer;
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyIV(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyNonce(Inst: PSalsa20Instance; Key: PByte; KeySize: Cardinal;
+          Nonce: UInt64): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 function GetSalsa20Instance(var A: PSalsa20Instance): TF_RESULT;
@@ -106,7 +117,7 @@ uses tfRecords, tfUtils, tfBaseCiphers;
 const
   SALSA_BLOCK_SIZE = 64;
 
-  Salsa20VTable: array[0..16] of Pointer = (
+  Salsa20VTable: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TSalsa20Instance.Release,
@@ -124,10 +135,12 @@ const
    @TBaseStreamCipher.GetRand,
    @TSalsa20Instance.KeyBlock,
    @TBaseStreamCipher.RandCrypt,
-   @TBaseStreamCipher.GetIsBlockCipher
+   @TBaseStreamCipher.GetIsBlockCipher,
+   @TSalsa20Instance.ExpandKeyIV,
+   @TSalsa20Instance.ExpandKeyNonce
    );
 
-  ChaCha20VTable: array[0..16] of Pointer = (
+  ChaCha20VTable: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TSalsa20Instance.Release,
@@ -145,7 +158,9 @@ const
    @TBaseStreamCipher.GetRand,
    @TChaCha20.KeyBlock,
    @TBaseStreamCipher.RandCrypt,
-   @TBaseStreamCipher.GetIsBlockCipher
+   @TBaseStreamCipher.GetIsBlockCipher,
+   @TChaCha20.ExpandKeyIV,
+   @TChaCha20.ExpandKeyNonce
    );
 
 function GetSalsa20Instance(var A: PSalsa20Instance): TF_RESULT;
@@ -166,6 +181,7 @@ begin
     Tmp:= AllocMem(SizeOf(TSalsa20Instance));
     Tmp^.FVTable:= @Salsa20VTable;
     Tmp^.FRefCount:= 1;
+    Tmp^.FAlgID:= TF_ALG_SALSA20;
     Tmp^.FRounds:= Rounds shr 1;
 
     if A <> nil then TSalsa20Instance.Release(A);
@@ -194,6 +210,7 @@ begin
     Tmp:= AllocMem(SizeOf(TSalsa20Instance));
     Tmp^.FVTable:= @ChaCha20VTable;
     Tmp^.FRefCount:= 1;
+    Tmp^.FAlgID:= TF_ALG_CHACHA20;
     Tmp^.FRounds:= Rounds shr 1;
 
     if A <> nil then TSalsa20Instance.Release(A);
@@ -398,11 +415,8 @@ begin
 end;
 
 class function TSalsa20Instance.ExpandKey(Inst: PSalsa20Instance; Key: PByte;
-  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 begin
-  Result:= TSalsa20Instance.SetIV(Inst, IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if (KeySize <> 16) and (KeySize <> 32) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -428,6 +442,22 @@ begin
   Inst.FValidKey:= True;
 
   Result:= TF_S_OK;
+end;
+
+class function TSalsa20Instance.ExpandKeyIV(Inst: PSalsa20Instance; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+begin
+  Result:= TSalsa20Instance.SetIV(Inst, IV, IVSize);
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
+end;
+
+class function TSalsa20Instance.ExpandKeyNonce(Inst: PSalsa20Instance;
+  Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
+begin
+  Result:= TSalsa20Instance.SetKeyParam(Inst, TF_KP_NONCE, @Nonce, SizeOf(Nonce));
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
 end;
 
 class function TSalsa20Instance.SetIV(Inst: PSalsa20Instance; Data: Pointer; DataLen: Cardinal): TF_RESULT;
@@ -550,11 +580,8 @@ begin
 end;
 
 class function TChaCha20.ExpandKey(Inst: PSalsa20Instance; Key: PByte;
-  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 begin
-  Result:= TChaCha20.SetIV(Inst, IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if (KeySize <> 16) and (KeySize <> 32) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -581,6 +608,22 @@ begin
   Inst.FValidKey:= True;
 
   Result:= TF_S_OK;
+end;
+
+class function TChaCha20.ExpandKeyIV(Inst: PSalsa20Instance; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+begin
+  Result:= TChaCha20.SetIV(Inst, IV, IVSize);
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
+end;
+
+class function TChaCha20.ExpandKeyNonce(Inst: PSalsa20Instance; Key: PByte;
+  KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
+begin
+  Result:= TChaCha20.SetKeyParam(Inst, TF_KP_NONCE, @Nonce, SizeOf(Nonce));
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
 end;
 
 class function TChaCha20.GetKeyParam(Inst: PSalsa20Instance; Param: UInt32;

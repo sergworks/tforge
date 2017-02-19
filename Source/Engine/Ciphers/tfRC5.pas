@@ -37,10 +37,11 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
+    FAlgID:    UInt32;
     FValidKey: Boolean;
-    FDir:      UInt32;
-    FMode:     UInt32;
-    FPadding:  UInt32;
+//    FDir:      UInt32;
+//    FMode:     UInt32;
+//    FPadding:  UInt32;
     FIVector:  TRC5Block;       // -- inherited fields end --
 {$HINTS ON}
     FBlockSize: Cardinal;       // 4, 8, 16
@@ -50,14 +51,14 @@ type
 
   public
     class function Release(Inst: PRC5Instance): Integer; stdcall; static;
-    class function ExpandKey32(Inst: PRC5Instance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey32(Inst: PRC5Instance;
+          Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey64(Inst: PRC5Instance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey64(Inst: PRC5Instance;
+          Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKey128(Inst: PRC5Instance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey128(Inst: PRC5Instance;
+          Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PRC5Instance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -89,7 +90,7 @@ uses tfRecords, tfBaseCiphers;
 //  MAX_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  RC5VTable32: array[0..16] of Pointer = (
+  RC5VTable32: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC5Instance.Release,
@@ -107,10 +108,12 @@ const
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher
+   @TBaseBlockCipher.GetIsBlockCipher,
+   @TBaseBlockCipher.ExpandKeyIV,
+   @TBaseBlockCipher.ExpandKeyNonce
    );
 
-  RC5VTable64: array[0..16] of Pointer = (
+  RC5VTable64: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC5Instance.Release,
@@ -128,10 +131,12 @@ const
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher
+   @TBaseBlockCipher.GetIsBlockCipher,
+   @TBaseBlockCipher.ExpandKeyIV,
+   @TBaseBlockCipher.ExpandKeyNonce
    );
 
-  RC5VTable128: array[0..16] of Pointer = (
+  RC5VTable128: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC5Instance.Release,
@@ -149,7 +154,9 @@ const
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher
+   @TBaseBlockCipher.GetIsBlockCipher,
+   @TBaseBlockCipher.ExpandKeyIV,
+   @TBaseBlockCipher.ExpandKeyNonce
    );
 
 procedure BurnKey(Inst: PRC5Instance); inline;
@@ -475,8 +482,8 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Instance.ExpandKey32(Inst: PRC5Instance; Key: PByte;
-  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+class function TRC5Instance.ExpandKey32(Inst: PRC5Instance;
+      Key: PByte; KeySize: Cardinal): TF_RESULT;
 
 type
   RC5Word = Word;         // RC5 "word" size = 2 bytes
@@ -498,9 +505,6 @@ var
   NSteps: Integer;
 
 begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if (KeySize > 255) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -538,8 +542,8 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Instance.ExpandKey64(Inst: PRC5Instance; Key: PByte;
-  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+class function TRC5Instance.ExpandKey64(Inst: PRC5Instance;
+      Key: PByte; KeySize: Cardinal): TF_RESULT;
 
 type
   RC5Word = UInt32;     // RC5 "word" size = 4 bytes
@@ -561,9 +565,6 @@ var
   NSteps: Integer;
 
 begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if (KeySize > 255) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -601,8 +602,8 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function TRC5Instance.ExpandKey128(Inst: PRC5Instance; Key: PByte;
-  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+class function TRC5Instance.ExpandKey128(Inst: PRC5Instance;
+      Key: PByte; KeySize: Cardinal): TF_RESULT;
 type
   RC5Word = UInt64;       // RC5 "word" size = 8 bytes
   PWArray = ^TWArray;
@@ -623,9 +624,6 @@ var
   NSteps: Integer;
 
 begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if (KeySize > 255) then begin
     Result:= TF_E_INVALIDARG;
     Exit;

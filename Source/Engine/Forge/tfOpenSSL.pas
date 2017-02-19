@@ -61,6 +61,18 @@ var
   EVP_DecryptUpdate: TEVP_CipherUpdate;
   EVP_DecryptFinal_ex: TEVP_CipherFinal;
 
+  EVP_aes_128_cbc: TGetEVPCipher;
+  EVP_aes_128_ecb: TGetEVPCipher;
+  EVP_aes_128_ctr: TGetEVPCipher;
+
+  EVP_aes_192_cbc: TGetEVPCipher;
+  EVP_aes_192_ecb: TGetEVPCipher;
+  EVP_aes_192_ctr: TGetEVPCipher;
+
+  EVP_aes_256_cbc: TGetEVPCipher;
+  EVP_aes_256_ecb: TGetEVPCipher;
+  EVP_aes_256_ctr: TGetEVPCipher;
+
   EVP_des_cbc: TGetEVPCipher;
 
 implementation

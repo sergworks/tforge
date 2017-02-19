@@ -40,10 +40,11 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
+    FAlgID:    UInt32;
     FValidKey: Boolean;
-    FDir:      UInt32;
-    FMode:     UInt32;
-    FPadding:  UInt32;
+//    FDir:      UInt32;
+//    FMode:     UInt32;
+//    FPadding:  UInt32;
 
     FIVector:  TAESBlock;
 {$HINTS ON}
@@ -57,9 +58,16 @@ type
                     var State: TAESBlock; First: Boolean); static;
   public
     class function Release(Inst: PAESInstance): Integer; stdcall; static;
-    class function ExpandKey(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
+    class function ExpandKey(Inst: PAESInstance; Key: PByte; KeySize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+(*
+    class function ExpandKeyIV(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
           IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyNonce(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
+          Nonce: UInt64): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+*)
     class function GetBlockSize(Inst: PAESInstance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DuplicateKey(Inst: PAESInstance; var Key: PAESInstance): TF_RESULT;
@@ -81,7 +89,7 @@ const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  AESCipherVTable: array[0..16] of Pointer = (
+  AESCipherVTable: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TAESInstance.Release,
@@ -99,7 +107,9 @@ const
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher
+   @TBaseBlockCipher.GetIsBlockCipher,
+   @TBaseBlockCipher.ExpandKeyIV,
+   @TBaseBlockCipher.ExpandKeyNonce
    );
 
 procedure BurnKey(Inst: PAESInstance); inline;
@@ -130,15 +140,22 @@ var
 //  Mode, Padding: Word;
 
 begin
+  if not TBaseBlockCipher.ValidFlags(Flags) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
   try
     Tmp:= AllocMem(SizeOf(TAESInstance));
     Tmp^.FVTable:= @AESCipherVTable;
     Tmp^.FRefCount:= 1;
+    Tmp^.FAlgID:= Flags;
+{
     Result:= PBaseBlockCipher(Tmp).SetFlags(Flags);
     if Result <> TF_S_OK then begin
       FreeMem(Tmp);
       Exit;
     end;
+}
     if A <> nil then TAESInstance.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
@@ -610,32 +627,14 @@ begin
   State := TAESBlock(r);
 end;
 
-class function TAESInstance.ExpandKey(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
-               IV: PByte; IVSize: Cardinal): TF_RESULT;
+class function TAESInstance.ExpandKey(Inst: PAESInstance; Key: PByte;
+  KeySize: Cardinal): TF_RESULT;
 var
   I: Cardinal;
   Temp: TRDLVector;
   Nk: Cardinal;
 
 begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
-{
-  if IV <> nil then begin
-    if IVSize = SizeOf(TAESBlock) then begin
-      Move(IV^, Inst.FIVector, SizeOf(TAESBlock));
-    end
-    else begin
-      Result:= TF_E_INVALIDARG;
-      Exit;
-    end;
-  end
-  else begin
-    FillChar(Inst.FIVector, SizeOf(TAESBlock), 0);
-  end;
-}
-
   if (KeySize = 16) or (KeySize = 24) or (KeySize = 32) then begin
     Move(Key^, Inst.FExpandedKey, KeySize);
                                 // key length in 4-byte words (# of key columns)
@@ -664,6 +663,24 @@ begin
   else
     Result:= TF_E_INVALIDARG;
 end;
+
+(*
+class function TAESInstance.ExpandKeyIV(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
+               IV: PByte; IVSize: Cardinal): TF_RESULT;
+begin
+  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
+end;
+
+class function TAESInstance.ExpandKeyNonce(Inst: PAESInstance; Key: PByte;
+  KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
+begin
+  Result:= PBaseBlockCipher(Inst).SetNonce(@Nonce, SizeOf(Nonce));
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
+end;
+*)
 
 class procedure TAESInstance.DestroyKey(Inst: PAESInstance);
 begin

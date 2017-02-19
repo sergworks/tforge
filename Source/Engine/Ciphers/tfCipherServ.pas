@@ -12,7 +12,7 @@ interface
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
      tfAES, tfDES, tfRC5, tfRC4, tfSalsa20, tfKeyStreams;
 
-function GetCipherServer(var A: ICipherServer): TF_RESULT;
+function GetCipherServerInstance(var A: ICipherServer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function GetCipherInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
@@ -40,6 +40,7 @@ type
           var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 *)
+(*
     class function GetRC5(Inst: PCipherServer; Flags: UInt32; BlockSize, Rounds: Integer;
           var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -49,7 +50,7 @@ type
     class function GetChaCha20(Inst: PCipherServer; Rounds: Integer;
           var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
+*)
 (*
     class function GetKSByAlgID(Inst: PCipherServer; AlgID: UInt32;
           var KS: IStreamCipher): TF_RESULT;
@@ -58,6 +59,7 @@ type
           Name: Pointer; CharSize: Integer; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 *)
+(*
     class function GetKSRC5(Inst: PCipherServer; BlockSize, Rounds: Integer;
           var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -67,6 +69,7 @@ type
     class function GetKSChaCha20(Inst: PCipherServer; Rounds: Integer;
           var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+*)
    end;
 
 function GetStdInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
@@ -78,7 +81,7 @@ begin
     TF_ALG_RC5: Result:= GetRC5Instance(PRC5Instance(Alg), AlgID);
     TF_ALG_3DES: Result:= Get3DESInstance(P3DESInstance(Alg), AlgID);
 
-// stream ciphers
+// stream ciphers; AlgID ignored
     TF_ALG_RC4: Result:= GetRC4Instance(PRC4Instance(Alg));
     TF_ALG_SALSA20: Result:= GetSalsa20Instance(PSalsa20Instance(Alg));
     TF_ALG_CHACHA20: Result:= GetChaCha20Instance(PSalsa20Instance(Alg));
@@ -86,17 +89,17 @@ begin
     Result:= TF_E_INVALIDARG;
   end;
 end;
-
+(*
 function GetOSSLInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
     Result:= TF_E_INVALIDARG;
 end;
-
+*)
 function GetCipherInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
   case AlgID and TF_ENGINE_MASK of
     TF_ENGINE_STD:  Result:= GetStdInstance(AlgID and not TF_ENGINE_MASK, Alg);
-    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID and not TF_ENGINE_MASK, Alg);
+//    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID and not TF_ENGINE_MASK, Alg);
   else
     Result:= TF_E_INVALIDARG;
   end;
@@ -109,7 +112,7 @@ var
 begin
   if AlgID = AlgID and TF_ALGID_MASK then begin
 // Flags are ignored for stream cipher algorithms
-    Result:= GetCipherInstance(AlgID or (TF_CTR_DECRYPT shl 16), Cipher);
+    Result:= GetCipherInstance(AlgID or TF_CTR_DECRYPT, Cipher);
     if Result = TF_S_OK then
       Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
   end
@@ -140,6 +143,7 @@ begin
   end;
 end;
 *)
+(*
 class function TCipherServer.GetRC5(Inst: PCipherServer; Flags: UInt32; BlockSize,
                Rounds: Integer; var Alg: ICipher): TF_RESULT;
 begin
@@ -157,7 +161,7 @@ class function TCipherServer.GetChaCha20(Inst: PCipherServer; Rounds: Integer;
 begin
   Result:= GetChaCha20InstanceEx(PSalsa20Instance(Alg), Rounds);
 end;
-
+*)
 (*
 class function TCipherServer.GetKSByAlgID(Inst: PCipherServer; AlgID: UInt32;
                  var KS: IStreamCipher): TF_RESULT;
@@ -183,7 +187,7 @@ begin
     Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
 *)
-
+(*
 class function TCipherServer.GetKSRC5(Inst: PCipherServer; BlockSize,
                  Rounds: Integer; var KS: IStreamCipher): TF_RESULT;
 var
@@ -216,18 +220,20 @@ begin
   if Result = TF_S_OK then
     Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(KS), Alg);
 end;
-
+*)
 const
-  VTable: array[0..12] of Pointer = (
+  VTable: array[0..7] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeSingleton.Addref,
     @TForgeSingleton.Release,
 
 //    @TCipherServer.GetByAlgID,
-    @TAlgServer.GetByName,
-    @TAlgServer.GetByIndex,
+    @TAlgServer.GetID,
     @TAlgServer.GetName,
     @TAlgServer.GetCount,
+    @TAlgServer.GetIDByName,
+    @TAlgServer.GetNameByID
+(*
     @TCipherServer.GetRC5,
     @TCipherServer.GetSalsa20,
     @TCipherServer.GetChaCha20,
@@ -237,6 +243,7 @@ const
     @TCipherServer.GetKSRC5,
     @TCipherServer.GetKSSalsa20,
     @TCipherServer.GetKSChaCha20
+*)
   );
 
 var
@@ -265,7 +272,7 @@ begin
   TAlgServer.AddTableItem(@Instance, Pointer(CHACHA20_LITERAL), TF_ALG_CHACHA20);
 end;
 
-function GetCipherServer(var A: ICipherServer): TF_RESULT;
+function GetCipherServerInstance(var A: ICipherServer): TF_RESULT;
 begin
   if Instance.FVTable = nil then InitInstance;
 // Server is implemented by a singleton, no need for releasing old instance

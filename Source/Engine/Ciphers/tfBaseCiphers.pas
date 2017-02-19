@@ -21,24 +21,28 @@ type
   TBaseBlockCipher = record
   private type
     TBlock = array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
+//    TExecuteBlock = procedure(Inst: Pointer; Block: Pointer);
   private
 {$HINTS OFF}
     FVTable:   Pointer;
     FRefCount: Integer;
-
+    FAlgID:    UInt32;
     FValidKey: Boolean;
 {$HINTS ON}
-    FDir:      UInt32;
-    FMode:     UInt32;
-    FPadding:  UInt32;
+//    FExecuteBlock: TExecuteBlock;
+//    FEncryptBlock: TExecuteBlock;
+//    FDecryptBlock: TExecuteBlock;
+
+//    FDir:      UInt32;
+//    FMode:     UInt32;
+//    FPadding:  UInt32;
 
     FIVector:  TBlock;                // var len = block size
 
 
-    function SetNonce(Data: PByte; DataLen: Cardinal): TF_RESULT;
-    function SetDir(Data: UInt32): TF_RESULT;
-    function SetMode(Data: UInt32): TF_RESULT;
-    function SetPadding(Data: UInt32): TF_RESULT;
+//    function SetDir(Data: UInt32): TF_RESULT;
+//    function SetMode(Data: UInt32): TF_RESULT;
+//    function SetPadding(Data: UInt32): TF_RESULT;
 //    function SetFlags(Data: UInt32): TF_RESULT;
     function IncBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
     function DecBlockNo(Data: Pointer; DataLen: Cardinal): TF_RESULT;
@@ -57,8 +61,10 @@ type
              Last: Boolean): TF_RESULT;
   public
     function SetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+    function SetNonce(Data: PByte; DataLen: Cardinal): TF_RESULT;
     function GetFlags: UInt32;
     function SetFlags(Data: UInt32): TF_RESULT;
+    class function ValidFlags(Data: UInt32): Boolean; static;
 
     class function SetKeyParam(Inst: Pointer; Param: UInt32; Data: Pointer;
       DataLen: Cardinal): TF_RESULT;
@@ -66,10 +72,10 @@ type
     class function GetKeyParam(Inst: PBaseBlockCipher; Param: UInt32; Data: Pointer;
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Encrypt(Inst: Pointer; Data: PByte; var DataSize: Cardinal;
+    class function Encrypt(Inst: PBaseBlockCipher; Data: PByte; var DataSize: Cardinal;
       BufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: Pointer; Data: PByte; var DataSize: Cardinal;
+    class function Decrypt(Inst: PBaseBlockCipher; Data: PByte; var DataSize: Cardinal;
       Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRand(Inst: Pointer; Data: PByte; DataSize: Cardinal): TF_RESULT;
@@ -81,6 +87,12 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIsBlockCipher(Inst: Pointer): Boolean;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyIV(Inst: PBaseBlockCipher; Key: PByte; KeySize: Cardinal;
+          IV: PByte; IVSize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyNonce(Inst: PBaseBlockCipher; Key: PByte; KeySize: Cardinal;
+          Nonce: UInt64): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 type
@@ -90,7 +102,7 @@ type
 {$HINTS OFF}
     FVTable:   Pointer;
     FRefCount: Integer;
-
+    FAlgID:    UInt32;
     FValidKey: Boolean;
 {$HINTS ON}
 
@@ -112,9 +124,6 @@ type
     class function RandCrypt(Inst: Pointer; Data: PByte; DataSize: Cardinal;
       Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-// this method is not really needed for stream ciphers,
-//   but it can be reasonably implemented
-//   and VTable entries for EncryptBlock/DecryptBlock should be filled anyway
     class function EncryptBlock(Inst: Pointer; Data: PByte): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
@@ -127,18 +136,22 @@ implementation
 { TBlockCipher }
 
 type
-  TVTable = array[0..15] of Pointer;
+  TVTable = array[0..18] of Pointer;
   PVTable = ^TVTable;
   PPVTable = ^PVTable;
 
   TBlockFunc = function(Inst: Pointer; Data: PByte): TF_RESULT;
-                 {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   TGetBlockSizeFunc = function(Inst: PBaseBlockCipher): Integer;
-                 {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   TGetRandFunc = function(Inst: PBaseStreamCipher;
       Data: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+  TExpandKeyFunc = function(Inst: PBaseBlockCipher;
+      Key: Pointer; KeySize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 function GetEncryptFunc(Inst: Pointer): Pointer; inline;
@@ -166,6 +179,11 @@ begin
   Result:= TGetBlockSizeFunc(PPVTable(Inst)^^[8])(Inst);
 end;
 
+function ExpandKey(Inst: Pointer; Key: Pointer; KeySize: Cardinal): TF_RESULT; inline;
+begin
+  Result:= TExpandKeyFunc(PPVTable(Inst)^^[5])(Inst, Key, KeySize);
+end;
+
 procedure XorBytes(Target: Pointer; Value: Pointer; Count: Integer);
 var
   LCount: Integer;
@@ -187,12 +205,14 @@ begin
   end;
 end;
 
-class function TBaseBlockCipher.Encrypt(Inst: Pointer; Data: PByte;
+class function TBaseBlockCipher.Encrypt(Inst: PBaseBlockCipher; Data: PByte;
   var DataSize: Cardinal; BufSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
-  if (PBaseBlockCipher(Inst).FDir = TF_KEYDIR_ENCRYPT) and
-      PBaseBlockCipher(Inst).FValidKey then begin
-    case PBaseBlockCipher(Inst).FMode of
+//  if (PBaseBlockCipher(Inst).FDir = TF_KEYDIR_ENCRYPT) and
+  if (Inst.FAlgID and TF_KEYDIR_MASK = TF_KEYDIR_ENCRYPT) and
+      Inst.FValidKey then begin
+//    case PBaseBlockCipher(Inst).FMode of
+    case Inst.FAlgID and TF_KEYMODE_MASK of
       TF_KEYMODE_ECB: Result:= PBaseBlockCipher(Inst).EncryptECB(Data, DataSize, BufSize, Last);
       TF_KEYMODE_CBC: Result:= PBaseBlockCipher(Inst).EncryptCBC(Data, DataSize, BufSize, Last);
       TF_KEYMODE_CTR: Result:= PBaseBlockCipher(Inst).EncryptCTR(Data, DataSize, BufSize, Last);
@@ -204,12 +224,14 @@ begin
     Result:= TF_E_UNEXPECTED;
 end;
 
-class function TBaseBlockCipher.Decrypt(Inst: Pointer; Data: PByte;
+class function TBaseBlockCipher.Decrypt(Inst: PBaseBlockCipher; Data: PByte;
   var DataSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
-  if (PBaseBlockCipher(Inst).FDir = TF_KEYDIR_DECRYPT) and
-      PBaseBlockCipher(Inst).FValidKey then begin
-    case PBaseBlockCipher(Inst).FMode of
+//  if (PBaseBlockCipher(Inst).FDir = TF_KEYDIR_DECRYPT) and
+  if (Inst.FAlgID and TF_KEYDIR_MASK = TF_KEYDIR_DECRYPT) and
+      Inst.FValidKey then begin
+//    case PBaseBlockCipher(Inst).FMode of
+    case Inst.FAlgID and TF_KEYMODE_MASK of
       TF_KEYMODE_ECB: Result:= PBaseBlockCipher(Inst).DecryptECB(Data, DataSize, Last);
       TF_KEYMODE_CBC: Result:= PBaseBlockCipher(Inst).DecryptCBC(Data, DataSize, Last);
       TF_KEYMODE_CTR: Result:= PBaseBlockCipher(Inst).DecryptCTR(Data, DataSize, Last);
@@ -225,9 +247,12 @@ class function TBaseBlockCipher.RandCrypt(Inst: Pointer; Data: PByte;
                DataSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
   if PBaseBlockCipher(Inst).FValidKey
-    and (PBaseBlockCipher(Inst).FMode = TF_KEYMODE_CTR)
-    and ((PBaseBlockCipher(Inst).FPadding = TF_PADDING_NONE)
-      or (PBaseBlockCipher(Inst).FPadding = TF_PADDING_DEFAULT))
+//    and (PBaseBlockCipher(Inst).FMode = TF_KEYMODE_CTR)
+    and (PBaseBlockCipher(Inst).FAlgID and TF_KEYMODE_MASK = TF_KEYMODE_CTR)
+//    and ((PBaseBlockCipher(Inst).FPadding = TF_PADDING_NONE)
+    and ((PBaseBlockCipher(Inst).FAlgID and TF_PADDING_MASK = TF_PADDING_NONE)
+//      or (PBaseBlockCipher(Inst).FPadding = TF_PADDING_DEFAULT))
+      or (PBaseBlockCipher(Inst).FAlgID and TF_PADDING_MASK = TF_PADDING_DEFAULT))
     then
       Result:= PBaseBlockCipher(Inst).DecryptCTR(Data, DataSize, Last)
     else
@@ -247,7 +272,8 @@ var
 begin
   @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
-  LPadding:= FPadding;
+//  LPadding:= FPadding;
+  LPadding:= FAlgID and TF_PADDING_MASK;
   LBlockSize:= GetBlockSize(@Self);
   if LPadding = TF_PADDING_DEFAULT
     then LPadding:= TF_PADDING_PKCS;
@@ -288,6 +314,7 @@ begin
 // encrypt
   while LDataSize >= LBlockSize do begin
     EncryptBlock(@Self, Data);
+//    FEncryptBlock(@Self, Data);
     Inc(Data, LBlockSize);
     Dec(LDataSize, LBlockSize);
   end;
@@ -300,6 +327,7 @@ begin
         FillChar(Data^, Cnt, 0);
         Dec(Data, LDataSize);
         EncryptBlock(@Self, Data);
+//        FEncryptBlock(@Self, Data);
       end;
                                             // XX 00 00 00 04
       TF_PADDING_ANSI: begin
@@ -308,6 +336,7 @@ begin
         Data^:= Byte(Cnt);
         Dec(Data, LBlockSize - 1);
         EncryptBlock(@Self, Data);
+//        FEncryptBlock(@Self, Data);
       end;
                                             // XX 04 04 04 04
       TF_PADDING_PKCS,
@@ -315,6 +344,7 @@ begin
         FillChar(Data^, Cnt, Byte(Cnt));
         Dec(Data, LDataSize);
         EncryptBlock(@Self, Data);
+//        FEncryptBlock(@Self, Data);
       end;
                                             // XX 80 00 00 00
       TF_PADDING_ISOIEC: begin
@@ -323,10 +353,27 @@ begin
         FillChar(Data^, Cnt - 1, 0);
         Dec(Data, LDataSize + 1);
         EncryptBlock(@Self, Data);
+//        FEncryptBlock(@Self, Data);
       end;
     end;
   end;
   Result:= TF_S_OK;
+end;
+
+class function TBaseBlockCipher.ExpandKeyIV(Inst: PBaseBlockCipher; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+begin
+  Result:= Inst.SetIV(IV, IVSize);
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
+end;
+
+class function TBaseBlockCipher.ExpandKeyNonce(Inst: PBaseBlockCipher;
+  Key: PByte; KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
+begin
+  Result:= Inst.SetNonce(@Nonce, SizeOf(Nonce));
+  if Result = TF_S_OK then
+    Result:= ExpandKey(Inst, Key, KeySize);
 end;
 
 class function TBaseBlockCipher.GetIsBlockCipher(Inst: Pointer): Boolean;
@@ -375,9 +422,12 @@ begin
 //      LData:= PUInt32(Data)^;
       Result:= TF_S_OK;
       case Param of
-        TF_KP_DIR: PUInt32(Data)^:= Inst.FDir;
-        TF_KP_MODE: PUInt32(Data)^:= Inst.FMode;
-        TF_KP_PADDING: PUInt32(Data)^:= Inst.FPadding;
+//        TF_KP_DIR: PUInt32(Data)^:= Inst.FDir;
+        TF_KP_DIR: PUInt32(Data)^:= Inst.FAlgID and TF_KEYDIR_MASK;
+//        TF_KP_MODE: PUInt32(Data)^:= Inst.FMode;
+        TF_KP_MODE: PUInt32(Data)^:= Inst.FAlgID and TF_KEYMODE_MASK;
+//        TF_KP_PADDING: PUInt32(Data)^:= Inst.FPadding;
+        TF_KP_PADDING: PUInt32(Data)^:= Inst.FAlgID and TF_PADDING_MASK;
 //        TF_KP_FLAGS: Result:= TF_E_NOTIMPL; // PBlockCipher(Inst).SetFlags(LData);
       else
         Result:= TF_E_INVALIDARG;
@@ -410,6 +460,7 @@ begin
       if Data <> nil then begin
         Move(PBaseBlockCipher(Inst).FIVector, Block, LBlockSize);
         EncryptBlock(Inst, @Block);
+//        PBaseBlockCipher(Inst).FEncryptBlock(Inst, @Block);
         Move(Block, Data^, LL);
         FillChar(Block, LBlockSize, 0);
       end;
@@ -418,6 +469,7 @@ begin
       if Data <> nil then begin
         Move(PBaseBlockCipher(Inst).FIVector, Data^, LBlockSize);
         EncryptBlock(Inst, Data);
+//        PBaseBlockCipher(Inst).FEncryptBlock(Inst, Data);
       end;
     end;
 
@@ -462,12 +514,20 @@ begin
 end;
 
 function TBaseBlockCipher.SetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+var
+  LBlockSize: Cardinal;
+
 begin
+  LBlockSize:= GetBlockSize(@Self);
+  if (LBlockSize = 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
   if (Data = nil) then begin
-    FillChar(FIVector, GetBlockSize(@Self), 0);
+    FillChar(FIVector, LBlockSize, 0);
     Result:= TF_S_OK;
   end
-  else if (DataLen = Cardinal(GetBlockSize(@Self))) then begin
+  else if (DataLen = LBlockSize) then begin
     Move(Data^, FIVector, DataLen);
     Result:= TF_S_OK;
   end
@@ -526,6 +586,7 @@ begin
     Result:= TF_E_INVALIDARG;
 end;
 
+{
 function TBaseBlockCipher.SetDir(Data: UInt32): TF_RESULT;
 begin
   if (Data = TF_KEYDIR_ENCRYPT) or (Data = TF_KEYDIR_DECRYPT) then begin
@@ -555,7 +616,7 @@ begin
   else
     Result:= TF_E_INVALIDARG;
 end;
-
+}
 (*
 function TBlockCipher.IncBlockNo(Data: Pointer; DataLen: Cardinal{; LE: Boolean}): TF_RESULT;
 var
@@ -679,14 +740,17 @@ end;
 
 function TBaseBlockCipher.GetFlags: UInt32;
 begin
-  Result:= FDir or FMode or FPadding;
+//  Result:= FDir or FMode or FPadding;
+  Result:= FAlgID;
 end;
 
 function TBaseBlockCipher.SetFlags(Data: UInt32): TF_RESULT;
+var
+  L: UInt32;
+
 begin
-//  Result:= TF_S_FALSE;
-  Result:= TF_E_INVALIDARG;
 {
+  Result:= TF_E_INVALIDARG;
   if Data and TF_KEYDIR_BASE <> 0 then
     Result:= SetDir(Data and TF_KEYDIR_MASK);
 
@@ -696,15 +760,53 @@ begin
   if (Result >= 0) and (Data and TF_PADDING_BASE <> 0) then
     Result:= SetPadding(Data and TF_PADDING_MASK);
 }
-  if Data and TF_KEYDIR_MASK <> 0 then
-    Result:= SetDir(Data and TF_KEYDIR_MASK);
 
-  if (Result >= 0) and (Data and TF_KEYMODE_MASK <> 0) then
-    Result:= SetMode(Data and TF_KEYMODE_MASK);
+  L:= Data and TF_KEYDIR_MASK;
+  if (L <> TF_KEYDIR_ENCRYPT) and (L <> TF_KEYDIR_DECRYPT) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
 
-  if (Result >= 0) and (Data and TF_PADDING_MASK <> 0) then
-    Result:= SetPadding(Data and TF_PADDING_MASK);
+  L:= Data and TF_KEYMODE_MASK;
+  if (L < TF_KEYMODE_MIN) or (L > TF_KEYMODE_MAX) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
 
+  L:= Data and TF_PADDING_MASK;
+  if (L <> TF_PADDING_DEFAULT) and ((L < TF_PADDING_MIN) or (L > TF_PADDING_MAX)) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  FAlgID:= Data;
+  Result:= TF_S_OK;
+end;
+
+class function TBaseBlockCipher.ValidFlags(Data: UInt32): Boolean;
+var
+  L: UInt32;
+
+begin
+  L:= Data and TF_KEYDIR_MASK;
+  if (L <> TF_KEYDIR_ENCRYPT) and (L <> TF_KEYDIR_DECRYPT) then begin
+    Result:= False;
+    Exit;
+  end;
+
+  L:= Data and TF_KEYMODE_MASK;
+  if (L < TF_KEYMODE_MIN) or (L > TF_KEYMODE_MAX) then begin
+    Result:= False;
+    Exit;
+  end;
+
+  L:= Data and TF_PADDING_MASK;
+  if (L <> TF_PADDING_DEFAULT) and ((L < TF_PADDING_MIN) or (L > TF_PADDING_MAX)) then begin
+    Result:= False;
+    Exit;
+  end;
+
+  Result:= True;
 end;
 
 class function TBaseBlockCipher.SetKeyParam(Inst: Pointer; Param: UInt32;
@@ -764,7 +866,8 @@ var
 begin
   @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
-  LPadding:= FPadding;
+//  LPadding:= FPadding;
+  LPadding:= FAlgID and TF_PADDING_MASK;
   LBlockSize:= GetBlockSize(@Self);
   if LPadding = TF_PADDING_DEFAULT
     then LPadding:= TF_PADDING_PKCS;
@@ -867,7 +970,8 @@ var
 begin
   @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
-  LPadding:= FPadding;
+//  LPadding:= FPadding;
+  LPadding:= FAlgID and TF_PADDING_MASK;
   LBlockSize:= GetBlockSize(@Self);
   if LBlockSize > SizeOf(TBlock) then begin
     Result:= TF_E_UNEXPECTED;
@@ -993,7 +1097,8 @@ var
 begin
   @DecryptBlock:= GetDecryptFunc(@Self);
   LDataSize:= DataSize;
-  LPadding:= FPadding;
+//  LPadding:= FPadding;
+  LPadding:= FAlgID and TF_PADDING_MASK;
   LBlockSize:= GetBlockSize(@Self);
   if LPadding = TF_PADDING_DEFAULT
     then LPadding:= TF_PADDING_PKCS;
@@ -1015,6 +1120,7 @@ begin
   end;
   while LDataSize >= LBlockSize do begin
     DecryptBlock(@Self, Data);
+//    FDecryptBlock(@Self, Data);
     Inc(Data, LBlockSize);
     Dec(LDataSize, LBlockSize);
   end;
@@ -1105,7 +1211,8 @@ var
 begin
   @DecryptBlock:= GetDecryptFunc(@Self);
 
-  LPadding:= FPadding;
+//  LPadding:= FPadding;
+  LPadding:= FAlgID and TF_PADDING_MASK;
   if LPadding = TF_PADDING_DEFAULT
     then LPadding:= TF_PADDING_PKCS;
 
@@ -1226,7 +1333,8 @@ var
 begin
   @EncryptBlock:= GetEncryptFunc(@Self);  // !! CTR mode uses EncryptBlock for decryption
   LDataSize:= DataSize;
-  LPadding:= FPadding;
+//  LPadding:= FPadding;
+  LPadding:= FAlgID and TF_PADDING_MASK;
   if LPadding = TF_PADDING_DEFAULT
     then LPadding:= TF_PADDING_NONE;
 
@@ -1497,6 +1605,10 @@ begin
 end;
 
 class function TBaseStreamCipher.EncryptBlock(Inst: Pointer; Data: PByte): TF_RESULT;
+begin
+  Result:= TF_E_NOTIMPL;
+end;
+{
 var
   L: Cardinal;
   GetRand: TGetRandFunc;
@@ -1514,6 +1626,7 @@ begin
   FillChar(Block, L, 0);
   Result:= TF_S_OK;
 end;
+}
 
 class function TBaseStreamCipher.GetIsBlockCipher(Inst: Pointer): Boolean;
 begin

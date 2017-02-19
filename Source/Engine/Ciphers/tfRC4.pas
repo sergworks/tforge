@@ -27,15 +27,15 @@ type
                                 // from tfRecord
     FVTable:   Pointer;
     FRefCount: Integer;
-                                // from tfStreamCipher
+                                // from tfBaseStreamCipher
+    FAlgID:    UInt32;
     FValidKey: Boolean;
                                 // -- inherited fields end --
     FState:    TState;
 {$HINTS ON}
   public
     class function Release(Inst: PRC4Instance): Integer; stdcall; static;
-    class function ExpandKey(Inst: PRC4Instance; Key: PByte; KeySize: Cardinal;
-          IV: Pointer; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey(Inst: PRC4Instance; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PRC4Instance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -43,6 +43,12 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class procedure DestroyKey(Inst: PRC4Instance);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function RandBlock(Inst: PRC4Instance; Data: PByte): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyIV(Inst: PRC4Instance; Key: PByte; KeySize: Cardinal;
+          IV: Pointer; IVSize: Cardinal): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyNonce(Inst: PRC4Instance; Key: PByte; KeySize: Cardinal;
+          Nonce: UInt64): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -53,7 +59,7 @@ implementation
 uses tfRecords, tfBaseCiphers;
 
 const
-  RC4VTable: array[0..16] of Pointer = (
+  RC4VTable: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TRC4Instance.Release,
@@ -71,7 +77,9 @@ const
    @TBaseStreamCipher.GetRand,
    @TRC4Instance.RandBlock,
    @TBaseStreamCipher.RandCrypt,
-   @TBaseStreamCipher.GetIsBlockCipher
+   @TBaseStreamCipher.GetIsBlockCipher,
+   @TRC4Instance.ExpandKeyIV,
+   @TRC4Instance.ExpandKeyNonce
    );
 
 function GetRC4Instance(var A: PRC4Instance): TF_RESULT;
@@ -83,7 +91,7 @@ begin
     Tmp:= AllocMem(SizeOf(TRC4Instance));
     Tmp^.FVTable:= @RC4VTable;
     Tmp^.FRefCount:= 1;
-
+    Tmp^.FAlgID:= TF_ALG_RC4;
     if A <> nil then TRC4Instance.Release(A);
     A:= Tmp;
     Result:= TF_S_OK;
@@ -133,17 +141,12 @@ begin
 end;
 
 class function TRC4Instance.ExpandKey(Inst: PRC4Instance; Key: PByte;
-  KeySize: Cardinal; IV: Pointer; IVSize: Cardinal): TF_RESULT;
+  KeySize: Cardinal): TF_RESULT;
 var
   I: Cardinal;
   J, Tmp: Byte;
 
 begin
-  if (IV <> nil) or (IVSize <> 0) then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-
   I:= 0;
   repeat
     Inst.FState.S[I]:= I;
@@ -163,6 +166,26 @@ begin
 
   Inst.FValidKey:= True;
   Result:= TF_S_OK;
+end;
+
+class function TRC4Instance.ExpandKeyIV(Inst: PRC4Instance; Key: PByte;
+  KeySize: Cardinal; IV: Pointer; IVSize: Cardinal): TF_RESULT;
+begin
+  if (IV <> nil) or (IVSize <> 0) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  Result:= ExpandKey(Inst, Key, KeySize);
+end;
+
+class function TRC4Instance.ExpandKeyNonce(Inst: PRC4Instance; Key: PByte;
+  KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
+begin
+  if (Nonce <> 0) then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  Result:= ExpandKey(Inst, Key, KeySize);
 end;
 
 class function TRC4Instance.GetBlockSize(Inst: PRC4Instance): Integer;

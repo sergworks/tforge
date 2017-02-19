@@ -3,7 +3,7 @@ program SSLInfo;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfTypes, tfWindows;
+  SysUtils, tfTypes, tfWindows, tfOpenSSL;
 
 procedure PrintInfo;
 begin

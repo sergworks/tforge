@@ -187,8 +187,25 @@ begin
       and LoadFunction(@EVP_DecryptInit_ex, 'EVP_DecryptInit_ex')
       and LoadFunction(@EVP_DecryptUpdate, 'EVP_DecryptUpdate')
       and LoadFunction(@EVP_DecryptFinal_ex, 'EVP_DecryptFinal_ex')
+
+      and LoadFunction(@EVP_aes_128_ecb, 'EVP_aes_128_ecb')
+      and LoadFunction(@EVP_aes_128_cbc, 'EVP_aes_128_cbc')
+      and LoadFunction(@EVP_aes_128_ctr, 'EVP_aes_128_ctr')
+      and LoadFunction(@EVP_aes_192_ecb, 'EVP_aes_192_ecb')
+      and LoadFunction(@EVP_aes_192_cbc, 'EVP_aes_192_cbc')
+      and LoadFunction(@EVP_aes_192_ctr, 'EVP_aes_192_ctr')
+      and LoadFunction(@EVP_aes_256_ecb, 'EVP_aes_256_ecb')
+      and LoadFunction(@EVP_aes_256_cbc, 'EVP_aes_256_cbc')
+      and LoadFunction(@EVP_aes_256_ctr, 'EVP_aes_256_ctr')
+
 {
+       2927  5E1 00072650 EVP_aes_128_cbc
+       4590  5E8 00072710 EVP_aes_128_ctr
+       2644  5E9 00072670 EVP_aes_128_ecb
+}
       and LoadFunction(@EVP_des_cbc, 'EVP_des_cbc')
+
+{
        3277  621 00070BC0 EVP_des_cfb1
         300  622 00070B90 EVP_des_cfb64
        3267  623 00070BD0 EVP_des_cfb8

@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
 { *********************************************************** }
 
 unit tfHashServ;
@@ -14,10 +14,10 @@ uses tfRecords, tfTypes, tfAlgServ, tfByteVectors,
      tfCRC32, tfJenkinsOne,
      tfHMAC;
 
-function GetHashServer(var A: IHashServer): TF_RESULT;
+function GetHashServerInstance(var A: IHashServer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-function GetHashInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+function GetHashInstance(AlgID: TF_AlgID; var Alg: IHash): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 implementation
@@ -52,9 +52,9 @@ type
 *)
     class function GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
 //          Key: Pointer; KeySize: Cardinal;
-          const HashAlg: IHashAlgorithm): TF_RESULT;
+          const HashAlg: IHash): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
+    class function PBKDF1(Inst: PHashServer; HashAlg: IHash;
           Password: Pointer; PassLen: Cardinal; Salt: Pointer; SaltLen: Cardinal;
           Rounds, dkLen: Cardinal; var Key: PByteVector): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -78,16 +78,16 @@ type
   end;
 
 const
-  VTable: array[0..8] of Pointer = (
+  VTable: array[0..9] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeSingleton.Addref,
     @TForgeSingleton.Release,
 
-//    @THashServer.GetByAlgID,
-    @TAlgServer.GetByName,
-    @TAlgServer.GetByIndex,
+    @TAlgServer.GetID,
     @TAlgServer.GetName,
     @TAlgServer.GetCount,
+    @TAlgServer.GetIDByName,
+    @TAlgServer.GetNameByID,
 
     @THashServer.GetHMAC,
     @THashServer.PBKDF1
@@ -140,7 +140,7 @@ begin
   TAlgServer.AddTableItem(@Instance, Pointer(JENKINS1_LITERAL), TF_ALG_JENKINS1);
 end;
 
-function GetHashServer(var A: IHashServer): TF_RESULT;
+function GetHashServerInstance(var A: IHashServer): TF_RESULT;
 begin
   if Instance.FVTable = nil then InitInstance;
 // IHashServer is implemented by a singleton, no need for releasing old instance
@@ -150,7 +150,7 @@ end;
 
 { THashServer }
 
-class function THashServer.PBKDF1(Inst: PHashServer; HashAlg: IHashAlgorithm;
+class function THashServer.PBKDF1(Inst: PHashServer; HashAlg: IHash;
   Password: Pointer; PassLen: Cardinal; Salt: Pointer; SaltLen: Cardinal;
   Rounds, dkLen: Cardinal; var Key: PByteVector): TF_RESULT;
 
@@ -181,7 +181,7 @@ begin
   Result:= ByteVectorFromPByte(Key, @Digest, dkLen);
 end;
 
-function GetStdInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+function GetStdInstance(AlgID: TF_AlgID; var Alg: IHash): TF_RESULT;
 begin
   case AlgID of
     TF_ALG_MD5: Result:= GetMD5Algorithm(PMD5Alg(Alg));
@@ -200,12 +200,12 @@ begin
   end;
 end;
 
-function GetOSSLInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+function GetOSSLInstance(AlgID: TF_AlgID; var Alg: IHash): TF_RESULT;
 begin
       Result:= TF_E_INVALIDARG;
 end;
 
-function GetHashInstance(AlgID: TF_AlgID; var Alg: IHashAlgorithm): TF_RESULT;
+function GetHashInstance(AlgID: TF_AlgID; var Alg: IHash): TF_RESULT;
 begin
   case AlgID and TF_ENGINE_MASK of
     TF_ENGINE_STD:  Result:= GetStdInstance(AlgID and not TF_ENGINE_MASK, Alg);
@@ -216,7 +216,7 @@ begin
 end;
 
 class function THashServer.GetHMAC(Inst: PHashServer; var HMACAlg: IHMACAlgorithm;
-                                   const HashAlg: IHashAlgorithm): TF_RESULT;
+                                   const HashAlg: IHash): TF_RESULT;
 begin
   Result:= GetHMACAlgorithm(PHMACAlg(HMACAlg), HashAlg);
 end;

@@ -24,7 +24,7 @@ type
   private
     FVTable: Pointer;
     FRefCount: Integer;
-    FHash: IHashAlgorithm;
+    FHash: IHash;
     FKey: PByteVector;
   public
     class function Release(Inst: PHMACAlg): Integer; stdcall; static;
@@ -48,7 +48,7 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHashAlgorithm): TF_RESULT;
+function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHash): TF_RESULT;
 //function GetHMACAlgorithm(var Inst: PHMACAlg; HashAlg: IHashAlgorithm): TF_RESULT;
 
 implementation
@@ -71,7 +71,7 @@ const
    @THMACAlg.PBKDF2
    );
 
-function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHashAlgorithm): TF_RESULT;
+function GetHMACAlgorithm(var Inst: PHMACAlg; const HashAlg: IHash): TF_RESULT;
 var
   P: PHMACAlg;
   BlockSize: Integer;

@@ -35,10 +35,11 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
+    FAlgID:    UInt32;
     FValidKey: Boolean;
-    FDir:      UInt32;
-    FMode:     UInt32;
-    FPadding:  UInt32;
+//    FDir:      UInt32;
+//    FMode:     UInt32;
+//    FPadding:  UInt32;
     FIVector:  TDESBlock;       // -- inherited fields end --
 {$HINTS ON}
 
@@ -48,8 +49,7 @@ type
     class procedure DoEncryptBlock(var SubKeys: TExpandedKey; Data: PByte); static;
   public
     class function Release(Inst: PDESInstance): Integer; stdcall; static;
-    class function ExpandKey(Inst: PDESInstance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey(Inst: PDESInstance; Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetBlockSize(Inst: PDESInstance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -71,10 +71,11 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
+    FAlgID:    UInt32;
     FValidKey: Boolean;
-    FDir:      UInt32;
-    FMode:     UInt32;
-    FPadding:  UInt32;
+//    FDir:      UInt32;
+//    FMode:     UInt32;
+//    FPadding:  UInt32;
     FIVector:  TDESInstance.TDESBlock;       // -- inherited fields end --
 {$HINTS ON}
 
@@ -82,8 +83,8 @@ type
 
   public
     class function Release(Inst: P3DESInstance): Integer; stdcall; static;
-    class function ExpandKey(Inst: P3DESInstance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
+    class function ExpandKey(Inst: P3DESInstance;
+          Key: PByte; KeySize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 //    class function GetBlockSize(Inst: P3DESAlgorithm): Integer;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -110,7 +111,7 @@ const
 { TDESCipher }
 
 const
-  DESCipherVTable: array[0..16] of Pointer = (
+  DESCipherVTable: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @TDESInstance.Release,
@@ -128,10 +129,12 @@ const
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher
+   @TBaseBlockCipher.GetIsBlockCipher,
+   @TBaseBlockCipher.ExpandKeyIV,
+   @TBaseBlockCipher.ExpandKeyNonce
    );
 
-  TripleDESVTable: array[0..16] of Pointer = (
+  TripleDESVTable: array[0..18] of Pointer = (
    @TForgeInstance.QueryIntf,
    @TForgeInstance.Addref,
    @T3DESInstance.Release,
@@ -149,7 +152,9 @@ const
    @TBaseBlockCipher.GetRand,
    @TBaseBlockCipher.RandBlock,
    @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher
+   @TBaseBlockCipher.GetIsBlockCipher,
+   @TBaseBlockCipher.ExpandKeyIV,
+   @TBaseBlockCipher.ExpandKeyNonce
    );
 
 procedure BurnDESKey(Inst: PDESInstance); inline;
@@ -306,26 +311,27 @@ begin
   end;
 end;
 
-class function TDESInstance.ExpandKey(Inst: PDESInstance; Key: PByte; KeySize: Cardinal;
-               IV: PByte; IVSize: Cardinal): TF_RESULT;
+class function TDESInstance.ExpandKey(Inst: PDESInstance; Key: PByte;
+  KeySize: Cardinal): TF_RESULT;
 var
   Encryption: Boolean;
+  LKeyDir: UInt32;
 
 begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if KeySize <> 8 then begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
-  if (Inst.FDir <> TF_KEYDIR_ENCRYPT) and (Inst.FDir <> TF_KEYDIR_DECRYPT) then begin
+  LKeyDir:= Inst.FAlgID and TF_KEYDIR_MASK;
+  if (LKeyDir <> TF_KEYDIR_ENCRYPT) and (LKeyDir <> TF_KEYDIR_DECRYPT) then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
 
-  Encryption:= (Inst.FDir = TF_KEYDIR_ENCRYPT) or (Inst.FMode = TF_KEYMODE_CTR);
+  Encryption:= (LKeyDir = TF_KEYDIR_ENCRYPT) or
+               (Inst.FAlgID and TF_KEYMODE_MASK = TF_KEYMODE_CTR);
+//               (Inst.FMode = TF_KEYMODE_CTR);
 
   DoExpandKey(Key, Inst.FSubKeys, Encryption);
 
@@ -333,26 +339,28 @@ begin
   Result:= TF_S_OK;
 end;
 
-class function T3DESInstance.ExpandKey(Inst: P3DESInstance; Key: PByte; KeySize: Cardinal;
-               IV: PByte; IVSize: Cardinal): TF_RESULT;
-//var
+class function T3DESInstance.ExpandKey(Inst: P3DESInstance;
+               Key: PByte; KeySize: Cardinal): TF_RESULT;
+var
 //  Encryption: Boolean;
+  LKeyDir: UInt32;
 
 begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result <> TF_S_OK then Exit;
-
   if (KeySize <> 8) and (KeySize <> 16) and (KeySize <> 24) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
-  if (Inst.FDir <> TF_KEYDIR_ENCRYPT) and (Inst.FDir <> TF_KEYDIR_DECRYPT) then begin
+  LKeyDir:= Inst.FAlgID and TF_KEYDIR_MASK;
+  if (LKeyDir <> TF_KEYDIR_ENCRYPT) and (LKeyDir <> TF_KEYDIR_DECRYPT) then begin
+//  if (Inst.FDir <> TF_KEYDIR_ENCRYPT) and (Inst.FDir <> TF_KEYDIR_DECRYPT) then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
 
-  if (Inst.FDir = TF_KEYDIR_ENCRYPT) or (Inst.FMode = TF_KEYMODE_CTR) then begin
+//  if (Inst.FDir = TF_KEYDIR_ENCRYPT) or (Inst.FMode = TF_KEYMODE_CTR) then begin
+    if (LKeyDir = TF_KEYDIR_ENCRYPT) or
+               (Inst.FAlgID and TF_KEYMODE_MASK = TF_KEYMODE_CTR) then begin
     TDESInstance.DoExpandKey(Key, Inst.FSubKeys[0], True);
 
     if KeySize > 8 then

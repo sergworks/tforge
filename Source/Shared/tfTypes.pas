@@ -304,14 +304,14 @@ const
   TF_ALG_CHACHA20 = $2803;
 
 type
-  IHashAlgorithm = interface(IInterface)
+  IHash = interface(IInterface)
     procedure Init;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Update(Data: Pointer; DataSize: Cardinal);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Done(PDigest: Pointer);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     procedure Burn;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetDigestSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Duplicate(var Inst: IHashAlgorithm): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Duplicate(var Inst: IHash): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
 //  THashGetter = function(var A: IHashAlgorithm): TF_RESULT;
@@ -334,18 +334,28 @@ type
   IHashServer = interface(IInterface)
 //    function GetByAlgID(AlgID: UInt32; var Alg: IHashAlgorithm): TF_RESULT;
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByName(Name: Pointer; CharSize: Integer; var Alg: TF_AlgID): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByIndex(Index: Integer; var Alg: TF_AlgID): TF_RESULT;
+
+    function GetID(Index: Integer; var Alg: TF_ALGID): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetName(Index: Integer; var Name: Pointer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetHMAC(var HMACAlg: IHMACAlgorithm;
-          const HashAlg: IHashAlgorithm): TF_RESULT;
+    function GetIDByName(Name: Pointer; CharSize: Integer; var AlgID: TF_AlgID): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function PBKDF1(HashAlg: IHashAlgorithm;
+    function GetNameByID(AlgID: TF_AlgID; var Name: Pointer): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+
+(*
+    function GetByName(Name: Pointer; CharSize: Integer; var Alg: TF_AlgID): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetByIndex(Index: Integer; var Alg: TF_AlgID): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+*)
+    function GetHMAC(var HMACAlg: IHMACAlgorithm;
+          const HashAlg: IHash): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function PBKDF1(HashAlg: IHash;
           Password: Pointer; PassLen: Cardinal;
           Salt: Pointer; SaltLen: Cardinal;
           Rounds, dkLen: Cardinal; var Key: IBytes): TF_RESULT;
@@ -360,8 +370,7 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Duplicate(var Inst: ICipher): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ExpandKey(Key: Pointer; KeySize: Cardinal;
-             IV: Pointer; IVSize: Cardinal): TF_RESULT;
+    function ExpandKey(Key: Pointer; KeySize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SetKeyParam(Param: UInt32; Data: Pointer; DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -380,6 +389,11 @@ type
     function KeyCrypt(Data: PByte; DataSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKeyIV(Key: Pointer; KeySize: Cardinal;
+             IV: Pointer; IVSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKeyNonce(Key: Pointer; KeySize: Cardinal;
+             Nonce: UInt64): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IStreamCipher = interface(IInterface)
@@ -401,17 +415,20 @@ type
   end;
 
   ICipherServer = interface(IInterface)
-    function GetByAlgID(AlgID: UInt32; var Alg: ICipher): TF_RESULT;
+//    function GetByAlgID(AlgID: UInt32; var Alg: ICipher): TF_RESULT;
+//          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetID(Index: Integer; var Alg: TF_ALGID): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByName(Name: Pointer; CharSize: Integer; var Alg: ICipher): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetByIndex(Index: Integer; var Alg: ICipher): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
+//    function GetName(Index: Integer; var Name: IBytes): TF_RESULT;
+    function GetName(Index: Integer; var Name: Pointer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetCount: Integer;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-
+    function GetIDByName(Name: Pointer; CharSize: Integer; var AlgID: TF_AlgID): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetNameByID(AlgID: TF_AlgID; var Name: Pointer): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+(*
     function GetRC5(BlockSize, Rounds: Cardinal;
           var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -430,7 +447,7 @@ type
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetKSChaCha20(Rounds: Cardinal; var KS: IStreamCipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-
+*)
   end;
 
 const

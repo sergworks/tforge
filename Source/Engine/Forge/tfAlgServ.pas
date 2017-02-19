@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
 { *********************************************************** }
 
 unit tfAlgServ;
@@ -32,8 +32,8 @@ type
 }
   TAlgItem = record
   private
-    FName: PAnsiChar;     // actually UTF8
     FAlgID: TF_AlgID;
+    FName: PAnsiChar;     // actually UTF8
   end;
 
 type
@@ -65,16 +65,19 @@ type
 
     class function AddTableItem(Inst: Pointer;
           AName: Pointer; AAlgID: TF_AlgID): Boolean; static;
-    class function GetByName(Inst: Pointer; AName: Pointer; CharSize: Integer;
-          var AlgID: TF_AlgID): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetByIndex(Inst: Pointer; Index: Integer;
+    class function GetID(Inst: Pointer; Index: Integer;
           var AlgID: TF_AlgID): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetName(Inst: Pointer; Index: Integer;
           var Name: Pointer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetCount(Inst: Pointer): Integer;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetIDByName(Inst: Pointer; AName: Pointer; CharSize: Integer;
+          var AlgID: TF_AlgID): TF_RESULT;
+          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetNameByID(Inst: Pointer; AlgID: TF_AlgID;
+          var AName: Pointer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -201,8 +204,8 @@ begin
   with PAlgServer(Inst)^ do
     if FCount < FCapacity then begin
       P:= @FAlgTable[FCount];
-      P^.FName:= AName;
       P^.FAlgID:= AAlgID;
+      P^.FName:= AName;
       Inc(FCount);
       Result:= True;
     end
@@ -210,7 +213,7 @@ begin
       Result:= False;
 end;
 
-class function TAlgServer.GetByName(Inst: Pointer; AName: Pointer; CharSize: Integer;
+class function TAlgServer.GetIDByName(Inst: Pointer; AName: Pointer; CharSize: Integer;
                var AlgID: TF_AlgID): TF_RESULT;
 const
   ANSI_a = Ord('a');
@@ -221,6 +224,7 @@ var
   P1, P2: PByte;
   Found: Boolean;
   Ch: Byte;
+  LCharSize: Integer;
 
 begin
   PItem:= @PAlgServer(Inst).FAlgTable;
@@ -243,7 +247,19 @@ begin
         Break;
       end;
       Inc(P1);
-      Inc(P2, CharSize);
+//      Inc(P2, CharSize);
+      Inc(P2);
+      if CharSize > 1 then begin
+        LCharSize:= CharSize - 1;
+        repeat
+          if (P2^ <> 0) then begin
+            Found:= False;
+            Break;
+          end;
+          Inc(P2);
+          Dec(LCharSize);
+        until LCharSize = 0;
+      end;
     until False;
     if Found then begin
       AlgID:= PItem^.FAlgID;
@@ -255,7 +271,27 @@ begin
   Result:= TF_E_INVALIDARG;
 end;
 
-class function TAlgServer.GetByIndex(Inst: Pointer; Index: Integer;
+class function TAlgServer.GetNameByID(Inst: Pointer; AlgID: TF_AlgID;
+  var AName: Pointer): TF_RESULT;
+var
+  PItem, Sentinel: PAlgItem;
+
+begin
+  PItem:= @PAlgServer(Inst).FAlgTable;
+  Sentinel:= PItem;
+  Inc(Sentinel, PAlgServer(Inst).FCount);
+  while PItem <> Sentinel do begin
+    if PItem^.FAlgID = AlgID then begin
+      AName:= PItem^.FName;
+      Result:= TF_S_OK;
+      Exit;
+    end;
+    Inc(PItem);
+  end;
+  Result:= TF_E_INVALIDARG;
+end;
+
+class function TAlgServer.GetID(Inst: Pointer; Index: Integer;
           var AlgID: TF_AlgID): TF_RESULT;
 begin
   if Cardinal(Index) >= Cardinal(PAlgServer(Inst).FCount) then

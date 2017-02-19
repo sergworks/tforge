@@ -46,32 +46,51 @@ const
 
   ALG_AES_ECB_ENCRYPT = TF_ALG_AES or TF_ECB_ENCRYPT;
   ALG_AES_ECB_DECRYPT = TF_ALG_AES or TF_ECB_DECRYPT;
+  ALG_AES_CBC_ENCRYPT = TF_ALG_AES or TF_CBC_ENCRYPT;
+  ALG_AES_CBC_DECRYPT = TF_ALG_AES or TF_CBC_DECRYPT;
+  ALG_AES_CTR_ENCRYPT = TF_ALG_AES or TF_CTR_ENCRYPT;
+  ALG_AES_CTR_DECRYPT = TF_ALG_AES or TF_CTR_DECRYPT;
 
+  ALG_DES_ECB_ENCRYPT = TF_ALG_DES or TF_ECB_ENCRYPT;
+  ALG_DES_ECB_DECRYPT = TF_ALG_DES or TF_ECB_DECRYPT;
+  ALG_DES_CBC_ENCRYPT = TF_ALG_DES or TF_CBC_ENCRYPT;
+  ALG_DES_CBC_DECRYPT = TF_ALG_DES or TF_CBC_DECRYPT;
+  ALG_DES_CTR_ENCRYPT = TF_ALG_DES or TF_CTR_ENCRYPT;
+  ALG_DES_CTR_DECRYPT = TF_ALG_DES or TF_CTR_DECRYPT;
+
+  ALG_3DES_ECB_ENCRYPT = TF_ALG_3DES or TF_ECB_ENCRYPT;
+  ALG_3DES_ECB_DECRYPT = TF_ALG_3DES or TF_ECB_DECRYPT;
+  ALG_3DES_CBC_ENCRYPT = TF_ALG_3DES or TF_CBC_ENCRYPT;
+  ALG_3DES_CBC_DECRYPT = TF_ALG_3DES or TF_CBC_DECRYPT;
+  ALG_3DES_CTR_ENCRYPT = TF_ALG_3DES or TF_CTR_ENCRYPT;
+  ALG_3DES_CTR_DECRYPT = TF_ALG_3DES or TF_CTR_DECRYPT;
+
+  ALG_RC5_ECB_ENCRYPT = TF_ALG_RC5 or TF_ECB_ENCRYPT;
+  ALG_RC5_ECB_DECRYPT = TF_ALG_RC5 or TF_ECB_DECRYPT;
+  ALG_RC5_CBC_ENCRYPT = TF_ALG_RC5 or TF_CBC_ENCRYPT;
+  ALG_RC5_CBC_DECRYPT = TF_ALG_RC5 or TF_CBC_DECRYPT;
+  ALG_RC5_CTR_ENCRYPT = TF_ALG_RC5 or TF_CTR_ENCRYPT;
+  ALG_RC5_CTR_DECRYPT = TF_ALG_RC5 or TF_CTR_DECRYPT;
 
 type
   TCipher = record
   private
     FInstance: ICipher;
-//    procedure SetFlagsProc(const Value: UInt32);
-    procedure SetIVProc(const Value: ByteArray);
-    procedure SetNonceProc(const Value: UInt64);
   public
-//    class function Create(const Alg: ICipherAlgorithm): TCipher; static;
     procedure Free;
     function IsAssigned: Boolean;
+    procedure Burn;
+    function Clone: TCipher;
+
     function IsBlockCipher: Boolean;
     function GetBlockSize: Cardinal;
 
-//    function SetFlags(AFlags: UInt32): TCipher; overload;
-
-    function SetIV(AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
-    function SetIV(const AIV: ByteArray): TCipher; overload;
-
-//    function SetNonce(const Value: ByteArray): TCipher; overload;
-    function SetNonce(const Value: UInt64): TCipher;
     function GetNonce: UInt64;
-//    function SetBlockNo(const Value: ByteArray): TCipher; overload;
-//    function SetBlockNo(const Value: UInt64): TCipher; overload;
+    procedure SetNonce(const Value: UInt64);
+
+    procedure SetIV(AIV: Pointer; AIVLen: Cardinal); overload;
+    procedure SetIV(const AIV: ByteArray); overload;
+    function GetIV: ByteArray;
 
 // key + IV
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal;
@@ -87,18 +106,6 @@ type
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
     function ExpandKey(const AKey: ByteArray): TCipher; overload;
 
-//    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32): TCipher; overload;
-//    function ExpandKey(AKey: PByte; AKeyLen: Cardinal; AFlags: UInt32;
-//                       AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
-
-//    function ExpandKey(const AKey: ByteArray; AFlags: UInt32): TCipher; overload;
-//    function ExpandKey(const AKey: ByteArray; AFlags: UInt32;
-//                       const AIV: ByteArray): TCipher; overload;
-//    function ExpandKey(const AKey: ByteArray; AFlags: UInt32;
-//                       const ANonce: UInt64): TCipher; overload;
-
-    procedure Burn;
-
     procedure Encrypt(var Data; var DataSize: Cardinal;
                       BufSize: Cardinal; Last: Boolean);
     procedure Decrypt(var Data; var DataSize: Cardinal;
@@ -112,9 +119,6 @@ type
     class function EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray; static;
     class function DecryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray; static;
 
-//    function EncryptData(const Data: ByteArray): ByteArray; deprecated;
-//    function DecryptData(const Data: ByteArray): ByteArray; deprecated;
-
     function EncryptByteArray(const Data: ByteArray): ByteArray;
     function DecryptByteArray(const Data: ByteArray): ByteArray;
 
@@ -126,10 +130,8 @@ type
 
 //    function Skip(Value: UInt32): TCipher; overload;
     function Skip(Value: UInt64): TCipher; overload;
-//    function Skip(Value: ByteArray): TCipher; overload;
 
-//    class function GetInstance(const Name: string): TCipher; static;
-    class function GetInstance(AlgID: UInt32): TCipher; static;
+    class function GetInstance(AlgID: TAlgID): TCipher; static;
 
     class function AES(AFlags: UInt32): TCipher; static;
     class function DES(AFlags: UInt32): TCipher; static;
@@ -142,40 +144,31 @@ type
     class function ChaCha20: TCipher; overload; static;
     class function ChaCha20(Rounds: Cardinal): TCipher; overload; static;
 
-    function Clone: TCipher;
+//    class operator Explicit(const Name: string): TCipher;
+//    class operator Explicit(AlgID: Integer): TCipher;
 
-    class operator Explicit(const Name: string): TCipher;
-    class operator Explicit(AlgID: Integer): TCipher;
-
-    class function AlgName(Index: Cardinal): string; static;
-    class function AlgCount: Integer; static;
-
-//    property Algorithm: ICipher read FInstance;
-//    property Flags: UInt32 write SetFlagsProc;
-
-// todo:
-//    property Dir: UInt32 read GetDir;
-//    property Mode: UInt32 read GetMode;
-//    property Padding: UInt32 read GetPadding;
-//    property IV: ByteArray read GetIV write SetIVProc;
-//    property Nonce: UInt64 read GetNonce write SetNonceProc;
-//    property BlockSize: Cardinal read GetBlockSize;
+    class function GetCount: Integer; static;
+    class function GetID(Index: Cardinal): TAlgID; static;
+    class function GetName(Index: Cardinal): string; static;
+    class function GetIDByName(const Name: string): TAlgID; static;
+    class function GetNameByID(AlgID: TAlgID): string; static;
   end;
 
   TStreamCipher = record
   private
     FInstance: IStreamCipher;
-    function GetNonce: UInt64;
-    procedure SetNonceProc(const Nonce: UInt64);
   public
     procedure Free;
     function IsAssigned: Boolean;
     procedure Burn;
-    function Copy: TStreamCipher;
+    function Clone: TStreamCipher;
 
     function ExpandKey(const AKey: ByteArray; ANonce: UInt64 = 0): TStreamCipher; overload;
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal; ANonce: UInt64): TStreamCipher; overload;
-    function SetNonce(const AValue: UInt64): TStreamCipher;
+
+    function GetNonce: UInt64;
+    procedure SetNonce(const Nonce: UInt64);
+
     function Skip(const AValue: Int64): TStreamCipher;
 
     procedure GetKeyStream(var Data; DataSize: Cardinal);
@@ -188,7 +181,8 @@ type
     procedure ApplyToStream(InStream, OutStream: TStream; BufSize: Cardinal = 0);
     procedure ApplyToFile(const InName, OutName: string; BufSize: Cardinal = 0);
 
-    class function GetInstance(const Name: string): TStreamCipher; static;
+    class function GetInstance(AlgID: TAlgID): TStreamCipher; static;
+//    class function GetInstance(const Name: string): TStreamCipher; static;
 
     class function AES: TStreamCipher; static;
     class function DES: TStreamCipher; static;
@@ -201,18 +195,15 @@ type
     class function ChaCha20: TStreamCipher; overload; static;
     class function ChaCha20(Rounds: Cardinal): TStreamCipher; overload; static;
 
-    class operator Explicit(const Name: string): TStreamCipher;
+//    class operator Explicit(const Name: string): TStreamCipher;
 
-    property Nonce: UInt64 read GetNonce write SetNonceProc;
+//    property Nonce: UInt64 read GetNonce write SetNonceProc;
   end;
 
 type
   ECipherError = class(EForgeError);
 
 implementation
-
-var
-  FServer: ICipherServer;
 
 procedure CipherError(ACode: TF_RESULT; const Msg: string = '');
 begin
@@ -223,6 +214,19 @@ procedure HResCheck(Value: TF_RESULT); inline;
 begin
   if Value <> TF_S_OK then
     CipherError(Value);
+end;
+
+
+
+// FServer is a singleton, no memory leak because of global intf ref
+var
+  FServer: ICipherServer;
+
+function GetServer: ICipherServer;
+begin
+  if FServer = nil then
+    HResCheck(GetCipherServerInstance(FServer));
+  Result:= FServer;
 end;
 
 { TCipher }
@@ -257,6 +261,18 @@ begin
   HResCheck(FInstance.GetKeyParam(TF_KP_NONCE, @Result, DataLen));
 end;
 
+function TCipher.GetIV: ByteArray;
+var
+  DataLen: Cardinal;
+
+begin
+  DataLen:= GetBlockSize;
+  if (DataLen = 0) or (DataLen > TF_MAX_CIPHER_BLOCK_SIZE) then
+    CipherError(TF_E_UNEXPECTED);
+  Result:= ByteArray.Allocate(DataLen);
+  HResCheck(FInstance.GetKeyParam(TF_KP_IV, Result.RawData, DataLen));
+end;
+
 function TCipher.KeyStream(DataSize: Cardinal): ByteArray;
 begin
   Result:= ByteArray.Allocate(DataSize);
@@ -280,7 +296,7 @@ begin
 end;
 }
 
-class function TCipher.GetInstance(AlgID: UInt32): TCipher;
+class function TCipher.GetInstance(AlgID: TAlgID): TCipher;
 begin
   HResCheck(GetCipherInstance(AlgID, Result.FInstance));
 end;
@@ -347,13 +363,13 @@ end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher;
 begin
-  HResCheck(FInstance.ExpandKey(AKey, AKeyLen, nil, 0));
+  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, nil, 0));
   Result:= Self;
 end;
 
 function TCipher.ExpandKey(const AKey: ByteArray): TCipher;
 begin
-  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len, nil, 0));
+  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, nil, 0));
   Result:= Self;
 end;
 
@@ -371,7 +387,7 @@ function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; {AFlags: UInt32;}
 begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
-  HResCheck(FInstance.ExpandKey(AKey, AKeyLen, AIV, AIVLen));
+  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, AIV, AIVLen));
   Result:= Self;
 end;
 (*
@@ -388,16 +404,18 @@ function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
 begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
-  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
+  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
   Result:= Self;
 end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; const ANonce: UInt64): TCipher;
+(*
 var
   LBlockSize: Cardinal;
   LBlock: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
 
 begin
+
   LBlockSize:= GetBlockSize;
   if LBlockSize < SizeOf(ANonce) then begin
     if ANonce = 0 then
@@ -418,6 +436,9 @@ begin
     CipherError(TF_E_UNEXPECTED);
 
 //  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+*)
+begin
+  HResCheck(FInstance.ExpandKeyNonce(AKey, AKeyLen, ANonce));
   Result:= Self;
 end;
 
@@ -426,7 +447,8 @@ function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
 begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
-  ExpandKey(AKey.GetRawData, AKey.GetLen, ANonce);
+  HResCheck(FInstance.ExpandKeyNonce(AKey.RawData, AKey.Len, ANonce));
+  Result:= Self;
 end;
 
 procedure TCipher.Burn;
@@ -456,6 +478,7 @@ var
   BlockSize: Integer;
 
 begin
+  AlgID:= AlgID and TF_ALGID_MASK;
   Cipher:= TCipher.GetInstance(AlgID or TF_ECB_ENCRYPT)
                   .ExpandKey(Key);
   BlockSize:= Cipher.GetBlockSize;
@@ -485,6 +508,7 @@ var
   BlockSize: Integer;
 
 begin
+  AlgID:= AlgID and TF_ALGID_MASK;
   Cipher:= TCipher.GetInstance(AlgID or TF_ECB_DECRYPT)
                   .ExpandKey(Key);
   BlockSize:= Cipher.GetBlockSize;
@@ -691,9 +715,10 @@ begin
   HResCheck(FInstance.Duplicate(Result.FInstance));
 end;
 
-class function TCipher.AlgCount: Integer;
+class function TCipher.GetCount: Integer;
 begin
-  Result:= FServer.GetCount;
+//  Result:= FServer.GetCount;
+  Result:= GetServer.GetCount;
 end;
 
 {
@@ -709,21 +734,46 @@ begin
 end;
 }
 
-class function TCipher.AlgName(Index: Cardinal): string;
+class function TCipher.GetID(Index: Cardinal): TAlgID;
+begin
+  HResCheck(GetServer.GetID(Index, Result));
+end;
+
+class function TCipher.GetName(Index: Cardinal): string;
 var
-  Bytes: IBytes;
-  I, L: Integer;
-  P: PByte;
+//  Bytes: IBytes;
+//  I, L: Integer;
+//  P: PByte;
+  P: Pointer;
+//  S: string;
 
 begin
-  HResCheck(FServer.GetName(Index, Bytes));
+(*  HResCheck(FServer.GetName(Index, Bytes));
   L:= Bytes.GetLen;
   P:= Bytes.GetRawData;
   SetLength(Result, L);
   for I:= 1 to L do begin
     Result[I]:= Char(P^);
     Inc(P);
-  end;
+  end;*)
+  HResCheck(GetServer.GetName(Index, P));
+//  S:= UTF8String(PAnsiChar(P));
+//  Result:= S;
+  Result:= UTF8String(PAnsiChar(P));
+end;
+
+class function TCipher.GetIDByName(const Name: string): TAlgID;
+begin
+  HResCheck(GetServer.GetIDByName(Pointer(Name), SizeOf(Char), Result));
+end;
+
+class function TCipher.GetNameByID(AlgID: TAlgID): string;
+var
+  P: Pointer;
+
+begin
+  HResCheck(GetServer.GetNameByID(AlgID and TF_ALGID_MASK, P));
+  Result:= string(PUTF8String(P)^);
 end;
 
 (*
@@ -739,41 +789,39 @@ begin
 end;
 *)
 
-function TCipher.SetIV(AIV: Pointer; AIVLen: Cardinal): TCipher;
+procedure TCipher.SetIV(AIV: Pointer; AIVLen: Cardinal);
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
-  Result:= Self;
 end;
 
-function TCipher.SetIV(const AIV: ByteArray): TCipher;
+procedure TCipher.SetIV(const AIV: ByteArray);
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
-  Result:= Self;
 end;
 
+(*
 procedure TCipher.SetIVProc(const Value: ByteArray);
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_IV, Value.RawData, Value.Len));
 end;
-
+*)
 (*
 function TCipher.SetNonce(const Value: ByteArray): TCipher;
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, Value.RawData, Value.Len));
   Result:= Self;
 end;
-*)
 
 function TCipher.SetNonce(const Value: UInt64): TCipher;
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @Value, SizeOf(Value)));
   Result:= Self;
 end;
+*)
 
-procedure TCipher.SetNonceProc(const Value: UInt64);
+procedure TCipher.SetNonce(const Value: UInt64);
 begin
   HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @Value, SizeOf(Value)));
-//  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, Value.RawData, Value.Len));
 end;
 
 {
@@ -807,16 +855,18 @@ begin
   HResCheck(FAlgorithm.SetKeyParam(TF_KP_INCNO, @Value, SizeOf(Value)));
   Result:= Self;
 end;
-}
 class operator TCipher.Explicit(AlgID: Integer): TCipher;
 begin
-  HResCheck(FServer.GetByAlgID(AlgID, Result.FInstance));
+//  HResCheck(FServer.GetByAlgID(AlgID, Result.FInstance));
+  HResCheck(GetServer.GetByAlgID(AlgID, Result.FInstance));
 end;
 
 class operator TCipher.Explicit(const Name: string): TCipher;
 begin
-  HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FInstance));
+//  HResCheck(FServer.GetByName(Pointer(Name), SizeOf(Char), Result.FInstance));
+  HResCheck(GetServer.GetByName(Pointer(Name), SizeOf(Char), Result.FInstance));
 end;
+}
 
 { TKeyStream }
 
@@ -860,12 +910,13 @@ begin
   Result:= Self;
 end;
 *)
-
+(*
 class operator TStreamCipher.Explicit(const Name: string): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
+//  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
+  HResCheck(GetServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
 end;
-
+*)
 (*  don't want to expose
 class operator TStreamCipher.Explicit(AlgID: Integer): TStreamCipher;
 begin
@@ -879,81 +930,102 @@ begin
   Result:= Self;
 end;
 
-// introduced for consistency with TCipher.SetNonce
-function TStreamCipher.SetNonce(const AValue: UInt64): TStreamCipher;
-begin
-  HResCheck(FInstance.SetNonce(Nonce));
-  Result:= Self;
-end;
-
-function TStreamCipher.Copy: TStreamCipher;
+function TStreamCipher.Clone: TStreamCipher;
 begin
   HResCheck(FInstance.Duplicate(Result.FInstance));
 end;
 
 class function TStreamCipher.AES: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_AES, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_AES, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_AES, Result.FInstance));
+  HResCheck(GetAESStreamCipherInstance(Result.FInstance));
 end;
 
 class function TStreamCipher.DES: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_DES, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_DES, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_DES, Result.FInstance));
+  HResCheck(GetDESStreamCipherInstance(Result.FInstance));
 end;
 
 class function TStreamCipher.TripleDES: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_3DES, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_3DES, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_3DES, Result.FInstance));
+  HResCheck(Get3DESStreamCipherInstance(Result.FInstance));
 end;
 
 class function TStreamCipher.Salsa20: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_SALSA20, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_SALSA20, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_SALSA20, Result.FInstance));
+  HResCheck(GetSalsa20StreamCipherInstance(Result.FInstance));
 end;
 
 class function TStreamCipher.Salsa20(Rounds: Cardinal): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSSalsa20(Rounds, Result.FInstance));
+//  HResCheck(FServer.GetKSSalsa20(Rounds, Result.FInstance));
+//  HResCheck(GetServer.GetKSSalsa20(Rounds, Result.FInstance));
+  HResCheck(GetSalsa20StreamCipherInstanceEx(Result.FInstance, Rounds));
 end;
 
+class function TStreamCipher.GetInstance(AlgID: TAlgID): TStreamCipher;
+begin
+  HResCheck(GetStreamCipherInstance(AlgID, Result.FInstance));
+end;
+(*
 class function TStreamCipher.GetInstance(const Name: string): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
+//  HResCheck(FServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
+  HResCheck(GetServer.GetKSByName(Pointer(Name), SizeOf(Char), Result.FInstance));
 end;
+*)
 
 function TStreamCipher.GetNonce: UInt64;
 begin
   HResCheck(FInstance.GetNonce(Result));
 end;
 
-procedure TStreamCipher.SetNonceProc(const Nonce: UInt64);
+procedure TStreamCipher.SetNonce(const Nonce: UInt64);
 begin
   HResCheck(FInstance.SetNonce(Nonce));
 end;
 
 class function TStreamCipher.ChaCha20: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FInstance));
+//  HResCheck(GetStreamCipherInstance(TF_ALG_CHACHA20, Result.FInstance));
+  HResCheck(GetChacha20StreamCipherInstance(Result.FInstance));
 end;
 
 class function TStreamCipher.ChaCha20(Rounds: Cardinal): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSChaCha20(Rounds, Result.FInstance));
+//  HResCheck(FServer.GetKSChaCha20(Rounds, Result.FInstance));
+//  HResCheck(GetServer.GetKSChaCha20(Rounds, Result.FInstance));
+  HResCheck(GetChacha20StreamCipherInstanceEx(Result.FInstance, Rounds));
 end;
 
 class function TStreamCipher.RC4: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC4, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC4, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_RC4, Result.FInstance));
+  HResCheck(GetRC4StreamCipherInstance(Result.FInstance));
 end;
 
 class function TStreamCipher.RC5(BlockSize, Rounds: Cardinal): TStreamCipher;
 begin
-  HResCheck(FServer.GetKSRC5(BlockSize, Rounds, Result.FInstance));
+//  HResCheck(FServer.GetKSRC5(BlockSize, Rounds, Result.FInstance));
+//  HResCheck(GetServer.GetKSRC5(BlockSize, Rounds, Result.FInstance));
+  HResCheck(GetRC5StreamCipherInstanceEx(Result.FInstance, BlockSize, Rounds));
 end;
 
 class function TStreamCipher.RC5: TStreamCipher;
 begin
-  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC5, Result.FInstance));
+//  HResCheck(FServer.GetKSByAlgID(TF_ALG_RC5, Result.FInstance));
+//  HResCheck(GetServer.GetKSByAlgID(TF_ALG_RC5, Result.FInstance));
+  HResCheck(GetRC5StreamCipherInstance(Result.FInstance));
 end;
 
 procedure TStreamCipher.GetKeyStream(var Data; DataSize: Cardinal);
@@ -1056,9 +1128,11 @@ begin
   end;
 end;
 
+(*
 {$IFNDEF TFL_DLL}
 initialization
-  GetCipherServer(FServer);
+  GetCipherServerInstance(FServer);
 
 {$ENDIF}
+*)
 end.

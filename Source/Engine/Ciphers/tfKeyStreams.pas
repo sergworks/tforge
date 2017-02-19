@@ -9,7 +9,7 @@ interface
 
 {$I TFL.inc}
 
-uses tfTypes, tfUtils{, tfCipherServ};
+uses tfTypes, tfUtils, tfAES, tfDES, tfRC5, tfRC4, tfSalsa20;
 
 type
   PStreamCipherInstance = ^TStreamCipherInstance;
@@ -48,7 +48,18 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-//function GetKeyStreamByAlgID(AlgID: UInt32; var A: PKeyStreamEngine): TF_RESULT;
+function GetAESStreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function GetDESStreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function Get3DESStreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function GetRC5StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function GetRC5StreamCipherInstanceEx(var Inst: IStreamCipher;
+           BlockSize, Rounds: Integer): TF_RESULT;
+
+function GetRC4StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function GetSalsa20StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function GetSalsa20StreamCipherInstanceEx(var Inst: IStreamCipher; Rounds: Integer): TF_RESULT;
+function GetChacha20StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+function GetChacha20StreamCipherInstanceEx(var Inst: IStreamCipher; Rounds: Integer): TF_RESULT;
 
 implementation
 
@@ -59,7 +70,6 @@ const
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
-//    @TKeyStreamInstance.Release,
     @TStreamCipherInstance.Burn,
     @TStreamCipherInstance.Duplicate,
     @TStreamCipherInstance.ExpandKey,
@@ -69,6 +79,107 @@ const
     @TStreamCipherInstance.Read,
     @TStreamCipherInstance.Crypt
   );
+
+function GetAESStreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetAESInstance(PAESInstance(Cipher), TF_CTR_DECRYPT);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetDESStreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetDESInstance(PDESInstance(Cipher), TF_CTR_DECRYPT);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function Get3DESStreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= Get3DESInstance(P3DESInstance(Cipher), TF_CTR_DECRYPT);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetRC5StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetRC5Instance(PRC5Instance(Cipher), TF_CTR_DECRYPT);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetRC5StreamCipherInstanceEx(var Inst: IStreamCipher;
+           BlockSize, Rounds: Integer): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetRC5InstanceEx(PRC5Instance(Cipher), TF_CTR_DECRYPT, BlockSize, Rounds);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetRC4StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetRC4Instance(PRC4Instance(Cipher));
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetSalsa20StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetSalsa20Instance(PSalsa20Instance(Cipher));
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetSalsa20StreamCipherInstanceEx(var Inst: IStreamCipher; Rounds: Integer): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetSalsa20InstanceEx(PSalsa20Instance(Cipher), Rounds);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetChacha20StreamCipherInstance(var Inst: IStreamCipher): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetChacha20Instance(PSalsa20Instance(Cipher));
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
+
+function GetChacha20StreamCipherInstanceEx(var Inst: IStreamCipher; Rounds: Integer): TF_RESULT;
+var
+  Cipher: ICipher;
+
+begin
+  Result:= GetChacha20InstanceEx(PSalsa20Instance(Cipher), Rounds);
+  if Result = TF_S_OK then
+    Result:= TStreamCipherInstance.GetInstance(PStreamCipherInstance(Inst), Cipher);
+end;
 
 (*
 function GetKeyStreamByAlgID(AlgID: UInt32; var A: PKeyStreamEngine): TF_RESULT;
@@ -105,17 +216,7 @@ begin
 end;
 *)
 
-{ TKeyStreamInstance }
-(*
-procedure Burn(Inst: PKeyStreamEngine); inline;
-var
-  BurnSize: Integer;
-
-begin
-  BurnSize:= SizeOf(TKeyStreamEngine) - Integer(@PKeyStreamEngine(nil)^.FBlockNo);
-  FillChar(Inst.FBlockNo, BurnSize, 0);
-end;
-*)
+{ TStreamCipherInstance }
 
 procedure BurnMem(Inst: PStreamCipherInstance); inline;
 var
@@ -167,25 +268,27 @@ begin
 
 //  Inst.FBlockNo:= 0;
   Inst.FPos:= 0;
-
+{
   BlockSize:= Inst.FCipher.GetBlockSize;
   if BlockSize < SizeOf(Nonce) then begin
     if Nonce = 0 then
-      Result:= Inst.FCipher.ExpandKey(Key, KeySize, nil, 0)
+      Result:= Inst.FCipher.ExpandKeyIV(Key, KeySize, nil, 0)
     else
       Result:= TF_E_INVALIDARG;
   end
   else if BlockSize = SizeOf(Nonce) then begin
-    Result:= Inst.FCipher.ExpandKey(Key, KeySize, @Nonce, BlockSize);
+    Result:= Inst.FCipher.ExpandKeyIV(Key, KeySize, @Nonce, BlockSize);
   end
   else if BlockSize <= TF_MAX_CIPHER_BLOCK_SIZE then begin
     FillChar(Block, TF_MAX_CIPHER_BLOCK_SIZE, 0);
     Move(Nonce, Block, SizeOf(Nonce));
-    Result:= Inst.FCipher.ExpandKey(Key, KeySize, @Block, BlockSize);
+    Result:= Inst.FCipher.ExpandKeyIV(Key, KeySize, @Block, BlockSize);
     FillChar(Block, TF_MAX_CIPHER_BLOCK_SIZE, 0);
   end
   else
     Result:= TF_E_UNEXPECTED;
+}
+  Result:= Inst.FCipher.ExpandKeyNonce(Key, KeySize, Nonce);
 end;
 
 class function TStreamCipherInstance.GetInstance(var Inst: PStreamCipherInstance;
