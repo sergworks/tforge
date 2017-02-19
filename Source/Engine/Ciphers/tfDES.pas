@@ -35,8 +35,8 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
-    FAlgID:    UInt32;
     FValidKey: Boolean;
+    FAlgID:    UInt32;
 //    FDir:      UInt32;
 //    FMode:     UInt32;
 //    FPadding:  UInt32;
@@ -71,8 +71,8 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBlockCipher
-    FAlgID:    UInt32;
     FValidKey: Boolean;
+    FAlgID:    UInt32;
 //    FDir:      UInt32;
 //    FMode:     UInt32;
 //    FPadding:  UInt32;

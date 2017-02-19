@@ -25,11 +25,11 @@ begin
   Key:= ByteArray.AllocateRand(16);
 
 // generate 16 bytes of keystream:
-  KeyStream:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce).KeyStream(16);
+  KeyStream:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, Nonce).KeyStream(16);
   Writeln(KeyStream.ToHex);
 
 // generate 8 + 8 bytes of keystream:
-  Cipher:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce);
+  Cipher:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, Nonce);
 // Warning - KeyStream1:= Cipher.KeyStream(8) + Cipher.KeyStream(8) is wrong
 //   because the compiler does not evaluate the summands in order
   KeyStream1:= Cipher.KeyStream(8);
@@ -66,7 +66,7 @@ begin
   Writeln('CipherText: ', CipherText.ToHex);
 
 // encrypt using TCipher
-  CipherText2:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT).EncryptByteArray(PlainText);
+  CipherText2:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key).EncryptByteArray(PlainText);
   Writeln('CipherText: ', CipherText2.ToHex);
 
   Assert(CipherText = CipherText2);
@@ -103,7 +103,7 @@ begin
   Writeln('CipherText: ', CipherText.ToHex);
 
 // encrypt using TCipher
-  CipherText2:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT).EncryptByteArray(PlainText);
+  CipherText2:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key).EncryptByteArray(PlainText);
   Assert(CipherText = CipherText2);
 
 // decrypt
@@ -135,7 +135,7 @@ begin
   Writeln('CipherText: ', CipherText.ToHex);
 
 // encrypt using TCipher
-  CipherText2:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT).EncryptByteArray(PlainText);
+  CipherText2:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key).EncryptByteArray(PlainText);
   Writeln('CipherText: ', CipherText2.ToHex);
 
   Assert(CipherText = CipherText2);
@@ -176,8 +176,8 @@ begin
   Assert(THash.SHA256.UpdateFile(NameBAK).Digest = FileDigest);
 
 // same using TCipher
-  TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce).EncryptFile(FileName, NameAES);
-  TCipher.AES.ExpandKey(Key, CTR_DECRYPT, Nonce).DecryptFile(NameAES, NameBAK);
+  TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, Nonce).EncryptFile(FileName, NameAES);
+  TCipher.AES(CTR_DECRYPT).ExpandKey(Key, Nonce).DecryptFile(NameAES, NameBAK);
 
   Assert(THash.SHA256.UpdateFile(NameAES).Digest = DigestAES);
   Assert(THash.SHA256.UpdateFile(NameBAK).Digest = FileDigest);
@@ -269,7 +269,7 @@ begin
   Writeln('CipherText1: ', CipherText1.ToHex);
 
 // duplicate TStreamCipher instance
-  AES2:= AES1.Copy();
+  AES2:= AES1.Clone();
 
 // encrypt the 2nd chunk using the 1st instance
   CipherText2:= AES1.ApplyToByteArray(PlainText2);
@@ -298,7 +298,7 @@ begin
   KeyStream1:= TStreamCipher.AES.ExpandKey(Key, Nonce)
                             .KeyStream(20);
 // generate 20 bytes of keystream using TCipher instance
-  KeyStream2:= TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce)
+  KeyStream2:= TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, Nonce)
                           .KeyStream(20);
   Writeln('KeyStream: ', KeyStream1.ToHex);
   Assert(KeyStream1 = KeyStream2);
@@ -325,7 +325,7 @@ begin
                .GetKeyStream(Buffer1, SizeOf(Buffer1));
 
 // generate 20 bytes of keystream using TCipher instance
-  TCipher.AES.ExpandKey(Key, CTR_ENCRYPT, Nonce)
+  TCipher.AES(CTR_ENCRYPT).ExpandKey(Key, Nonce)
              .GetKeyStream(Buffer2, SizeOf(Buffer2));
   for I:= 0 to SizeOf(Buffer1) - 1 do
     Assert(Buffer1[I] = Buffer2[I]);
@@ -379,9 +379,9 @@ begin
   Writeln('=== TStreamCipher.Nonce example ===');
   Key:= ByteArray.ParseHex(HexKey);
   StreamCipher:= TStreamCipher.AES.ExpandKey(Key);
-  Writeln('Nonce = ', StreamCipher.Nonce);
-  StreamCipher.Nonce:= Nonce;
-  Writeln('Nonce = ', StreamCipher.Nonce);
+  Writeln('Nonce = ', StreamCipher.GetNonce);
+  StreamCipher.SetNonce(Nonce);
+  Writeln('Nonce = ', StreamCipher.GetNonce);
 
 // generate 60 bytes of keystream
   KeyStream1:= StreamCipher.KeyStream(60);

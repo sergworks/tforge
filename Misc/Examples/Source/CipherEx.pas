@@ -21,18 +21,18 @@ var
 
 begin
 // allocate 2 chunks of random data
-  PlainText1:= ByteArray.AllocateRand(20);
-  PlainText2:= ByteArray.AllocateRand(20);
+  PlainText1:= ByteArray.AllocateRand(16);
+  PlainText2:= ByteArray.AllocateRand(16);
   Writeln('PlainText1: ', PlainText1.ToHex);
   Writeln('PlainText2: ', PlainText2.ToHex);
 
 // encrypt the 1st plaintext
-  AES1:= TCipher.AES.ExpandKey(ByteArray.ParseHex(HexKey), CTR_ENCRYPT, Nonce);
+  AES1:= TCipher.AES(CTR_ENCRYPT).ExpandKey(ByteArray.ParseHex(HexKey), Nonce);
   CipherText1:= AES1.EncryptByteArray(PlainText1);
   Writeln('CipherText1: ', CipherText1.ToHex);
 
 // duplicate TCipher instance
-  AES2:= AES1.Copy();
+  AES2:= AES1.Clone();
 
 // encrypt the 2nd plaintext using the 1st instance
   CipherText21:= AES1.EncryptByteArray(PlainText2);
@@ -40,6 +40,8 @@ begin
 
 // encrypt the 2nd plaintext using the 2nd instance
   CipherText22:= AES2.EncryptByteArray(PlainText2);
+  Writeln('CipherText2: ', CipherText22.ToHex);
+
   Assert(CipherText22 = CipherText21);
 end;
 
@@ -70,15 +72,15 @@ begin
   PlainText:= ByteArray.AllocateRand(PlainTextSize);
 
 // encrypt using TCipher.EncryptByteArray
-  CipherText:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, Nonce)
+  CipherText:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, Nonce)
                           .EncryptByteArray(PlainText);
 
 // decrypt by BufSize chuncks using TCipher.Decrypt
   P:= CipherText.RawData;
   L:= CipherText.Len;
-  Cipher:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, Nonce);
+  Cipher:= TCipher.AES(CBC_DECRYPT).ExpandKey(Key, Nonce);
 // required to correctly process the last padded block
-  Assert(BufSize mod Cipher.BlockSize = 0);
+  Assert(BufSize mod Cipher.GetBlockSize = 0);
 
   while L > 0 do begin
     Last:= L <= BufSize;
@@ -115,10 +117,10 @@ begin
   PlainText:= ByteArray.AllocateRand(AESBlockSize);
 
 // encrypt block
-  CipherText:= TCipher.AES.EncryptBlock(PlainText, Key);
+  CipherText:= TCipher.EncryptBlock(ALG_AES, PlainText, Key);
 
 // decrypt block
-  DecryptedText:= TCipher.AES.DecryptBlock(CipherText, Key);
+  DecryptedText:= TCipher.DecryptBlock(ALG_AES, CipherText, Key);
 
   Assert(PlainText = DecryptedText);
 end;
@@ -140,11 +142,11 @@ begin
   PlainText:= ByteArray.AllocateRand(20);
 
 // encrypt plaintext
-  CipherText:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, Nonce)
+  CipherText:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, Nonce)
                           .EncryptByteArray(PlainText);
 
 // decrypt ciphertext
-  DecryptedText:= TCipher.AES.ExpandKey(Key, CBC_DECRYPT, Nonce)
+  DecryptedText:= TCipher.AES(CBC_DECRYPT).ExpandKey(Key, Nonce)
                              .DecryptByteArray(CipherText);
 
 // Check encryption/decryption is correct:
@@ -172,7 +174,7 @@ begin
   try
     OutStream:= TFileStream.Create('Encrypted.aes', fmCreate);
     try
-      TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, Nonce)
+      TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, Nonce)
                  .EncryptStream(InStream, OutStream);
     finally
       OutStream.Free;
@@ -186,7 +188,7 @@ begin
   try
     OutStream:= TFileStream.Create('Decrypted.aes', fmCreate);
     try
-      TCipher.AES.ExpandKey(Key, CBC_DECRYPT, Nonce)
+      TCipher.AES(CBC_DECRYPT).ExpandKey(Key, Nonce)
                  .DecryptStream(InStream, OutStream);
     finally
       OutStream.Free;
@@ -217,11 +219,11 @@ begin
   Key:= ByteArray.AllocateRand(16);
 
 // encryption
-  TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, Nonce)
+  TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, Nonce)
              .EncryptFile(FileName, 'Encrypted.aes');
 
 // decryption
-  TCipher.AES.ExpandKey(Key, CBC_DECRYPT, Nonce)
+  TCipher.AES(CBC_DECRYPT).ExpandKey(Key, Nonce)
              .DecryptFile('Encrypted.aes', 'Decrypted.aes');
 
 // Check encryption/decryption is correct:
@@ -259,7 +261,7 @@ begin
 // encrypt by BufSize chuncks using TCipher.Encrypt
   P:= PlainText.RawData;
   L:= PlainText.Len;
-  Cipher:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, Nonce);
+  Cipher:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, Nonce);
 
   while L > 0 do begin
     Last:= L <= BufSize;
@@ -278,7 +280,7 @@ begin
   Writeln('Encrypted 1 : ', THash.SHA1.UpdateByteArray(EncryptedText).Digest.ToHex);
 
 // Encrypt using TCipher.EncryptByteArray
-  CipherText:= TCipher.AES.ExpandKey(Key, CBC_ENCRYPT, Nonce)
+  CipherText:= TCipher.AES(CBC_ENCRYPT).ExpandKey(Key, Nonce)
                           .EncryptByteArray(PlainText);
 
   Writeln('Encrypted 2 : ', THash.SHA1.UpdateByteArray(CipherText).Digest.ToHex);

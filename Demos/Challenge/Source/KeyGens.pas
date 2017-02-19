@@ -38,7 +38,7 @@ var
   I: Integer;
 
 begin
-  Cipher:= TCipher.AES.ExpandKey(ByteArray.ParseHex(MasterHex), CTR_ENCRYPT);
+  Cipher:= TCipher.AES(CTR_ENCRYPT).ExpandKey(ByteArray.ParseHex(MasterHex));
   for I:= 0 to 99 do begin
     Cipher.GetKeyStream(DerivedKey, SizeOf(TDerivedKey));
 // print valid serial numbers
@@ -61,7 +61,7 @@ end;
 
 procedure TKeyGen.SaveKeys(const FileName: string);
 var
-  DerivedKey: TDerivedKey;
+//  DerivedKey: TDerivedKey;
   I: Integer;
   SL: TStringList;
 

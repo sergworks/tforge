@@ -37,8 +37,8 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
                                 // from tfBaseStreamCipher
-    FAlgID:    UInt32;
     FValidKey: Boolean;
+    FAlgID:    UInt32;
                                 // -- inherited fields end --
     FExpandedKey: TBlock;
     FRounds: Cardinal;          // 2..254

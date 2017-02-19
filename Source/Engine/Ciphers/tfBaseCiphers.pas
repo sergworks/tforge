@@ -26,8 +26,8 @@ type
 {$HINTS OFF}
     FVTable:   Pointer;
     FRefCount: Integer;
-    FAlgID:    UInt32;
     FValidKey: Boolean;
+    FAlgID:    UInt32;
 {$HINTS ON}
 //    FExecuteBlock: TExecuteBlock;
 //    FEncryptBlock: TExecuteBlock;
@@ -102,8 +102,8 @@ type
 {$HINTS OFF}
     FVTable:   Pointer;
     FRefCount: Integer;
-    FAlgID:    UInt32;
     FValidKey: Boolean;
+    FAlgID:    UInt32;
 {$HINTS ON}
 
   public
