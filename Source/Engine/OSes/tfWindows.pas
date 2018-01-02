@@ -171,7 +171,7 @@ begin
 
 // Cipher EVP API
       and LoadFunction(@EVP_CIPHER_CTX_new, 'EVP_CIPHER_CTX_new')
-// !! ver 1.1.0 replaces 'EVP_CIPHER_CTX_init' by 'EVP_CIPHER_CTX_reset',
+// !! ver 1.1.0 replaced 'EVP_CIPHER_CTX_init' by 'EVP_CIPHER_CTX_reset',
 //    see evp.h:
 //  #  define EVP_CIPHER_CTX_init(c)      EVP_CIPHER_CTX_reset(c)
 //  #  define EVP_CIPHER_CTX_cleanup(c)   EVP_CIPHER_CTX_reset(c)

@@ -5153,7 +5153,7 @@ begin
     N:= (N + SizeOf(TLimb) - 1) shr (LIMB_SHIFT - 1);
 {$IFEND}
 
-    Result:= TBigNumber.AllocNumber(Tmp, N);
+    Result:= TBigNumber.AllocNumber(Tmp, N+1);
     if Result <> TF_S_OK then Exit;
 // Tmp = 0 here
     repeat
