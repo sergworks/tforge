@@ -154,8 +154,9 @@ begin
       Result:= TF_E_OSSL;
       Exit;
     end;
+    Inc(SaveSize, LBufSize);
   end;
-  DataSize:= Cardinal(SaveSize + LBufSize);
+  DataSize:= Cardinal(SaveSize);
   Result:= TF_S_OK;
 end;
 
@@ -205,8 +206,9 @@ begin
       Result:= TF_E_OSSL;
       Exit;
     end;
+    Inc(SaveSize, LBufSize);
   end;
-  DataSize:= Cardinal(SaveSize + LBufSize);
+  DataSize:= Cardinal(SaveSize);
   Result:= TF_S_OK;
 end;
 

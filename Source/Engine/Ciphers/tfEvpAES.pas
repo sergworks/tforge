@@ -24,7 +24,7 @@ type
     FValidKey: Boolean;
     FFlags:    UInt32;
     FCtx:      PEVP_CIPHER_CTX;
-    FInit:     TEVP_CipherInit;
+//    FInit:     TEVP_CipherInit;
     FUpdate:   TEVP_CipherUpdate;
     FFinal:    TEVP_CipherFinal;
 {$HINTS ON}
@@ -146,9 +146,9 @@ begin
   end;
 }
   case KeySize of
-    16: PCipher:= EVP_aes_128_cbc();
-    24: PCipher:= EVP_aes_192_cbc();
-    32: PCipher:= EVP_aes_256_cbc();
+    16: PCipher:= EVP_aes_128_ecb();
+    24: PCipher:= EVP_aes_192_ecb();
+    32: PCipher:= EVP_aes_256_ecb();
   else
     Result:= TF_E_INVALIDARG;
     Exit;
@@ -191,6 +191,8 @@ begin
     Result:= TF_E_OSSL;
     Exit;
   end;
+
+  EVP_CIPHER_CTX_set_padding(Inst.FCtx, 0);
 
   Result:= TF_S_OK;
 end;

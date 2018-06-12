@@ -34,6 +34,10 @@ type
          var OutBufLen: Integer; InBuf: PByte; InBufLen: Integer): Integer; cdecl;
   TEVP_CipherFinal = function(CTX: PEVP_CIPHER_CTX; OutBuf: PByte;
          var OutBufLen: Integer): Integer; cdecl;
+
+  TEVP_CIPHER_CTX_set_padding = function(CTX: PEVP_CIPHER_CTX;
+         Padding: Integer): Integer; cdecl;
+
 (*
   TEVP_DecryptInit_ex = function(CTX: PEVP_CIPHER_CTX; EVP_CIPHER: PEVP_CIPHER;
          Impl: Pointer; Key, IV: PByte): Integer; cdecl;
@@ -61,6 +65,8 @@ var
   EVP_DecryptInit_ex: TEVP_CipherInit;
   EVP_DecryptUpdate: TEVP_CipherUpdate;
   EVP_DecryptFinal_ex: TEVP_CipherFinal;
+
+  EVP_CIPHER_CTX_set_padding: TEVP_CIPHER_CTX_set_padding;
 
   EVP_aes_128_cbc: TGetEVPCipher;
   EVP_aes_128_ecb: TGetEVPCipher;

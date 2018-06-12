@@ -205,6 +205,8 @@ begin
       and LoadFunction(@EVP_DecryptUpdate, 'EVP_DecryptUpdate')
       and LoadFunction(@EVP_DecryptFinal_ex, 'EVP_DecryptFinal_ex')
 
+      and LoadFunction(@EVP_CIPHER_CTX_set_padding, 'EVP_CIPHER_CTX_set_padding')
+
       and LoadFunction(@EVP_aes_128_ecb, 'EVP_aes_128_ecb')
       and LoadFunction(@EVP_aes_128_cbc, 'EVP_aes_128_cbc')
       and LoadFunction(@EVP_aes_128_ctr, 'EVP_aes_128_ctr')

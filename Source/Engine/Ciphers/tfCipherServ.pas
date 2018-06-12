@@ -10,7 +10,8 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
-     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20, tfKeyStreams;
+     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20, tfKeyStreams,
+     tfEvpAES;
 
 function GetCipherServerInstance(var A: ICipherServer): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -89,17 +90,30 @@ begin
     Result:= TF_E_INVALIDARG;
   end;
 end;
-(*
+
 function GetOSSLInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
+  case AlgID and TF_ALGID_MASK of
+// block ciphers
+    TF_ALG_AES: Result:= GetEvpAESInstance(PEvpAESInstance(Alg), AlgID);
+//    TF_ALG_DES: Result:= GetDESInstance(PDESInstance(Alg), AlgID);
+//    TF_ALG_RC5: Result:= GetRC5Instance(PRC5Instance(Alg), AlgID);
+//    TF_ALG_3DES: Result:= Get3DESInstance(P3DESInstance(Alg), AlgID);
+
+// stream ciphers; AlgID ignored
+//    TF_ALG_RC4: Result:= GetRC4Instance(PRC4Instance(Alg));
+//    TF_ALG_SALSA20: Result:= GetSalsa20Instance(PSalsa20Instance(Alg));
+//    TF_ALG_CHACHA20: Result:= GetChaCha20Instance(PSalsa20Instance(Alg));
+  else
     Result:= TF_E_INVALIDARG;
+  end;
 end;
-*)
+
 function GetCipherInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
   case AlgID and TF_ENGINE_MASK of
     TF_ENGINE_STD:  Result:= GetStdInstance(AlgID and not TF_ENGINE_MASK, Alg);
-//    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID and not TF_ENGINE_MASK, Alg);
+    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID and not TF_ENGINE_MASK, Alg);
   else
     Result:= TF_E_INVALIDARG;
   end;
