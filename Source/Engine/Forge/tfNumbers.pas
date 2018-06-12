@@ -3608,7 +3608,10 @@ begin
     Exit;
   end;
   if NLimbs = 0 then NLimbs:= 1;
-  BytesRequired:= NLimbs * SizeOf(TLimb) + BigNumPrefixSize;
+
+// since some low-level operations require one more limb,
+//   we allocate memory for additional +1 limb:
+  BytesRequired:= (NLimbs + 1) * SizeOf(TLimb) + BigNumPrefixSize;
   BytesRequired:= (BytesRequired + 7) and not 7;
   try
     GetMem(A, BytesRequired);

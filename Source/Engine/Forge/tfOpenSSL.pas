@@ -50,7 +50,8 @@ var
   SSLeay_version: TSSLeay_version;
 
   EVP_CIPHER_CTX_new: TEVP_CIPHER_CTX_new;
-  EVP_CIPHER_CTX_reset: TEVP_CIPHER_CTX_reset;
+  EVP_CIPHER_CTX_init: TEVP_CIPHER_CTX_reset;
+  EVP_CIPHER_CTX_cleanup: TEVP_CIPHER_CTX_reset;
   EVP_CIPHER_CTX_free: TEVP_CIPHER_CTX_free;
 
   EVP_EncryptInit_ex: TEVP_CipherInit;

@@ -72,6 +72,8 @@ const
   ALG_RC5_CTR_ENCRYPT = TF_ALG_RC5 or TF_CTR_ENCRYPT;
   ALG_RC5_CTR_DECRYPT = TF_ALG_RC5 or TF_CTR_DECRYPT;
 
+  ENGINE_OSSL = TF_ENGINE_OSSL;
+
 type
   TCipher = record
   private

@@ -9,7 +9,7 @@ unit tfWindows;
 
 interface
 
-uses tfTypes, tfOpenSSL, Windows;
+uses tfTypes, tfOpenSSL, Windows, SysUtils;
 
 // Advapi32.dll, WinCrypt.h
 
@@ -40,7 +40,7 @@ var
 function GenRandom(var Buf; BufSize: Cardinal): TF_RESULT;
 
 // OpenSSL
-function LoadSSLCrypto(const LibName: string = ''): TF_RESULT;
+function LoadLibCrypto(const FolderName: string = ''): TF_RESULT;
 
 implementation
 
@@ -137,12 +137,13 @@ end;
 // OpenSSL staff
 
 const
-  SSLCryptoName   = 'libeay32.dll';
+  libCryptoName = 'libeay32.dll';
+  libSSLName    = 'ssleay32.dll';
 
 var
   SSLCryptoLoaded: Boolean = False;
 
-function LoadSSLCrypto(const LibName: string): TF_RESULT;
+function LoadLibCrypto(const FolderName: string): TF_RESULT;
 var
   LibHandle: THandle;
   Version: LongWord;
@@ -153,31 +154,47 @@ begin
   Result:= Address <> nil;
 end;
 
+//function LoadCleanup
+
 begin
   if SSLCryptoLoaded then begin
     Result:= TF_S_FALSE;
     Exit;
   end;
 
-  if (LibName = '') then
-    LibHandle:= LoadLibrary(PChar(SSLCryptoName))
-  else
-    LibHandle:= LoadLibrary(PChar(LibName));
+  if (FolderName = '') then begin
+    LibHandle:= LoadLibrary(PChar(libCryptoName));
+  end
+  else begin
+    LibHandle:= LoadLibrary(PChar(IncludeTrailingPathDelimiter(FolderName) +  libCryptoName));
+  end;
 
-  if (LibHandle <> 0) then begin
+  if (LibHandle = 0) then begin
+    Result:= TF_E_LOADERROR;
+    Exit;
+  end;
 
-    if LoadFunction(@SSLeay, 'SSLeay')
-      and LoadFunction(@SSLeay_version, 'SSLeay_version')
+  if LoadFunction(@SSLeay, 'SSLeay')
+    and LoadFunction(@SSLeay_version, 'SSLeay_version')
 
 // Cipher EVP API
       and LoadFunction(@EVP_CIPHER_CTX_new, 'EVP_CIPHER_CTX_new')
-// !! ver 1.1.0 replaced 'EVP_CIPHER_CTX_init' by 'EVP_CIPHER_CTX_reset',
-//    see evp.h:
+//
+// !! ver 1.1.0 replaced 'EVP_CIPHER_CTX_init' by 'EVP_CIPHER_CTX_init'
+//    from man pages:
+//  # EVP_CIPHER_CTX was made opaque in OpenSSL 1.1.0. As a result,
+//  # EVP_CIPHER_CTX_reset() appeared and EVP_CIPHER_CTX_cleanup() disappeared.
+//  # EVP_CIPHER_CTX_init() remains as an alias for EVP_CIPHER_CTX_reset().
+//    from evp.h:
 //  #  define EVP_CIPHER_CTX_init(c)      EVP_CIPHER_CTX_reset(c)
 //  #  define EVP_CIPHER_CTX_cleanup(c)   EVP_CIPHER_CTX_reset(c)
-//    but ver 1.1.0 libeay32.dll exports
+//    ver 1.1.0 libeay32.dll exports
 //     'EVP_CIPHER_CTX_init' and 'EVP_CIPHER_CTX_cleanup'
-      and LoadFunction(@EVP_CIPHER_CTX_reset, 'EVP_CIPHER_CTX_init')
+//  I am using 'EVP_CIPHER_CTX_init' and 'EVP_CIPHER_CTX_cleanup'
+//    for compliance with version 1.0.2
+//
+      and LoadFunction(@EVP_CIPHER_CTX_init, 'EVP_CIPHER_CTX_init')
+      and LoadFunction(@EVP_CIPHER_CTX_cleanup, 'EVP_CIPHER_CTX_cleanup')
       and LoadFunction(@EVP_CIPHER_CTX_free, 'EVP_CIPHER_CTX_free')
 
       and LoadFunction(@EVP_EncryptInit_ex, 'EVP_EncryptInit_ex')
@@ -235,7 +252,7 @@ begin
        (@SSLeay_version <> nil) and
 
        (@EVP_CIPHER_CTX_new <> nil) and
-       (@EVP_CIPHER_CTX_reset <> nil) and
+       (@EVP_CIPHER_CTX_init <> nil) and
        (@EVP_CIPHER_CTX_free <> nil) and
 
        (@EVP_EncryptInit_ex <> nil) and
@@ -252,10 +269,9 @@ begin
         Result:= TF_S_OK;
         Exit;
 //      end;
-    end;
-    FreeLibrary(LibHandle);
-    Result:= TF_E_LOADERROR;
   end;
+  FreeLibrary(LibHandle);
+  Result:= TF_E_LOADERROR;
 {  @GetNumericsVersion:= @GetNumericsVersionError;
   @BigNumberFromLimb:= @BigNumberFrom32Error;
   @BigNumberFromDblLimb:= @BigNumberFrom64Error;

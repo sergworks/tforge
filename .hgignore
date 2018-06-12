@@ -28,3 +28,4 @@ dunit.ini
 *.save
 *.aes
 *.rc4
+*.stat

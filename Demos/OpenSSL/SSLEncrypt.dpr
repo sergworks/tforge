@@ -112,7 +112,7 @@ end;
 begin
   try
     ReportMemoryLeaksOnShutdown:= True;
-    if LoadSSLCrypto('c:\Projects\TForge\SSL32\libeay32.dll') < 0 then begin
+    if LoadLibCrypto() < 0 then begin
       Writeln(' Error Loading OpenSSL');
     end
     else

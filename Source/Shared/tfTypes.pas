@@ -41,7 +41,9 @@ const
 
                                               // = tforge codes =
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
-  TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading tforge dll
+  TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading dll
+  TF_E_OSSL         = TF_RESULT($A0000005);   // OpenSSL function error
+
 
 //  TF_E_STATE        = TF_RESULT($A0001001);   // Invalid instance state
 
