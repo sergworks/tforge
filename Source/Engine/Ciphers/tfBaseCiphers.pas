@@ -963,26 +963,26 @@ var
   Temp: TBlock;
   RequiredSize: Cardinal;
   LDataSize: Cardinal;
-  LPadding: UInt32;
+//  LPadding: UInt32;
   LBlockSize: Cardinal;
   Cnt: Cardinal;
 
 begin
   @EncryptBlock:= GetEncryptFunc(@Self);
   LDataSize:= DataSize;
-//  LPadding:= FPadding;
-  LPadding:= FAlgID and TF_PADDING_MASK;
+//  LPadding:= FAlgID and TF_PADDING_MASK;
   LBlockSize:= GetBlockSize(@Self);
   if LBlockSize > SizeOf(TBlock) then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
-  if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_NONE;
+//  if LPadding = TF_PADDING_DEFAULT
+//    then LPadding:= TF_PADDING_NONE;
 
 // check arguments
   if Last then begin
-    case LPadding of
+    RequiredSize:= LDataSize;
+{    case LPadding of
       TF_PADDING_NONE: RequiredSize:= LDataSize;
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
       TF_PADDING_ANSI,
@@ -992,7 +992,7 @@ begin
     else
       Result:= TF_E_UNEXPECTED;
       Exit;
-    end;
+    end; }
   end
   else begin
     if LDataSize and (LBlockSize - 1) <> 0 then begin
@@ -1026,7 +1026,7 @@ begin
     Dec(LDataSize, LBlockSize);
   end;
   if Last then begin
-    if LPadding = TF_PADDING_NONE then begin
+//    if LPadding = TF_PADDING_NONE then begin
       if LDataSize > 0 then begin
         Move(FIVector, Temp, LBlockSize);       // copy IV to temp block
                                                 // encrypt temp block
@@ -1041,6 +1041,7 @@ begin
           until (FIVector[Cnt] <> 0) or (Cnt = 0);
         end;
       end;
+{
     end
     else begin
       Cnt:= LBlockSize - LDataSize;           // 0 < Cnt <= BLOCK_SIZE
@@ -1081,6 +1082,7 @@ begin
         end;
       end;
     end;
+}
   end;
   Result:= TF_S_OK;
 end;
@@ -1326,17 +1328,16 @@ var
   EncryptBlock: TBlockFunc;
   Temp: TBlock;
   LDataSize: Cardinal;
-  LPadding: UInt32;
+//  LPadding: UInt32;
   LBlockSize: Cardinal;
   Cnt, SaveCnt: Cardinal;
 
 begin
   @EncryptBlock:= GetEncryptFunc(@Self);  // !! CTR mode uses EncryptBlock for decryption
   LDataSize:= DataSize;
-//  LPadding:= FPadding;
-  LPadding:= FAlgID and TF_PADDING_MASK;
+{  LPadding:= FAlgID and TF_PADDING_MASK;
   if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_NONE;
+    then LPadding:= TF_PADDING_NONE; }
 
   LBlockSize:= GetBlockSize(@Self);
   if LBlockSize > SizeOf(TBlock) then begin
@@ -1346,7 +1347,7 @@ begin
 
   if (LDataSize and (LBlockSize - 1) <> 0) then begin
 // the last block with TF_PADDING_NONE can be incomplete
-    if not Last or (LPadding <> TF_PADDING_NONE) then begin
+    if not Last {or (LPadding <> TF_PADDING_NONE)} then begin
       Result:= TF_E_INVALIDARG;
       Exit;
     end;
@@ -1384,16 +1385,17 @@ begin
           Inc(FIVector[Cnt]);
         until (FIVector[Cnt] <> 0) or (Cnt = 0);
       end;
-      if LPadding = TF_PADDING_NONE then begin
+//      if LPadding = TF_PADDING_NONE then begin
         XorBytes(Data, @Temp, LDataSize);
         Result:= TF_S_OK;
-      end
-      else
-        Result:= TF_E_INVALIDARG;
+
+//      end
+//      else
+//        Result:= TF_E_INVALIDARG;
       Exit;
     end
     else begin    { LDataSize = 0 }
-      case LPadding of
+{      case LPadding of
                                               // XX 00 00 00 04
         TF_PADDING_ANSI: begin
           Dec(Data);
@@ -1463,6 +1465,7 @@ begin
           end;
         end;
       end;
+}
     end;
   end;
   Result:= TF_S_OK;
