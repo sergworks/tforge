@@ -112,8 +112,8 @@ end;
 function GetCipherInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
   case AlgID and TF_ENGINE_MASK of
-    TF_ENGINE_STD:  Result:= GetStdInstance(AlgID and not TF_ENGINE_MASK, Alg);
-    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID and not TF_ENGINE_MASK, Alg);
+    TF_ENGINE_STD:  Result:= GetStdInstance(AlgID {and not TF_ENGINE_MASK}, Alg);
+    TF_ENGINE_OSSL: Result:= GetOSSLInstance(AlgID {and not TF_ENGINE_MASK}, Alg);
   else
     Result:= TF_E_INVALIDARG;
   end;

@@ -127,6 +127,8 @@ class function TEvpAESInstance.ExpandKeyIV(Inst: PEvpAESInstance; Key: PByte;
 var
   RC: Integer;
   KeyDir: Cardinal;
+  KeyMode: Cardinal;
+  Padding: Cardinal;
   PCipher: PEVP_CIPHER;
 
 begin
@@ -145,17 +147,31 @@ begin
     Exit;
   end;
 }
-  case KeySize of
-    16: PCipher:= EVP_aes_128_ecb();
-    24: PCipher:= EVP_aes_192_ecb();
-    32: PCipher:= EVP_aes_256_ecb();
-  else
-    Result:= TF_E_INVALIDARG;
-    Exit;
+  KeyMode:= Inst.FFlags and TF_KEYMODE_MASK;
+  PCipher:= nil;
+  case KeyMode of
+    TF_KEYMODE_ECB:
+      case KeySize of
+        16: PCipher:= EVP_aes_128_ecb();
+        24: PCipher:= EVP_aes_192_ecb();
+        32: PCipher:= EVP_aes_256_ecb();
+      end;
+    TF_KEYMODE_CBC:
+      case KeySize of
+        16: PCipher:= EVP_aes_128_cbc();
+        24: PCipher:= EVP_aes_192_cbc();
+        32: PCipher:= EVP_aes_256_cbc();
+      end;
+    TF_KEYMODE_CTR:
+      case KeySize of
+        16: PCipher:= EVP_aes_128_ctr();
+        24: PCipher:= EVP_aes_192_ctr();
+        32: PCipher:= EVP_aes_256_ctr();
+      end;
   end;
 
   if PCipher = nil then begin
-    Result:= TF_E_OSSL;
+    Result:= TF_E_UNEXPECTED;
     Exit;
   end;
 
@@ -181,6 +197,8 @@ begin
     end;
   end
   else begin
+    EVP_CIPHER_CTX_free(Inst.FCtx);
+    Inst.FCtx:= nil;
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
@@ -192,7 +210,17 @@ begin
     Exit;
   end;
 
-  EVP_CIPHER_CTX_set_padding(Inst.FCtx, 0);
+  Padding:= Inst.FFlags and TF_PADDING_MASK;
+  case Padding of
+    TF_PADDING_DEFAULT: ;
+    TF_PADDING_NONE: EVP_CIPHER_CTX_set_padding(Inst.FCtx, 0);
+    TF_PADDING_PKCS: EVP_CIPHER_CTX_set_padding(Inst.FCtx, 1);
+  else
+    EVP_CIPHER_CTX_free(Inst.FCtx);
+    Inst.FCtx:= nil;
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
 
   Result:= TF_S_OK;
 end;

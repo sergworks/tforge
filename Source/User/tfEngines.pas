@@ -10,12 +10,13 @@ interface
 {$I TFL.inc}
 
 uses
-  SysUtils, tfTypes, tfWindows, tfExceptions;
+  SysUtils, tfTypes, tfOpenSSL, tfWindows, tfExceptions;
 
 //type
 //  EOSSLError = class(Exception);
 
 procedure LoadOpenSSL(const FolderName: string = '');
+function OpenSSLVersion: string;
 // procedure OSSLResCheck(Res: Integer);
 
 implementation
@@ -27,8 +28,18 @@ var
 begin
   Code:= LoadLibCrypto(FolderName);
   if Code < 0 then
-    ForgeError(Code, 'OpenSSL Load Error');
+    ForgeError(TF_E_LOADERROR, 'OpenSSL Load Error');
 end;
+
+function OpenSSLVersion: string;
+begin
+  if Assigned(SSLeay_version) then begin
+    Result:= string(SSLeay_version(_SSLEAY_VERSION));
+  end
+  else
+    ForgeError(TF_E_LOADERROR, 'OpenSSL Load Error');
+end;
+
 {  not used
 procedure OSSLResCheck(Res: Integer);
 begin
@@ -37,3 +48,4 @@ begin
 end;
 }
 end.
+

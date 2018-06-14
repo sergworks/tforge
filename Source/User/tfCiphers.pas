@@ -14,7 +14,8 @@ uses
   {$IFDEF TFL_DLL}
     tfImport
   {$ELSE}
-    tfAES, tfDES, tfRC4, tfRC5, tfSalsa20, tfCipherServ, tfKeyStreams
+    tfAES, tfDES, tfRC4, tfRC5, tfSalsa20, tfCipherServ, tfKeyStreams,
+    tfEvpAES
   {$ENDIF};
 
 const
@@ -305,8 +306,7 @@ end;
 
 class function TCipher.AES(AFlags: UInt32): TCipher;
 begin
-//  HResCheck(FServer.GetByAlgID(TF_ALG_AES, Result.FInstance));
-  HResCheck(GetAESInstance(PAESInstance(Result.FInstance), AFlags));
+  Result:= GetInstance(AFlags or TF_ALG_AES);
 end;
 
 class function TCipher.DES(AFlags: UInt32): TCipher;
@@ -536,17 +536,34 @@ end;
 
 function TCipher.EncryptByteArray(const Data: ByteArray): ByteArray;
 var
-  L0, L1: LongWord;
+  L0, L1: Cardinal;
+  L: Cardinal;
+  Buffer: Pointer;
 
 begin
   L0:= Data.GetLen;
+  if L0 = 0 then begin
+    Result:= ByteArray.Allocate(0);
+    Exit;
+  end;
   L1:= L0;
-  if (FInstance.Encrypt(nil, L1, 0, True) <> TF_E_INVALIDARG) or (L1 <= 0)
-    then CipherError(TF_E_UNEXPECTED);
-
-  Result:= Data;
-  Result.ReAllocate(L1);
-  HResCheck(FInstance.Encrypt(Result.RawData, L0, L1, True));
+//  if (FInstance.Encrypt(nil, L1, 0, True) <> TF_E_INVALIDARG) or (L1 <= 0)
+//    then CipherError(TF_E_UNEXPECTED);
+  if IsBlockCipher then begin
+    L:= GetBlockSize - 1;
+    L1:= (L1 + L) and not L;
+  end;
+  GetMem(Buffer, L1);
+  try
+    Move(Data.RawData^, Buffer^, L0);
+    HResCheck(FInstance.Encrypt(Buffer, L0, L1, True));
+    Result:= ByteArray.FromMem(Buffer, L0);
+  finally
+    FreeMem(Buffer);
+  end;
+//  Result:= Data;
+//  Result.ReAllocate(L1);
+//  HResCheck(FInstance.Encrypt(Result.RawData, L0, L1, True));
 end;
 {
 function TCipher.EncryptData(const Data: ByteArray): ByteArray;
@@ -578,12 +595,25 @@ end;
 function TCipher.DecryptByteArray(const Data: ByteArray): ByteArray;
 var
   L: Cardinal;
+  Buffer: Pointer;
 
 begin
   L:= Data.GetLen;
-  Result:= Data.Copy;
-  HResCheck(FInstance.Decrypt(Result.RawData, L, True));
-  Result.SetLen(L);
+  if L = 0 then begin
+    Result:= ByteArray.Allocate(0);
+    Exit;
+  end;
+  GetMem(Buffer, L);
+  try
+    Move(Data.RawData^, Buffer^, L);
+    HResCheck(FInstance.Decrypt(Buffer, L, True));
+    Result:= ByteArray.FromMem(Buffer, L);
+  finally
+    FreeMem(Buffer);
+  end;
+//  Result:= Data.Copy;
+//  HResCheck(FInstance.Decrypt(Result.RawData, L, True));
+//  Result.SetLen(L);
 end;
 
 procedure TCipher.EncryptFile(const InName, OutName: string; BufSize: Cardinal);
