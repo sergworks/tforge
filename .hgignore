@@ -30,3 +30,4 @@ dunit.ini
 *.rc4
 *.stat
 *.otares
+*_MemoryManager_EventLog.txt

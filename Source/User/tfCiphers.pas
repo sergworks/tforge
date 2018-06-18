@@ -407,7 +407,7 @@ begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
   HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
-  Result:= Self;
+  ICipher(Result):= ICipher(Self);
 end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; const ANonce: UInt64): TCipher;
@@ -682,6 +682,8 @@ const
   PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
 
 var
+// Pad buffer is needed for both native and OSSL support
+  Pad: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
   OutBufSize, DataSize: Cardinal;
   Data, PData: PByte;
   N: Integer;
@@ -694,7 +696,11 @@ begin
     else BufSize:= (BufSize + PAD_BUFSIZE - 1)
                          and not (PAD_BUFSIZE - 1);
   OutBufSize:= BufSize + PAD_BUFSIZE;
-  GetMem(Data, OutBufSize);
+
+// allocate 2 pad blocks at the Buffer end
+//   we don't use the 2nd pad block but OSSL can use it
+//   then we decrypt the 1st block (Last = True)
+  GetMem(Data, OutBufSize + PAD_BUFSIZE);
   try
     PData:= Data;
     Cnt:= OutBufSize;
@@ -710,14 +716,18 @@ begin
         DataSize:= OutBufSize - Cnt;
       end
       else begin
-        DataSize:= BufSize - Cnt;
+//        DataSize:= BufSize - Cnt;
+        DataSize:= BufSize;
       end;
+      Move((Data + BufSize)^, Pad, PAD_BUFSIZE);
       Decrypt(Data^, DataSize, Last);
       if DataSize > 0 then
         OutStream.WriteBuffer(Data^, DataSize);
+//        OutStream.WriteBuffer(Data^, BufSize);
       if Last then Break
       else begin
-        Move((Data + OutBufSize - PAD_BUFSIZE)^, Data^, PAD_BUFSIZE);
+//        Move((Data + OutBufSize - PAD_BUFSIZE)^, Data^, PAD_BUFSIZE);
+        Move(Pad, Data^, PAD_BUFSIZE);
         PData:= Data + PAD_BUFSIZE;
         Cnt:= BufSize;
       end;
