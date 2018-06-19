@@ -3,7 +3,7 @@ program SSLEncrypt;
 {$APPTYPE CONSOLE}
 
 uses
-  SysUtils, tfBytes, tfWindows, tfOpenSSL;
+  SysUtils, tfBytes, tfWindows, tfOpenSSL, tfEngines;
 
 procedure Test;
 var
@@ -112,11 +112,8 @@ end;
 begin
   try
     ReportMemoryLeaksOnShutdown:= True;
-    if LoadLibCrypto() < 0 then begin
-      Writeln(' Error Loading OpenSSL');
-    end
-    else
-      Test;
+    LoadLibCrypto();
+    Test;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

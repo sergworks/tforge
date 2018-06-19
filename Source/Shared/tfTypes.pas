@@ -381,7 +381,9 @@ type
     function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function Encrypt(Data: PByte; var DataSize: Cardinal; BufSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data: PByte; var DataSize: Cardinal;
+//    function Decrypt(Data: PByte; var DataSize: Cardinal;
+//             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decrypt(OutData, Data: PByte; var DataSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}

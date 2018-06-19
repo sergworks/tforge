@@ -15,26 +15,26 @@ uses
 //type
 //  EOSSLError = class(Exception);
 
-procedure LoadOpenSSL(const FolderName: string = '');
+procedure LoadLibCrypto(const FolderName: string = '');
 function OpenSSLVersion: string;
 // procedure OSSLResCheck(Res: Integer);
 
 implementation
 
-procedure LoadOpenSSL(const FolderName: string);
+procedure LoadLibCrypto(const FolderName: string);
 var
   Code: TF_RESULT;
 
 begin
-  Code:= LoadLibCrypto(FolderName);
+  Code:= TryLoadLibCrypto(FolderName);
   if Code < 0 then
     ForgeError(TF_E_LOADERROR, 'OpenSSL Load Error');
 end;
 
 function OpenSSLVersion: string;
 begin
-  if Assigned(SSLeay_version) then begin
-    Result:= string(SSLeay_version(_SSLEAY_VERSION));
+  if Assigned(OpenSSL_version) then begin
+    Result:= string(OpenSSL_version(_SSLEAY_VERSION));
   end
   else
     ForgeError(TF_E_LOADERROR, 'OpenSSL Load Error');

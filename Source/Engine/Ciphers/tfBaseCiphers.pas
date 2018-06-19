@@ -75,7 +75,7 @@ type
     class function Encrypt(Inst: PBaseBlockCipher; Data: PByte; var DataSize: Cardinal;
       BufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: PBaseBlockCipher; Data: PByte; var DataSize: Cardinal;
+    class function Decrypt(Inst: PBaseBlockCipher; OutData, Data: PByte; var DataSize: Cardinal;
       Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetRand(Inst: Pointer; Data: PByte; DataSize: Cardinal): TF_RESULT;
@@ -224,7 +224,7 @@ begin
     Result:= TF_E_UNEXPECTED;
 end;
 
-class function TBaseBlockCipher.Decrypt(Inst: PBaseBlockCipher; Data: PByte;
+class function TBaseBlockCipher.Decrypt(Inst: PBaseBlockCipher; OutData, Data: PByte;
   var DataSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
 //  if (PBaseBlockCipher(Inst).FDir = TF_KEYDIR_DECRYPT) and

@@ -111,7 +111,7 @@ type
 
     procedure Encrypt(var Data; var DataSize: Cardinal;
                       BufSize: Cardinal; Last: Boolean);
-    procedure Decrypt(var Data; var DataSize: Cardinal;
+    procedure Decrypt(OutData, Data: Pointer; var DataSize: Cardinal;
                       Last: Boolean);
     procedure Apply(var Data; DataSize: Cardinal;
                         Last: Boolean);
@@ -464,9 +464,9 @@ begin
   HResCheck(FInstance.Encrypt(@Data, DataSize, BufSize, Last));
 end;
 
-procedure TCipher.Decrypt(var Data; var DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Decrypt(OutData, Data: Pointer; var DataSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Decrypt(@Data, DataSize, Last));
+  HResCheck(FInstance.Decrypt(OutData, Data, DataSize, Last));
 end;
 
 procedure TCipher.Apply(var Data; DataSize: Cardinal; Last: Boolean);
@@ -606,7 +606,7 @@ begin
   GetMem(Buffer, L);
   try
     Move(Data.RawData^, Buffer^, L);
-    HResCheck(FInstance.Decrypt(Buffer, L, True));
+    HResCheck(FInstance.Decrypt(Buffer, Buffer, L, True));
     Result:= ByteArray.FromMem(Buffer, L);
   finally
     FreeMem(Buffer);
@@ -684,8 +684,8 @@ const
 var
 // Pad buffer is needed for both native and OSSL support
   Pad: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
-  OutBufSize, DataSize: Cardinal;
-  Data, PData: PByte;
+  ReadBufSize, OutDataSize, DataSize, LDataSize, Offset: Cardinal;
+  OutData, InData, Data, PData: PByte;
   N: Integer;
   Cnt: Cardinal;
   Last: Boolean;
@@ -695,16 +695,21 @@ begin
     then BufSize:= DEFAULT_BUFSIZE
     else BufSize:= (BufSize + PAD_BUFSIZE - 1)
                          and not (PAD_BUFSIZE - 1);
-  OutBufSize:= BufSize + PAD_BUFSIZE;
+
+  OutDataSize:= BufSize + PAD_BUFSIZE;
+  ReadBufSize:= BufSize + PAD_BUFSIZE;
 
 // allocate 2 pad blocks at the Buffer end
 //   we don't use the 2nd pad block but OSSL can use it
 //   then we decrypt the 1st block (Last = True)
-  GetMem(Data, OutBufSize + PAD_BUFSIZE);
+  GetMem(Data, ReadBufSize + PAD_BUFSIZE);
   try
-    PData:= Data;
-    Cnt:= OutBufSize;
+    OutData:= Data;
+    InData:= Data;
+    PData:= InData;
+    Offset:= 0;
     repeat
+      Cnt:= ReadBufSize;
       repeat
         N:= InStream.Read(PData^, Cnt);
         if N <= 0 then Break;
@@ -713,23 +718,29 @@ begin
       until (Cnt = 0);
       Last:= Cnt > 0;
       if Last then begin
-        DataSize:= OutBufSize - Cnt;
+        DataSize:= OutDataSize - Cnt;
       end
       else begin
-//        DataSize:= BufSize - Cnt;
-        DataSize:= BufSize;
+        DataSize:= BufSize - Offset;
+//        Move((InData + BufSize - Offset)^, Pad, PAD_BUFSIZE);
+        Move((Data + BufSize)^, Pad, PAD_BUFSIZE);
       end;
-      Move((Data + BufSize)^, Pad, PAD_BUFSIZE);
-      Decrypt(Data^, DataSize, Last);
+      LDataSize:= DataSize;
+      Decrypt(OutData, InData, DataSize, Last);
       if DataSize > 0 then
-        OutStream.WriteBuffer(Data^, DataSize);
+        OutStream.WriteBuffer(OutData^, DataSize);
 //        OutStream.WriteBuffer(Data^, BufSize);
       if Last then Break
       else begin
 //        Move((Data + OutBufSize - PAD_BUFSIZE)^, Data^, PAD_BUFSIZE);
-        Move(Pad, Data^, PAD_BUFSIZE);
-        PData:= Data + PAD_BUFSIZE;
-        Cnt:= BufSize;
+        if LDataSize > DataSize then begin
+          Inc(Offset, LDataSize - DataSize);
+          Inc(InData, LDataSize - DataSize);
+        end;
+        Move(Pad, InData^, PAD_BUFSIZE);
+        PData:= InData + PAD_BUFSIZE;
+        ReadBufSize:= BufSize - Offset;
+        OutDataSize:= ReadBufSize + PAD_BUFSIZE;
       end;
     until False;
   finally

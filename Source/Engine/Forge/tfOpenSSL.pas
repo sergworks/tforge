@@ -50,8 +50,8 @@ type
   TGetEVPCipher = function(): PEVP_CIPHER; cdecl;
 
 var
-  SSLeay: TSSLeay;
-  SSLeay_version: TSSLeay_version;
+  OpenSSL_version_num: TSSLeay;
+  OpenSSL_version: TSSLeay_version;
 
   EVP_CIPHER_CTX_new: TEVP_CIPHER_CTX_new;
   EVP_CIPHER_CTX_init: TEVP_CIPHER_CTX_reset;
@@ -81,6 +81,7 @@ var
   EVP_aes_256_ctr: TGetEVPCipher;
 
   EVP_des_cbc: TGetEVPCipher;
+  EVP_des_ecb: TGetEVPCipher;
 
 implementation
 

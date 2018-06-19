@@ -40,7 +40,7 @@ var
 function GenRandom(var Buf; BufSize: Cardinal): TF_RESULT;
 
 // OpenSSL
-function LoadLibCrypto(const FolderName: string = ''): TF_RESULT;
+function TryLoadLibCrypto(const LibName: string = ''): TF_RESULT;
 
 implementation
 
@@ -137,13 +137,13 @@ end;
 // OpenSSL staff
 
 const
-  libCryptoName = 'libeay32.dll';
-  libSSLName    = 'ssleay32.dll';
+  libCryptoName1 = 'libeay32.dll';
+  libCryptoName2 = 'libcrypto-1_1.dll';
 
 var
-  SSLCryptoLoaded: Boolean = False;
+  LibCryptoLoaded: Boolean = False;
 
-function LoadLibCrypto(const FolderName: string): TF_RESULT;
+function TryLoadLibCrypto(const LibName: string): TF_RESULT;
 var
   LibHandle: THandle;
   Version: LongWord;
@@ -154,33 +154,7 @@ begin
   Result:= Address <> nil;
 end;
 
-//function LoadCleanup
-
-begin
-  if SSLCryptoLoaded then begin
-    Result:= TF_S_FALSE;
-    Exit;
-  end;
-
-  if (FolderName = '') then begin
-    LibHandle:= LoadLibrary(PChar(libCryptoName));
-  end
-  else begin
-    LibHandle:= LoadLibrary(PChar(IncludeTrailingPathDelimiter(FolderName) +  libCryptoName));
-  end;
-
-  if (LibHandle = 0) then begin
-    Result:= TF_E_LOADERROR;
-    Exit;
-  end;
-
-  if LoadFunction(@SSLeay, 'SSLeay')
-    and LoadFunction(@SSLeay_version, 'SSLeay_version')
-
-// Cipher EVP API
-      and LoadFunction(@EVP_CIPHER_CTX_new, 'EVP_CIPHER_CTX_new')
-//
-// !! ver 1.1.0 replaced 'EVP_CIPHER_CTX_init' by 'EVP_CIPHER_CTX_init'
+// !! ver 1.1.0 replaced 'EVP_CIPHER_CTX_init' by 'EVP_CIPHER_CTX_reset'
 //    from man pages:
 //  # EVP_CIPHER_CTX was made opaque in OpenSSL 1.1.0. As a result,
 //  # EVP_CIPHER_CTX_reset() appeared and EVP_CIPHER_CTX_cleanup() disappeared.
@@ -188,42 +162,77 @@ begin
 //    from evp.h:
 //  #  define EVP_CIPHER_CTX_init(c)      EVP_CIPHER_CTX_reset(c)
 //  #  define EVP_CIPHER_CTX_cleanup(c)   EVP_CIPHER_CTX_reset(c)
-//    ver 1.1.0 libeay32.dll exports
-//     'EVP_CIPHER_CTX_init' and 'EVP_CIPHER_CTX_cleanup'
+//
 //  I am using 'EVP_CIPHER_CTX_init' and 'EVP_CIPHER_CTX_cleanup'
 //    for compliance with version 1.0.2
 //
+function LoadBrokenABI: Boolean;
+begin
+  if LoadFunction(@OpenSSL_version_num, 'SSLeay') then begin
+    Result:= LoadFunction(@OpenSSL_version, 'SSLeay_version')
       and LoadFunction(@EVP_CIPHER_CTX_init, 'EVP_CIPHER_CTX_init')
-      and LoadFunction(@EVP_CIPHER_CTX_cleanup, 'EVP_CIPHER_CTX_cleanup')
-      and LoadFunction(@EVP_CIPHER_CTX_free, 'EVP_CIPHER_CTX_free')
+      and LoadFunction(@EVP_CIPHER_CTX_cleanup, 'EVP_CIPHER_CTX_cleanup');
+  end
+  else begin
+    Result:= LoadFunction(@OpenSSL_version_num, 'OpenSSL_version_num')
+      and LoadFunction(@OpenSSL_version, 'OpenSSL_version')
+      and LoadFunction(@EVP_CIPHER_CTX_init, 'EVP_CIPHER_CTX_reset');
+      @EVP_CIPHER_CTX_cleanup:= @EVP_CIPHER_CTX_init;
+  end;
+end;
 
-      and LoadFunction(@EVP_EncryptInit_ex, 'EVP_EncryptInit_ex')
-      and LoadFunction(@EVP_EncryptUpdate, 'EVP_EncryptUpdate')
-      and LoadFunction(@EVP_EncryptFinal_ex, 'EVP_EncryptFinal_ex')
+begin
+  if LibCryptoLoaded then begin
+    Result:= TF_S_FALSE;
+    Exit;
+  end;
 
-      and LoadFunction(@EVP_DecryptInit_ex, 'EVP_DecryptInit_ex')
-      and LoadFunction(@EVP_DecryptUpdate, 'EVP_DecryptUpdate')
-      and LoadFunction(@EVP_DecryptFinal_ex, 'EVP_DecryptFinal_ex')
+  if (LibName = '') then begin
+    LibHandle:= LoadLibrary(PChar(libCryptoName1));
+    if LibHandle = 0 then
+      LibHandle:= LoadLibrary(PChar(libCryptoName2));
+  end
+  else begin
+    LibHandle:= LoadLibrary(PChar(LibName));
+  end;
 
-      and LoadFunction(@EVP_CIPHER_CTX_set_padding, 'EVP_CIPHER_CTX_set_padding')
+  if (LibHandle = 0) then begin
+    Result:= TF_E_LOADERROR;
+    Exit;
+  end;
 
-      and LoadFunction(@EVP_aes_128_ecb, 'EVP_aes_128_ecb')
-      and LoadFunction(@EVP_aes_128_cbc, 'EVP_aes_128_cbc')
-      and LoadFunction(@EVP_aes_128_ctr, 'EVP_aes_128_ctr')
-      and LoadFunction(@EVP_aes_192_ecb, 'EVP_aes_192_ecb')
-      and LoadFunction(@EVP_aes_192_cbc, 'EVP_aes_192_cbc')
-      and LoadFunction(@EVP_aes_192_ctr, 'EVP_aes_192_ctr')
-      and LoadFunction(@EVP_aes_256_ecb, 'EVP_aes_256_ecb')
-      and LoadFunction(@EVP_aes_256_cbc, 'EVP_aes_256_cbc')
-      and LoadFunction(@EVP_aes_256_ctr, 'EVP_aes_256_ctr')
+  if LoadBrokenABI
+    and LoadFunction(@EVP_CIPHER_CTX_new, 'EVP_CIPHER_CTX_new')
+    and LoadFunction(@EVP_CIPHER_CTX_free, 'EVP_CIPHER_CTX_free')
 
-{
-       2927  5E1 00072650 EVP_aes_128_cbc
-       4590  5E8 00072710 EVP_aes_128_ctr
-       2644  5E9 00072670 EVP_aes_128_ecb
-}
-      and LoadFunction(@EVP_des_cbc, 'EVP_des_cbc')
+    and LoadFunction(@EVP_EncryptInit_ex, 'EVP_EncryptInit_ex')
+    and LoadFunction(@EVP_EncryptUpdate, 'EVP_EncryptUpdate')
+    and LoadFunction(@EVP_EncryptFinal_ex, 'EVP_EncryptFinal_ex')
 
+    and LoadFunction(@EVP_DecryptInit_ex, 'EVP_DecryptInit_ex')
+    and LoadFunction(@EVP_DecryptUpdate, 'EVP_DecryptUpdate')
+    and LoadFunction(@EVP_DecryptFinal_ex, 'EVP_DecryptFinal_ex')
+
+    and LoadFunction(@EVP_CIPHER_CTX_set_padding, 'EVP_CIPHER_CTX_set_padding')
+
+    and LoadFunction(@EVP_aes_128_ecb, 'EVP_aes_128_ecb')
+    and LoadFunction(@EVP_aes_128_cbc, 'EVP_aes_128_cbc')
+    and LoadFunction(@EVP_aes_128_ctr, 'EVP_aes_128_ctr')
+    and LoadFunction(@EVP_aes_192_ecb, 'EVP_aes_192_ecb')
+    and LoadFunction(@EVP_aes_192_cbc, 'EVP_aes_192_cbc')
+    and LoadFunction(@EVP_aes_192_ctr, 'EVP_aes_192_ctr')
+    and LoadFunction(@EVP_aes_256_ecb, 'EVP_aes_256_ecb')
+    and LoadFunction(@EVP_aes_256_cbc, 'EVP_aes_256_cbc')
+    and LoadFunction(@EVP_aes_256_ctr, 'EVP_aes_256_ctr')
+
+    and LoadFunction(@EVP_des_ecb, 'EVP_des_ecb')
+    and LoadFunction(@EVP_des_cbc, 'EVP_des_cbc')
+
+  then begin
+    LibCryptoLoaded:= True;
+    Result:= TF_S_OK;
+    Exit;
+  end;
 {
        3277  621 00070BC0 EVP_des_cfb1
         300  622 00070B90 EVP_des_cfb64
@@ -245,45 +254,8 @@ begin
         310  632 00070BA0 EVP_des_ofb
         311  633 00073F20 EVP_desx_cbc
 }
-{
-    @SSLeay:= GetProcAddress(LibHandle, 'SSLeay');
-    @SSLeay_version:= GetProcAddress(LibHandle, 'SSLeay_version');
-
-
-    if (@SSLeay <> nil) and
-       (@SSLeay_version <> nil) and
-
-       (@EVP_CIPHER_CTX_new <> nil) and
-       (@EVP_CIPHER_CTX_init <> nil) and
-       (@EVP_CIPHER_CTX_free <> nil) and
-
-       (@EVP_EncryptInit_ex <> nil) and
-       (@EVP_EncryptUpdate <> nil) and
-       (@EVP_EncryptFinal_ex <> nil) and
-
-       (@EVP_DecryptInit_ex <> nil) and
-  EVP_DecryptUpdate: TEVP_DecryptUpdate;
-  EVP_DecryptFinal_ex: TEVP_DecryptFinal_ex;}
-//    then begin
-// todo: check version
-      and (SSLeay() > 0) then begin
-        SSLCryptoLoaded:= True;
-        Result:= TF_S_OK;
-        Exit;
-//      end;
-  end;
   FreeLibrary(LibHandle);
   Result:= TF_E_LOADERROR;
-{  @GetNumericsVersion:= @GetNumericsVersionError;
-  @BigNumberFromLimb:= @BigNumberFrom32Error;
-  @BigNumberFromDblLimb:= @BigNumberFrom64Error;
-  @BigNumberFromIntLimb:= @BigNumberFrom32Error;
-  @BigNumberFromDblIntLimb:= @BigNumberFrom64Error;
-  @BigNumberFromPChar:= @BigNumberFromPCharError;
-  @BigNumberFromPByte:= @BigNumberFromPByteError;
-  @BigNumberAlloc:= @BigNumberAllocError;
-  Result:= TF_E_LOADERROR;}
-
 end;
 
 end.
