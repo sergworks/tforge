@@ -57,11 +57,11 @@ type
       var DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function Encrypt(Inst: PEvpCipherInstance; Data: PByte; var DataSize: Cardinal;
-      BufSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function Encrypt(Inst: PEvpCipherInstance; OutData: PByte; OutSize: Cardinal;
+      Data: PByte; var DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: PEvpCipherInstance; OutData, Data: PByte; var DataSize: Cardinal;
-      Last: Boolean): TF_RESULT;
+    class function Decrypt(Inst: PEvpCipherInstance; OutData: PByte; OutSize: Cardinal;
+      Data: PByte; var DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
     class function ExpandKeyNonce(Inst: PEvpCipherInstance; Key: PByte; KeySize: Cardinal;
@@ -127,8 +127,8 @@ begin
   Result:= TF_E_NOTIMPL;
 end;
 
-class function TEvpCipherInstance.Encrypt(Inst: PEvpCipherInstance; Data: PByte;
-  var DataSize: Cardinal; BufSize: Cardinal; Last: Boolean): TF_RESULT;
+class function TEvpCipherInstance.Encrypt(Inst: PEvpCipherInstance; OutData: PByte; OutSize: Cardinal;
+  Data: PByte; var DataSize: Cardinal; Last: Boolean): TF_RESULT;
 var
   LBufSize: Integer;
   SaveSize: Integer;
@@ -139,17 +139,19 @@ begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
-  LBufSize:= BufSize;
-  RC:= Inst.FUpdate(Inst.FCtx, Data, LBufSize, Data, DataSize);
+//  LBufSize:= OutSize;
+  RC:= Inst.FUpdate(Inst.FCtx, OutData, LBufSize, Data, DataSize);
   if RC <> 1 then begin
     Result:= TF_E_OSSL;
     Exit;
   end;
+// LBufSize contains number of bytes written to OutData
   SaveSize:= LBufSize;
   if Last then begin
-    Inc(Data, LBufSize);
-    LBufSize:= Integer(BufSize) - LBufSize;
-    RC:= Inst.FFinal(Inst.FCtx, Data, LBufSize);
+//    Inc(Data, LBufSize);
+    Inc(OutData, LBufSize);
+//    LBufSize:= Integer(OutSize) - LBufSize;
+    RC:= Inst.FFinal(Inst.FCtx, OutData, LBufSize);
     if RC <> 1 then begin
       Result:= TF_E_OSSL;
       Exit;
@@ -179,8 +181,8 @@ begin
   Result:= ICipher(Inst).ExpandKeyIV(Key, KeySize, @Buf, BlockSize);
 end;
 
-class function TEvpCipherInstance.Decrypt(Inst: PEvpCipherInstance; OutData, Data: PByte;
-  var DataSize: Cardinal; Last: Boolean): TF_RESULT;
+class function TEvpCipherInstance.Decrypt(Inst: PEvpCipherInstance; OutData: PByte; OutSize: Cardinal;
+  Data: PByte; var DataSize: Cardinal; Last: Boolean): TF_RESULT;
 var
   LBufSize: Integer;
   SaveSize: Integer;

@@ -296,7 +296,7 @@ type
     class function MaskBits(A: PBigNumber; Shift: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    procedure Free; inline;
+    procedure Free; //inline;
     class procedure FreeAndNil(var Inst: PBigNumber); static;
 
     function IsNegative: Boolean; inline;
@@ -1637,6 +1637,7 @@ begin
     tfFreeInstance(G); //if (G <> nil) then TtfRecord.Release(G);
     G:= A;
     Result:= TF_S_OK;
+    Exit;
   end;
 
   Tmp1:= nil;

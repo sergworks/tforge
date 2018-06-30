@@ -57,8 +57,9 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_DcpOutput>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform)</DCC_DcpOutput>
-        <DCC_DcuOutput>$(BDSCOMMONDIR)\TForge\$(Config)\$(Platform)</DCC_DcuOutput>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
+        <DCC_DcpOutput>$(BDSCOMMONDIR)\TForge\$(Platform)-$(Config)</DCC_DcpOutput>
+        <DCC_DcuOutput>$(BDSCOMMONDIR)\TForge\$(Platform)-$(Config)</DCC_DcuOutput>
         <DCC_UnitSearchPath>E:\TForge\tforge\Source\Include;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <GenDll>true</GenDll>
         <DCC_N>false</DCC_N>
@@ -117,47 +118,48 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="rtl.dcp"/>
-        <DCCReference Include="..\..\Engine\Forge\arrProcs.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfAlgServ.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfByteVectors.pas"/>
-        <DCCReference Include="..\..\Engine\OSes\tfWindows.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfMontMath.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfNumbers.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfRandEngines.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfRecords.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfCRC32.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfHashServ.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfHMAC.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfJenkinsOne.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfMD5.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfSHA1.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfSHA256.pas"/>
-        <DCCReference Include="..\..\Engine\Hashes\tfSHA512.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfAES.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfBaseCiphers.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfCipherServ.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfDES.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfKeyStreams.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfRC4.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfRC5.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfSalsa20.pas"/>
-        <DCCReference Include="..\..\Shared\tfLimbs.pas"/>
-        <DCCReference Include="..\..\Shared\tfTypes.pas"/>
-        <DCCReference Include="..\..\Shared\tfUtils.pas"/>
-        <DCCReference Include="..\..\User\tfBytes.pas"/>
-        <DCCReference Include="..\..\User\tfCiphers.pas"/>
-        <DCCReference Include="..\..\User\tfConsts.pas"/>
-        <DCCReference Include="..\..\User\tfCRCs.pas"/>
-        <DCCReference Include="..\..\User\tfExceptions.pas"/>
-        <DCCReference Include="..\..\User\tfGNumerics.pas"/>
-        <DCCReference Include="..\..\User\tfHashes.pas"/>
-        <DCCReference Include="..\..\User\tfNumerics.pas"/>
-        <DCCReference Include="..\..\User\tfRandoms.pas"/>
-        <DCCReference Include="..\..\Engine\OSes\tfStubOS.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfEVPCiphers.pas"/>
-        <DCCReference Include="..\..\Engine\Forge\tfOpenSSL.pas"/>
-        <DCCReference Include="..\..\User\tfEngines.pas"/>
-        <DCCReference Include="..\..\Engine\Ciphers\tfEvpAES.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\arrProcs.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfAlgServ.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfByteVectors.pas"/>
+        <DCCReference Include="..\..\Source\Engine\OSes\tfWindows.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfMontMath.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfNumbers.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfRandEngines.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfRecords.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfCRC32.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfHashServ.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfHMAC.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfJenkinsOne.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfMD5.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfSHA1.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfSHA256.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Hashes\tfSHA512.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfAES.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfBaseCiphers.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfCipherServ.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfDES.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfKeyStreams.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfRC4.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfRC5.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfSalsa20.pas"/>
+        <DCCReference Include="..\..\Source\Shared\tfLimbs.pas"/>
+        <DCCReference Include="..\..\Source\Shared\tfTypes.pas"/>
+        <DCCReference Include="..\..\Source\Shared\tfUtils.pas"/>
+        <DCCReference Include="..\..\Source\User\tfBytes.pas"/>
+        <DCCReference Include="..\..\Source\User\tfCiphers.pas"/>
+        <DCCReference Include="..\..\Source\User\tfConsts.pas"/>
+        <DCCReference Include="..\..\Source\User\tfCRCs.pas"/>
+        <DCCReference Include="..\..\Source\User\tfExceptions.pas"/>
+        <DCCReference Include="..\..\Source\User\tfGNumerics.pas"/>
+        <DCCReference Include="..\..\Source\User\tfHashes.pas"/>
+        <DCCReference Include="..\..\Source\User\tfNumerics.pas"/>
+        <DCCReference Include="..\..\Source\User\tfRandoms.pas"/>
+        <DCCReference Include="..\..\Source\Engine\OSes\tfStubOS.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfEVPCiphers.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Forge\tfOpenSSL.pas"/>
+        <DCCReference Include="..\..\Source\User\tfEngines.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfEvpAES.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfCipherHelpers.pas"/>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -540,13 +542,13 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
-                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
             </Deployment>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

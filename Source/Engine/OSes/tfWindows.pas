@@ -146,7 +146,7 @@ var
 function TryLoadLibCrypto(const LibName: string): TF_RESULT;
 var
   LibHandle: THandle;
-  Version: LongWord;
+//  Version: LongWord;
 
 function LoadFunction(var Address: Pointer; const Name: string): Boolean;
 begin

@@ -233,7 +233,7 @@ begin
   while PItem <> Sentinel do begin
     P1:= PByte(PItem.FName);
     P2:= PByte(AName);
-//    Found:= True;
+    Found:= False;
     repeat
       if (P1^ = 0) then begin
         Found:= P2^ = 0;

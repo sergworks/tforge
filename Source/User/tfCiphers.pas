@@ -109,9 +109,9 @@ type
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
     function ExpandKey(const AKey: ByteArray): TCipher; overload;
 
-    procedure Encrypt(var Data; var DataSize: Cardinal;
-                      BufSize: Cardinal; Last: Boolean);
-    procedure Decrypt(OutData, Data: Pointer; var DataSize: Cardinal;
+    procedure Encrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
+                      Last: Boolean);
+    procedure Decrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
                       Last: Boolean);
     procedure Apply(var Data; DataSize: Cardinal;
                         Last: Boolean);
@@ -458,15 +458,15 @@ begin
   FInstance.Burn;
 end;
 
-procedure TCipher.Encrypt(var Data; var DataSize: Cardinal;
-  BufSize: Cardinal; Last: Boolean);
+procedure TCipher.Encrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
+  Last: Boolean);
 begin
-  HResCheck(FInstance.Encrypt(@Data, DataSize, BufSize, Last));
+  HResCheck(FInstance.Encrypt(OutData, OutSize, Data, DataSize, Last));
 end;
 
-procedure TCipher.Decrypt(OutData, Data: Pointer; var DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Decrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Decrypt(OutData, Data, DataSize, Last));
+  HResCheck(FInstance.Decrypt(OutData, OutSize, Data, DataSize, Last));
 end;
 
 procedure TCipher.Apply(var Data; DataSize: Cardinal; Last: Boolean);
@@ -490,18 +490,6 @@ begin
     CipherError(TF_E_INVALIDARG);
   Result:= Data.Copy();
   Cipher.FInstance.EncryptBlock(Result.GetRawData);
-{
-  BlockSize:= FInstance.GetBlockSize;
-  if (BlockSize = 0) or (BlockSize <> Data.GetLen) then
-    CipherError(TF_E_UNEXPECTED);
-
-  Flags:= TF_ECB_ENCRYPT;
-  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
-  HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len, nil, 0));
-
-  Result:= Data.Copy();
-  FInstance.EncryptBlock(Result.RawData);
-}
 end;
 
 class function TCipher.DecryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray;
@@ -520,24 +508,11 @@ begin
     CipherError(TF_E_INVALIDARG);
   Result:= Data.Copy();
   Cipher.FInstance.DecryptBlock(Result.GetRawData);
-{
-  BlockSize:= FInstance.GetBlockSize;
-  if (BlockSize = 0) or (BlockSize <> Data.GetLen) then
-    CipherError(TF_E_UNEXPECTED);
-
-  Flags:= TF_ECB_DECRYPT;
-  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @Flags, SizeOf(Flags)));
-  HResCheck(FInstance.ExpandKey(Key.RawData, Key.Len, nil, 0));
-
-  Result:= Data.Copy;
-  FInstance.DecryptBlock(Result.RawData);
-}
 end;
 
 function TCipher.EncryptByteArray(const Data: ByteArray): ByteArray;
 var
   L0, L1: Cardinal;
-  L: Cardinal;
   Buffer: Pointer;
 
 begin
@@ -546,74 +521,39 @@ begin
     Result:= ByteArray.Allocate(0);
     Exit;
   end;
-  L1:= L0;
-//  if (FInstance.Encrypt(nil, L1, 0, True) <> TF_E_INVALIDARG) or (L1 <= 0)
-//    then CipherError(TF_E_UNEXPECTED);
-  if IsBlockCipher then begin
-    L:= GetBlockSize - 1;
-    L1:= (L1 + L) and not L;
-  end;
+  L1:= L0 + TF_MAX_CIPHER_BLOCK_SIZE;
   GetMem(Buffer, L1);
   try
     Move(Data.RawData^, Buffer^, L0);
-    HResCheck(FInstance.Encrypt(Buffer, L0, L1, True));
+    HResCheck(FInstance.Encrypt(Buffer, L1, Buffer, L0, True));
     Result:= ByteArray.FromMem(Buffer, L0);
   finally
+    FillChar(Buffer^, L1, 0);
     FreeMem(Buffer);
   end;
-//  Result:= Data;
-//  Result.ReAllocate(L1);
-//  HResCheck(FInstance.Encrypt(Result.RawData, L0, L1, True));
 end;
-{
-function TCipher.EncryptData(const Data: ByteArray): ByteArray;
-var
-  L0, L1: Cardinal;
-
-begin
-  L0:= Data.GetLen;
-  L1:= L0;
-  if (FInstance.Encrypt(nil, L1, 0, True) <> TF_E_INVALIDARG) or (L1 <= 0)
-    then CipherError(TF_E_UNEXPECTED);
-
-  Result:= Data;
-  Result.ReAllocate(L1);
-  HResCheck(FInstance.Encrypt(Result.RawData, L0, L1, True));
-end;
-function TCipher.DecryptData(const Data: ByteArray): ByteArray;
-var
-  L: LongWord;
-
-begin
-  L:= Data.GetLen;
-  Result:= Data.Copy;
-  HResCheck(FInstance.Decrypt(Result.RawData, L, True));
-  Result.SetLen(L);
-end;
-}
 
 function TCipher.DecryptByteArray(const Data: ByteArray): ByteArray;
 var
-  L: Cardinal;
+  L0, L1: Cardinal;
   Buffer: Pointer;
 
 begin
-  L:= Data.GetLen;
-  if L = 0 then begin
+  L0:= Data.GetLen;
+  if L0 = 0 then begin
     Result:= ByteArray.Allocate(0);
     Exit;
   end;
-  GetMem(Buffer, L);
+  L1:= L0 + TF_MAX_CIPHER_BLOCK_SIZE;
+  GetMem(Buffer, L1);
   try
-    Move(Data.RawData^, Buffer^, L);
-    HResCheck(FInstance.Decrypt(Buffer, Buffer, L, True));
-    Result:= ByteArray.FromMem(Buffer, L);
+    Move(Data.RawData^, Buffer^, L0);
+    HResCheck(FInstance.Decrypt(Buffer, L1, Buffer, L0, True));
+    Result:= ByteArray.FromMem(Buffer, L0);
   finally
+    FillChar(Buffer^, L1, 0);
     FreeMem(Buffer);
   end;
-//  Result:= Data.Copy;
-//  HResCheck(FInstance.Decrypt(Result.RawData, L, True));
-//  Result.SetLen(L);
 end;
 
 procedure TCipher.EncryptFile(const InName, OutName: string; BufSize: Cardinal);
@@ -665,7 +605,7 @@ begin
       until (Cnt = 0);
       Last:= Cnt > 0;
       DataSize:= BufSize - Cnt;
-      Encrypt(Data^, DataSize, OutBufSize, Last);
+      Encrypt(Data, OutBufSize, Data, DataSize, Last);
       if DataSize > 0 then
         OutStream.WriteBuffer(Data^, DataSize);
     until Last;
@@ -726,7 +666,7 @@ begin
         Move((Data + BufSize)^, Pad, PAD_BUFSIZE);
       end;
       LDataSize:= DataSize;
-      Decrypt(OutData, InData, DataSize, Last);
+      Decrypt(OutData, DataSize, InData, DataSize, Last);
       if DataSize > 0 then
         OutStream.WriteBuffer(OutData^, DataSize);
 //        OutStream.WriteBuffer(Data^, BufSize);
@@ -812,7 +752,7 @@ begin
   HResCheck(GetServer.GetName(Index, P));
 //  S:= UTF8String(PAnsiChar(P));
 //  Result:= S;
-  Result:= UTF8String(PAnsiChar(P));
+  Result:= string(UTF8String(PAnsiChar(P)));
 end;
 
 class function TCipher.GetIDByName(const Name: string): TAlgID;

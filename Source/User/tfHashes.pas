@@ -303,7 +303,7 @@ var
 
 begin
   HResCheck(GetServer.GetName(Index, P));
-  Result:= UTF8String(PAnsiChar(P));
+  Result:= string(UTF8String(PAnsiChar(P)));
 //  Result:= string(PUTF8String(P)^);
 {
   L:= Bytes.GetLen;
