@@ -36,6 +36,7 @@ type
 function tfIncrement(var Value: Integer): Integer;
 function tfDecrement(var Value: Integer): Integer;
 
+// deprecated; use TForgeHelper methods
 procedure tfAddrefInstance(Inst: Pointer); inline;
 procedure tfReleaseInstance(Inst: Pointer); inline;
 procedure tfFreeInstance(Inst: Pointer); inline;
@@ -43,6 +44,7 @@ procedure tfFreeInstance(Inst: Pointer); inline;
 function tfTryAllocMem(var P: Pointer; Size: Integer): TF_RESULT;
 function tfTryGetMem(var P: Pointer; Size: Integer): TF_RESULT;
 
+// remove after THash redesign
 function HashAlgRelease(Inst: Pointer): Integer; stdcall;
 
 implementation

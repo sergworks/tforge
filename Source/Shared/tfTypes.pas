@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2018         * }
 { *********************************************************** }
 
 unit tfTypes;
@@ -17,13 +17,19 @@ type
 //  PUInt8 = ^UInt8;
 //  PInt16 = ^Int16;
 //  PUInt16 = ^UInt16;
+{$POINTERMATH ON}
   PInt32 = ^Int32;
   PUInt32 = ^UInt32;
+{$POINTERMATH OFF}
 
 type
   TF_RESULT = type Int32;
   TF_AlgID = UInt32;
   TAlgID = TF_AlgID;
+  TF_Nonce = UInt64;
+  TNonce = TF_Nonce;
+//  TF_KeyParam = UInt32;
+//  TKeyParam = TF_KeyParam;
 
 // Codes returned by TF functions; see also
 //   http://msdn.microsoft.com/en-us/library/cc231198(v=prot.10).aspx
@@ -42,7 +48,8 @@ const
                                               // = tforge codes =
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
   TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading dll
-  TF_E_OSSL         = TF_RESULT($A0000005);   // OpenSSL function error
+  TF_E_INVALIDKEY   = TF_RESULT($A0000005);   // Invalid key
+  TF_E_OSSL         = TF_RESULT($A0001000);   // OpenSSL function error
 
 
 //  TF_E_STATE        = TF_RESULT($A0001001);   // Invalid instance state
@@ -367,6 +374,7 @@ type
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
+(*
   ICipher = interface(IInterface)
     procedure Burn;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
@@ -400,6 +408,48 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function ExpandKeyNonce(Key: Pointer; KeySize: Cardinal;
              Nonce: UInt64): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+  end;
+*)
+
+  ICipher = interface(IInterface)
+    procedure Burn;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Clone(var Inst: ICipher): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKey(Key: Pointer; KeySize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKeyIV(Key: Pointer; KeySize: Cardinal;
+             IV: Pointer; IVSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ExpandKeyNonce(Key: Pointer; KeySize: Cardinal;
+             Nonce: TNonce): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Encrypt(Data: PByte; var DataSize: Cardinal; OutData: PByte; OutSize: Cardinal;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decrypt(Data: PByte; var DataSize: Cardinal; OutData: PByte; OutSize: Cardinal;
+             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetKeyStream(Data: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function ApplyKeyStream(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function IncBlockNo(Count: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function DecBlockNo(Count: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Skip(Count: Int64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetNonce(Nonce: TNonce): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetNonce(var Nonce: TNonce): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
   IStreamCipher = interface(IInterface)
@@ -457,11 +507,12 @@ type
   end;
 
 const
-                            // max block size for supported block ciphers:
-                            //   256 bytes = 2048 bits
-  TF_MAX_CIPHER_BLOCK_SIZE = 256;
+                            // max block size for supported ciphers:
+                            //   64 bytes = 512 bits (Salsa20)
+  TF_MAX_CIPHER_BLOCK_SIZE = 64;
 
                             // ICipherAlgorithm.SetKeyParam Param values
+                            // !! deprecated
   TF_KP_DIR       = 1;      // encrypt/decrypt
   TF_KP_MODE      = 2;      // mode of operation
   TF_KP_PADDING   = 3;      // block padding
@@ -487,16 +538,19 @@ const
 //  DIR  | MODE             | PADDING    | ENGINE
 
                           // KP_DIR values
-                          //   01 - encrypt only
-                          //   10 - decrypt only
-                          //   11 - encrypt & decrypt
+                          //   00 - disabled
+                          //   01 - enabled, decrypt only
+                          //   11 - enabled, encrypt only
   TF_KEYDIR_SHIFT = 16;
-//  TF_KEYDIR_BASE  = $10000;
   TF_KEYDIR_MASK  = $00030000;
 
-  TF_KEYDIR_ENCRYPT = 1 shl TF_KEYDIR_SHIFT;
-  TF_KEYDIR_DECRYPT = 2 shl TF_KEYDIR_SHIFT;
-  TF_KEYDIR_ALL = TF_KEYDIR_ENCRYPT or TF_KEYDIR_DECRYPT;
+  TF_KEYDIR_ENABLED = 1 shl TF_KEYDIR_SHIFT;
+  TF_KEYDIR_ENC     = 1 shl (TF_KEYDIR_SHIFT + 1);
+  TF_KEYDIR_ENCRYPT = 3 shl TF_KEYDIR_SHIFT;
+  TF_KEYDIR_DECRYPT = 1 shl TF_KEYDIR_SHIFT;
+
+
+//  TF_KEYDIR_ALL = TF_KEYDIR_ENCRYPT or TF_KEYDIR_DECRYPT;
 
                           // TF_KP_MODE values
                           //   00001 - ECB
@@ -544,6 +598,10 @@ const
   TF_ENGINE_OSSL    = 1 shl TF_ENGINE_SHIFT;
   TF_ENGINE_MASK    = $F0000000;
 
+  TF_KEYFLAG_KEY = 1;
+  TF_KEYFLAG_IV  = 2;
+
+(*
   TF_ECB_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;
   TF_ECB_DECRYPT = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;
 
@@ -552,6 +610,7 @@ const
 
   TF_CTR_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_CTR or TF_PADDING_DEFAULT;
   TF_CTR_DECRYPT = TF_KEYDIR_DECRYPT or TF_KEYMODE_CTR or TF_PADDING_DEFAULT;
+*)
 
 // "user-friendly" constants
 { moved to Ciphers.pas

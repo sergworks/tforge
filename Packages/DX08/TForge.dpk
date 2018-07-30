@@ -52,7 +52,6 @@ contains
   tfBaseCiphers in '..\..\Source\Engine\Ciphers\tfBaseCiphers.pas',
   tfCipherServ in '..\..\Source\Engine\Ciphers\tfCipherServ.pas',
   tfDES in '..\..\Source\Engine\Ciphers\tfDES.pas',
-  tfKeyStreams in '..\..\Source\Engine\Ciphers\tfKeyStreams.pas',
   tfRC4 in '..\..\Source\Engine\Ciphers\tfRC4.pas',
   tfRC5 in '..\..\Source\Engine\Ciphers\tfRC5.pas',
   tfSalsa20 in '..\..\Source\Engine\Ciphers\tfSalsa20.pas',
@@ -73,6 +72,14 @@ contains
   tfOpenSSL in '..\..\Source\Engine\Forge\tfOpenSSL.pas',
   tfEngines in '..\..\Source\User\tfEngines.pas',
   tfEvpAES in '..\..\Source\Engine\Ciphers\tfEvpAES.pas',
-  tfCipherHelpers in '..\..\Source\Engine\Ciphers\tfCipherHelpers.pas';
+  tfCipherHelpers in '..\..\Source\Engine\Ciphers\tfCipherHelpers.pas',
+  tfStreamCiphers in '..\..\Source\Engine\Ciphers\tfStreamCiphers.pas',
+  tfCipherInstances in '..\..\Source\Engine\Ciphers\tfCipherInstances.pas',
+  tfBlockCiphers in '..\..\Source\Engine\Ciphers\tfBlockCiphers.pas',
+  tfAlgAES in '..\..\Source\Engine\Ciphers\tfAlgAES.pas',
+  tfAESBlockCiphers in '..\..\Source\Engine\Ciphers\tfAESBlockCiphers.pas',
+  tfHelpers in '..\..\Source\Engine\Forge\tfHelpers.pas',
+  tfAESStreamCiphers in '..\..\Source\Engine\Ciphers\tfAESStreamCiphers.pas',
+  tfGHash in '..\..\Source\Engine\Ciphers\tfGHash.pas';
 
 end.

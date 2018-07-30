@@ -157,7 +157,7 @@ end;
 
 procedure THash.GetDigest(var Buffer; BufSize: Cardinal);
 begin
-  if BufSize <> DigestSize then
+  if BufSize <> Cardinal(DigestSize) then
     HashError(TF_E_INVALIDARG);
   FInstance.Done(@Buffer);
 end;
@@ -467,7 +467,7 @@ end;
 
 procedure THMAC.GetDigest(var Buffer; BufSize: Cardinal);
 begin
-  if BufSize <> DigestSize then
+  if BufSize <> Cardinal(DigestSize) then
     HashError(TF_E_INVALIDARG);
   FInstance.Done(@Buffer);
 end;

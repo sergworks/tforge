@@ -1233,7 +1233,9 @@ begin
     Inc(OutData, LBlockSize);
     Dec(LDataSize, LBlockSize);
   end;
-                                            // if padding is not used we are done
+                                          // if LPadding = TF_PADDING_NONE
+                                          // or LPadding:= TF_PADDING_ZERO
+                                          //   we are done, else decode padding block
   if Last then begin
     case LPadding of
                                             // XX 00 00 00 04

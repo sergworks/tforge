@@ -1,20 +1,22 @@
-{ *********************************************************** }
-{ *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
-{ *********************************************************** }
+{
+                       TForge Library
+        Copyright (c) Sergey Kasandrov 1997, 2018
+  -------------------------------------------------------
+  # AES block cipher algorithm
+}
 
-unit tfAES;
-
-interface
+unit tfAlgAES;
 
 {$I TFL.inc}
+
+interface
 
 uses
   tfTypes;
 
 type
-  PAESInstance = ^TAESInstance;
-  TAESInstance = record
+  PAESAlgorithm = ^TAESAlgorithm;
+  TAESAlgorithm = record
   private const
     MaxRounds = 14;
 
@@ -34,17 +36,13 @@ type
         2: (Blocks: array[0 .. MaxRounds + 1] of TAESBlock);
     end;
 
-  private
-{$HINTS OFF}
-                                // from tfRecord
-    FVTable:   Pointer;
-    FRefCount: Integer;
-                                // from tfBlockCipher
-    FValidKey: Boolean;
-    FAlgID:    UInt32;
+  public const
+    BLOCK_SIZE = 16;
 
-    FIVector:  TAESBlock;
-{$HINTS ON}
+  public type
+    TBlock = array[0..BLOCK_SIZE - 1] of Byte;
+
+  private
 
     FExpandedKey: TExpandedKey;
     FRounds: Cardinal;
@@ -54,174 +52,12 @@ type
     class procedure DoInvRound(const RoundKey: TAESBlock;
                     var State: TAESBlock; First: Boolean); static;
   public
-    class function Release(Inst: PAESInstance): Integer; stdcall; static;
-    class function ExpandKey(Inst: PAESInstance; Key: PByte; KeySize: Cardinal): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-(*
-    class function ExpandKeyIV(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
-          IV: PByte; IVSize: Cardinal): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ExpandKeyNonce(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
-          Nonce: UInt64): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-*)
-    class function GetBlockSize(Inst: PAESInstance): Integer;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DuplicateKey(Inst: PAESInstance; var Key: PAESInstance): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class procedure DestroyKey(Inst: PAESInstance);{$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptBlock(Inst: PAESInstance; Data: PByte): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DecryptBlock(Inst: PAESInstance; Data: PByte): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    function ExpandKey(Key: PByte; KeySize: Cardinal): TF_RESULT;
+    function EncryptBlock(Data: PByte): TF_RESULT;
+    function DecryptBlock(Data: PByte): TF_RESULT;
   end;
-
-function GetAESInstance(var A: PAESInstance; AlgID: TAlgID): TF_RESULT;
 
 implementation
-
-uses
-  tfRecords, tfCipherInstances, tfBlockCiphers, tfAESBlockCiphers, tfAlgAES, tfBaseCiphers;
-
-function GetAESBlockSize(Inst: Pointer): Integer; {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-begin
-  Result:= TAESAlgorithm.BLOCK_SIZE;
-end;
-
-const
-  ECBCipherVTable: array[0..22] of Pointer = (
-    @TForgeInstance.QueryIntf,
-    @TForgeInstance.Addref,
-    @TForgeInstance.SafeRelease,
-
-    @TAESBlockCipherInstance.Burn,
-    @TAESBlockCipherInstance.Clone,
-    @TBlockCipherInstance.ExpandKey,
-    @TAESBlockCipherInstance.ExpandKeyIV,
-    @TBlockCipherInstance.ExpandKeyNonce,
-    @GetAESBlockSize,
-    @TBlockCipherInstance.EncryptECB,
-    @TBlockCipherInstance.DecryptECB,
-    @TAESBlockCipherInstance.EncryptBlock,
-    @TAESBlockCipherInstance.DecryptBlock,
-    @TCipherInstance.GetKeyBlockStub,
-    @TCipherInstance.GetKeyStreamStub,
-    @TCipherInstance.ApplyKeyStreamStub,
-    @TCipherInstance.IncBlockNoStub,
-    @TCipherInstance.IncBlockNoStub,
-    @TCipherInstance.IncBlockNoStub,
-    @TBlockCipherInstance.SetIV,
-    @TBlockCipherInstance.SetNonce,
-    @TBlockCipherInstance.GetIV,
-    @TBlockCipherInstance.GetNonce
-  );
-
-  CBCCipherVTable: array[0..22] of Pointer = (
-    @TForgeInstance.QueryIntf,
-    @TForgeInstance.Addref,
-    @TForgeInstance.SafeRelease,
-
-    @TAESBlockCipherInstance.Burn,
-    @TAESBlockCipherInstance.Clone,
-    @TBlockCipherInstance.ExpandKey,
-    @TAESBlockCipherInstance.ExpandKeyIV,
-    @TBlockCipherInstance.ExpandKeyNonce,
-    @GetAESBlockSize,
-    @TBlockCipherInstance.EncryptCBC,
-    @TBlockCipherInstance.DecryptCBC,
-    @TAESBlockCipherInstance.EncryptBlock,
-    @TAESBlockCipherInstance.DecryptBlock,
-    @TCipherInstance.GetKeyBlockStub,
-    @TCipherInstance.GetKeyStreamStub,
-    @TCipherInstance.ApplyKeyStreamStub,
-    @TCipherInstance.IncBlockNoStub,
-    @TCipherInstance.IncBlockNoStub,
-    @TCipherInstance.IncBlockNoStub,
-    @TBlockCipherInstance.SetIV,
-    @TBlockCipherInstance.SetNonce,
-    @TBlockCipherInstance.GetIV,
-    @TBlockCipherInstance.GetNonce
-  );
-
-
-const
-  AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
-
-const
-  AESCipherVTable: array[0..18] of Pointer = (
-   @TForgeInstance.QueryIntf,
-   @TForgeInstance.Addref,
-   @TAESInstance.Release,
-
-   @TAESInstance.DestroyKey,
-   @TAESInstance.DuplicateKey,
-   @TAESInstance.ExpandKey,
-   @TBaseBlockCipher.SetKeyParam,
-   @TBaseBlockCipher.GetKeyParam,
-   @TAESInstance.GetBlockSize,
-   @TBaseBlockCipher.Encrypt,
-   @TBaseBlockCipher.Decrypt,
-   @TAESInstance.EncryptBlock,
-   @TAESInstance.DecryptBlock,
-   @TBaseBlockCipher.GetRand,
-   @TBaseBlockCipher.RandBlock,
-   @TBaseBlockCipher.RandCrypt,
-   @TBaseBlockCipher.GetIsBlockCipher,
-   @TBaseBlockCipher.ExpandKeyIV,
-   @TBaseBlockCipher.ExpandKeyNonce
-   );
-
-procedure BurnKey(Inst: PAESInstance); inline;
-var
-  BurnSize: Integer;
-
-begin
-  BurnSize:= SizeOf(TAESInstance) - Integer(@PAESInstance(nil)^.FValidKey);
-  FillChar(Inst.FValidKey, BurnSize, 0);
-end;
-
-class function TAESInstance.Release(Inst: PAESInstance): Integer;
-begin
-  if Inst.FRefCount > 0 then begin
-    Result:= tfDecrement(Inst.FRefCount);
-    if Result = 0 then begin
-      BurnKey(Inst);
-      FreeMem(Inst);
-    end;
-  end
-  else
-    Result:= Inst.FRefCount;
-end;
-
-function GetAESInstance(var A: PAESInstance; AlgID: TAlgID): TF_RESULT;
-var
-  Tmp: PAESInstance;
-//  Mode, Padding: Word;
-
-begin
-  if not TBaseBlockCipher.ValidFlags(AlgID) then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-  try
-    Tmp:= AllocMem(SizeOf(TAESInstance));
-    Tmp^.FVTable:= @AESCipherVTable;
-    Tmp^.FRefCount:= 1;
-    Tmp^.FAlgID:= AlgID;
-{
-    Result:= PBaseBlockCipher(Tmp).SetFlags(Flags);
-    if Result <> TF_S_OK then begin
-      FreeMem(Tmp);
-      Exit;
-    end;
-}
-    if A <> nil then TAESInstance.Release(A);
-    A:= Tmp;
-    Result:= TF_S_OK;
-  except
-    Result:= TF_E_OUTOFMEMORY;
-  end;
-end;
 
 procedure Xor128(Target: Pointer; Value: Pointer); inline;
 begin
@@ -299,7 +135,7 @@ const
     $17, $2B, $04, $7E, $BA, $77, $D6, $26, $E1, $69, $14, $63, $55, $21, $0C, $7D);
 
 const
-  RCon : array[1..TAESInstance.MaxRounds] of UInt32 =
+  RCon : array[1..TAESAlgorithm.MaxRounds] of UInt32 =
    ($00000001, $00000002, $00000004, $00000008, $00000010, $00000020, $00000040,
     $00000080, $0000001B, $00000036, $0000006C, $000000D8, $000000AB, $0000004D);
 
@@ -601,7 +437,7 @@ begin
   Result.Bytes[2]:= RdlSBox[v.Bytes[2]];
   Result.Bytes[3]:= RdlSBox[v.Bytes[3]];
 end;
-{ ------------------------------------------------------------------- }
+
 function RdlRotateVector(v : TRDLVector; Count : Byte) : TRDLVector;
   { rotate vector (count bytes) to the right, e.g. }
   { |3 2 1 0| -> |0 3 2 1| for Count = 1 }
@@ -633,11 +469,12 @@ begin
   Result.Bytes[3]:= Vector.Bytes[0];
 end;
 
-class procedure TAESInstance.DoRound(const RoundKey: TAESBlock;
-                var State: TAESBlock; Last: Boolean);
+class procedure TAESAlgorithm.DoRound(const RoundKey: TAESBlock;
+  var State: TAESBlock; Last: Boolean);
 var
   i : Integer;
   e : TRDLVectors;
+
 begin
   for i := 0 to 3 do begin
     if not Last then begin
@@ -657,9 +494,8 @@ begin
   State:= TAESBlock(e);
 end;
 
-class procedure TAESInstance.DoInvRound(const RoundKey: TAESBlock;
-             var State: TAESBlock; First: Boolean);
-  { Rijndael inverse round transformation }
+class procedure TAESAlgorithm.DoInvRound(const RoundKey: TAESBlock;
+  var State: TAESBlock; First: Boolean);
 var
   i : Integer;
   r : TRDLVectors;
@@ -686,8 +522,31 @@ begin
   State := TAESBlock(r);
 end;
 
-class function TAESInstance.ExpandKey(Inst: PAESInstance; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+function TAESAlgorithm.DecryptBlock(Data: PByte): TF_RESULT;
+var
+  I: Integer;
+
+begin
+  DoInvRound(FExpandedKey.Blocks[FRounds], PBlock(Data)^, True);
+  for I:= (FRounds - 1) downto 1 do
+    DoInvRound(FExpandedKey.Blocks[I], PBlock(Data)^, False);
+  Xor128(Data, @FExpandedKey);
+  Result:= TF_S_OK;
+end;
+
+function TAESAlgorithm.EncryptBlock(Data: PByte): TF_RESULT;
+var
+  I: Integer;
+
+begin
+  Xor128(Data, @FExpandedKey);
+  for I:= 1 to FRounds - 1 do
+    DoRound(FExpandedKey.Blocks[I], PBlock(Data)^, False);
+  DoRound(FExpandedKey.Blocks[FRounds], PBlock(Data)^, True);
+  Result:= TF_S_OK;
+end;
+
+function TAESAlgorithm.ExpandKey(Key: PByte; KeySize: Cardinal): TF_RESULT;
 var
   I: Cardinal;
   Temp: TRDLVector;
@@ -695,101 +554,31 @@ var
 
 begin
   if (KeySize = 16) or (KeySize = 24) or (KeySize = 32) then begin
-    Move(Key^, Inst.FExpandedKey, KeySize);
+    Move(Key^, FExpandedKey, KeySize);
                                 // key length in 4-byte words (# of key columns)
     Nk:= KeySize shr 2;         //   Nk = 4, 6 or 8
-    Inst.FRounds:= 6 + Nk;      // # of rounds = 10, 12 or 14
+    FRounds:= 6 + Nk;           // # of rounds = 10, 12 or 14
 
 // expand key into round keys
-    for I:= Nk to 4 * (Inst.FRounds + 1) do begin
-      Temp.LWord:= Inst.FExpandedKey.LWords[I-1];
+    for I:= Nk to 4 * (FRounds + 1) do begin
+      Temp.LWord:= FExpandedKey.LWords[I-1];
       case Nk of 4, 6: begin
         if (I mod Nk) = 0 then
           Temp.LWord:= SubVector(RotVector(Temp)).LWord xor RCon[I div Nk];
-        Inst.FExpandedKey.LWords[I]:= Inst.FExpandedKey.LWords[I - Nk] xor Temp.LWord;
+        FExpandedKey.LWords[I]:= FExpandedKey.LWords[I - Nk] xor Temp.LWord;
       end
       else { Nk = 8 }
         if (I mod Nk) = 0 then
           Temp.LWord:= SubVector(RotVector(Temp)).LWord xor RCon[I div Nk]
         else if (I mod Nk) = 4 then
           Temp:= SubVector(Temp);
-        Inst.FExpandedKey.LWords[I]:= Inst.FExpandedKey.LWords[I - Nk] xor Temp.LWord;
+        FExpandedKey.LWords[I]:= FExpandedKey.LWords[I - Nk] xor Temp.LWord;
       end;
     end;
-    Inst.FValidKey:= True;
     Result:= TF_S_OK;
   end
   else
     Result:= TF_E_INVALIDARG;
-end;
-
-(*
-class function TAESInstance.ExpandKeyIV(Inst: PAESInstance; Key: PByte; KeySize: Cardinal;
-               IV: PByte; IVSize: Cardinal): TF_RESULT;
-begin
-  Result:= PBaseBlockCipher(Inst).SetIV(IV, IVSize);
-  if Result = TF_S_OK then
-    Result:= ExpandKey(Inst, Key, KeySize);
-end;
-
-class function TAESInstance.ExpandKeyNonce(Inst: PAESInstance; Key: PByte;
-  KeySize: Cardinal; Nonce: UInt64): TF_RESULT;
-begin
-  Result:= PBaseBlockCipher(Inst).SetNonce(@Nonce, SizeOf(Nonce));
-  if Result = TF_S_OK then
-    Result:= ExpandKey(Inst, Key, KeySize);
-end;
-*)
-
-class procedure TAESInstance.DestroyKey(Inst: PAESInstance);
-begin
-  BurnKey(Inst);
-end;
-
-class function TAESInstance.EncryptBlock(Inst: PAESInstance; Data: PByte): TF_RESULT;
-var
-  I: Integer;
-
-begin
-  Xor128(Data, @Inst.FExpandedKey);
-  for I:= 1 to Inst.FRounds - 1 do
-    DoRound(Inst.FExpandedKey.Blocks[I], PBlock(Data)^, False);
-  DoRound(Inst.FExpandedKey.Blocks[Inst.FRounds], PBlock(Data)^, True);
-  Result:= TF_S_OK;
-end;
-
-class function TAESInstance.DecryptBlock(Inst: PAESInstance; Data: PByte): TF_RESULT;
-var
-  I: Integer;
-
-begin
-  DoInvRound(Inst.FExpandedKey.Blocks[Inst.FRounds], PBlock(Data)^, True);
-  for I:= (Inst.FRounds - 1) downto 1 do
-    DoInvRound(Inst.FExpandedKey.Blocks[I], PBlock(Data)^, False);
-  Xor128(Data, @Inst.FExpandedKey);
-  Result:= TF_S_OK;
-end;
-
-{ TAESCipher }
-
-class function TAESInstance.DuplicateKey(Inst: PAESInstance;
-                          var Key: PAESInstance): TF_RESULT;
-begin
-  Result:= GetAESInstance(Key, PBaseBlockCipher(Inst).GetFlags);
-  if Result = TF_S_OK then begin
-    Key.FValidKey:= Inst.FValidKey;
-//    Key.FDir:= Inst.FDir;
-//    Key.FMode:= Inst.FMode;
-//    Key.FPadding:= Inst.FPadding;
-    Key.FIVector:= Inst.FIVector;
-    Key.FExpandedKey:= Inst.FExpandedKey;
-    Key.FRounds:= Inst.FRounds;
-  end;
-end;
-
-class function TAESInstance.GetBlockSize(Inst: PAESInstance): Integer;
-begin
-  Result:= AES_BLOCK_SIZE;
 end;
 
 end.

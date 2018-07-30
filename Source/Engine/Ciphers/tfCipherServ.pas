@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
-     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20, tfKeyStreams,
+     tfAES, tfDES, tfRC5, tfRC4, tfSalsa20, //tfKeyStreams,
      tfEvpAES;
 
 function GetCipherServerInstance(var A: ICipherServer): TF_RESULT;
@@ -19,8 +19,8 @@ function GetCipherServerInstance(var A: ICipherServer): TF_RESULT;
 function GetCipherInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
-function GetStreamCipherInstance(AlgID: TF_AlgID; var Inst: IStreamCipher): TF_RESULT;
-          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//function GetStreamCipherInstance(AlgID: TF_AlgID; var Inst: IStreamCipher): TF_RESULT;
+//          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 implementation
 
@@ -118,7 +118,7 @@ begin
     Result:= TF_E_INVALIDARG;
   end;
 end;
-
+{
 function GetStreamCipherInstance(AlgID: TF_AlgID; var Inst: IStreamCipher): TF_RESULT;
 var
   Cipher: ICipher;
@@ -134,7 +134,7 @@ begin
     Result:= TF_E_INVALIDARG;
   end;
 end;
-
+}
 (*
 class function TCipherServer.GetByAlgID(Inst: PCipherServer; AlgID: UInt32;
                     var Alg: ICipher): TF_RESULT;

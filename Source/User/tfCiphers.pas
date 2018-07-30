@@ -14,28 +14,11 @@ uses
   {$IFDEF TFL_DLL}
     tfImport
   {$ELSE}
-    tfAES, tfDES, tfRC4, tfRC5, tfSalsa20, tfCipherServ, tfKeyStreams,
-    tfEvpAES
+    tfAES, tfDES, tfRC4, tfRC5, tfSalsa20, tfCipherServ, // tfKeyStreams,
+    tfEvpAES, tfOpenSSL
   {$ENDIF};
 
 const
-  ECB_ENCRYPT = TF_ECB_ENCRYPT;
-  ECB_DECRYPT = TF_ECB_DECRYPT;
-
-  CBC_ENCRYPT = TF_CBC_ENCRYPT;
-  CBC_DECRYPT = TF_CBC_DECRYPT;
-
-  CTR_ENCRYPT = TF_CTR_ENCRYPT;
-  CTR_DECRYPT = TF_CTR_DECRYPT;
-
-  PADDING_DEFAULT  = TF_PADDING_DEFAULT;
-  PADDING_NONE     = TF_PADDING_NONE;
-  PADDING_ZERO     = TF_PADDING_ZERO;
-  PADDING_ANSI     = TF_PADDING_ANSI;
-  PADDING_PKCS     = TF_PADDING_PKCS;
-  PADDING_ISO10126 = TF_PADDING_ISO10126;
-  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
-
   ALG_AES      = TF_ALG_AES;
   ALG_DES      = TF_ALG_DES;
   ALG_RC5      = TF_ALG_RC5;
@@ -45,33 +28,66 @@ const
   ALG_SALSA20  = TF_ALG_SALSA20;
   ALG_CHACHA20 = TF_ALG_CHACHA20;
 
-  ALG_AES_ECB_ENCRYPT = TF_ALG_AES or TF_ECB_ENCRYPT;
-  ALG_AES_ECB_DECRYPT = TF_ALG_AES or TF_ECB_DECRYPT;
-  ALG_AES_CBC_ENCRYPT = TF_ALG_AES or TF_CBC_ENCRYPT;
-  ALG_AES_CBC_DECRYPT = TF_ALG_AES or TF_CBC_DECRYPT;
-  ALG_AES_CTR_ENCRYPT = TF_ALG_AES or TF_CTR_ENCRYPT;
-  ALG_AES_CTR_DECRYPT = TF_ALG_AES or TF_CTR_DECRYPT;
+  MODE_ECB     = TF_KEYMODE_ECB;
+  MODE_CBC     = TF_KEYMODE_CBC;
+  MODE_CTR     = TF_KEYMODE_CTR;
 
-  ALG_DES_ECB_ENCRYPT = TF_ALG_DES or TF_ECB_ENCRYPT;
-  ALG_DES_ECB_DECRYPT = TF_ALG_DES or TF_ECB_DECRYPT;
-  ALG_DES_CBC_ENCRYPT = TF_ALG_DES or TF_CBC_ENCRYPT;
-  ALG_DES_CBC_DECRYPT = TF_ALG_DES or TF_CBC_DECRYPT;
-  ALG_DES_CTR_ENCRYPT = TF_ALG_DES or TF_CTR_ENCRYPT;
-  ALG_DES_CTR_DECRYPT = TF_ALG_DES or TF_CTR_DECRYPT;
+  PADDING_DEFAULT  = TF_PADDING_DEFAULT;
+  PADDING_NONE     = TF_PADDING_NONE;
+  PADDING_ZERO     = TF_PADDING_ZERO;
+  PADDING_ANSI     = TF_PADDING_ANSI;
+  PADDING_PKCS     = TF_PADDING_PKCS;
+  PADDING_ISO10126 = TF_PADDING_ISO10126;
+  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
 
-  ALG_3DES_ECB_ENCRYPT = TF_ALG_3DES or TF_ECB_ENCRYPT;
-  ALG_3DES_ECB_DECRYPT = TF_ALG_3DES or TF_ECB_DECRYPT;
-  ALG_3DES_CBC_ENCRYPT = TF_ALG_3DES or TF_CBC_ENCRYPT;
-  ALG_3DES_CBC_DECRYPT = TF_ALG_3DES or TF_CBC_DECRYPT;
-  ALG_3DES_CTR_ENCRYPT = TF_ALG_3DES or TF_CTR_ENCRYPT;
-  ALG_3DES_CTR_DECRYPT = TF_ALG_3DES or TF_CTR_DECRYPT;
+  ECB_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB;
+  ECB_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB;
 
-  ALG_RC5_ECB_ENCRYPT = TF_ALG_RC5 or TF_ECB_ENCRYPT;
-  ALG_RC5_ECB_DECRYPT = TF_ALG_RC5 or TF_ECB_DECRYPT;
-  ALG_RC5_CBC_ENCRYPT = TF_ALG_RC5 or TF_CBC_ENCRYPT;
-  ALG_RC5_CBC_DECRYPT = TF_ALG_RC5 or TF_CBC_DECRYPT;
-  ALG_RC5_CTR_ENCRYPT = TF_ALG_RC5 or TF_CTR_ENCRYPT;
-  ALG_RC5_CTR_DECRYPT = TF_ALG_RC5 or TF_CTR_DECRYPT;
+  CBC_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_CBC;
+  CBC_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_CBC;
+
+//  CTR_ENCRYPT = TF_CTR_ENCRYPT;
+//  CTR_DECRYPT = TF_CTR_DECRYPT;
+
+  AES_ECB         = ALG_AES or MODE_ECB;
+  AES_ECB_ENCRYPT = ALG_AES or ECB_ENCRYPT;
+  AES_ECB_DECRYPT = ALG_AES or ECB_DECRYPT;
+  AES_CBC         = ALG_AES or MODE_CBC;
+  AES_CBC_ENCRYPT = ALG_AES or CBC_ENCRYPT;
+  AES_CBC_DECRYPT = ALG_AES or CBC_DECRYPT;
+  AES_CTR         = ALG_AES or MODE_CTR;
+//  ALG_AES_CTR_ENCRYPT = TF_ALG_AES or TF_CTR_ENCRYPT;
+//  ALG_AES_CTR_DECRYPT = TF_ALG_AES or TF_CTR_DECRYPT;
+
+//  DES_ECB         = ALG_DES or MODE_ECB;
+  DES_ECB_ENCRYPT = ALG_DES or ECB_ENCRYPT;
+  DES_ECB_DECRYPT = ALG_DES or ECB_DECRYPT;
+//  DES_CBC         = ALG_DES or MODE_CBC;
+  DES_CBC_ENCRYPT = ALG_DES or CBC_ENCRYPT;
+  DES_CBC_DECRYPT = ALG_DES or CBC_DECRYPT;
+  DES_CTR         = ALG_DES or MODE_CTR;
+//  ALG_DES_CTR_ENCRYPT = TF_ALG_DES or TF_CTR_ENCRYPT;
+//  ALG_DES_CTR_DECRYPT = TF_ALG_DES or TF_CTR_DECRYPT;
+
+//  DES3_ECB         = ALG_3DES or MODE_ECB;
+  DES3_ECB_ENCRYPT = ALG_3DES or ECB_ENCRYPT;
+  DES3_ECB_DECRYPT = ALG_3DES or ECB_DECRYPT;
+//  DES3_CBC         = ALG_3DES or MODE_CBC;
+  DES3_CBC_ENCRYPT = ALG_3DES or CBC_ENCRYPT;
+  DES3_CBC_DECRYPT = ALG_3DES or CBC_DECRYPT;
+  DES3_CTR         = ALG_3DES or MODE_CTR;
+//  ALG_3DES_CTR_ENCRYPT = TF_ALG_3DES or TF_CTR_ENCRYPT;
+//  ALG_3DES_CTR_DECRYPT = TF_ALG_3DES or TF_CTR_DECRYPT;
+
+  RC5_ECB         = ALG_RC5 or MODE_ECB;
+  RC5_ECB_ENCRYPT = ALG_RC5 or ECB_ENCRYPT;
+  RC5_ECB_DECRYPT = ALG_RC5 or ECB_DECRYPT;
+  RC5_CBC         = ALG_RC5 or MODE_CBC;
+  RC5_CBC_ENCRYPT = ALG_RC5 or CBC_ENCRYPT;
+  RC5_CBC_DECRYPT = ALG_RC5 or CBC_DECRYPT;
+  RC5_CTR         = ALG_RC5 or MODE_CTR;
+//  ALG_RC5_CTR_ENCRYPT = TF_ALG_RC5 or TF_CTR_ENCRYPT;
+//  ALG_RC5_CTR_DECRYPT = TF_ALG_RC5 or TF_CTR_DECRYPT;
 
   ENGINE_OSSL = TF_ENGINE_OSSL;
 
@@ -113,8 +129,7 @@ type
                       Last: Boolean);
     procedure Decrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
                       Last: Boolean);
-    procedure Apply(var Data; DataSize: Cardinal;
-                        Last: Boolean);
+    procedure Apply(var Data; var OutData; DataSize: Cardinal);
 
     procedure GetKeyStream(var Data; DataSize: Cardinal);
     function KeyStream(DataSize: Cardinal): ByteArray;
@@ -132,7 +147,7 @@ type
     procedure DecryptFile(const InName, OutName: string; BufSize: Cardinal = 0);
 
 //    function Skip(Value: UInt32): TCipher; overload;
-    function Skip(Value: UInt64): TCipher; overload;
+    function Skip(Value: Int64): TCipher; overload;
 
     class function GetInstance(AlgID: TAlgID): TCipher; static;
 
@@ -155,7 +170,10 @@ type
     class function GetName(Index: Cardinal): string; static;
     class function GetIDByName(const Name: string): TAlgID; static;
     class function GetNameByID(AlgID: TAlgID): string; static;
+
+    class function Supports(AlgID: TAlgID): Boolean; static;
   end;
+
 
   TStreamCipher = record
   private
@@ -183,7 +201,7 @@ type
     function ApplyToByteArray(const Data: ByteArray): ByteArray;
     procedure ApplyToStream(InStream, OutStream: TStream; BufSize: Cardinal = 0);
     procedure ApplyToFile(const InName, OutName: string; BufSize: Cardinal = 0);
-
+{
     class function GetInstance(AlgID: TAlgID): TStreamCipher; static;
 //    class function GetInstance(const Name: string): TStreamCipher; static;
 
@@ -197,7 +215,7 @@ type
     class function Salsa20(Rounds: Cardinal): TStreamCipher; overload; static;
     class function ChaCha20: TStreamCipher; overload; static;
     class function ChaCha20(Rounds: Cardinal): TStreamCipher; overload; static;
-
+}
 //    class operator Explicit(const Name: string): TStreamCipher;
 
 //    property Nonce: UInt64 read GetNonce write SetNonceProc;
@@ -256,12 +274,14 @@ begin
 end;
 
 function TCipher.GetNonce: UInt64;
-var
+{var
   DataLen: Cardinal;
 
 begin
   DataLen:= SizeOf(UInt64);
-  HResCheck(FInstance.GetKeyParam(TF_KP_NONCE, @Result, DataLen));
+  HResCheck(FInstance.GetKeyParam(TF_KP_NONCE, @Result, DataLen));}
+begin
+  HResCheck(FInstance.GetNonce(Result));
 end;
 
 function TCipher.GetIV: ByteArray;
@@ -273,7 +293,8 @@ begin
   if (DataLen = 0) or (DataLen > TF_MAX_CIPHER_BLOCK_SIZE) then
     CipherError(TF_E_UNEXPECTED);
   Result:= ByteArray.Allocate(DataLen);
-  HResCheck(FInstance.GetKeyParam(TF_KP_IV, Result.RawData, DataLen));
+//  HResCheck(FInstance.GetKeyParam(TF_KP_IV, Result.RawData, DataLen));
+  HResCheck(FInstance.GetIV(Result.RawData, DataLen));
 end;
 
 function TCipher.KeyStream(DataSize: Cardinal): ByteArray;
@@ -469,9 +490,9 @@ begin
   HResCheck(FInstance.Decrypt(OutData, OutSize, Data, DataSize, Last));
 end;
 
-procedure TCipher.Apply(var Data; DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Apply(var Data; var OutData; DataSize: Cardinal);
 begin
-  HResCheck(FInstance.KeyCrypt(@Data, DataSize, Last));
+  HResCheck(FInstance.ApplyKeyStream(@Data, @OutData, DataSize));
 end;
 
 class function TCipher.EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray;
@@ -481,7 +502,7 @@ var
 
 begin
   AlgID:= AlgID and TF_ALGID_MASK;
-  Cipher:= TCipher.GetInstance(AlgID or TF_ECB_ENCRYPT)
+  Cipher:= TCipher.GetInstance(AlgID or ECB_ENCRYPT)
                   .ExpandKey(Key);
   BlockSize:= Cipher.GetBlockSize;
   if (BlockSize = 0) or (BlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then
@@ -499,7 +520,7 @@ var
 
 begin
   AlgID:= AlgID and TF_ALGID_MASK;
-  Cipher:= TCipher.GetInstance(AlgID or TF_ECB_DECRYPT)
+  Cipher:= TCipher.GetInstance(AlgID or ECB_DECRYPT)
                   .ExpandKey(Key);
   BlockSize:= Cipher.GetBlockSize;
   if (BlockSize = 0) or (BlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then
@@ -705,7 +726,7 @@ end;
 
 function TCipher.Clone: TCipher;
 begin
-  HResCheck(FInstance.Duplicate(Result.FInstance));
+  HResCheck(FInstance.Clone(Result.FInstance));
 end;
 
 class function TCipher.GetCount: Integer;
@@ -784,12 +805,14 @@ end;
 
 procedure TCipher.SetIV(AIV: Pointer; AIVLen: Cardinal);
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
+  HResCheck(FInstance.SetIV(AIV, AIVLen));
 end;
 
 procedure TCipher.SetIV(const AIV: ByteArray);
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
+  HResCheck(FInstance.SetIV(AIV.RawData, AIV.Len));
 end;
 
 (*
@@ -814,7 +837,8 @@ end;
 
 procedure TCipher.SetNonce(const Value: UInt64);
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @Value, SizeOf(Value)));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @Value, SizeOf(Value)));
+  HResCheck(FInstance.SetNonce(Value));
 end;
 
 {
@@ -837,11 +861,141 @@ begin
   Result:= Self;
 end;
 *)
-function TCipher.Skip(Value: UInt64): TCipher;
+function TCipher.Skip(Value: Int64): TCipher;
 begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_INCNO{_LE}, @Value, SizeOf(Value)));
+//  HResCheck(FInstance.SetKeyParam(TF_KP_INCNO{_LE}, @Value, SizeOf(Value)));
+  HResCheck(FInstance.Skip(Value));
   Result:= Self;
 end;
+
+function SupportsOSSL(AlgID: TAlgID): Boolean;
+var
+  Alg, Mode, Padding: TAlgID;
+
+begin
+  Alg:= AlgID and TF_ALGID_MASK;
+  Mode:= AlgID and TF_KEYMODE_MASK;
+  Padding:= AlgID and TF_PADDING_MASK;
+  if (Padding <> TF_PADDING_DEFAULT)
+     and (Padding <> TF_PADDING_NONE)
+     and (Padding <> TF_PADDING_PKCS) then begin
+    Result:= False;
+    Exit;
+  end;
+
+  if Alg = TF_ALG_AES then begin
+    if (Mode = TF_KEYMODE_ECB) then begin
+      Result:= Assigned(EVP_aes_128_ecb);
+      Exit;
+    end;
+    if (Mode = TF_KEYMODE_CBC) then begin
+      Result:= Assigned(EVP_aes_128_cbc);
+      Exit;
+    end;
+    if (Mode = TF_KEYMODE_CTR) then begin
+      Result:= Assigned(EVP_aes_128_ctr) and (Padding = TF_PADDING_DEFAULT);
+      Exit;
+    end;
+    Result:= False;
+    Exit;
+  end
+  else
+    Result:= False;
+end;
+
+function SupportsStd(AlgID: TAlgID): Boolean;
+var
+  A, Alg, Mode, Padding: TAlgID;
+  IsBlock, IsStream: Boolean;
+  ValidMode, ValidPadding: Boolean;
+
+const
+  BlockAlgs: array[0..3] of TAlgID = (
+    TF_ALG_AES, TF_ALG_DES, TF_ALG_RC5, TF_ALG_3DES
+    );
+  StreamAlgs: array[0..2] of TAlgID = (
+    TF_ALG_RC4, TF_ALG_SALSA20, TF_ALG_CHACHA20
+    );
+  Modes: array[0..2] of TAlgID = (
+    TF_KEYMODE_ECB, TF_KEYMODE_CBC, TF_KEYMODE_CTR
+    );
+  Paddings: array[0..6] of TAlgID = (
+    TF_PADDING_DEFAULT, TF_PADDING_NONE, TF_PADDING_ZERO, TF_PADDING_ANSI,
+    TF_PADDING_PKCS, TF_PADDING_ISO10126, TF_PADDING_ISOIEC
+    );
+
+begin
+  Alg:= AlgID and TF_ALGID_MASK;
+  IsBlock:= False;
+  IsStream:= False;
+  for A in BlockAlgs do begin
+    if A = Alg then begin
+      IsBlock:= True;
+      Break;
+    end;
+  end;
+  if not IsBlock then begin
+    for A in StreamAlgs do begin
+      if A = Alg then begin
+        IsStream:= True;
+        Break;
+      end;
+    end;
+  end;
+  if not IsBlock and not IsStream then begin
+    Result:= False;
+    Exit;
+  end;
+
+  Mode:= AlgID and TF_KEYMODE_MASK;
+
+// a block cipher algorithm in CTR mode is a stream cipher
+  if IsBlock and (Mode = TF_KEYMODE_CTR) then begin
+//    IsBlock:= False;
+    IsStream:= True;
+  end;
+
+  ValidMode:= False;
+  for A in Modes do begin
+    if A = Mode then begin
+      ValidMode:= True;
+      Break;
+    end;
+  end;
+  if not ValidMode then begin
+    Result:= False;
+    Exit;
+  end;
+
+  Padding:= AlgID and TF_PADDING_MASK;
+
+// stream ciphers do not use padding
+  if IsStream and (Padding <> TF_PADDING_DEFAULT) then begin
+    Result:= False;
+    Exit;
+  end;
+
+  ValidPadding:= False;
+  for A in Paddings do begin
+    if A = Mode then begin
+      ValidPadding:= True;
+      Break;
+    end;
+  end;
+
+  Result:= ValidPadding;
+end;
+
+class function TCipher.Supports(AlgID: TAlgID): Boolean;
+begin
+  case AlgID and TF_ENGINE_MASK of
+    TF_ENGINE_STD: Result:= SupportsStd(AlgID);
+    TF_ENGINE_OSSL: Result:= SupportsOSSL(AlgID);
+  else
+    Result:= False;
+  end;
+end;
+
 {
 function TCipher.Skip(Value: ByteArray): TCipher;
 begin
@@ -928,6 +1082,7 @@ begin
   HResCheck(FInstance.Duplicate(Result.FInstance));
 end;
 
+(*
 class function TStreamCipher.AES: TStreamCipher;
 begin
 //  HResCheck(FServer.GetKSByAlgID(TF_ALG_AES, Result.FInstance));
@@ -967,6 +1122,7 @@ class function TStreamCipher.GetInstance(AlgID: TAlgID): TStreamCipher;
 begin
   HResCheck(GetStreamCipherInstance(AlgID, Result.FInstance));
 end;
+*)
 (*
 class function TStreamCipher.GetInstance(const Name: string): TStreamCipher;
 begin
@@ -984,7 +1140,7 @@ procedure TStreamCipher.SetNonce(const Nonce: UInt64);
 begin
   HResCheck(FInstance.SetNonce(Nonce));
 end;
-
+(*
 class function TStreamCipher.ChaCha20: TStreamCipher;
 begin
 //  HResCheck(FServer.GetKSByAlgID(TF_ALG_CHACHA20, Result.FInstance));
@@ -1020,7 +1176,7 @@ begin
 //  HResCheck(GetServer.GetKSByAlgID(TF_ALG_RC5, Result.FInstance));
   HResCheck(GetRC5StreamCipherInstance(Result.FInstance));
 end;
-
+*)
 procedure TStreamCipher.GetKeyStream(var Data; DataSize: Cardinal);
 begin
   HResCheck(FInstance.GetKeyStream(@Data, DataSize));
