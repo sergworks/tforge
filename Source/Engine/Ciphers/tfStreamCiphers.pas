@@ -26,19 +26,20 @@ type
     FAlgID:    TAlgID;
     FKeyFlags: UInt32;
 {$HINTS ON}
-    FPos:      Cardinal;    // 0 .. BlockSize - 1
+    FPos:      Integer;    // 0 .. BlockSize - 1
+    FCache:    array[0..0] of Byte;
 
   public
     class function IncBlockNo(Inst: PStreamCipherInstance; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Encrypt(Inst: Pointer; OutData: PByte; OutSize: Cardinal;
-      Data: PByte; var DataSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function Encrypt(Inst: Pointer; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyStream(Inst: PStreamCipherInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
+    class function GetKeyStream(Inst: PStreamCipherInstance;
+                     Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ApplyKeyStream(Inst: PStreamCipherInstance; InData, OutData: PByte; DataSize: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetIsBlockCipher(Inst: Pointer): Boolean;
+    class function ApplyKeyStream(Inst: PStreamCipherInstance;
+                     InData, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -49,32 +50,47 @@ uses tfCipherHelpers;
 { TStreamCipherInstance }
 
 class function TStreamCipherInstance.ApplyKeyStream(Inst: PStreamCipherInstance;
-                 InData, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+                 InData, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
 var
-  LBlockSize: Cardinal;
+  LBlockSize: Integer;
   LGetKeyBlock: TCipherHelper.TBlockFunc;
-  LDataSize: Cardinal;
+//  LDataSize: Cardinal;
+  Cnt: Cardinal;
 //  NBlocks: Cardinal;
-  LBlock: TCipherHelper.TBlock;
+//  LBlock: TCipherHelper.TBlock;
 
 begin
-  if Inst.FKeyFlags and TF_KEYFLAG_KEY <> 0 then begin
+  if Inst.FKeyFlags and TF_KEYFLAG_KEY = 0 then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
 
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
   if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
+{$ENDIF}
 
   @LGetKeyBlock:= TCipherHelper.GetKeyBlockFunc(Inst);
 
 // process current block's tail (if exists)
   if Inst.FPos > 0 then begin
-//    NBlocks:= 1;
-//    Result:= TCipherHelper.SetKeyParam(Inst, TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
+
+    Cnt:= LBlockSize - Inst.FPos;
+    if Cnt > DataSize then Cnt:= DataSize;
+    Move(InData^, OutData^, Cnt);
+    MoveXor(Inst.FCache[Inst.FPos], OutData^, Cnt);
+    Inc(InData, Cnt);
+    Inc(OutData, Cnt);
+    Dec(DataSize, Cnt);
+    Inc(Inst.FPos, Cnt);
+    if (Inst.FPos = LBlockSize) then begin
+      Inst.FPos:= 0;
+    end;
+(*
     Result:= TCipherHelper.DecBlockNo(Inst, 1);
     if Result <> TF_S_OK then Exit;
     Result:= LGetKeyBlock(Inst, @LBlock);
@@ -91,73 +107,87 @@ begin
     Inc(OutData, LDataSize);
     Inc(InData, LDataSize);
     Dec(DataSize, LDataSize);
+*)
   end;
 
 // process full blocks
-  while DataSize >= LBlockSize do begin
-    LDataSize:= DataSize and not (LBlockSize - 1);
-    Result:= LGetKeyBlock(Inst, @LBlock);
+  while DataSize >= Cardinal(LBlockSize) do begin
+// InData and OutData can be identical, so we use cache
+    Result:= LGetKeyBlock(Inst, @Inst.FCache);
     if Result <> TF_S_OK then Exit;
-    Move(InData^, OutData^, LDataSize);
-    MoveXor(LBlock, OutData^, LDataSize);
-    Inc(OutData, LDataSize);
-    Inc(InData, LDataSize);
-    Dec(DataSize, LDataSize);
+    Move(InData^, OutData^, LBlockSize);
+    MoveXor(Inst.FCache, OutData^, LBlockSize);
+    Inc(OutData, LBlockSize);
+    Inc(InData, LBlockSize);
+    Dec(DataSize, LBlockSize);
   end;
 
 // process last incomplete block (if exists)
   if DataSize > 0 then begin
-    Result:= LGetKeyBlock(Inst, @LBlock);
+    Result:= LGetKeyBlock(Inst, @Inst.FCache);
     if Result <> TF_S_OK then Exit;
     Move(InData^, OutData^, DataSize);
-    MoveXor(LBlock, OutData^, DataSize);
+    MoveXor(Inst.FCache, OutData^, DataSize);
     Inst.FPos:= DataSize;
   end;
 
-  FillChar(LBlock, LBlockSize, 0);
+  if Last then Inst.FPos:= 0;
   Result:= TF_S_OK;
 end;
 
-class function TStreamCipherInstance.Encrypt(Inst: Pointer; OutData: PByte;
-  OutSize: Cardinal; Data: PByte; var DataSize: Cardinal;
-  Last: Boolean): TF_RESULT;
+class function TStreamCipherInstance.Encrypt(Inst: Pointer;
+                 InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+                 OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
-  Result:= ApplyKeyStream(Inst, Data, OutData, DataSize);
-end;
-
-// CTR-mode block algorithms can override it
-class function TStreamCipherInstance.GetIsBlockCipher(Inst: Pointer): Boolean;
-begin
-  Result:= False;
+  if DataSize > OutBufSize then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+  Result:= ApplyKeyStream(Inst, InBuffer, OutBuffer, DataSize, Last);
 end;
 
 class function TStreamCipherInstance.GetKeyStream(Inst: PStreamCipherInstance;
-                 Data: PByte; DataSize: Cardinal): TF_RESULT;
+                 Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
 var
-  LBlockSize: Cardinal;
+  LBlockSize: Integer;
   LGetKeyBlock: TCipherHelper.TBlockFunc;
-  LDataSize: Cardinal;
+//  LDataSize: Cardinal;
+  Cnt: Cardinal;
 //  NBlocks: Cardinal;
-  LBlock: TCipherHelper.TBlock;
+//  LBlock: TCipherHelper.TBlock;
 
 begin
-  if Inst.FKeyFlags and TF_KEYFLAG_KEY <> 0 then begin
+{$IFDEF DEBUG}
+  if Inst.FKeyFlags and TF_KEYFLAG_KEY = 0 then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
+{$ENDIF}
 
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
   if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
     Result:= TF_E_UNEXPECTED;
     Exit;
   end;
+{$ENDIF}
 
   @LGetKeyBlock:= TCipherHelper.GetKeyBlockFunc(Inst);
 
 // process current block's tail (if exists)
   if Inst.FPos > 0 then begin
-//    NBlocks:= 1;
-//    Result:= TCipherHelper.SetKeyParam(Inst, TF_KP_DECNO, @NBlocks, SizeOf(NBlocks));
+    Cnt:= LBlockSize - Inst.FPos;
+    if Cnt > DataSize then Cnt:= DataSize;
+    Move(Inst.FCache[Inst.FPos], Data^, Cnt);
+    Inc(Data, Cnt);
+    Dec(DataSize, Cnt);
+    Inc(Inst.FPos, Cnt);
+    if (Inst.FPos = LBlockSize) then begin
+      Inst.FPos:= 0;
+    end;
+(*
+
     Result:= TCipherHelper.DecBlockNo(Inst, 1);
     if Result <> TF_S_OK then Exit;
     Result:= LGetKeyBlock(Inst, @LBlock);
@@ -172,27 +202,30 @@ begin
     if Inst.FPos = LBlockSize then Inst.FPos:= 0;
     Inc(Data, LDataSize);
     Dec(DataSize, LDataSize);
+*)
   end;
 
 // process full blocks
-  while DataSize >= LBlockSize do begin
-    LDataSize:= DataSize and not (LBlockSize - 1);
-    Result:= LGetKeyBlock(Inst, @LBlock);
+  while DataSize >= Cardinal(LBlockSize) do begin
+//    LDataSize:= DataSize and not (LBlockSize - 1);
+    Result:= LGetKeyBlock(Inst, Data);
     if Result <> TF_S_OK then Exit;
-    Move(LBlock, Data^, LDataSize);
-    Inc(Data, LDataSize);
-    Dec(DataSize, LDataSize);
+//    Move(LBlock, Data^, LDataSize);
+//    Inc(Data, LDataSize);
+//    Dec(DataSize, LDataSize);
+    Inc(Data, LBlockSize);
+    Dec(DataSize, LBlockSize);
   end;
 
 // process last incomplete block (if exists)
   if DataSize > 0 then begin
-    Result:= LGetKeyBlock(Inst, @LBlock);
+    Result:= LGetKeyBlock(Inst, @Inst.FCache);
     if Result <> TF_S_OK then Exit;
-    Move(LBlock, Data^, DataSize);
+    Move(Inst.FCache, Data^, DataSize);
     Inst.FPos:= DataSize;
   end;
 
-  FillChar(LBlock, LBlockSize, 0);
+  if Last then Inst.FPos:= 0;
   Result:= TF_S_OK;
 end;
 

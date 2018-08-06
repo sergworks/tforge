@@ -10,68 +10,75 @@ interface
 {$I TFL.inc}
 
 uses
-  tfTypes, tfOpenSSL;
+  tfTypes, tfOpenSSL, tfCipherInstances;
 
 type
   PEvpAESInstance = ^TEvpAESInstance;
   TEvpAESInstance = record
   private
 {$HINTS OFF}
-                                // from tfRecord
     FVTable:   Pointer;
     FRefCount: Integer;
-                                // from tfEvpCipherInstance
-    FValidKey: Boolean;
-    FFlags:    UInt32;
+
+    FAlgID:    TAlgID;
+    FKeyFlags: TKeyFlags;
     FCtx:      PEVP_CIPHER_CTX;
 //    FInit:     TEVP_CipherInit;
     FUpdate:   TEVP_CipherUpdate;
     FFinal:    TEVP_CipherFinal;
 {$HINTS ON}
   public
+(*
     class function GetBlockSize(Inst: PEvpAESInstance): Integer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIsBlockCipher(Inst: Pointer): Boolean;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+*)
     class function ExpandKeyIV(Inst: PEvpAESInstance; Key: PByte; KeySize: Cardinal;
           IV: PByte; IVSize: Cardinal): TF_RESULT;
           {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
-function GetEvpAESInstance(var Inst: PEvpAESInstance; Flags: UInt32): TF_RESULT;
+function GetEvpAESInstance(var Inst: PEvpAESInstance; AlgID: TAlgID): TF_RESULT;
 
 implementation
 
-uses tfRecords, tfEvpCiphers;
+uses tfRecords, tfHelpers, tfEvpCiphers;
 
 const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  EvpAESCipherVTable: array[0..18] of Pointer = (
-   @TForgeInstance.QueryIntf,
-   @TForgeInstance.Addref,
-   @TEvpCipherInstance.Release,
+  EvpAESCipherVTable: array[0..24] of Pointer = (
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
+    @TForgeInstance.SafeRelease,
 
-   @TEvpCipherInstance.DestroyKey,
-   @TEvpCipherInstance.Duplicate,
-   @TEvpCipherInstance.ExpandKey,
-   @TEvpCipherInstance.SetKeyParam,
-   @TEvpCipherInstance.GetKeyParam,
-   @TEvpAESInstance.GetBlockSize,
-   @TEvpCipherInstance.Encrypt,
-   @TEvpCipherInstance.Decrypt,
-   @TEvpCipherInstance.UpdateBlock,
-   @TEvpCipherInstance.UpdateBlock,
-   @TEvpCipherInstance.GetRand,
-   @TEvpCipherInstance.RandBlock,
-   @TEvpCipherInstance.RandCrypt,
-   @TEvpAESInstance.GetIsBlockCipher,
-   @TEvpAESInstance.ExpandKeyIV,
-   @TEvpCipherInstance.ExpandKeyNonce
+    @TEvpCipherInstance.Burn,
+    @TEvpCipherInstance.Clone,
+    @TEvpCipherInstance.ExpandKey,
+    @TEvpAESInstance.ExpandKeyIV,
+    @TEvpCipherInstance.ExpandKeyNonce,
+    @TCipherInstance.GetBlockSize128,
+    @TEvpCipherInstance.Encrypt,
+    @TEvpCipherInstance.Decrypt,
+    @TCipherInstance.EncryptBlockStub,
+    @TCipherInstance.EncryptBlockStub,
+    @TCipherInstance.GetKeyBlockStub,
+    @TCipherInstance.GetKeyStreamStub,
+    @TCipherInstance.ApplyKeyStreamStub,
+    @TCipherInstance.IsBlockCipher,
+    @TCipherInstance.IncBlockNoStub,
+    @TCipherInstance.IncBlockNoStub,
+    @TCipherInstance.IncBlockNoStub,
+    @TCipherInstance.SetIVStub,
+    @TCipherInstance.SetNonceStub,
+    @TCipherInstance.GetIVStub,
+    @TCipherInstance.GetNonceStub,
+    @TCipherInstance.GetIVPointerStub
    );
 
-function GetEvpAESInstance(var Inst: PEvpAESInstance; Flags: UInt32): TF_RESULT;
+function GetEvpAESInstance(var Inst: PEvpAESInstance; AlgID: TAlgID): TF_RESULT;
 var
   Padding: Cardinal;
   KeyMode: Cardinal;
@@ -79,13 +86,13 @@ var
   Tmp: PEvpAESInstance;
 
 begin
-  KeyDir:= Flags and TF_KEYDIR_MASK;
+  KeyDir:= AlgID and TF_KEYDIR_MASK;
   if (KeyDir <> TF_KEYDIR_ENCRYPT) and (KeyDir <> TF_KEYDIR_DECRYPT) then begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
 
-  Padding:= Flags and TF_PADDING_MASK;
+  Padding:= AlgID and TF_PADDING_MASK;
   if Padding = TF_PADDING_DEFAULT then
     Padding:= TF_PADDING_PKCS;
   if (Padding <> TF_PADDING_NONE) and (Padding <> TF_PADDING_PKCS) then  begin
@@ -93,7 +100,7 @@ begin
     Exit;
   end;
 
-  KeyMode:= Flags and TF_KEYMODE_MASK;
+  KeyMode:= AlgID and TF_KEYMODE_MASK;
   if (KeyMode <> TF_KEYMODE_ECB) and (KeyMode <> TF_KEYMODE_CBC)
     and (KeyMode <> TF_KEYMODE_CTR) then begin
       Result:= TF_E_NOTIMPL;
@@ -104,15 +111,9 @@ begin
     Tmp:= AllocMem(SizeOf(TEvpAESInstance));
     Tmp^.FVTable:= @EvpAESCipherVTable;
     Tmp^.FRefCount:= 1;
-    Tmp^.FFlags:= Flags;
-{
-    Result:= PBaseBlockCipher(Tmp).SetFlags(Flags);
-    if Result <> TF_S_OK then begin
-      FreeMem(Tmp);
-      Exit;
-    end;
-}
-    if Inst <> nil then TEvpCipherInstance.Release(Inst);
+    Tmp^.FAlgID:= AlgID;
+
+    TForgeHelper.Free(Inst);
     Inst:= Tmp;
     Result:= TF_S_OK;
   except
@@ -147,7 +148,7 @@ begin
     Exit;
   end;
 }
-  KeyMode:= Inst.FFlags and TF_KEYMODE_MASK;
+  KeyMode:= Inst.FAlgID and TF_KEYMODE_MASK;
   PCipher:= nil;
   case KeyMode of
     TF_KEYMODE_ECB:
@@ -181,7 +182,7 @@ begin
     Exit;
   end;
 
-  KeyDir:= Inst.FFlags and TF_KEYDIR_MASK;
+  KeyDir:= Inst.FAlgID and TF_KEYDIR_MASK;
   if KeyDir = TF_KEYDIR_ENCRYPT then begin
     RC:= EVP_EncryptInit_ex(Inst.FCtx, PCipher, nil, Key, IV);
     if RC = 1 then begin
@@ -210,7 +211,7 @@ begin
     Exit;
   end;
 
-  Padding:= Inst.FFlags and TF_PADDING_MASK;
+  Padding:= Inst.FAlgID and TF_PADDING_MASK;
   case Padding of
     TF_PADDING_DEFAULT: ;
     TF_PADDING_NONE: EVP_CIPHER_CTX_set_padding(Inst.FCtx, 0);
@@ -225,6 +226,7 @@ begin
   Result:= TF_S_OK;
 end;
 
+{
 class function TEvpAESInstance.GetBlockSize(Inst: PEvpAESInstance): Integer;
 begin
   Result:= AES_BLOCK_SIZE;
@@ -234,5 +236,5 @@ class function TEvpAESInstance.GetIsBlockCipher(Inst: Pointer): Boolean;
 begin
   Result:= True;
 end;
-
+}
 end.

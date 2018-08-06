@@ -48,7 +48,6 @@ contains
   tfSHA1 in '..\..\Source\Engine\Hashes\tfSHA1.pas',
   tfSHA256 in '..\..\Source\Engine\Hashes\tfSHA256.pas',
   tfSHA512 in '..\..\Source\Engine\Hashes\tfSHA512.pas',
-  tfAES in '..\..\Source\Engine\Ciphers\tfAES.pas',
   tfBaseCiphers in '..\..\Source\Engine\Ciphers\tfBaseCiphers.pas',
   tfCipherServ in '..\..\Source\Engine\Ciphers\tfCipherServ.pas',
   tfDES in '..\..\Source\Engine\Ciphers\tfDES.pas',
@@ -77,9 +76,8 @@ contains
   tfCipherInstances in '..\..\Source\Engine\Ciphers\tfCipherInstances.pas',
   tfBlockCiphers in '..\..\Source\Engine\Ciphers\tfBlockCiphers.pas',
   tfAlgAES in '..\..\Source\Engine\Ciphers\tfAlgAES.pas',
-  tfAESBlockCiphers in '..\..\Source\Engine\Ciphers\tfAESBlockCiphers.pas',
+  tfAESCiphers in '..\..\Source\Engine\Ciphers\tfAESCiphers.pas',
   tfHelpers in '..\..\Source\Engine\Forge\tfHelpers.pas',
-  tfAESStreamCiphers in '..\..\Source\Engine\Ciphers\tfAESStreamCiphers.pas',
   tfGHash in '..\..\Source\Engine\Ciphers\tfGHash.pas';
 
 end.

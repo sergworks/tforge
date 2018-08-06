@@ -14,7 +14,7 @@ uses
   {$IFDEF TFL_DLL}
     tfImport
   {$ELSE}
-    tfAES, tfDES, tfRC4, tfRC5, tfSalsa20, tfCipherServ, // tfKeyStreams,
+    tfAESCiphers, tfDES, tfRC4, tfRC5, tfSalsa20, tfCipherServ, // tfKeyStreams,
     tfEvpAES, tfOpenSSL
   {$ENDIF};
 
@@ -32,13 +32,13 @@ const
   MODE_CBC     = TF_KEYMODE_CBC;
   MODE_CTR     = TF_KEYMODE_CTR;
 
-  PADDING_DEFAULT  = TF_PADDING_DEFAULT;
-  PADDING_NONE     = TF_PADDING_NONE;
-  PADDING_ZERO     = TF_PADDING_ZERO;
-  PADDING_ANSI     = TF_PADDING_ANSI;
-  PADDING_PKCS     = TF_PADDING_PKCS;
-  PADDING_ISO10126 = TF_PADDING_ISO10126;
-  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
+  PAD_DEFAULT  = TF_PADDING_DEFAULT;
+  PAD_NONE     = TF_PADDING_NONE;
+  PAD_ZERO     = TF_PADDING_ZERO;
+  PAD_ANSI     = TF_PADDING_ANSI;
+  PAD_PKCS     = TF_PADDING_PKCS;
+  PAD_ISO10126 = TF_PADDING_ISO10126;
+  PAD_ISOIEC   = TF_PADDING_ISOIEC;
 
   ECB_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB;
   ECB_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB;
@@ -46,8 +46,8 @@ const
   CBC_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_CBC;
   CBC_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_CBC;
 
-//  CTR_ENCRYPT = TF_CTR_ENCRYPT;
-//  CTR_DECRYPT = TF_CTR_DECRYPT;
+  CTR_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_CTR;
+  CTR_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_CTR;
 
   AES_ECB         = ALG_AES or MODE_ECB;
   AES_ECB_ENCRYPT = ALG_AES or ECB_ENCRYPT;
@@ -56,9 +56,11 @@ const
   AES_CBC_ENCRYPT = ALG_AES or CBC_ENCRYPT;
   AES_CBC_DECRYPT = ALG_AES or CBC_DECRYPT;
   AES_CTR         = ALG_AES or MODE_CTR;
-//  ALG_AES_CTR_ENCRYPT = TF_ALG_AES or TF_CTR_ENCRYPT;
-//  ALG_AES_CTR_DECRYPT = TF_ALG_AES or TF_CTR_DECRYPT;
+  AES_CTR_ENCRYPT = ALG_AES or CTR_ENCRYPT;
+  AES_CTR_DECRYPT = ALG_AES or CTR_DECRYPT;
 
+// current DES implementation require direction for key expansion,
+//  so some stuff is commented out
 //  DES_ECB         = ALG_DES or MODE_ECB;
   DES_ECB_ENCRYPT = ALG_DES or ECB_ENCRYPT;
   DES_ECB_DECRYPT = ALG_DES or ECB_DECRYPT;
@@ -66,8 +68,8 @@ const
   DES_CBC_ENCRYPT = ALG_DES or CBC_ENCRYPT;
   DES_CBC_DECRYPT = ALG_DES or CBC_DECRYPT;
   DES_CTR         = ALG_DES or MODE_CTR;
-//  ALG_DES_CTR_ENCRYPT = TF_ALG_DES or TF_CTR_ENCRYPT;
-//  ALG_DES_CTR_DECRYPT = TF_ALG_DES or TF_CTR_DECRYPT;
+  DES_CTR_ENCRYPT = ALG_DES or CTR_ENCRYPT;
+  DES_CTR_DECRYPT = ALG_DES or CTR_DECRYPT;
 
 //  DES3_ECB         = ALG_3DES or MODE_ECB;
   DES3_ECB_ENCRYPT = ALG_3DES or ECB_ENCRYPT;
@@ -76,8 +78,8 @@ const
   DES3_CBC_ENCRYPT = ALG_3DES or CBC_ENCRYPT;
   DES3_CBC_DECRYPT = ALG_3DES or CBC_DECRYPT;
   DES3_CTR         = ALG_3DES or MODE_CTR;
-//  ALG_3DES_CTR_ENCRYPT = TF_ALG_3DES or TF_CTR_ENCRYPT;
-//  ALG_3DES_CTR_DECRYPT = TF_ALG_3DES or TF_CTR_DECRYPT;
+  DES3_CTR_ENCRYPT = ALG_3DES or CTR_ENCRYPT;
+  DES3_CTR_DECRYPT = ALG_3DES or CTR_DECRYPT;
 
   RC5_ECB         = ALG_RC5 or MODE_ECB;
   RC5_ECB_ENCRYPT = ALG_RC5 or ECB_ENCRYPT;
@@ -86,8 +88,8 @@ const
   RC5_CBC_ENCRYPT = ALG_RC5 or CBC_ENCRYPT;
   RC5_CBC_DECRYPT = ALG_RC5 or CBC_DECRYPT;
   RC5_CTR         = ALG_RC5 or MODE_CTR;
-//  ALG_RC5_CTR_ENCRYPT = TF_ALG_RC5 or TF_CTR_ENCRYPT;
-//  ALG_RC5_CTR_DECRYPT = TF_ALG_RC5 or TF_CTR_DECRYPT;
+  RC5_CTR_ENCRYPT = ALG_RC5 or CTR_ENCRYPT;
+  RC5_CTR_DECRYPT = ALG_RC5 or CTR_DECRYPT;
 
   ENGINE_OSSL = TF_ENGINE_OSSL;
 
@@ -109,7 +111,8 @@ type
 
     procedure SetIV(AIV: Pointer; AIVLen: Cardinal); overload;
     procedure SetIV(const AIV: ByteArray); overload;
-    function GetIV: ByteArray;
+    procedure GetIV(AIV: Pointer; AIVLen: Cardinal); overload;
+    function GetIV(AIVLen: Cardinal): ByteArray; overload;
 
 // key + IV
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal;
@@ -125,14 +128,14 @@ type
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
     function ExpandKey(const AKey: ByteArray): TCipher; overload;
 
-    procedure Encrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
-                      Last: Boolean);
-    procedure Decrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
-                      Last: Boolean);
-    procedure Apply(var Data; var OutData; DataSize: Cardinal);
+    procedure Encrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+                OutBufSize: Cardinal; Last: Boolean);
+    procedure Decrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+                OutBufSize: Cardinal; Last: Boolean);
+    procedure Apply(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean = False);
 
-    procedure GetKeyStream(var Data; DataSize: Cardinal);
-    function KeyStream(DataSize: Cardinal): ByteArray;
+    procedure GetKeyStream(var Data; DataSize: Cardinal; Last: Boolean = False);
+    function KeyStream(DataSize: Cardinal; Last: Boolean = False): ByteArray;
 
     class function EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray; static;
     class function DecryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray; static;
@@ -165,11 +168,11 @@ type
 //    class operator Explicit(const Name: string): TCipher;
 //    class operator Explicit(AlgID: Integer): TCipher;
 
-    class function GetCount: Integer; static;
-    class function GetID(Index: Cardinal): TAlgID; static;
-    class function GetName(Index: Cardinal): string; static;
-    class function GetIDByName(const Name: string): TAlgID; static;
-    class function GetNameByID(AlgID: TAlgID): string; static;
+//    class function GetCount: Integer; static;
+//    class function GetID(Index: Cardinal): TAlgID; static;
+//    class function GetName(Index: Cardinal): string; static;
+//    class function GetIDByName(const Name: string): TAlgID; static;
+//    class function GetNameByID(AlgID: TAlgID): string; static;
 
     class function Supports(AlgID: TAlgID): Boolean; static;
   end;
@@ -268,9 +271,9 @@ begin
   Result:= FInstance.GetBlockSize;
 end;
 
-procedure TCipher.GetKeyStream(var Data; DataSize: Cardinal);
+procedure TCipher.GetKeyStream(var Data; DataSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.GetKeyStream(@Data, DataSize));
+  HResCheck(FInstance.GetKeyStream(@Data, DataSize, Last));
 end;
 
 function TCipher.GetNonce: UInt64;
@@ -284,23 +287,29 @@ begin
   HResCheck(FInstance.GetNonce(Result));
 end;
 
-function TCipher.GetIV: ByteArray;
-var
-  DataLen: Cardinal;
-
+procedure TCipher.GetIV(AIV: Pointer; AIVLen: Cardinal);
 begin
-  DataLen:= GetBlockSize;
-  if (DataLen = 0) or (DataLen > TF_MAX_CIPHER_BLOCK_SIZE) then
-    CipherError(TF_E_UNEXPECTED);
-  Result:= ByteArray.Allocate(DataLen);
-//  HResCheck(FInstance.GetKeyParam(TF_KP_IV, Result.RawData, DataLen));
-  HResCheck(FInstance.GetIV(Result.RawData, DataLen));
+  HResCheck(FInstance.GetIV(AIV, AIVLen));
 end;
 
-function TCipher.KeyStream(DataSize: Cardinal): ByteArray;
+function TCipher.GetIV(AIVLen: Cardinal): ByteArray;
+var
+  Tmp: ByteArray;
+
 begin
-  Result:= ByteArray.Allocate(DataSize);
-  GetKeyStream(Result.RawData^, DataSize);
+  Tmp:= ByteArray.Allocate(AIVLen);
+  HResCheck(FInstance.GetIV(Tmp.RawData, AIVLen));
+  Result:= Tmp;
+end;
+
+function TCipher.KeyStream(DataSize: Cardinal; Last: Boolean): ByteArray;
+var
+  Tmp: ByteArray;
+
+begin
+  Tmp:= ByteArray.Allocate(DataSize);
+  GetKeyStream(Tmp.RawData^, DataSize, Last);
+  Result:= Tmp;
 end;
 
 function TCipher.IsAssigned: Boolean;
@@ -386,14 +395,18 @@ end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher;
 begin
-  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, nil, 0));
-  Result:= Self;
+//  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, nil, 0));
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 function TCipher.ExpandKey(const AKey: ByteArray): TCipher;
 begin
-  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, nil, 0));
-  Result:= Self;
+//  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, nil, 0));
+  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 (*
@@ -411,7 +424,8 @@ begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV, AIVLen));
   HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, AIV, AIVLen));
-  Result:= Self;
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 (*
 function TCipher.ExpandKey(const AKey: ByteArray; AFlags: UInt32): TCipher;
@@ -428,7 +442,8 @@ begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_IV, AIV.RawData, AIV.Len));
   HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
-  ICipher(Result):= ICipher(Self);
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; const ANonce: UInt64): TCipher;
@@ -462,7 +477,8 @@ begin
 *)
 begin
   HResCheck(FInstance.ExpandKeyNonce(AKey, AKeyLen, ANonce));
-  Result:= Self;
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
@@ -471,7 +487,8 @@ begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
 //  HResCheck(FInstance.SetKeyParam(TF_KP_NONCE, @ANonce, SizeOf(ANonce)));
   HResCheck(FInstance.ExpandKeyNonce(AKey.RawData, AKey.Len, ANonce));
-  Result:= Self;
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 procedure TCipher.Burn;
@@ -479,20 +496,21 @@ begin
   FInstance.Burn;
 end;
 
-procedure TCipher.Encrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal;
-  Last: Boolean);
+procedure TCipher.Encrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+            OutBufSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Encrypt(OutData, OutSize, Data, DataSize, Last));
+  HResCheck(FInstance.Encrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
 end;
 
-procedure TCipher.Decrypt(OutData: Pointer; OutSize: Cardinal; Data: Pointer; var DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Decrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+            OutBufSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Decrypt(OutData, OutSize, Data, DataSize, Last));
+  HResCheck(FInstance.Decrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
 end;
 
-procedure TCipher.Apply(var Data; var OutData; DataSize: Cardinal);
+procedure TCipher.Apply(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.ApplyKeyStream(@Data, @OutData, DataSize));
+  HResCheck(FInstance.ApplyKeyStream(Data, OutData, DataSize, Last));
 end;
 
 class function TCipher.EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray;
@@ -534,46 +552,69 @@ end;
 function TCipher.EncryptByteArray(const Data: ByteArray): ByteArray;
 var
   L0, L1: Cardinal;
-  Buffer: Pointer;
+  LBlockSize: Cardinal;
+  OutBuffer, InBuffer: PByte;
+
+// It is possible that TCipher instance containes some cached data
+//   before EncryptByteArray call; this is user code error
+//   (prev encryption was not finalized),
+//   but I must handle this case correctly;
+//   since I wouldn't reset cache for an external engine,
+//   I simply dump the cache to the output.
 
 begin
-  L0:= Data.GetLen;
-  if L0 = 0 then begin
-    Result:= ByteArray.Allocate(0);
-    Exit;
+  LBlockSize:= GetBlockSize;
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    CipherError(TF_E_UNEXPECTED, 'BlockSize = ' + IntToStr(LBlockSize));
   end;
-  L1:= L0 + TF_MAX_CIPHER_BLOCK_SIZE;
-  GetMem(Buffer, L1);
+{$ENDIF}
+
+  L0:= Data.GetLen;
+// one LBlockSize for cache dump, another for pad block
+  L1:= L0 + 2 * LBlockSize;
+
+  GetMem(OutBuffer, L1);
   try
-    Move(Data.RawData^, Buffer^, L0);
-    HResCheck(FInstance.Encrypt(Buffer, L1, Buffer, L0, True));
-    Result:= ByteArray.FromMem(Buffer, L0);
+    InBuffer:= OutBuffer + LBlockSize;
+    Move(Data.RawData^, InBuffer^, L0);
+    HResCheck(FInstance.Encrypt(InBuffer, OutBuffer, L0, L1, True));
+    Result:= ByteArray.FromMem(OutBuffer, L0);
   finally
-    FillChar(Buffer^, L1, 0);
-    FreeMem(Buffer);
+    FillChar(OutBuffer^, L1, 0);
+    FreeMem(OutBuffer);
   end;
 end;
 
 function TCipher.DecryptByteArray(const Data: ByteArray): ByteArray;
 var
   L0, L1: Cardinal;
-  Buffer: Pointer;
+  LBlockSize: Cardinal;
+  OutBuffer, InBuffer: PByte;
 
 begin
-  L0:= Data.GetLen;
-  if L0 = 0 then begin
-    Result:= ByteArray.Allocate(0);
-    Exit;
+  LBlockSize:= GetBlockSize;
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    CipherError(TF_E_UNEXPECTED, 'BlockSize = ' + IntToStr(LBlockSize));
   end;
-  L1:= L0 + TF_MAX_CIPHER_BLOCK_SIZE;
-  GetMem(Buffer, L1);
+{$ENDIF}
+
+  L0:= Data.GetLen;
+// LBlockSize for cache dump
+  L1:= L0 + LBlockSize;
+
+  GetMem(OutBuffer, L1);
   try
-    Move(Data.RawData^, Buffer^, L0);
-    HResCheck(FInstance.Decrypt(Buffer, L1, Buffer, L0, True));
-    Result:= ByteArray.FromMem(Buffer, L0);
+    InBuffer:= OutBuffer + LBlockSize;
+    Move(Data.RawData^, InBuffer^, L0);
+    HResCheck(FInstance.Decrypt(InBuffer, OutBuffer, L0, L1, True));
+    Result:= ByteArray.FromMem(OutBuffer, L0);
   finally
-    FillChar(Buffer^, L1, 0);
-    FreeMem(Buffer);
+    FillChar(OutBuffer^, L1, 0);
+    FreeMem(OutBuffer);
   end;
 end;
 
@@ -597,41 +638,53 @@ const
   MIN_BUFSIZE = 4 * 1024;
   MAX_BUFSIZE = 4 * 1024 * 1024;
   DEFAULT_BUFSIZE = 16 * 1024;
-  PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
+//  PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
 
 
 var
-  OutBufSize, DataSize: LongWord;
-  Data, PData: PByte;
+  LBlockSize: Cardinal;
+  DataSize, OutBufSize: Cardinal;
+  InBuffer, OutBuffer: PByte;
+  PInBuffer: PByte;
   N: Integer;
-  Cnt: LongWord;
+  Cnt: Cardinal;
   Last: Boolean;
 
 begin
+  LBlockSize:= GetBlockSize;
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    CipherError(TF_E_UNEXPECTED, 'BlockSize = ' + IntToStr(LBlockSize));
+  end;
+{$ENDIF}
+
   if (BufSize < MIN_BUFSIZE) or (BufSize > MAX_BUFSIZE)
     then BufSize:= DEFAULT_BUFSIZE
-    else BufSize:= (BufSize + PAD_BUFSIZE - 1)
-                         and not (PAD_BUFSIZE - 1);
-  OutBufSize:= BufSize + PAD_BUFSIZE;
-  GetMem(Data, OutBufSize);
+    else BufSize:= (BufSize + LBlockSize - 1)
+                         and not (LBlockSize - 1);
+
+  OutBufSize:= BufSize + 2 * LBlockSize;
+  GetMem(OutBuffer, OutBufSize);
+  InBuffer:= OutBuffer + LBlockSize;
   try
     repeat
       Cnt:= BufSize;
-      PData:= Data;
+      PInBuffer:= InBuffer;
       repeat
-        N:= InStream.Read(PData^, Cnt);
+        N:= InStream.Read(PInBuffer^, Cnt);
         if N <= 0 then Break;
-        Inc(PData, N);
+        Inc(PInBuffer, N);
         Dec(Cnt, N);
       until (Cnt = 0);
       Last:= Cnt > 0;
       DataSize:= BufSize - Cnt;
-      Encrypt(Data, OutBufSize, Data, DataSize, Last);
+      Encrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last);
       if DataSize > 0 then
-        OutStream.WriteBuffer(Data^, DataSize);
+        OutStream.WriteBuffer(OutBuffer^, DataSize);
     until Last;
   finally
-    FreeMem(Data);
+    FreeMem(OutBuffer);
   end;
 end;
 
@@ -640,10 +693,64 @@ const
   MIN_BUFSIZE = 4 * 1024;
   MAX_BUFSIZE = 4 * 1024 * 1024;
   DEFAULT_BUFSIZE = 16 * 1024;
+//  PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
+
+var
+  LBlockSize: Cardinal;
+  DataSize, OutBufSize: Cardinal;
+  InBuffer, OutBuffer, PInBuffer: PByte;
+  N: Integer;
+  Cnt: Cardinal;
+  Last: Boolean;
+
+begin
+  LBlockSize:= GetBlockSize;
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    CipherError(TF_E_UNEXPECTED, 'BlockSize = ' + IntToStr(LBlockSize));
+  end;
+{$ENDIF}
+
+  if (BufSize < MIN_BUFSIZE) or (BufSize > MAX_BUFSIZE)
+    then BufSize:= DEFAULT_BUFSIZE
+    else BufSize:= (BufSize + LBlockSize - 1)
+                         and not (LBlockSize - 1);
+
+  OutBufSize:= BufSize + LBlockSize;
+  GetMem(OutBuffer, OutBufSize);
+  InBuffer:= OutBuffer + LBlockSize;
+
+  try
+    repeat
+      Cnt:= BufSize;
+      PInBuffer:= InBuffer;
+      repeat
+        N:= InStream.Read(PInBuffer^, Cnt);
+        if N <= 0 then Break;
+        Inc(PInBuffer, N);
+        Dec(Cnt, N);
+      until (Cnt = 0);
+      Last:= Cnt > 0;
+      DataSize:= BufSize - Cnt;
+      Decrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last);
+      if DataSize > 0 then
+        OutStream.WriteBuffer(OutBuffer^, DataSize);
+    until Last;
+  finally
+    FreeMem(OutBuffer);
+  end;
+end;
+
+(*
+procedure TCipher.DecryptStream(InStream, OutStream: TStream; BufSize: Cardinal);
+const
+  MIN_BUFSIZE = 4 * 1024;
+  MAX_BUFSIZE = 4 * 1024 * 1024;
+  DEFAULT_BUFSIZE = 16 * 1024;
   PAD_BUFSIZE = TF_MAX_CIPHER_BLOCK_SIZE;
 
 var
-// Pad buffer is needed for both native and OSSL support
   Pad: array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
   ReadBufSize, OutDataSize, DataSize, LDataSize, Offset: Cardinal;
   OutData, InData, Data, PData: PByte;
@@ -687,7 +794,7 @@ begin
         Move((Data + BufSize)^, Pad, PAD_BUFSIZE);
       end;
       LDataSize:= DataSize;
-      Decrypt(OutData, DataSize, InData, DataSize, Last);
+      Decrypt(InData, DataSize, OutData, DataSize, Last);
       if DataSize > 0 then
         OutStream.WriteBuffer(OutData^, DataSize);
 //        OutStream.WriteBuffer(Data^, BufSize);
@@ -708,6 +815,7 @@ begin
     FreeMem(Data);
   end;
 end;
+*)
 
 procedure TCipher.DecryptFile(const InName, OutName: string; BufSize: Cardinal);
 var
@@ -729,12 +837,13 @@ begin
   HResCheck(FInstance.Clone(Result.FInstance));
 end;
 
+{
 class function TCipher.GetCount: Integer;
 begin
 //  Result:= FServer.GetCount;
   Result:= GetServer.GetCount;
 end;
-
+}
 {
 function TCipher.Decrypt(const Data: ByteArray): ByteArray;
 var
@@ -747,7 +856,7 @@ begin
   Result.Len:= L;
 end;
 }
-
+{
 class function TCipher.GetID(Index: Cardinal): TAlgID;
 begin
   HResCheck(GetServer.GetID(Index, Result));
@@ -789,7 +898,7 @@ begin
   HResCheck(GetServer.GetNameByID(AlgID and TF_ALGID_MASK, P));
   Result:= string(PUTF8String(P)^);
 end;
-
+}
 (*
 function TCipher.SetFlags(AFlags: UInt32): TCipher;
 begin

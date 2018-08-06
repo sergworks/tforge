@@ -134,7 +134,6 @@
         <DCCReference Include="..\..\Source\Engine\Hashes\tfSHA1.pas"/>
         <DCCReference Include="..\..\Source\Engine\Hashes\tfSHA256.pas"/>
         <DCCReference Include="..\..\Source\Engine\Hashes\tfSHA512.pas"/>
-        <DCCReference Include="..\..\Source\Engine\Ciphers\tfAES.pas"/>
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfBaseCiphers.pas"/>
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfCipherServ.pas"/>
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfDES.pas"/>
@@ -163,9 +162,8 @@
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfCipherInstances.pas"/>
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfBlockCiphers.pas"/>
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfAlgAES.pas"/>
-        <DCCReference Include="..\..\Source\Engine\Ciphers\tfAESBlockCiphers.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfAESCiphers.pas"/>
         <DCCReference Include="..\..\Source\Engine\Forge\tfHelpers.pas"/>
-        <DCCReference Include="..\..\Source\Engine\Ciphers\tfAESStreamCiphers.pas"/>
         <DCCReference Include="..\..\Source\Engine\Ciphers\tfGHash.pas"/>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
@@ -549,13 +547,13 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
                 <ProjectRoot Platform="Android" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Win32" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
-                <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME)"/>
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
-                <ProjectRoot Platform="iOSSimulator" Name="$(PROJECTNAME).app"/>
+                <ProjectRoot Platform="OSX32" Name="$(PROJECTNAME)"/>
+                <ProjectRoot Platform="iOSDevice32" Name="$(PROJECTNAME).app"/>
             </Deployment>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

@@ -26,6 +26,8 @@ type
   TF_RESULT = type Int32;
   TF_AlgID = UInt32;
   TAlgID = TF_AlgID;
+  TF_KeyFlags = UInt32;
+  TKeyFlags = TF_AlgID;
   TF_Nonce = UInt64;
   TNonce = TF_Nonce;
 //  TF_KeyParam = UInt32;
@@ -49,6 +51,8 @@ const
   TF_E_NOMEMORY     = TF_RESULT($A0000003);   // specific TFL memory error
   TF_E_LOADERROR    = TF_RESULT($A0000004);   // Error loading dll
   TF_E_INVALIDKEY   = TF_RESULT($A0000005);   // Invalid key
+  TF_E_INVALIDIV    = TF_RESULT($A0000006);   // Invalid IV
+  TF_E_INVALIDPAD   = TF_RESULT($A0000007);   // Invalid padding
   TF_E_OSSL         = TF_RESULT($A0001000);   // OpenSSL function error
 
 
@@ -424,16 +428,20 @@ type
     function ExpandKeyNonce(Key: Pointer; KeySize: Cardinal;
              Nonce: TNonce): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data: PByte; var DataSize: Cardinal; OutData: PByte; OutSize: Cardinal;
+//    function Encrypt(Data: PByte; DataSize: Cardinal; OutData: PByte; var OutSize: Cardinal;
+//             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+//    function Decrypt(Data: PByte; DataSize: Cardinal; OutData: PByte; var OutSize: Cardinal;
+//             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Encrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data: PByte; var DataSize: Cardinal; OutData: PByte; OutSize: Cardinal;
+    function Decrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetKeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function GetKeyStream(Data: PByte; DataSize: Cardinal): TF_RESULT;
+    function GetKeyStream(Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ApplyKeyStream(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+    function ApplyKeyStream(Data, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function IncBlockNo(Count: UInt64): TF_RESULT;
@@ -449,6 +457,8 @@ type
     function GetIV(Data: Pointer; DataLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetNonce(var Nonce: TNonce): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetIVPointer: Pointer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -532,7 +542,7 @@ const
 //  TF_KP_NONCE_LE     = TF_KP_LE + TF_KP_NONCE;
 //  TF_KP_INCNO_LE     = TF_KP_LE + TF_KP_INCNO;
 
-// Key Flags bits:
+// AlgID bits:
 //    0002               0080         0800          8000
 //  0  1 | 2  3  4  5  6  7 | 8  9 10 11 | 12 13 14 15 |
 //  DIR  | MODE             | PADDING    | ENGINE

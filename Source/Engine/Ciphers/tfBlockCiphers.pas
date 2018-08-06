@@ -4,17 +4,19 @@
   -------------------------------------------------------
   # generic block cipher
   # inheritance:
-      TForgeInstance <-- TCipherInstance <-- TBlockCipherInstance
+      TForgeInstance <-- TCipherInstance <-- TStreamCipherInstance <--
+        <-- TBlockCipherInstance
 }
 
 unit tfBlockCiphers;
 
 {$I TFL.inc}
+{$R-}
 
 interface
 
 uses
-  tfTypes;
+  tfTypes, tfUtils;
 
 type
   PBlockCipherInstance = ^TBlockCipherInstance;
@@ -24,34 +26,42 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
     FAlgID:    TAlgID;
-    FKeyFlags: UInt32;
-    FPos:      Cardinal;
+    FKeyFlags: TKeyFlags;
+    FPos:      Integer;
 {$HINTS ON}
-    FIVector: array[0..0] of Byte;
+    FCache: array[0..0] of Byte;
 
+    function DecodePad(PadBlock: PByte; BlockSize: Cardinal;
+                         Padding: UInt32; out PayLoad: Cardinal): TF_RESULT;
   public
-    class function GetIsBlockCipher(Inst: Pointer): Boolean;
+//    class function GetIsBlockCipher(Inst: Pointer): Boolean;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function IncBlockNoCTR(Inst: PBlockCipherInstance; Count: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DecBlockNoCTR(Inst: PBlockCipherInstance; Count: UInt64): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SkipCTR(Inst: PBlockCipherInstance; Dist: Int64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ExpandKey(Inst: Pointer; Key: PByte; KeySize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ExpandKeyNonce(Inst: Pointer; Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptECB(Inst: PBlockCipherInstance; Data: PByte; var DataSize: Cardinal;
-                     OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function EncryptECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DecryptECB(Inst: PBlockCipherInstance; Data: PByte; var DataSize: Cardinal;
-                     OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function DecryptECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptCBC(Inst: PBlockCipherInstance; Data: PByte; var DataSize: Cardinal;
-                     OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function EncryptCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function DecryptCBC(Inst: PBlockCipherInstance; Data: PByte; var DataSize: Cardinal;
-                     OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function DecryptCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyBlockCTR(Inst: Pointer; Data: PByte): TF_RESULT;
+    class function GetKeyBlockCTR(Inst: PBlockCipherInstance; Data: PByte): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyBlockOFB(Inst: Pointer; Data: PByte): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function GetKeyBlockOFB(Inst: Pointer; Data: PByte): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SetIV(Inst: Pointer; IV: Pointer; IVLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SetNonce(Inst: PBlockCipherInstance; Nonce: TNonce): TF_RESULT;
@@ -60,7 +70,12 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetNonce(Inst: PBlockCipherInstance; var Nonce: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
- end;
+    class function GetIVPointer(Inst: PBlockCipherInstance): Pointer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function EncryptFinalECB(Inst: PBlockCipherInstance;
+//                     OutData: PByte; var OutSize: Cardinal): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+  end;
 
 implementation
 
@@ -105,14 +120,15 @@ end;
 { TBlockCipherInstance }
 
 class function TBlockCipherInstance.EncryptCBC(Inst: PBlockCipherInstance;
-                 Data: PByte; var DataSize: Cardinal;
-                 OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+                 InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+                 OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
-  RequiredSize: Cardinal;
-  LDataSize: Cardinal;
+  IVector: PByte;
+  OutCount: Cardinal;     // number of bytes written to OutData
   LPadding: UInt32;
-  LBlockSize: Cardinal;
+  LBlockSize: Integer;
+  LDataSize: Cardinal;
   Cnt: Cardinal;
 
 begin
@@ -122,8 +138,6 @@ begin
   end;
 
   @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
-  LDataSize:= DataSize;
-  LPadding:= Inst.FAlgID and TF_PADDING_MASK;
 
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
 
@@ -134,111 +148,149 @@ begin
   end;
 {$ENDIF}
 
-  if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKCS;
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+  LDataSize:= DataSize;
+  OutCount:= 0;
 
-// check arguments
-  if Last then begin
-    case LPadding of
-      TF_PADDING_NONE: begin
-        if LDataSize and (LBlockSize - 1) <> 0 then begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-        RequiredSize:= LDataSize;
+// process incomplete cached block
+  if Inst.FPos > 0 then begin
+    Cnt:= LBlockSize - Inst.FPos;
+    if Cnt > LDataSize then Cnt:= LDataSize;
+    Move(InBuffer^, Inst.FCache[Inst.FPos], Cnt);
+    Inc(InBuffer, Cnt);
+    Dec(LDataSize, Cnt);
+    Inc(Inst.FPos, Cnt);
+    if Inst.FPos = LBlockSize then begin
+      Inst.FPos:= 0;
+      if OutBufSize < Cardinal(LBlockSize) then begin
+        Result:= TF_E_INVALIDARG;
+        Exit;
       end;
-      TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
-      TF_PADDING_ANSI,
-      TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
-    else
-      Result:= TF_E_UNEXPECTED;
-      Exit;
+      XorBytes(@Inst.FCache, IVector, LBlockSize);
+      EncryptBlock(Inst, @Inst.FCache);
+      Move(Inst.FCache, IVector^, LBlockSize);
+      Move(Inst.FCache, OutBuffer^, LBlockSize);
+      FillChar(Inst.FCache, LBlockSize, 0);
+      Inc(OutBuffer, LBlockSize);
+      OutCount:= LBlockSize;
     end;
-  end
-  else begin
-    if LDataSize and (LBlockSize - 1) <> 0 then begin
+  end;
+
+// process full blocks
+  while LDataSize >= Cardinal(LBlockSize) do begin
+    if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
       Result:= TF_E_INVALIDARG;
       Exit;
     end;
-    RequiredSize:= LDataSize;
-  end;
-  DataSize:= RequiredSize;
-  if OutSize < RequiredSize then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+    XorBytes(OutBuffer, IVector, LBlockSize);
+    EncryptBlock(Inst, OutBuffer);
+    Move(OutBuffer^, IVector^, LBlockSize);
+    Inc(InBuffer, LBlockSize);
+    Dec(LDataSize, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Inc(OutCount, LBlockSize);
   end;
 
-// encrypt
-  while LDataSize >= LBlockSize do begin
-    Move(Data^, OutData^, LBlockSize);
-    XorBytes(OutData, @Inst.FIVector, LBlockSize);
-    EncryptBlock(Inst, OutData);
-    Move(OutData^, Inst.FIVector, LBlockSize);
-    Inc(Data, LBlockSize);
-    Inc(OutData, LBlockSize);
-    Dec(LDataSize, LBlockSize);
+// process last incomplete block
+  if LDataSize > 0 then begin
+    Move(InBuffer^, Inst.FCache, LDataSize);
+    Inst.FPos:= LDataSize;
   end;
+
+  Result:= TF_S_OK;
 
   if Last then begin
-    Cnt:= LBlockSize - LDataSize;    // 0 < Cnt <= BLOCK_SIZE
+    LPadding:= Inst.FAlgID and TF_PADDING_MASK;
+    if LPadding = TF_PADDING_DEFAULT
+      then LPadding:= TF_PADDING_PKCS;
+
+    Cnt:= Cardinal(LBlockSize) - LDataSize;      // 0 < Cnt <= LBlockSize
     case LPadding of
+
+      TF_PADDING_NONE: begin
+        if Inst.FPos > 0 then begin
+          Result:= TF_E_INVALIDPAD;
+        end;
+      end;
                                             // XX 00 00 00 00
-      TF_PADDING_ZERO: if LDataSize > 0 then begin
-        Move(Data^, OutData^, LBlockSize);
-        Inc(OutData, LDataSize);
-        FillChar(OutData^, Cnt, 0);
-        Dec(OutData, LDataSize);
-        XorBytes(OutData, @Inst.FIVector, LBlockSize);
-        EncryptBlock(Inst, OutData);
+      TF_PADDING_ZERO: if Inst.FPos > 0 then begin
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          FillChar(Inst.FCache[Inst.FPos], Cnt, 0);
+          XorBytes(@Inst.FCache, IVector, LBlockSize);
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, IVector^, LBlockSize);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+          Inc(OutCount, LBlockSize);
+        end;
       end;
                                             // XX 00 00 00 04
       TF_PADDING_ANSI: begin
-        Move(Data^, OutData^, LBlockSize);
-        Inc(OutData, LDataSize);
-        FillChar(OutData^, Cnt - 1, 0);
-        Inc(OutData, Cnt - 1);
-        OutData^:= Byte(Cnt);
-        Dec(OutData, LBlockSize - 1);
-        XorBytes(OutData, @Inst.FIVector, LBlockSize);
-        EncryptBlock(Inst, OutData);
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          FillChar(Inst.FCache[Inst.FPos], Cnt - 1, 0);
+          Inst.FCache[LBlockSize - 1]:= Byte(Cnt);
+          XorBytes(@Inst.FCache, IVector, LBlockSize);
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, IVector^, LBlockSize);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+          Inc(OutCount, LBlockSize);
+        end;
       end;
                                             // XX 04 04 04 04
       TF_PADDING_PKCS,
       TF_PADDING_ISO10126: begin
-        Move(Data^, OutData^, LBlockSize);
-        Inc(OutData, LDataSize);
-        FillChar(OutData^, Cnt, Byte(Cnt));
-        Dec(OutData, LDataSize);
-        XorBytes(OutData, @Inst.FIVector, LBlockSize);
-        EncryptBlock(Inst, OutData);
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          FillChar(Inst.FCache[Inst.FPos], Cnt, Byte(Cnt));
+          XorBytes(@Inst.FCache, IVector, LBlockSize);
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, IVector^, LBlockSize);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+
+          Inc(OutCount, LBlockSize);
+        end;
       end;
                                             // XX 80 00 00 00
       TF_PADDING_ISOIEC: begin
-        Move(Data^, OutData^, LBlockSize);
-        Inc(OutData, LDataSize);
-        Data^:= $80;
-        Inc(OutData);
-        FillChar(OutData^, Cnt - 1, 0);
-        Dec(OutData, LDataSize + 1);
-        XorBytes(OutData, @Inst.FIVector, LBlockSize);
-        EncryptBlock(Inst, OutData);
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          Inst.FCache[Inst.FPos]:= $80;
+          FillChar(Inst.FCache[Inst.FPos + 1], Cnt - 1, 0);
+          XorBytes(@Inst.FCache, IVector, LBlockSize);
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, IVector^, LBlockSize);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+
+          Inc(OutCount, LBlockSize);
+        end;
       end;
     end;
+    FillChar(Inst.FCache, LBlockSize, 0);
+    Inst.FPos:= 0;
   end;
-  Result:= TF_S_OK;
+
+  DataSize:= OutCount;
 end;
 
 class function TBlockCipherInstance.EncryptECB(Inst: PBlockCipherInstance;
-                 Data: PByte; var DataSize: Cardinal;
-                 OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+                 InBuffer, OutBuffer: PByte;
+                 var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
-  RequiredSize: Cardinal;
-  LDataSize: Cardinal;
+  OutCount: Cardinal;     // number of bytes written to OutBuffer
   LPadding: UInt32;
-  LBlockSize: Cardinal;
+  LBlockSize: Integer;
+  LDataSize: Cardinal;
   Cnt: Cardinal;
 
 begin
@@ -248,8 +300,6 @@ begin
   end;
 
   @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
-  LDataSize:= DataSize;
-  LPadding:= Inst.FAlgID and TF_PADDING_MASK;
 
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
 
@@ -260,95 +310,128 @@ begin
   end;
 {$ENDIF}
 
-  if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKCS;
+  LDataSize:= DataSize;
+  OutCount:= 0;
 
-// check arguments
-  if Last then begin
-    case LPadding of
-      TF_PADDING_NONE: begin
-        if LDataSize and (LBlockSize - 1) <> 0 then begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-        RequiredSize:= LDataSize;
+// process incomplete cached block
+  if Inst.FPos > 0 then begin
+    Cnt:= LBlockSize - Inst.FPos;
+    if Cnt > LDataSize then Cnt:= LDataSize;
+    Move(InBuffer^, Inst.FCache[Inst.FPos], Cnt);
+    Inc(InBuffer, Cnt);
+    Dec(LDataSize, Cnt);
+    Inc(Inst.FPos, Cnt);
+    if Inst.FPos = LBlockSize then begin
+      Inst.FPos:= 0;
+      if OutBufSize < Cardinal(LBlockSize) then begin
+        Result:= TF_E_INVALIDARG;
+        Exit;
       end;
-      TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
-      TF_PADDING_ANSI,
-      TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
-    else
-      Result:= TF_E_UNEXPECTED;
-      Exit;
+      EncryptBlock(Inst, @Inst.FCache);
+      Move(Inst.FCache, OutBuffer^, LBlockSize);
+      FillChar(Inst.FCache, LBlockSize, 0);
+      Inc(OutBuffer, LBlockSize);
+      OutCount:= LBlockSize;
     end;
-  end
-  else begin
-    if LDataSize and (LBlockSize - 1) <> 0 then begin
+  end;
+
+// process full blocks
+  while LDataSize >= Cardinal(LBlockSize) do begin
+    if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
       Result:= TF_E_INVALIDARG;
       Exit;
     end;
-    RequiredSize:= LDataSize;
-  end;
-  DataSize:= RequiredSize;
-  if (Data = nil) or (OutSize < RequiredSize) then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+    EncryptBlock(Inst, OutBuffer);
+    Inc(InBuffer, LBlockSize);
+    Dec(LDataSize, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Inc(OutCount, LBlockSize);
   end;
 
-// encrypt
-  while LDataSize >= LBlockSize do begin
-    Move(Data^, OutData^, LBlockSize);
-    EncryptBlock(Inst, OutData);
-    Inc(Data, LBlockSize);
-    Inc(OutData, LBlockSize);
-    Dec(LDataSize, LBlockSize);
+// process last incomplete block
+  if LDataSize > 0 then begin
+    Move(InBuffer^, Inst.FCache, LDataSize);
+    Inst.FPos:= LDataSize;
   end;
+
+  Result:= TF_S_OK;
+
   if Last then begin
-    Cnt:= LBlockSize - LDataSize;    // 0 < Cnt <= LBlockSize
+    LPadding:= Inst.FAlgID and TF_PADDING_MASK;
+    if LPadding = TF_PADDING_DEFAULT
+      then LPadding:= TF_PADDING_PKCS;
+
+    Cnt:= Cardinal(LBlockSize) - LDataSize;      // 0 < Cnt <= LBlockSize
     case LPadding of
+
+      TF_PADDING_NONE: begin
+        if Inst.FPos > 0 then begin
+          Result:= TF_E_INVALIDPAD;
+        end;
+      end;
                                             // XX 00 00 00 00
-      TF_PADDING_ZERO: if LDataSize > 0 then begin
-        Move(Data^, OutData^, LDataSize);
-        Inc(OutData, LDataSize);
-        FillChar(OutData^, Cnt, 0);
-        Dec(OutData, LDataSize);
-        EncryptBlock(Inst, OutData);
+      TF_PADDING_ZERO: if Inst.FPos > 0 then begin
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          FillChar(Inst.FCache[Inst.FPos], Cnt, 0);
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+          Inc(OutCount, LBlockSize);
+        end;
       end;
                                             // XX 00 00 00 04
       TF_PADDING_ANSI: begin
-        Move(Data^, OutData^, LDataSize);
-        Inc(OutData, LDataSize);
-        FillChar(OutData^, Cnt - 1, 0);
-        Inc(OutData, Cnt - 1);
-        OutData^:= Byte(Cnt);
-        Dec(OutData, LBlockSize - 1);
-        EncryptBlock(Inst, OutData);
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          FillChar(Inst.FCache[Inst.FPos], Cnt - 1, 0);
+          Inst.FCache[LBlockSize - 1]:= Byte(Cnt);
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+          Inc(OutCount, LBlockSize);
+        end;
       end;
                                             // XX 04 04 04 04
       TF_PADDING_PKCS,
       TF_PADDING_ISO10126: begin
-        Move(Data^, OutData^, LDataSize);
-        Inc(OutData, LDataSize);
-        FillChar(OutData^, Cnt, Byte(Cnt));
-        Dec(OutData, LDataSize);
-        EncryptBlock(Inst, OutData);
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          FillChar(Inst.FCache[Inst.FPos], Cnt, Byte(Cnt));
+          EncryptBlock(Inst, @Inst.FCache);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+          Inc(OutCount, LBlockSize);
+        end;
       end;
                                             // XX 80 00 00 00
       TF_PADDING_ISOIEC: begin
-        Move(Data^, OutData^, LDataSize);
-        Inc(OutData, LDataSize);
-        OutData^:= $80;
-        Inc(OutData);
-        FillChar(OutData^, Cnt - 1, 0);
-        Dec(OutData, LDataSize + 1);
-        EncryptBlock(Inst, OutData);
+        if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+          Result:= TF_E_INVALIDARG;
+        end
+        else begin
+          Inst.FCache[Inst.FPos]:= $80;
+          FillChar(Inst.FCache[Inst.FPos + 1], Cnt - 1, 0);
+          EncryptBlock(Inst, OutBuffer);
+          Move(Inst.FCache, OutBuffer^, LBlockSize);
+          Inc(OutCount, LBlockSize);
+        end;
       end;
     end;
+    FillChar(Inst.FCache, LBlockSize, 0);
+    Inst.FPos:= 0;
   end;
-  Result:= TF_S_OK;
+
+  DataSize:= OutCount;
 end;
 
+// I assume here that derived class implements ExpandKeyIV
+//   and inherits ExpandKey and ExpandKeyNonce implementations
+//   from TBlockCipherInstance
 class function TBlockCipherInstance.ExpandKey(Inst: Pointer;
                  Key: PByte; KeySize: Cardinal): TF_RESULT;
 begin
@@ -358,154 +441,93 @@ end;
 class function TBlockCipherInstance.ExpandKeyNonce(Inst: Pointer;
                  Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
 begin
-  Result:= TCipherHelper.ExpandKeyIV(Inst, Key, KeySize, nil, 0);
+//  Result:= TCipherHelper.ExpandKeyIV(Inst, Key, KeySize, nil, 0);
+  Result:= TCipherHelper.ExpandKey(Inst, Key, KeySize);
   if Result = TF_S_OK then
     Result:= SetNonce(Inst, Nonce);
 end;
 
-class function TBlockCipherInstance.DecryptCBC(Inst: PBlockCipherInstance;
-                 Data: PByte; var DataSize: Cardinal;
-                 OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+function TBlockCipherInstance.DecodePad(PadBlock: PByte; BlockSize: Cardinal;
+           Padding: UInt32; out PayLoad: Cardinal): TF_RESULT;
 var
-  DecryptBlock: TCipherHelper.TBlockFunc;
-  Temp: TCipherHelper.TBlock;
-  LDataSize: Cardinal;
-  LPadding: UInt32;
-  LBlockSize: Cardinal;
-  Cnt, SaveCnt: Cardinal;
+  Cnt, Cnt2: Cardinal;
 
 begin
-  if not ValidDecryptionKey(Inst) then begin
-    Result:= TF_E_INVALIDKEY;
-    Exit;
-  end;
-
-  @DecryptBlock:= TCipherHelper.GetDecryptBlockFunc(Inst);
-
-  LPadding:= Inst.FAlgID and TF_PADDING_MASK;
-  if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKCS;
-
-  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
-
-{$IFDEF DEBUG}
-  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
-    Result:= TF_E_UNEXPECTED;
-    Exit;
-  end;
-{$ENDIF}
-
-  LDataSize:= DataSize;
-  if LDataSize and (LBlockSize - 1) <> 0 then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
-
-  if Last and (LDataSize = 0) then begin
-    case LPadding of
-      TF_PADDING_ANSI,
-      TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: begin
-        Result:= TF_E_INVALIDARG;
-        Exit;
-      end;
-    end;
-  end;
-
-  while LDataSize >= LBlockSize do begin
-    Move(Data^, OutData^, LBlockSize);
-    Move(Data^, Temp, LBlockSize);
-    DecryptBlock(Inst, OutData);
-    XorBytes(OutData, @Inst.FIVector, LBlockSize);
-    Move(Temp, Inst.FIVector, LBlockSize);
-    Inc(Data, LBlockSize);
-    Inc(OutData, LBlockSize);
-    Dec(LDataSize, LBlockSize);
-  end;
-  if Last then begin
-    case LPadding of
-                                            // XX 00 00 00 04
-      TF_PADDING_ANSI: begin
-        Dec(OutData);
-        Cnt:= OutData^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(OutData);
-            if OutData^ <> 0 then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-                                              // XX 04 04 04 04
-      TF_PADDING_PKCS: begin
-        Dec(OutData);
-        Cnt:= OutData^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(OutData);
-            if OutData^ <> Cnt then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-                                              // XX ?? ?? ?? 04
-      TF_PADDING_ISO10126: begin
-        Cnt:= (OutData - 1)^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-                                              // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
-        Cnt:= LBlockSize;
-        repeat
-          Dec(OutData);
-          Dec(Cnt);
-        until (OutData^ <> 0) or (Cnt = 0);
-        if (OutData^ = $80) then
-          DataSize:= DataSize - LBlockSize + Cnt
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
-    end;
-  end;
   Result:= TF_S_OK;
+
+  case Padding of
+                                      // XX 00 00 00 04
+    TF_PADDING_ANSI: begin
+      Cnt:= PadBlock[BlockSize - 1];
+      if (Cnt > 0) and (Cnt <= BlockSize) then begin
+        Cnt2:= Cnt;
+        while Cnt2 > 1 do begin    // Cnt - 1 zero bytes
+          if PadBlock[BlockSize - Cnt2] <> 0 then begin
+            Result:= TF_E_INVALIDPAD;
+            Break;
+          end;
+          Dec(Cnt2);
+        end;
+      end
+      else
+        Result:= TF_E_INVALIDPAD;
+    end;
+                                      // XX 04 04 04 04
+    TF_PADDING_PKCS: begin
+      Cnt:= PadBlock[BlockSize - 1];
+      if (Cnt > 0) and (Cnt <= BlockSize) then begin
+        Cnt2:= Cnt;
+        while Cnt2 > 1 do begin // Cnt - 1 bytes
+          if PadBlock[BlockSize - Cnt2] <> Byte(Cnt) then begin
+            Result:= TF_E_INVALIDPAD;
+            Break;
+          end;
+          Dec(Cnt2);
+        end;
+      end
+      else
+        Result:= TF_E_INVALIDPAD;
+    end;
+                                      // XX ?? ?? ?? 04
+    TF_PADDING_ISO10126: begin
+      Cnt:= PadBlock[BlockSize - 1];
+      if (Cnt <= 0) or (Cnt > BlockSize) then
+        Result:= TF_E_INVALIDPAD;
+    end;
+                                      // XX 80 00 00 00
+    TF_PADDING_ISOIEC: begin
+      Cnt:= BlockSize;
+      repeat
+        Dec(Cnt);
+      until (PadBlock[Cnt] <> 0) or (Cnt = 0);
+      if (PadBlock[Cnt] = $80) then
+        Cnt:= BlockSize - Cnt
+      else
+        Result:= TF_E_INVALIDPAD;
+    end;
+  else
+    Cnt:= 0; // not used, just to remove compiler warning
+             //   W1036 Variable 'Cnt' might not have been initialized
+    Result:= TF_E_UNEXPECTED;
+  end;
+  if Result = TF_S_OK then
+    PayLoad:= BlockSize - Cnt
+  else
+    PayLoad:= 0;
 end;
 
-class function TBlockCipherInstance.DecryptECB(Inst: PBlockCipherInstance;
-                 Data: PByte; var DataSize: Cardinal;
-                 OutData: PByte; OutSize: Cardinal; Last: Boolean): TF_RESULT;
+class function TBlockCipherInstance.DecryptCBC(Inst: PBlockCipherInstance;
+                 InBuffer, OutBuffer: PByte;
+                 var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
   DecryptBlock: TCipherHelper.TBlockFunc;
-  LDataSize: Cardinal;
+  IVector: PByte;
+  OutCount: Cardinal;     // number of bytes written to OutData
   LPadding: UInt32;
-  LBlockSize: Cardinal;
-  Cnt, SaveCnt: Cardinal;
+  LBlockSize: Integer;
+  LDataSize: Cardinal;
+  Cnt: Cardinal;
+  NoPadBlock: Boolean;
 
 begin
   if not ValidDecryptionKey(Inst) then begin
@@ -514,10 +536,6 @@ begin
   end;
 
   @DecryptBlock:= TCipherHelper.GetDecryptBlockFunc(Inst);
-
-  LPadding:= Inst.FAlgID and TF_PADDING_MASK;
-  if LPadding = TF_PADDING_DEFAULT
-    then LPadding:= TF_PADDING_PKCS;
 
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
 
@@ -528,116 +546,432 @@ begin
   end;
 {$ENDIF}
 
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
   LDataSize:= DataSize;
-  if LDataSize and (LBlockSize - 1) <> 0 then begin
-    Result:= TF_E_INVALIDARG;
-    Exit;
-  end;
+  OutCount:= 0;
 
-  if Last and (LDataSize = 0) then begin
-    case LPadding of
-      TF_PADDING_ANSI,
-      TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: begin
+  LPadding:= Inst.FAlgID and TF_PADDING_MASK;
+  if LPadding = TF_PADDING_DEFAULT
+    then LPadding:= TF_PADDING_PKCS;
+
+  NoPadBlock:= (LPadding = TF_PADDING_NONE) or (LPadding = TF_PADDING_ZERO);
+
+// process cached block
+  if LDataSize > 0 then begin
+    Cnt:= LBlockSize - Inst.FPos;   // it is possible that Cnt = 0
+    if Cnt > LDataSize then Cnt:= LDataSize;
+    Move(InBuffer^, Inst.FCache[Inst.FPos], Cnt);
+    Inc(InBuffer, Cnt);
+    Dec(LDataSize, Cnt);
+    Inc(Inst.FPos, Cnt);
+    if (Inst.FPos = LBlockSize) and ((LDataSize > 0) or NoPadBlock) then begin
+      Inst.FPos:= 0;
+      if OutBufSize < Cardinal(LBlockSize) then begin
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
+      Move(Inst.FCache, OutBuffer^, LBlockSize);
+      DecryptBlock(Inst, OutBuffer);
+      XorBytes(OutBuffer, IVector, LBlockSize);
+      Move(Inst.FCache, IVector^, LBlockSize);
+//      FillChar(Inst.FCache, LBlockSize, 0);
+      Inc(OutBuffer, LBlockSize);
+      OutCount:= LBlockSize;
     end;
   end;
-  while LDataSize >= LBlockSize do begin
-    Move(Data^, OutData^, LBlockSize);
-    DecryptBlock(Inst, OutData);
-    Inc(Data, LBlockSize);
-    Inc(OutData, LBlockSize);
+
+// process full blocks
+  while (LDataSize > Cardinal(LBlockSize)) or ((LDataSize = Cardinal(LBlockSize)) and NoPadBlock) do begin
+    if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+// since InBuffer and OutBuffer can be identical
+//   we store InBuffer block in intermediate buffer
+    Move(InBuffer^, Inst.FCache, LBlockSize);
+    DecryptBlock(Inst, OutBuffer);
+    XorBytes(OutBuffer, IVector, LBlockSize);
+    Move(Inst.FCache, IVector^, LBlockSize);
+    Inc(InBuffer, LBlockSize);
     Dec(LDataSize, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Inc(OutCount, LBlockSize);
   end;
+
+// process last block
+  if LDataSize > 0 then begin
+    Move(InBuffer^, Inst.FCache, LDataSize);
+    Inst.FPos:= LDataSize;
+  end;
+
+  Result:= TF_S_OK;
                                           // if LPadding = TF_PADDING_NONE
                                           // or LPadding:= TF_PADDING_ZERO
                                           //   we are done, else decode padding block
   if Last then begin
+
     case LPadding of
+      TF_PADDING_NONE, TF_PADDING_ZERO: if Inst.FPos > 0 then
+        Result:= TF_E_INVALIDARG;
+    else
+      if (Inst.FPos <> LBlockSize) or (OutCount + Cardinal(LBlockSize) > OutBufSize) then begin
+        Result:= TF_E_INVALIDARG;
+      end
+      else begin
+        Move(Inst.FCache, OutBuffer^, LBlockSize);
+        DecryptBlock(Inst, OutBuffer);
+        XorBytes(OutBuffer, IVector, LBlockSize);
+        Move(Inst.FCache, IVector^, LBlockSize);
+        Result:= Inst.DecodePad(OutBuffer, LBlockSize, LPadding, Cnt);
+(*
+        case LPadding of
+                                            // XX 00 00 00 04
+          TF_PADDING_ANSI: begin
+            Cnt:= OutData[LBlockSize - 1];
+            if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+              SaveCnt:= Cnt;
+              while SaveCnt > 1 do begin    // Cnt - 1 zero bytes
+                if OutData[LBlockSize - SaveCnt] <> 0 then begin
+                  Result:= TF_E_INVALIDPAD;
+                  Break;
+                end;
+                Dec(SaveCnt);
+              end;
+            end
+            else
+              Result:= TF_E_INVALIDPAD;
+          end;
+                                            // XX 04 04 04 04
+          TF_PADDING_PKCS: begin
+            Cnt:= OutData[LBlockSize - 1];
+            if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+              SaveCnt:= Cnt;
+              while SaveCnt > 1 do begin // Cnt - 1 bytes
+                if OutData[LBlockSize - SaveCnt] <> Byte(Cnt) then begin
+                  Result:= TF_E_INVALIDPAD;
+                  Break;
+                end;
+                Dec(SaveCnt);
+              end;
+            end
+            else
+              Result:= TF_E_INVALIDPAD;
+          end;
+                                            // XX ?? ?? ?? 04
+          TF_PADDING_ISO10126: begin
+            Cnt:= OutData[LBlockSize - 1];
+            if (Cnt = 0) or (Cnt > LBlockSize) then
+              Result:= TF_E_INVALIDPAD;
+          end;
+                                            // XX 80 00 00 00
+          TF_PADDING_ISOIEC: begin
+            Cnt:= LBlockSize;
+            repeat
+              Dec(Cnt);
+            until (OutData[Cnt] <> 0) or (Cnt = 0);
+            if (OutData[Cnt] = $80) then
+              Cnt:= LBlockSize - Cnt
+            else
+              Result:= TF_E_INVALIDPAD;
+          end;
+        else
+          Result:= TF_E_UNEXPECTED;
+        end; { inner case }
+        if Result = TF_S_OK then
+          Inc(OutCount, LBlockSize - Cnt);
+*)
+        Inc(OutCount, Cnt);
+        FillChar(Inst.FCache, LBlockSize, 0);
+        Inst.FPos:= 0;
+      end;
+    end; { outer case }
+  end;
+  DataSize:= OutCount;
+
+end;
+
+class function TBlockCipherInstance.DecryptECB(Inst: PBlockCipherInstance;
+                 InBuffer, OutBuffer: PByte;
+                 var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
+var
+  DecryptBlock: TCipherHelper.TBlockFunc;
+  OutCount: Cardinal;     // number of bytes written to OutData
+  LPadding: UInt32;
+  LBlockSize: Integer;
+  LDataSize: Cardinal;
+//  Cnt, SaveCnt: Cardinal;
+  Cnt: Cardinal;
+  NoPadBlock: Boolean;
+
+begin
+  if not ValidDecryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @DecryptBlock:= TCipherHelper.GetDecryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  LDataSize:= DataSize;
+  OutCount:= 0;
+
+  LPadding:= Inst.FAlgID and TF_PADDING_MASK;
+  if LPadding = TF_PADDING_DEFAULT
+    then LPadding:= TF_PADDING_PKCS;
+
+  NoPadBlock:= (LPadding = TF_PADDING_NONE) or (LPadding = TF_PADDING_ZERO);
+
+// process cached block
+  if LDataSize > 0 then begin
+    Cnt:= LBlockSize - Inst.FPos;   // it is possible that Cnt = 0
+    if Cnt > LDataSize then Cnt:= LDataSize;
+    Move(InBuffer^, Inst.FCache[Inst.FPos], Cnt);
+    Inc(InBuffer, Cnt);
+    Dec(LDataSize, Cnt);
+    Inc(Inst.FPos, Cnt);
+    if (Inst.FPos = LBlockSize) and ((LDataSize > 0) or NoPadBlock) then begin
+      Inst.FPos:= 0;
+      if OutBufSize < Cardinal(LBlockSize) then begin
+        Result:= TF_E_INVALIDARG;
+        Exit;
+      end;
+      DecryptBlock(Inst, @Inst.FCache);
+      Move(Inst.FCache, OutBuffer^, LBlockSize);
+      FillChar(Inst.FCache, LBlockSize, 0);
+      Inc(OutBuffer, LBlockSize);
+      OutCount:= LBlockSize;
+    end;
+  end;
+
+// process full blocks
+  while (LDataSize > Cardinal(LBlockSize)) or ((LDataSize = Cardinal(LBlockSize)) and NoPadBlock) do begin
+    if OutCount + Cardinal(LBlockSize) > OutBufSize then begin
+      Result:= TF_E_INVALIDARG;
+      Exit;
+    end;
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+    DecryptBlock(Inst, OutBuffer);
+    Inc(InBuffer, LBlockSize);
+    Dec(LDataSize, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Inc(OutCount, LBlockSize);
+  end;
+
+// process last block
+  if LDataSize > 0 then begin
+    Move(InBuffer^, Inst.FCache, LDataSize);
+    Inst.FPos:= LDataSize;
+  end;
+
+  Result:= TF_S_OK;
+                                          // if LPadding = TF_PADDING_NONE
+                                          // or LPadding:= TF_PADDING_ZERO
+                                          //   we are done, else decode padding block
+  if Last then begin
+
+    case LPadding of
+      TF_PADDING_NONE, TF_PADDING_ZERO: if Inst.FPos > 0 then
+        Result:= TF_E_INVALIDARG;
+    else
+      if (Inst.FPos <> LBlockSize) or (OutCount + Cardinal(LBlockSize) > OutBufSize) then begin
+        Result:= TF_E_INVALIDARG;
+      end
+      else begin
+        Move(Inst.FCache, OutBuffer^, LBlockSize);
+        DecryptBlock(Inst, OutBuffer);
+        Result:= Inst.DecodePad(OutBuffer, LBlockSize, LPadding, Cnt);
+(*
+        case LPadding of
+                                            // XX 00 00 00 04
+          TF_PADDING_ANSI: begin
+            Cnt:= OutData[LBlockSize - 1];
+            if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+              SaveCnt:= Cnt;
+              while SaveCnt > 1 do begin    // Cnt - 1 zero bytes
+                if OutData[LBlockSize - SaveCnt] <> 0 then begin
+                  Result:= TF_E_INVALIDPAD;
+                  Break;
+                end;
+                Dec(SaveCnt);
+              end;
+            end
+            else
+              Result:= TF_E_INVALIDPAD;
+          end;
+                                            // XX 04 04 04 04
+          TF_PADDING_PKCS: begin
+            Cnt:= OutData[LBlockSize - 1];
+            if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+              SaveCnt:= Cnt;
+              while SaveCnt > 1 do begin // Cnt - 1 bytes
+                if OutData[LBlockSize - SaveCnt] <> Byte(Cnt) then begin
+                  Result:= TF_E_INVALIDPAD;
+                  Break;
+                end;
+                Dec(SaveCnt);
+              end;
+            end
+            else
+              Result:= TF_E_INVALIDPAD;
+          end;
+                                            // XX ?? ?? ?? 04
+          TF_PADDING_ISO10126: begin
+            Cnt:= OutData[LBlockSize - 1];
+            if (Cnt = 0) or (Cnt > LBlockSize) then
+              Result:= TF_E_INVALIDPAD;
+          end;
+                                            // XX 80 00 00 00
+          TF_PADDING_ISOIEC: begin
+            Cnt:= LBlockSize;
+            repeat
+              Dec(Cnt);
+            until (OutData[Cnt] <> 0) or (Cnt = 0);
+            if (OutData[Cnt] = $80) then
+              Cnt:= LBlockSize - Cnt
+            else
+              Result:= TF_E_INVALIDPAD;
+          end;
+        else
+          Result:= TF_E_UNEXPECTED;
+        end; { inner case }
+        if Result = TF_S_OK then
+          Inc(OutCount, LBlockSize - Cnt);
+*)
+        Inc(OutCount, Cnt);
+        FillChar(Inst.FCache, LBlockSize, 0);
+        Inst.FPos:= 0;
+      end;
+    end; { outer case }
+
+
+
+(*
+    case LPadding of
+      TF_PADDING_NONE,
+      TF_PADDING_ZERO: if Inst.FPos > 0 then begin
+        Result:= TF_E_INVALIDARG;
+      end;
                                             // XX 00 00 00 04
       TF_PADDING_ANSI: begin
-        Dec(OutData);
-        Cnt:= OutData^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(OutData);
-            if OutData^ <> 0 then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
+        if (Inst.FPos <> LBlockSize) or (OutCount + LBlockSize > OutSize) then begin
+          Result:= TF_E_INVALIDARG;
         end
         else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
+          DecryptBlock(Inst, @Inst.FCache);
+          Cnt:= Inst.FCache[LBlockSize - 1];
+          if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+            SaveCnt:= Cnt;
+            while SaveCnt > 1 do begin // Cnt - 1 zero bytes
+              if Inst.FCache[LBlockSize - SaveCnt] <> 0 then begin
+                Result:= TF_E_INVALIDPAD;
+                Break;
+              end;
+              Dec(SaveCnt);
+            end;
+            if Result = TF_S_OK then begin
+              Inc(OutCount, LBlockSize - Cnt);
+              Move(Inst.FCache, OutData^, LBlockSize - Cnt);
+            end;
+          end
+          else begin
+            Result:= TF_E_INVALIDARG;
+          end;
         end;
       end;
                                             // XX 04 04 04 04
       TF_PADDING_PKCS: begin
-        Dec(OutData);
-        Cnt:= OutData^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          SaveCnt:= Cnt - 1;
-          while SaveCnt > 0 do begin
-            Dec(OutData);
-            if OutData^ <> Cnt then begin
-              Result:= TF_E_INVALIDARG;
-              Exit;
-            end;
-            Dec(SaveCnt);
-          end;
-          DataSize:= DataSize - Cnt;
+        if (Inst.FPos <> LBlockSize) or (OutCount + LBlockSize > OutSize) then begin
+          Result:= TF_E_INVALIDARG;
         end
         else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
+          DecryptBlock(Inst, @Inst.FCache);
+          Cnt:= Inst.FCache[LBlockSize - 1];
+          if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+            SaveCnt:= Cnt;
+            while SaveCnt > 1 do begin // Cnt - 1 bytes
+              if Inst.FCache[LBlockSize - SaveCnt] <> Byte(Cnt) then begin
+                Result:= TF_E_INVALIDPAD;
+                Break;
+              end;
+              Dec(SaveCnt);
+            end;
+            if Result = TF_S_OK then begin
+              Inc(OutCount, LBlockSize - Cnt);
+              Move(Inst.FCache, OutData^, LBlockSize - Cnt);
+            end;
+          end
+          else begin
+            Result:= TF_E_INVALIDPAD;
+          end;
         end;
       end;
                                             // XX ?? ?? ?? 04
       TF_PADDING_ISO10126: begin
-        Cnt:= (OutData - 1)^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          DataSize:= DataSize - Cnt;
+        if (Inst.FPos <> LBlockSize) or (OutCount + LBlockSize > OutSize) then begin
+          Result:= TF_E_INVALIDARG;
         end
         else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
+          DecryptBlock(Inst, @Inst.FCache);
+          Cnt:= Inst.FCache[LBlockSize - 1];
+          if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+            Inc(OutCount, LBlockSize - Cnt);
+            Move(Inst.FCache, OutData^, LBlockSize - Cnt);
+          end
+          else begin
+            Result:= TF_E_INVALIDPAD;
+          end;
         end;
       end;
                                             // XX 80 00 00 00
       TF_PADDING_ISOIEC: begin
-        Cnt:= LBlockSize;
-        repeat
-          Dec(OutData);
-          Dec(Cnt);
-        until (OutData^ <> 0) or (Cnt = 0);
-        if (OutData^ = $80) then
-          DataSize:= DataSize - LBlockSize + Cnt
-        else begin
+        if (Inst.FPos <> LBlockSize) or (OutCount + LBlockSize > OutSize) then begin
           Result:= TF_E_INVALIDARG;
-          Exit;
+        end
+        else begin
+          DecryptBlock(Inst, @Inst.FCache);
+          Cnt:= LBlockSize;
+          repeat
+            Dec(Cnt);
+          until (Inst.FCache[Cnt] <> 0) or (Cnt = 0);
+          if (Inst.FCache[Cnt] = $80) then begin
+            Inc(OutCount, LBlockSize - Cnt);
+            Move(Inst.FCache, OutData^, LBlockSize - Cnt);
+          end
+          else begin
+            Result:= TF_E_INVALIDPAD;
+          end;
         end;
       end;
+    else
+      Result:= TF_E_INVALIDPAD;
     end;
+    FillChar(Inst.FCache, LBlockSize, 0);
+    Inst.FPos:= 0;
+*)
   end;
-  Result:= TF_S_OK;
-end;
 
+  DataSize:= OutCount;
+end;
+{
 class function TBlockCipherInstance.GetIsBlockCipher(Inst: Pointer): Boolean;
 begin
   Result:= True;
 end;
-
+}
 class function TBlockCipherInstance.GetIV(Inst: PBlockCipherInstance;
   IV: Pointer; IVLen: Cardinal): TF_RESULT;
 var
   LBlockSize: Cardinal;
+  IVector: PByte;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -649,8 +983,10 @@ begin
   end;
 {$ENDIF}
 
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
   if (IVLen = LBlockSize) then begin
-    Move(Inst.FIVector, IV^, IVLen);
+    Move(IVector^, IV^, IVLen);
     Result:= TF_S_OK;
   end
   else
@@ -658,11 +994,28 @@ begin
 
 end;
 
-// for block ciphers in stream modes;
-//   block modes should use TCipherInstance.GetKeyBlockStub
-class function TBlockCipherInstance.GetKeyBlockCTR(Inst: Pointer; Data: PByte): TF_RESULT;
+class function TBlockCipherInstance.GetIVPointer(Inst: PBlockCipherInstance): Pointer;
 var
-  LBlockSize, Cnt: Cardinal;
+  LBlockSize: Cardinal;
+
+begin
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= nil;
+    Exit;
+  end;
+{$ENDIF}
+
+  Result:= PByte(@Inst.FCache) + LBlockSize;
+end;
+
+class function TBlockCipherInstance.GetKeyBlockCTR(
+                 Inst: PBlockCipherInstance; Data: PByte): TF_RESULT;
+var
+  LBlockSize{, Cnt}: Cardinal;
+  IVector: PByte;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -674,22 +1027,29 @@ begin
   end;
 {$ENDIF}
 
-  Move(FIVector, Data^, LBlockSize);          // copy IV to Data block
-  TCipherHelper.EncryptBlock(Inst, Data);     // encrypt Data block
-  Cnt:= LBlockSize - 1;                       // increment IV
-  Inc(FIVector[Cnt]);
-  if FIVector[Cnt] = 0 then begin
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  Move(IVector^, Data^, LBlockSize);            // copy IV to Data block
+  TCipherHelper.EncryptBlock(Inst, Data);       // encrypt Data block
+  TBigEndian.Incr(IVector, LBlockSize);         // increment IV
+(*
+  Cnt:= LBlockSize - 1;                         // increment IV
+  Inc(IVector[Cnt]);
+  if IVector[Cnt] = 0 then begin
     repeat
       Dec(Cnt);
-      Inc(FIVector[Cnt]);
-    until (FIVector[Cnt] <> 0) or (Cnt = 0);
+      Inc(IVector[Cnt]);
+    until (IVector[Cnt] <> 0) or (Cnt = 0);
   end;
+*)
+  Result:= TF_S_OK;
 end;
 
 class function TBlockCipherInstance.GetNonce(Inst: PBlockCipherInstance;
   var Nonce: UInt64): TF_RESULT;
 var
   LBlockSize: Cardinal;
+  IVector: PByte;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -701,18 +1061,130 @@ begin
   end;
 {$ENDIF}
 
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
   if (LBlockSize < 16) then
     Nonce:= 0
   else
-    Move(Inst.FIVector, Nonce, SizeOf(Nonce));
+    Move(IVector^, Nonce, SizeOf(Nonce));
 
   Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.IncBlockNoCTR(Inst: PBlockCipherInstance;
+  Count: UInt64): TF_RESULT;
+var
+  LBlockSize: Cardinal;
+  LCount: UInt64;
+  PIV: PByte;
+
+begin
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  PIV:= PByte(@PBlockCipherInstance(Inst).FCache) + LBlockSize;
+
+// convert Count to big-endian
+  TBigEndian.ReverseCopy(@Count, PByte(@Count) + SizeOf(UInt64), @LCount);
+
+  TBigEndian.Add(PIV, LBlockSize, @LCount, SizeOf(UInt64));
+
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.DecBlockNoCTR(Inst: PBlockCipherInstance;
+  Count: UInt64): TF_RESULT;
+var
+  LBlockSize: Cardinal;
+  LCount: UInt64;
+  PIV: PByte;
+
+begin
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  PIV:= PByte(@PBlockCipherInstance(Inst).FCache) + LBlockSize;
+
+// convert Count to big-endian
+  TBigEndian.ReverseCopy(@Count, PByte(@Count) + SizeOf(UInt64), @LCount);
+
+  TBigEndian.Sub(PIV, LBlockSize, @LCount, SizeOf(UInt64));
+
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.SkipCTR(Inst: PBlockCipherInstance;
+                 Dist: Int64): TF_RESULT;
+var
+  LBlockSize: UInt64;
+  Count, LCount: UInt64;
+  Cnt: Cardinal;
+  PIV: PByte;
+
+begin
+  if Dist = 0 then begin
+    Result:= TF_S_OK;
+    Exit;
+  end;
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  PIV:= PByte(@PBlockCipherInstance(Inst).FCache) + LBlockSize;
+
+  if Dist > 0 then begin
+    Count:= UInt64(Dist) div LBlockSize;
+    Cnt:= UInt64(Dist) mod LBlockSize;
+    Inc(Inst.FPos, Cnt);
+    if Inst.FPos >= LBlockSize then begin
+      Inc(Count);
+      Dec(Inst.FPos, LBlockSize);
+    end;
+
+    TBigEndian.ReverseCopy(@Count, PByte(@Count) + SizeOf(UInt64), @LCount);
+    TBigEndian.Add(PIV, LBlockSize, @LCount, SizeOf(UInt64));
+  end
+  else begin
+    Count:= UInt64(-Dist) div LBlockSize;
+    Cnt:= UInt64(-Dist) mod LBlockSize;
+    Dec(Inst.FPos, Cnt);
+    if Inst.FPos < 0 then begin
+      Inc(Count);
+      Inc(Inst.FPos, LBlockSize);
+    end;
+
+    TBigEndian.ReverseCopy(@Count, PByte(@Count) + SizeOf(UInt64), @LCount);
+    TBigEndian.Sub(PIV, LBlockSize, @LCount, SizeOf(UInt64));
+  end;
+  if Inst.FPos > 0 then
+    Result:= GetKeyBlockCTR(Inst, @Inst.FCache)
+  else
+    Result:= TF_S_OK;
 end;
 
 class function TBlockCipherInstance.SetIV(Inst: Pointer;
   IV: Pointer; IVLen: Cardinal): TF_RESULT;
 var
   LBlockSize: Cardinal;
+  PIV: PByte;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -724,9 +1196,11 @@ begin
   end;
 {$ENDIF}
 
+  PIV:= PByte(@PBlockCipherInstance(Inst).FCache) + LBlockSize;
+
   if (IV = nil) then begin
     if (IVLen = 0) or (IVLen = LBlockSize) then begin
-      FillChar(PBlockCipherInstance(Inst).FIVector, LBlockSize, 0);
+      FillChar(PIV^, LBlockSize, 0);
       Result:= TF_S_OK;
     end
     else begin
@@ -736,7 +1210,7 @@ begin
   end;
 
   if (IVLen = LBlockSize) then begin
-    Move(IV^, PBlockCipherInstance(Inst).FIVector, IVLen);
+    Move(IV^, PIV^, IVLen);
     Result:= TF_S_OK;
   end
   else
@@ -748,6 +1222,7 @@ class function TBlockCipherInstance.SetNonce(Inst: PBlockCipherInstance;
   Nonce: TNonce): TF_RESULT;
 var
   LBlockSize: Cardinal;
+  IVector: PByte;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -759,6 +1234,8 @@ begin
   end;
 {$ENDIF}
 
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
 // IV consists of 2 parts: Nonce and BlockNo;
 //   if BlockSize >= 16 (128 bits),
 //     then both Nonce and BlockNo are of 8 bytes (64 bits);
@@ -769,7 +1246,7 @@ begin
 //     then (BlockSize - 16) bytes of IV between Nonce and BlockNo are zeroed.
 //   BlockNo bytes of IV are zeroed.
 
-  FillChar(Inst.FIVector, LBlockSize, 0);
+  FillChar(IVector^, LBlockSize, 0);
 
   if (LBlockSize < 16) then begin
     if (Nonce <> 0) then
@@ -779,7 +1256,7 @@ begin
     Exit;
   end;
 
-  Move(Nonce, Inst.FIVector, SizeOf(Nonce));
+  Move(Nonce, IVector^, SizeOf(Nonce));
   Result:= TF_S_OK;
 end;
 

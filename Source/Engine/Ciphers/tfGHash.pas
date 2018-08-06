@@ -85,10 +85,10 @@ begin
     end;
   end;
 // We have finished the block so copy Z into Y and byte-swap.
-      Y[0]:= Swap32(Z[0]);
-      Y[1]:= Swap32(Z[1]);
-      Y[2]:= Swap32(Z[2]);
-      Y[3]:= Swap32(Z[3]);
+  Y[0]:= Swap32(Z[0]);
+  Y[1]:= Swap32(Z[1]);
+  Y[2]:= Swap32(Z[2]);
+  Y[3]:= Swap32(Z[3]);
 end;
 
 procedure TGHash.Init(HashKey: Pointer);

@@ -20,20 +20,13 @@ uses
 type
   TCipherHelper = record
   private type
-    TVTable = array[0..18] of Pointer;
+    TVTable = array[0..24] of Pointer;
     PVTable = ^TVTable;
     PPVTable = ^PVTable;
 
   public type
     TBlock = array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
 
-(*    TSetKeyParamFunc = function(Inst: Pointer; Param: UInt32; Data: Pointer;
-       DataLen: Cardinal): TF_RESULT;
-        {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    TGetKeyParamFunc = function(Inst: Pointer; Param: UInt32; Data: Pointer;
-        var DataLen: Cardinal): TF_RESULT;
-        {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-*)
     TGetBlockSizeFunc = function(Inst: Pointer): Integer;
         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     TBlockFunc = function(Inst: Pointer; Data: PByte): TF_RESULT;
@@ -52,6 +45,8 @@ type
         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     TIncBlockNoFunc = function(Inst: Pointer; Count: UInt64): Integer;
         {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    TSetNonceFunc = function(Inst: Pointer; Nonce: TNonce): Integer;
+        {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
   public
     class function ExpandKey(Inst: Pointer; Key: Pointer;
@@ -61,6 +56,8 @@ type
     class function GetBlockSize(Inst: Pointer): Integer; static; inline;
     class function IncBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT; static; inline;
     class function DecBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT; static; inline;
+    class function SetNonce(Inst: Pointer; Nonce: TNonce): TF_RESULT; static; inline;
+
     class function EncryptBlock(Inst: Pointer; Data: Pointer): TF_RESULT; static; inline;
     class function DecryptBlock(Inst: Pointer; Data: Pointer): TF_RESULT; static; inline;
 
@@ -79,6 +76,8 @@ const
   INDEX_EXPANDKEYIV = 6;
   INDEX_EXPANDKEYNONCE = 7;
   INDEX_GETBLOCKSIZE = 8;
+  INDEX_ENCRYPT = 9;
+  INDEX_DECRYPT = 10;
   INDEX_ENCRYPTBLOCK = 11;
   INDEX_DECRYPTBLOCK = 12;
   INDEX_GETKEYBLOCK = 13;
@@ -92,6 +91,7 @@ const
   INDEX_SETNONCE = 21;
   INDEX_GETIV = 22;
   INDEX_GETNONCE = 23;
+  INDEX_GETIVPTR = 24;
 
 { TCipherHelper }
 
@@ -103,6 +103,11 @@ end;
 class function TCipherHelper.IncBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT;
 begin
   Result:= TIncBlockNoFunc(PPVTable(Inst)^^[INDEX_INCBLOCKNO])(Inst, Count);
+end;
+
+class function TCipherHelper.SetNonce(Inst: Pointer; Nonce: TNonce): TF_RESULT;
+begin
+  Result:= TSetNonceFunc(PPVTable(Inst)^^[INDEX_SETNONCE])(Inst, Nonce);
 end;
 
 class function TCipherHelper.DecBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT;
@@ -145,20 +150,6 @@ class function TCipherHelper.GetKeyStreamFunc(Inst: Pointer): Pointer;
 begin
   Result:= PPVTable(Inst)^^[INDEX_GETKEYSTREAM];
 end;
-
-(*
-class function TCipherHelper.SetKeyParam(Inst: Pointer; Param: UInt32;
-  Data: Pointer; DataLen: Cardinal): TF_RESULT;
-begin
-  Result:= TSetKeyParamFunc(PPVTable(Inst)^^[INDEX_SETKEYPARAM])(Inst, Param, Data, DataLen);
-end;
-
-class function TCipherHelper.GetKeyParam(Inst: Pointer; Param: UInt32;
-  Data: Pointer; var DataLen: Cardinal): TF_RESULT;
-begin
-  Result:= TGetKeyParamFunc(PPVTable(Inst)^^[INDEX_GETKEYPARAM])(Inst, Param, Data, DataLen);
-end;
-*)
 
 class function TCipherHelper.GetKeyBlockFunc(Inst: Pointer): Pointer;
 begin
