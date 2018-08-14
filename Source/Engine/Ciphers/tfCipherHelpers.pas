@@ -4,8 +4,7 @@
   -------------------------------------------------------
   # engine tricks with ICipher interface must be implemented
       as inline static class methods of TCipherHelper
-  # due to inlining the unit should be 'used'
-      in implementation section of other units
+  # exports inlined functions
 }
 
 unit tfCipherHelpers;
@@ -76,22 +75,23 @@ const
   INDEX_EXPANDKEYIV = 6;
   INDEX_EXPANDKEYNONCE = 7;
   INDEX_GETBLOCKSIZE = 8;
-  INDEX_ENCRYPT = 9;
-  INDEX_DECRYPT = 10;
+  INDEX_ENCRYPTUPDATE = 9;
+  INDEX_DECRYPTUPDATE = 10;
   INDEX_ENCRYPTBLOCK = 11;
   INDEX_DECRYPTBLOCK = 12;
   INDEX_GETKEYBLOCK = 13;
   INDEX_GETKEYSTREAM = 14;
-  INDEX_APPLYKEYSTREAM = 15;
-  INDEX_GETISBLOCKCIPHER = 16;
-  INDEX_INCBLOCKNO = 17;
-  INDEX_DECBLOCKNO = 18;
-  INDEX_SKIP = 19;
-  INDEX_SETIV = 20;
-  INDEX_SETNONCE = 21;
-  INDEX_GETIV = 22;
-  INDEX_GETNONCE = 23;
-  INDEX_GETIVPTR = 24;
+  INDEX_ENCRYPT = 15;
+  INDEX_DECRYPT = 16;
+  INDEX_GETISBLOCKCIPHER = 17;
+  INDEX_INCBLOCKNO = 18;
+  INDEX_DECBLOCKNO = 19;
+  INDEX_SKIP = 20;
+  INDEX_SETIV = 21;
+  INDEX_SETNONCE = 22;
+  INDEX_GETIV = 23;
+  INDEX_GETNONCE = 24;
+  INDEX_GETIVPTR = 25;
 
 { TCipherHelper }
 

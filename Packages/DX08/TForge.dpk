@@ -78,6 +78,7 @@ contains
   tfAlgAES in '..\..\Source\Engine\Ciphers\tfAlgAES.pas',
   tfAESCiphers in '..\..\Source\Engine\Ciphers\tfAESCiphers.pas',
   tfHelpers in '..\..\Source\Engine\Forge\tfHelpers.pas',
-  tfGHash in '..\..\Source\Engine\Ciphers\tfGHash.pas';
+  tfGHash in '..\..\Source\Engine\Ciphers\tfGHash.pas',
+  tfGCMCiphers in '..\..\Source\Engine\Ciphers\tfGCMCiphers.pas';
 
 end.

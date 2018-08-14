@@ -13,13 +13,15 @@ uses
   tfLimbs;
 
 type
+{$POINTERMATH ON}
 //  PInt8 = ^Int8;
 //  PUInt8 = ^UInt8;
 //  PInt16 = ^Int16;
 //  PUInt16 = ^UInt16;
-{$POINTERMATH ON}
   PInt32 = ^Int32;
   PUInt32 = ^UInt32;
+//  PInt64 = ^Int64;
+//  PUInt64 = ^UInt64;
 {$POINTERMATH OFF}
 
 type
@@ -27,7 +29,7 @@ type
   TF_AlgID = UInt32;
   TAlgID = TF_AlgID;
   TF_KeyFlags = UInt32;
-  TKeyFlags = TF_AlgID;
+  TKeyFlags = TF_KeyFlags;
   TF_Nonce = UInt64;
   TNonce = TF_Nonce;
 //  TF_KeyParam = UInt32;
@@ -428,20 +430,18 @@ type
     function ExpandKeyNonce(Key: Pointer; KeySize: Cardinal;
              Nonce: TNonce): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetBlockSize: Integer;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function Encrypt(Data: PByte; DataSize: Cardinal; OutData: PByte; var OutSize: Cardinal;
-//             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-//    function Decrypt(Data: PByte; DataSize: Cardinal; OutData: PByte; var OutSize: Cardinal;
-//             Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
+    function EncryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
+    function DecryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
              Last: Boolean): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function EncryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function DecryptBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetKeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetKeyStream(Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function ApplyKeyStream(Data, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+    function Encrypt(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function Decrypt(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function IncBlockNo(Count: UInt64): TF_RESULT;
@@ -459,6 +459,8 @@ type
     function GetNonce(var Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIVPointer: Pointer;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function SetKeyDir(KeyDir: TAlgID): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -565,15 +567,23 @@ const
                           // TF_KP_MODE values
                           //   00001 - ECB
                           //   00010 - CBC
-                          //   00011 - CTR
+                          //   00011 - CFB
+                          //   00100 - OFB
+                          //   00101 - CTR
+                          //   00110 - GCM
   TF_KEYMODE_SHIFT = 18;
 //  TF_KEYMODE_BASE  = $40000;
   TF_KEYMODE_MASK  = $007C0000;
 
   TF_KEYMODE_ECB = 1 shl TF_KEYMODE_SHIFT;
   TF_KEYMODE_CBC = 2 shl TF_KEYMODE_SHIFT;
-  TF_KEYMODE_CTR = 3 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CFB = 3 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_OFB = 4 shl TF_KEYMODE_SHIFT;
+  TF_KEYMODE_CTR = 5 shl TF_KEYMODE_SHIFT;
 
+  TF_KEYMODE_GCM = 6 shl TF_KEYMODE_SHIFT;
+
+// TODO: remove
   TF_KEYMODE_MIN = TF_KEYMODE_ECB;
   TF_KEYMODE_MAX = TF_KEYMODE_CTR;
 
@@ -608,8 +618,12 @@ const
   TF_ENGINE_OSSL    = 1 shl TF_ENGINE_SHIFT;
   TF_ENGINE_MASK    = $F0000000;
 
-  TF_KEYFLAG_KEY = 1;
-  TF_KEYFLAG_IV  = 2;
+  TF_KEYFLAG_KEY      = 1;      // key is set
+  TF_KEYFLAG_IV       = 2;      // IV is set
+  TF_KEYFLAG_STARTED  = 3;      // encryption or decryption started;
+                                //   used in GCM mode implementation
+  TF_KEYFLAG_EXT      = 4;      // nonce extention is set
+                                //   used in GCM mode implementation
 
 (*
   TF_ECB_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;

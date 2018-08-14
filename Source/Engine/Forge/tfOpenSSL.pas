@@ -70,15 +70,24 @@ var
 
   EVP_aes_128_cbc: TGetEVPCipher;
   EVP_aes_128_ecb: TGetEVPCipher;
+  EVP_aes_128_cfb: TGetEVPCipher;
+  EVP_aes_128_ofb: TGetEVPCipher;
   EVP_aes_128_ctr: TGetEVPCipher;
+  EVP_aes_128_gcm: TGetEVPCipher;
 
   EVP_aes_192_cbc: TGetEVPCipher;
   EVP_aes_192_ecb: TGetEVPCipher;
+  EVP_aes_192_cfb: TGetEVPCipher;
+  EVP_aes_192_ofb: TGetEVPCipher;
   EVP_aes_192_ctr: TGetEVPCipher;
+  EVP_aes_192_gcm: TGetEVPCipher;
 
   EVP_aes_256_cbc: TGetEVPCipher;
   EVP_aes_256_ecb: TGetEVPCipher;
+  EVP_aes_256_cfb: TGetEVPCipher;
+  EVP_aes_256_ofb: TGetEVPCipher;
   EVP_aes_256_ctr: TGetEVPCipher;
+  EVP_aes_256_gcm: TGetEVPCipher;
 
   EVP_des_cbc: TGetEVPCipher;
   EVP_des_ecb: TGetEVPCipher;

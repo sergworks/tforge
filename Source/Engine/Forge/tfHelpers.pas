@@ -2,8 +2,7 @@
                        TForge Library
         Copyright (c) Sergey Kasandrov 1997, 2018
   -------------------------------------------------------
-  # due to inlining the unit should be 'used'
-      in implementation section of other units
+  # exports inlined functions
 }
 
 unit tfHelpers;

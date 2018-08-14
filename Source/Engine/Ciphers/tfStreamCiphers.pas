@@ -32,14 +32,14 @@ type
   public
     class function IncBlockNo(Inst: PStreamCipherInstance; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Encrypt(Inst: Pointer; InBuffer, OutBuffer: PByte;
+    class function EncryptUpdate(Inst: Pointer; InBuffer, OutBuffer: PByte;
                      var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKeyStream(Inst: PStreamCipherInstance;
                      Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ApplyKeyStream(Inst: PStreamCipherInstance;
-                     InData, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+    class function Encrypt(Inst: PStreamCipherInstance;
+                     InData, OutData: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
@@ -49,8 +49,8 @@ uses tfCipherHelpers;
 
 { TStreamCipherInstance }
 
-class function TStreamCipherInstance.ApplyKeyStream(Inst: PStreamCipherInstance;
-                 InData, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+class function TStreamCipherInstance.Encrypt(Inst: PStreamCipherInstance;
+                 InData, OutData: PByte; DataSize: Cardinal): TF_RESULT;
 var
   LBlockSize: Integer;
   LGetKeyBlock: TCipherHelper.TBlockFunc;
@@ -131,11 +131,11 @@ begin
     Inst.FPos:= DataSize;
   end;
 
-  if Last then Inst.FPos:= 0;
+//  if Last then Inst.FPos:= 0;
   Result:= TF_S_OK;
 end;
 
-class function TStreamCipherInstance.Encrypt(Inst: Pointer;
+class function TStreamCipherInstance.EncryptUpdate(Inst: Pointer;
                  InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
                  OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
@@ -143,7 +143,7 @@ begin
     Result:= TF_E_INVALIDARG;
     Exit;
   end;
-  Result:= ApplyKeyStream(Inst, InBuffer, OutBuffer, DataSize, Last);
+  Result:= Encrypt(Inst, InBuffer, OutBuffer, DataSize);
 end;
 
 class function TStreamCipherInstance.GetKeyStream(Inst: PStreamCipherInstance;

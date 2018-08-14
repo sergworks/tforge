@@ -50,17 +50,10 @@ type
 //      Last: Boolean): TF_RESULT;
 //      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-//    class function SetKeyParam(Inst: PEvpCipherInstance; Param: UInt32; Data: Pointer;
-//      DataLen: Cardinal): TF_RESULT;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class function GetKeyParam(Inst: PEvpCipherInstance; Param: UInt32; Data: Pointer;
-//      var DataLen: Cardinal): TF_RESULT;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-
-    class function Encrypt(Inst: PEvpCipherInstance; InBuffer, OutBuffer: PByte;
+    class function EncryptUpdate(Inst: PEvpCipherInstance; InBuffer, OutBuffer: PByte;
                      var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function Decrypt(Inst: PEvpCipherInstance; InBuffer, OutBuffer: PByte;
+    class function DecryptUpdate(Inst: PEvpCipherInstance; InBuffer, OutBuffer: PByte;
                      var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
@@ -151,7 +144,7 @@ begin
   end;
 end;
 
-class function TEvpCipherInstance.Encrypt(Inst: PEvpCipherInstance;
+class function TEvpCipherInstance.EncryptUpdate(Inst: PEvpCipherInstance;
                  InBuffer, OutBuffer: PByte;
                  var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
@@ -222,7 +215,7 @@ begin
   Result:= ICipher(Inst).ExpandKeyIV(Key, KeySize, @Buf, BlockSize);
 end;
 
-class function TEvpCipherInstance.Decrypt(Inst: PEvpCipherInstance;
+class function TEvpCipherInstance.DecryptUpdate(Inst: PEvpCipherInstance;
                  InBuffer, OutBuffer: PByte;
                  var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
@@ -286,31 +279,5 @@ begin
   else
     Result:= TF_S_OK;
 end;
-(*
-class function TEvpCipherInstance.SetKeyParam(Inst: PEvpCipherInstance; Param: UInt32;
-               Data: Pointer; DataLen: Cardinal): TF_RESULT;
-begin
-  Result:= TF_E_NOTIMPL;
-end;
-
-class function TEvpCipherInstance.UpdateBlock(Inst: PEvpCipherInstance;
-  Data: PByte): TF_RESULT;
-begin
-  Result:= TF_E_NOTIMPL;
-end;
-
-class function TEvpCipherInstance.GetKeyParam(Inst: PEvpCipherInstance;
-  Param: UInt32; Data: Pointer; var DataLen: Cardinal): TF_RESULT;
-begin
-// todo: later
-  Result:= TF_E_NOTIMPL;
-end;
-
-class function TEvpCipherInstance.GetRand(Inst: Pointer; Data: PByte;
-  DataSize: Cardinal): TF_RESULT;
-begin
-  Result:= TF_E_NOTIMPL;
-end;
-*)
 
 end.

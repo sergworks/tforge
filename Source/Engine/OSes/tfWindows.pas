@@ -217,13 +217,24 @@ begin
 
     and LoadFunction(@EVP_aes_128_ecb, 'EVP_aes_128_ecb')
     and LoadFunction(@EVP_aes_128_cbc, 'EVP_aes_128_cbc')
+    and LoadFunction(@EVP_aes_128_cfb, 'EVP_aes_128_cfb128')
+    and LoadFunction(@EVP_aes_128_ofb, 'EVP_aes_128_ofb')
     and LoadFunction(@EVP_aes_128_ctr, 'EVP_aes_128_ctr')
+    and LoadFunction(@EVP_aes_128_gcm, 'EVP_aes_128_gcm')
+
     and LoadFunction(@EVP_aes_192_ecb, 'EVP_aes_192_ecb')
     and LoadFunction(@EVP_aes_192_cbc, 'EVP_aes_192_cbc')
+    and LoadFunction(@EVP_aes_192_cfb, 'EVP_aes_192_cfb128')
+    and LoadFunction(@EVP_aes_192_ofb, 'EVP_aes_192_ofb')
     and LoadFunction(@EVP_aes_192_ctr, 'EVP_aes_192_ctr')
+    and LoadFunction(@EVP_aes_192_gcm, 'EVP_aes_192_gcm')
+
     and LoadFunction(@EVP_aes_256_ecb, 'EVP_aes_256_ecb')
     and LoadFunction(@EVP_aes_256_cbc, 'EVP_aes_256_cbc')
+    and LoadFunction(@EVP_aes_256_cfb, 'EVP_aes_256_cfb128')
+    and LoadFunction(@EVP_aes_256_ofb, 'EVP_aes_256_ofb')
     and LoadFunction(@EVP_aes_256_ctr, 'EVP_aes_256_ctr')
+    and LoadFunction(@EVP_aes_256_gcm, 'EVP_aes_256_gcm')
 
     and LoadFunction(@EVP_des_ecb, 'EVP_des_ecb')
     and LoadFunction(@EVP_des_cbc, 'EVP_des_cbc')

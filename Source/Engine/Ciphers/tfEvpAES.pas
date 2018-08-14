@@ -49,7 +49,7 @@ const
   AES_BLOCK_SIZE = 16;  // 16 bytes = 128 bits
 
 const
-  EvpAESCipherVTable: array[0..24] of Pointer = (
+  EvpAESCipherVTable: array[0..25] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
@@ -60,12 +60,13 @@ const
     @TEvpAESInstance.ExpandKeyIV,
     @TEvpCipherInstance.ExpandKeyNonce,
     @TCipherInstance.GetBlockSize128,
-    @TEvpCipherInstance.Encrypt,
-    @TEvpCipherInstance.Decrypt,
+    @TEvpCipherInstance.EncryptUpdate,
+    @TEvpCipherInstance.DecryptUpdate,
     @TCipherInstance.EncryptBlockStub,
     @TCipherInstance.EncryptBlockStub,
     @TCipherInstance.GetKeyBlockStub,
     @TCipherInstance.GetKeyStreamStub,
+    @TCipherInstance.ApplyKeyStreamStub,
     @TCipherInstance.ApplyKeyStreamStub,
     @TCipherInstance.IsBlockCipher,
     @TCipherInstance.IncBlockNoStub,
@@ -101,11 +102,13 @@ begin
   end;
 
   KeyMode:= AlgID and TF_KEYMODE_MASK;
-  if (KeyMode <> TF_KEYMODE_ECB) and (KeyMode <> TF_KEYMODE_CBC)
-    and (KeyMode <> TF_KEYMODE_CTR) then begin
-      Result:= TF_E_NOTIMPL;
-      Exit;
-    end;
+  case KeyMode of
+    TF_KEYMODE_ECB, TF_KEYMODE_CBC, TF_KEYMODE_CFB,
+    TF_KEYMODE_OFB, TF_KEYMODE_CTR, TF_KEYMODE_GCM: ;
+  else
+    Result:= TF_E_NOTIMPL;
+    Exit;
+  end;
 
   try
     Tmp:= AllocMem(SizeOf(TEvpAESInstance));
@@ -163,11 +166,29 @@ begin
         24: PCipher:= EVP_aes_192_cbc();
         32: PCipher:= EVP_aes_256_cbc();
       end;
+    TF_KEYMODE_CFB:
+      case KeySize of
+        16: PCipher:= EVP_aes_128_cfb();
+        24: PCipher:= EVP_aes_192_cfb();
+        32: PCipher:= EVP_aes_256_cfb();
+      end;
+    TF_KEYMODE_OFB:
+      case KeySize of
+        16: PCipher:= EVP_aes_128_ofb();
+        24: PCipher:= EVP_aes_192_ofb();
+        32: PCipher:= EVP_aes_256_ofb();
+      end;
     TF_KEYMODE_CTR:
       case KeySize of
         16: PCipher:= EVP_aes_128_ctr();
         24: PCipher:= EVP_aes_192_ctr();
         32: PCipher:= EVP_aes_256_ctr();
+      end;
+    TF_KEYMODE_GCM:
+      case KeySize of
+        16: PCipher:= EVP_aes_128_gcm();
+        24: PCipher:= EVP_aes_192_gcm();
+        32: PCipher:= EVP_aes_256_gcm();
       end;
   end;
 

@@ -32,13 +32,13 @@ const
   MODE_CBC     = TF_KEYMODE_CBC;
   MODE_CTR     = TF_KEYMODE_CTR;
 
-  PAD_DEFAULT  = TF_PADDING_DEFAULT;
-  PAD_NONE     = TF_PADDING_NONE;
-  PAD_ZERO     = TF_PADDING_ZERO;
-  PAD_ANSI     = TF_PADDING_ANSI;
-  PAD_PKCS     = TF_PADDING_PKCS;
-  PAD_ISO10126 = TF_PADDING_ISO10126;
-  PAD_ISOIEC   = TF_PADDING_ISOIEC;
+  PADDING_DEFAULT  = TF_PADDING_DEFAULT;
+  PADDING_NONE     = TF_PADDING_NONE;
+  PADDING_ZERO     = TF_PADDING_ZERO;
+  PADDING_ANSI     = TF_PADDING_ANSI;
+  PADDING_PKCS     = TF_PADDING_PKCS;
+  PADDING_ISO10126 = TF_PADDING_ISO10126;
+  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
 
   ECB_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB;
   ECB_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB;
@@ -60,21 +60,20 @@ const
   AES_CTR_DECRYPT = ALG_AES or CTR_DECRYPT;
 
 // current DES implementation require direction for key expansion,
-//  so some stuff is commented out
-//  DES_ECB         = ALG_DES or MODE_ECB;
+  DES_ECB         = ALG_DES or MODE_ECB;
   DES_ECB_ENCRYPT = ALG_DES or ECB_ENCRYPT;
   DES_ECB_DECRYPT = ALG_DES or ECB_DECRYPT;
-//  DES_CBC         = ALG_DES or MODE_CBC;
+  DES_CBC         = ALG_DES or MODE_CBC;
   DES_CBC_ENCRYPT = ALG_DES or CBC_ENCRYPT;
   DES_CBC_DECRYPT = ALG_DES or CBC_DECRYPT;
   DES_CTR         = ALG_DES or MODE_CTR;
   DES_CTR_ENCRYPT = ALG_DES or CTR_ENCRYPT;
   DES_CTR_DECRYPT = ALG_DES or CTR_DECRYPT;
 
-//  DES3_ECB         = ALG_3DES or MODE_ECB;
+  DES3_ECB         = ALG_3DES or MODE_ECB;
   DES3_ECB_ENCRYPT = ALG_3DES or ECB_ENCRYPT;
   DES3_ECB_DECRYPT = ALG_3DES or ECB_DECRYPT;
-//  DES3_CBC         = ALG_3DES or MODE_CBC;
+  DES3_CBC         = ALG_3DES or MODE_CBC;
   DES3_CBC_ENCRYPT = ALG_3DES or CBC_ENCRYPT;
   DES3_CBC_DECRYPT = ALG_3DES or CBC_DECRYPT;
   DES3_CTR         = ALG_3DES or MODE_CTR;
@@ -114,6 +113,39 @@ type
     procedure GetIV(AIV: Pointer; AIVLen: Cardinal); overload;
     function GetIV(AIVLen: Cardinal): ByteArray; overload;
 
+    function Init(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
+    function Init(const AKey: ByteArray): TCipher; overload;
+    function Init(AKey: PByte; AKeyLen: Cardinal;
+                       AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
+    function Init(const AKey: ByteArray;
+                       const AIV: ByteArray): TCipher; overload;
+    function Init(AKey: PByte; AKeyLen: Cardinal;
+                       const ANonce: UInt64): TCipher; overload;
+    function Init(const AKey: ByteArray;
+                       const ANonce: UInt64): TCipher; overload;
+
+    function EncryptInit(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
+    function EncryptInit(const AKey: ByteArray): TCipher; overload;
+    function EncryptInit(AKey: PByte; AKeyLen: Cardinal;
+                       AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
+    function EncryptInit(const AKey: ByteArray;
+                       const AIV: ByteArray): TCipher; overload;
+    function EncryptInit(AKey: PByte; AKeyLen: Cardinal;
+                       const ANonce: UInt64): TCipher; overload;
+    function EncryptInit(const AKey: ByteArray;
+                       const ANonce: UInt64): TCipher; overload;
+
+    function DecryptInit(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
+    function DecryptInit(const AKey: ByteArray): TCipher; overload;
+    function DecryptInit(AKey: PByte; AKeyLen: Cardinal;
+                       AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
+    function DecryptInit(const AKey: ByteArray;
+                       const AIV: ByteArray): TCipher; overload;
+    function DecryptInit(AKey: PByte; AKeyLen: Cardinal;
+                       const ANonce: UInt64): TCipher; overload;
+    function DecryptInit(const AKey: ByteArray;
+                       const ANonce: UInt64): TCipher; overload;
+{
 // key + IV
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal;
                        AIV: Pointer; AIVLen: Cardinal): TCipher; overload;
@@ -127,12 +159,13 @@ type
 // key only (zeroed IV)
     function ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher; overload;
     function ExpandKey(const AKey: ByteArray): TCipher; overload;
-
-    procedure Encrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+}
+    procedure EncryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
                 OutBufSize: Cardinal; Last: Boolean);
-    procedure Decrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+    procedure DecryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
                 OutBufSize: Cardinal; Last: Boolean);
-    procedure Apply(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean = False);
+    procedure Encrypt(Data, OutData: Pointer; DataSize: Cardinal);
+    procedure Decrypt(Data, OutData: Pointer; DataSize: Cardinal);
 
     procedure GetKeyStream(var Data; DataSize: Cardinal; Last: Boolean = False);
     function KeyStream(DataSize: Cardinal; Last: Boolean = False): ByteArray;
@@ -312,6 +345,49 @@ begin
   Result:= Tmp;
 end;
 
+function TCipher.Init(AKey: PByte; AKeyLen: Cardinal; AIV: Pointer;
+  AIVLen: Cardinal): TCipher;
+begin
+  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, AIV, AIVLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.Init(const AKey: ByteArray): TCipher;
+begin
+  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.Init(AKey: PByte; AKeyLen: Cardinal): TCipher;
+begin
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.Init(const AKey: ByteArray; const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FInstance.ExpandKeyNonce(AKey.RawData, AKey.Len, ANonce));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.Init(AKey: PByte; AKeyLen: Cardinal; const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FInstance.ExpandKeyNonce(AKey, AKeyLen, ANonce));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.Init(const AKey, AIV: ByteArray): TCipher;
+begin
+  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
 function TCipher.IsAssigned: Boolean;
 begin
   Result:= FInstance <> nil;
@@ -393,6 +469,7 @@ begin
   HResCheck(GetChaCha20InstanceEx(PSalsa20Instance(Result.FInstance), Rounds));
 end;
 
+{
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher;
 begin
 //  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, nil, 0));
@@ -418,7 +495,7 @@ begin
 end;
 *)
 
-function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal; {AFlags: UInt32;}
+function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal;
                            AIV: Pointer; AIVLen: Cardinal): TCipher;
 begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
@@ -427,16 +504,8 @@ begin
 //  Result:= Self;
   Result.FInstance:= FInstance;
 end;
-(*
-function TCipher.ExpandKey(const AKey: ByteArray; AFlags: UInt32): TCipher;
-begin
-  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
-  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
-  Result:= Self;
-end;
-*)
 
-function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
+function TCipher.ExpandKey(const AKey: ByteArray;
                            const AIV: ByteArray): TCipher;
 begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
@@ -481,7 +550,7 @@ begin
   Result.FInstance:= FInstance;
 end;
 
-function TCipher.ExpandKey(const AKey: ByteArray; {AFlags: UInt32;}
+function TCipher.ExpandKey(const AKey: ByteArray;
                            const ANonce: UInt64): TCipher;
 begin
 //  HResCheck(FInstance.SetKeyParam(TF_KP_FLAGS, @AFlags, SizeOf(AFlags)));
@@ -490,27 +559,33 @@ begin
 //  Result:= Self;
   Result.FInstance:= FInstance;
 end;
+}
 
 procedure TCipher.Burn;
 begin
   FInstance.Burn;
 end;
 
-procedure TCipher.Encrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+procedure TCipher.EncryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
             OutBufSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Encrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
+  HResCheck(FInstance.EncryptUpdate(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
 end;
 
-procedure TCipher.Decrypt(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
+procedure TCipher.DecryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
             OutBufSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Decrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
+  HResCheck(FInstance.DecryptUpdate(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
 end;
 
-procedure TCipher.Apply(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Encrypt(Data, OutData: Pointer; DataSize: Cardinal);
 begin
-  HResCheck(FInstance.ApplyKeyStream(Data, OutData, DataSize, Last));
+  HResCheck(FInstance.Encrypt(Data, OutData, DataSize));
+end;
+
+procedure TCipher.Decrypt(Data, OutData: Pointer; DataSize: Cardinal);
+begin
+  HResCheck(FInstance.Decrypt(Data, OutData, DataSize));
 end;
 
 class function TCipher.EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray;
@@ -520,8 +595,7 @@ var
 
 begin
   AlgID:= AlgID and TF_ALGID_MASK;
-  Cipher:= TCipher.GetInstance(AlgID or ECB_ENCRYPT)
-                  .ExpandKey(Key);
+  Cipher:= TCipher.GetInstance(AlgID or ECB_ENCRYPT).Init(Key);
   BlockSize:= Cipher.GetBlockSize;
   if (BlockSize = 0) or (BlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then
     CipherError(TF_E_UNEXPECTED);
@@ -538,8 +612,7 @@ var
 
 begin
   AlgID:= AlgID and TF_ALGID_MASK;
-  Cipher:= TCipher.GetInstance(AlgID or ECB_DECRYPT)
-                  .ExpandKey(Key);
+  Cipher:= TCipher.GetInstance(AlgID or ECB_DECRYPT).Init(Key);
   BlockSize:= Cipher.GetBlockSize;
   if (BlockSize = 0) or (BlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then
     CipherError(TF_E_UNEXPECTED);
@@ -579,7 +652,7 @@ begin
   try
     InBuffer:= OutBuffer + LBlockSize;
     Move(Data.RawData^, InBuffer^, L0);
-    HResCheck(FInstance.Encrypt(InBuffer, OutBuffer, L0, L1, True));
+    HResCheck(FInstance.EncryptUpdate(InBuffer, OutBuffer, L0, L1, True));
     Result:= ByteArray.FromMem(OutBuffer, L0);
   finally
     FillChar(OutBuffer^, L1, 0);
@@ -610,7 +683,7 @@ begin
   try
     InBuffer:= OutBuffer + LBlockSize;
     Move(Data.RawData^, InBuffer^, L0);
-    HResCheck(FInstance.Decrypt(InBuffer, OutBuffer, L0, L1, True));
+    HResCheck(FInstance.DecryptUpdate(InBuffer, OutBuffer, L0, L1, True));
     Result:= ByteArray.FromMem(OutBuffer, L0);
   finally
     FillChar(OutBuffer^, L1, 0);
@@ -631,6 +704,57 @@ begin
     InStream.Free;
     OutStream.Free;
   end;
+end;
+
+function TCipher.EncryptInit(AKey: PByte; AKeyLen: Cardinal; AIV: Pointer;
+  AIVLen: Cardinal): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_ENCRYPT));
+  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, AIV, AIVLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.EncryptInit(const AKey: ByteArray): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_ENCRYPT));
+  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.EncryptInit(AKey: PByte; AKeyLen: Cardinal): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_ENCRYPT));
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.EncryptInit(const AKey: ByteArray;
+  const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_ENCRYPT));
+  HResCheck(FInstance.ExpandKeyNonce(AKey.RawData, AKey.Len, ANonce));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.EncryptInit(AKey: PByte; AKeyLen: Cardinal;
+  const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_ENCRYPT));
+  HResCheck(FInstance.ExpandKeyNonce(AKey, AKeyLen, ANonce));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.EncryptInit(const AKey, AIV: ByteArray): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_ENCRYPT));
+  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 procedure TCipher.EncryptStream(InStream, OutStream: TStream; BufSize: Cardinal);
@@ -679,7 +803,7 @@ begin
       until (Cnt = 0);
       Last:= Cnt > 0;
       DataSize:= BufSize - Cnt;
-      Encrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last);
+      EncryptUpdate(InBuffer, OutBuffer, DataSize, OutBufSize, Last);
       if DataSize > 0 then
         OutStream.WriteBuffer(OutBuffer^, DataSize);
     until Last;
@@ -733,7 +857,7 @@ begin
       until (Cnt = 0);
       Last:= Cnt > 0;
       DataSize:= BufSize - Cnt;
-      Decrypt(InBuffer, OutBuffer, DataSize, OutBufSize, Last);
+      DecryptUpdate(InBuffer, OutBuffer, DataSize, OutBufSize, Last);
       if DataSize > 0 then
         OutStream.WriteBuffer(OutBuffer^, DataSize);
     until Last;
@@ -830,6 +954,57 @@ begin
     InStream.Free;
     OutStream.Free;
   end;
+end;
+
+function TCipher.DecryptInit(AKey: PByte; AKeyLen: Cardinal; AIV: Pointer;
+  AIVLen: Cardinal): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_DECRYPT));
+  HResCheck(FInstance.ExpandKeyIV(AKey, AKeyLen, AIV, AIVLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.DecryptInit(const AKey: ByteArray): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_DECRYPT));
+  HResCheck(FInstance.ExpandKey(AKey.RawData, AKey.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.DecryptInit(AKey: PByte; AKeyLen: Cardinal): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_DECRYPT));
+  HResCheck(FInstance.ExpandKey(AKey, AKeyLen));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.DecryptInit(const AKey: ByteArray;
+  const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_DECRYPT));
+  HResCheck(FInstance.ExpandKeyNonce(AKey.RawData, AKey.Len, ANonce));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.DecryptInit(AKey: PByte; AKeyLen: Cardinal;
+  const ANonce: UInt64): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_DECRYPT));
+  HResCheck(FInstance.ExpandKeyNonce(AKey, AKeyLen, ANonce));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
+end;
+
+function TCipher.DecryptInit(const AKey, AIV: ByteArray): TCipher;
+begin
+  HResCheck(FInstance.SetKeyDir(TF_KEYDIR_DECRYPT));
+  HResCheck(FInstance.ExpandKeyIV(AKey.RawData, AKey.Len, AIV.RawData, AIV.Len));
+//  Result:= Self;
+  Result.FInstance:= FInstance;
 end;
 
 function TCipher.Clone: TCipher;

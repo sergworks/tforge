@@ -3,9 +3,6 @@
         Copyright (c) Sergey Kasandrov 1997, 2018
   -------------------------------------------------------
   # generic block cipher
-  # inheritance:
-      TForgeInstance <-- TCipherInstance <-- TStreamCipherInstance <--
-        <-- TBlockCipherInstance
 }
 
 unit tfBlockCiphers;
@@ -26,16 +23,24 @@ type
     FVTable:   Pointer;
     FRefCount: Integer;
     FAlgID:    TAlgID;
-    FKeyFlags: TKeyFlags;
-    FPos:      Integer;
 {$HINTS ON}
+    FKeyFlags: TKeyFlags;
+//
+// the semantics of FPos field depends on the mode of operation;
+// for block modes (ECB, CBC) FPos is number of cached
+//   plaintext(encryption)/ciphertext(decryption) bytes, 0..BlockSize-1
+// for stream modes (CFB, OFB, CTR) the cache is either empty
+//   or contains keystream block;
+//   FPos = 0..BlockSize is number of used keystream bytes;
+//   FPos = BlockSize is the same as cache is empty.
+//  CFB and OFB modes use IV field instead of FCache for keystream caching
+//
+    FPos:      Integer;
     FCache: array[0..0] of Byte;
 
     function DecodePad(PadBlock: PByte; BlockSize: Cardinal;
                          Padding: UInt32; out PayLoad: Cardinal): TF_RESULT;
   public
-//    class function GetIsBlockCipher(Inst: Pointer): Boolean;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function IncBlockNoCTR(Inst: PBlockCipherInstance; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DecBlockNoCTR(Inst: PBlockCipherInstance; Count: UInt64): TF_RESULT;
@@ -47,21 +52,49 @@ type
     class function ExpandKeyNonce(Inst: Pointer; Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptCTR(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function GetKeyStreamCTR(Inst: PBlockCipherInstance; Data: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptCFB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptOFB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptUpdateECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DecryptUpdateECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
                      var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DecryptECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DecryptCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DecryptCFB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptUpdateCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DecryptUpdateCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
+                     var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function EncryptUpdateCTR(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
                      var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKeyBlockCTR(Inst: PBlockCipherInstance; Data: PByte): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class function GetKeyBlockOFB(Inst: Pointer; Data: PByte): TF_RESULT;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SetIV(Inst: Pointer; IV: Pointer; IVLen: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SetNonce(Inst: PBlockCipherInstance; Nonce: TNonce): TF_RESULT;
@@ -72,15 +105,17 @@ type
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIVPointer(Inst: PBlockCipherInstance): Pointer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-//    class function EncryptFinalECB(Inst: PBlockCipherInstance;
-//                     OutData: PByte; var OutSize: Cardinal): TF_RESULT;
-//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
   end;
 
 implementation
 
 uses
   tfCipherHelpers;
+
+function ValidKey(Inst: PBlockCipherInstance): Boolean; inline;
+begin
+  Result:= (Inst.FKeyFlags and TF_KEYFLAG_KEY <> 0);
+end;
 
 function ValidEncryptionKey(Inst: PBlockCipherInstance): Boolean; inline;
 begin
@@ -120,6 +155,356 @@ end;
 { TBlockCipherInstance }
 
 class function TBlockCipherInstance.EncryptCBC(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  IVector: PByte;
+  LBlockSize: Integer;
+
+begin
+  if not ValidEncryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  if (Inst.FAlgID and TF_PADDING_MASK <> TF_PADDING_NONE) or (Inst.FPos <> 0) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+
+  if DataSize mod Cardinal(LBlockSize) <> 0 then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+// encrypt  complete blocks
+  while DataSize > 0 do begin
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+    XorBytes(OutBuffer, IVector, LBlockSize);
+    EncryptBlock(Inst, OutBuffer);
+    Move(OutBuffer^, IVector^, LBlockSize);
+
+    Inc(InBuffer, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Dec(DataSize, LBlockSize);
+  end;
+
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.EncryptCFB(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  IVector, IV: PByte;
+  LBlockSize: Integer;
+  Cnt: Integer;
+
+begin
+  if not ValidEncryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  while DataSize > 0 do begin
+    if Inst.FPos = LBlockSize then begin
+      EncryptBlock(Inst, IVector);
+      Inst.FPos:= 0;
+    end;
+    Cnt:= LBlockSize - Inst.FPos;
+
+{$IFDEF DEBUG}
+    if (Cnt < 0) then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+{$ENDIF}
+
+    if Cardinal(Cnt) > DataSize then
+      Cnt:= DataSize;
+    IV:= @IVector[Inst.FPos];
+    Inc(Inst.FPos, Cnt);
+    Dec(DataSize, Cnt);
+    while Cnt > 0 do begin
+      IV^:= IV^ xor InBuffer^;
+      OutBuffer^:= IV^;
+      Inc(OutBuffer);
+      Inc(InBuffer);
+      Inc(IV);
+      Dec(Cnt);
+    end;
+  end;
+{
+  if Last then begin
+    FillChar(IVector, LBlockSize, 0);
+    Inst.FPos:= LBlockSize;
+  end;
+}
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.EncryptCTR(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  IVector, PCache: PByte;
+  LBlockSize: Integer;
+  Cnt: Integer;
+
+begin
+  if not ValidKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  while DataSize > 0 do begin
+    if Inst.FPos = LBlockSize then begin
+      Move(IVector^, Inst.FCache, LBlockSize);
+      TBigEndian.Incr(IVector, IVector + LBlockSize);
+      EncryptBlock(Inst, @Inst.FCache);
+      Inst.FPos:= 0;
+    end;
+    Cnt:= LBlockSize - Inst.FPos;
+
+{$IFDEF DEBUG}
+    if (Cnt < 0) then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+{$ENDIF}
+
+    if Cardinal(Cnt) > DataSize then
+      Cnt:= DataSize;
+    PCache:= @Inst.FCache[Inst.FPos];
+    Inc(Inst.FPos, Cnt);
+    Dec(DataSize, Cnt);
+    while Cnt > 0 do begin
+      OutBuffer^:= InBuffer^ xor PCache^;
+      Inc(OutBuffer);
+      Inc(InBuffer);
+      Inc(PCache);
+      Dec(Cnt);
+    end;
+  end;
+{
+  if Last then begin
+    FillChar(Inst.FCache, LBlockSize, 0);
+    Inst.FPos:= LBlockSize;
+  end;
+}
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.GetKeyStreamCTR(Inst: PBlockCipherInstance;
+                 Data: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  IVector, PCache: PByte;
+  LBlockSize: Integer;
+  Cnt: Integer;
+
+begin
+  if not ValidKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  while DataSize > 0 do begin
+    if Inst.FPos = LBlockSize then begin
+      Move(IVector^, Inst.FCache, LBlockSize);
+      TBigEndian.Incr(IVector, IVector + LBlockSize);
+      EncryptBlock(Inst, @Inst.FCache);
+      Inst.FPos:= 0;
+    end;
+    Cnt:= LBlockSize - Inst.FPos;
+
+{$IFDEF DEBUG}
+    if (Cnt < 0) then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+{$ENDIF}
+
+    if Cardinal(Cnt) > DataSize then
+      Cnt:= DataSize;
+    PCache:= @Inst.FCache[Inst.FPos];
+    Inc(Inst.FPos, Cnt);
+    Dec(DataSize, Cnt);
+    if Cnt = LBlockSize then begin
+      Move(Data^, PCache^, LBlockSize);
+      Inc(Data, LBlockSize);
+    end
+    else while Cnt > 0 do begin
+      Data^:= PCache^;
+      Inc(Data);
+      Inc(PCache);
+      Dec(Cnt);
+    end;
+  end;
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.EncryptECB(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  LBlockSize: Integer;
+
+begin
+  if not ValidEncryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  if (Inst.FAlgID and TF_PADDING_MASK <> TF_PADDING_NONE) or (Inst.FPos <> 0) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+
+  if DataSize mod Cardinal(LBlockSize) <> 0 then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+// encrypt  complete blocks
+  while DataSize > 0 do begin
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+    EncryptBlock(Inst, OutBuffer);
+    Inc(InBuffer, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Dec(DataSize, LBlockSize);
+  end;
+
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.EncryptOFB(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  IVector, IV: PByte;
+  LBlockSize: Integer;
+  Cnt: Integer;
+
+begin
+  if not ValidKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  while DataSize > 0 do begin
+    if Inst.FPos = LBlockSize then begin
+      EncryptBlock(Inst, IVector);
+      Inst.FPos:= 0;
+    end;
+    Cnt:= LBlockSize - Inst.FPos;
+
+{$IFDEF DEBUG}
+    if (Cnt < 0) then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+{$ENDIF}
+
+    if Cardinal(Cnt) > DataSize then
+      Cnt:= DataSize;
+    IV:= @IVector[Inst.FPos];
+    Inc(Inst.FPos, Cnt);
+    Dec(DataSize, Cnt);
+    while Cnt > 0 do begin
+      OutBuffer^:= InBuffer^ xor IV^;
+      Inc(OutBuffer);
+      Inc(InBuffer);
+      Inc(IV);
+      Dec(Cnt);
+    end;
+  end;
+{
+  if Last then begin
+    FillChar(IVector, LBlockSize, 0);
+    Inst.FPos:= LBlockSize;
+  end;
+}
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.EncryptUpdateCBC(Inst: PBlockCipherInstance;
                  InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
                  OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
@@ -282,7 +667,19 @@ begin
   DataSize:= OutCount;
 end;
 
-class function TBlockCipherInstance.EncryptECB(Inst: PBlockCipherInstance;
+class function TBlockCipherInstance.EncryptUpdateCTR(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; var DataSize: Cardinal; OutBufSize: Cardinal;
+  Last: Boolean): TF_RESULT;
+begin
+  if OutBufSize < DataSize then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end
+  else
+    Result:= EncryptCTR(Inst, InBuffer, OutBuffer, DataSize);
+end;
+
+class function TBlockCipherInstance.EncryptUpdateECB(Inst: PBlockCipherInstance;
                  InBuffer, OutBuffer: PByte;
                  var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
@@ -517,6 +914,173 @@ begin
 end;
 
 class function TBlockCipherInstance.DecryptCBC(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  DecryptBlock: TCipherHelper.TBlockFunc;
+  IVector: PByte;
+  LBlockSize: Integer;
+
+begin
+  if not ValidDecryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @DecryptBlock:= TCipherHelper.GetDecryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  if (Inst.FAlgID and TF_PADDING_MASK <> TF_PADDING_NONE) or (Inst.FPos <> 0) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+
+  if DataSize mod Cardinal(LBlockSize) <> 0 then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+// decrypt complete blocks
+  while DataSize > 0 do begin
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+// since InBuffer and OutBuffer can be identical
+//   we store InBuffer block in intermediate buffer
+    Move(InBuffer^, Inst.FCache, LBlockSize);
+    DecryptBlock(Inst, OutBuffer);
+    XorBytes(OutBuffer, IVector, LBlockSize);
+    Move(Inst.FCache, IVector^, LBlockSize);
+
+    Inc(InBuffer, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Dec(DataSize, LBlockSize);
+  end;
+
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.DecryptCFB(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  EncryptBlock: TCipherHelper.TBlockFunc;
+  IVector, IV: PByte;
+  LBlockSize: Integer;
+  Cnt: Integer;
+  Tmp: Byte;
+
+begin
+  if not ValidDecryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @EncryptBlock:= TCipherHelper.GetEncryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  IVector:= PByte(@Inst.FCache) + LBlockSize;
+
+  while DataSize > 0 do begin
+    if Inst.FPos = LBlockSize then begin
+      EncryptBlock(Inst, IVector);
+      Inst.FPos:= 0;
+    end;
+    Cnt:= LBlockSize - Inst.FPos;
+
+{$IFDEF DEBUG}
+    if (Cnt < 0) then begin
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+{$ENDIF}
+
+    if Cardinal(Cnt) > DataSize then
+      Cnt:= DataSize;
+    IV:= @IVector[Inst.FPos];
+    Inc(Inst.FPos, Cnt);
+    Dec(DataSize, Cnt);
+    while Cnt > 0 do begin
+      Tmp:= InBuffer^;
+      OutBuffer^:= IV^ xor Tmp;
+      Inc(OutBuffer);
+      Inc(InBuffer);
+      Inc(IV);
+      IV^:= Tmp;
+      Dec(Cnt);
+    end;
+//    Tmp:= 0;
+  end;
+{
+  if Last then begin
+    FillChar(IVector, LBlockSize, 0);
+    Inst.FPos:= LBlockSize;
+  end;
+}
+  Result:= TF_S_OK;
+
+end;
+
+class function TBlockCipherInstance.DecryptECB(Inst: PBlockCipherInstance;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
+var
+  DecryptBlock: TCipherHelper.TBlockFunc;
+  LBlockSize: Integer;
+
+begin
+  if not ValidDecryptionKey(Inst) then begin
+    Result:= TF_E_INVALIDKEY;
+    Exit;
+  end;
+
+  @DecryptBlock:= TCipherHelper.GetDecryptBlockFunc(Inst);
+
+  LBlockSize:= TCipherHelper.GetBlockSize(Inst);
+
+{$IFDEF DEBUG}
+  if (LBlockSize <= 0) or (LBlockSize > TF_MAX_CIPHER_BLOCK_SIZE) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+{$ENDIF}
+
+  if (Inst.FAlgID and TF_PADDING_MASK <> TF_PADDING_NONE) or (Inst.FPos <> 0) then begin
+    Result:= TF_E_UNEXPECTED;
+    Exit;
+  end;
+
+  if DataSize mod Cardinal(LBlockSize) <> 0 then begin
+    Result:= TF_E_INVALIDARG;
+    Exit;
+  end;
+
+// decrypt complete blocks
+  while DataSize > 0 do begin
+    Move(InBuffer^, OutBuffer^, LBlockSize);
+    DecryptBlock(Inst, OutBuffer);
+    Inc(InBuffer, LBlockSize);
+    Inc(OutBuffer, LBlockSize);
+    Dec(DataSize, LBlockSize);
+  end;
+
+  Result:= TF_S_OK;
+end;
+
+class function TBlockCipherInstance.DecryptUpdateCBC(Inst: PBlockCipherInstance;
                  InBuffer, OutBuffer: PByte;
                  var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
@@ -691,7 +1255,7 @@ begin
 
 end;
 
-class function TBlockCipherInstance.DecryptECB(Inst: PBlockCipherInstance;
+class function TBlockCipherInstance.DecryptUpdateECB(Inst: PBlockCipherInstance;
                  InBuffer, OutBuffer: PByte;
                  var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
 var
@@ -1185,6 +1749,7 @@ class function TBlockCipherInstance.SetIV(Inst: Pointer;
 var
   LBlockSize: Cardinal;
   PIV: PByte;
+  LMode: TAlgID;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -1207,6 +1772,14 @@ begin
       Result:= TF_E_INVALIDARG;
     end;
     Exit;
+  end;
+
+  LMode:= PBlockCipherInstance(Inst).FAlgID and TF_KEYMODE_MASK;
+  case LMode of
+    TF_KEYMODE_ECB,
+    TF_KEYMODE_CBC: PBlockCipherInstance(Inst).FPos:= 0;
+  else
+    PBlockCipherInstance(Inst).FPos:= LBlockSize;
   end;
 
   if (IVLen = LBlockSize) then begin

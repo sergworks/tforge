@@ -2,7 +2,7 @@
                        TForge Library
         Copyright (c) Sergey Kasandrov 1997, 2018
   -------------------------------------------------------
-  # AES in block cipher mode (ECB, CBC)
+  # AES cipher instance
   # inheritance:
       TForgeInstance <-- TCipherInstance <-- TBlockCipherInstance <--
          <-- TAESCipherInstance
@@ -51,14 +51,9 @@ implementation
 
 uses
   tfRecords, tfHelpers, tfCipherInstances, tfStreamCiphers, tfBlockCiphers;
-(*
-function GetAESBlockSize(Inst: Pointer): Integer; {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-begin
-  Result:= TAESAlgorithm.BLOCK_SIZE;
-end;
-*)
+
 const
-  ECBCipherVTable: array[0..24] of Pointer = (
+  ECBCipherVTable: array[0..26] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
@@ -69,13 +64,14 @@ const
     @TAESCipherInstance.ExpandKeyIV,
     @TBlockCipherInstance.ExpandKeyNonce,
     @TCipherInstance.GetBlockSize128,
+    @TBlockCipherInstance.EncryptUpdateECB,
+    @TBlockCipherInstance.DecryptUpdateECB,
+    @TAESCipherInstance.EncryptBlock,
+    @TAESCipherInstance.DecryptBlock,
+    @TCipherInstance.GetKeyBlockStub,
+    @TCipherInstance.GetKeyStreamStub,
     @TBlockCipherInstance.EncryptECB,
     @TBlockCipherInstance.DecryptECB,
-    @TAESCipherInstance.EncryptBlock,
-    @TAESCipherInstance.DecryptBlock,
-    @TCipherInstance.GetKeyBlockStub,
-    @TCipherInstance.GetKeyStreamStub,
-    @TCipherInstance.ApplyKeyStreamStub,
     @TCipherInstance.IsBlockCipher,
     @TCipherInstance.IncBlockNoStub,
     @TCipherInstance.IncBlockNoStub,
@@ -84,10 +80,11 @@ const
     @TBlockCipherInstance.SetNonce,
     @TBlockCipherInstance.GetIV,
     @TBlockCipherInstance.GetNonce,
-    @TBlockCipherInstance.GetIVPointer
+    @TBlockCipherInstance.GetIVPointer,
+    @TCipherInstance.SetKeyDir
   );
 
-  CBCCipherVTable: array[0..24] of Pointer = (
+  CBCCipherVTable: array[0..26] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
@@ -98,13 +95,14 @@ const
     @TAESCipherInstance.ExpandKeyIV,
     @TBlockCipherInstance.ExpandKeyNonce,
     @TCipherInstance.GetBlockSize128,
+    @TBlockCipherInstance.EncryptUpdateCBC,
+    @TBlockCipherInstance.DecryptUpdateCBC,
+    @TAESCipherInstance.EncryptBlock,
+    @TAESCipherInstance.DecryptBlock,
+    @TCipherInstance.GetKeyBlockStub,
+    @TCipherInstance.GetKeyStreamStub,
     @TBlockCipherInstance.EncryptCBC,
     @TBlockCipherInstance.DecryptCBC,
-    @TAESCipherInstance.EncryptBlock,
-    @TAESCipherInstance.DecryptBlock,
-    @TCipherInstance.GetKeyBlockStub,
-    @TCipherInstance.GetKeyStreamStub,
-    @TCipherInstance.ApplyKeyStreamStub,
     @TCipherInstance.IsBlockCipher,
     @TCipherInstance.IncBlockNoStub,
     @TCipherInstance.IncBlockNoStub,
@@ -113,10 +111,11 @@ const
     @TBlockCipherInstance.SetNonce,
     @TBlockCipherInstance.GetIV,
     @TBlockCipherInstance.GetNonce,
-    @TBlockCipherInstance.GetIVPointer
+    @TBlockCipherInstance.GetIVPointer,
+    @TCipherInstance.SetKeyDir
   );
 
-  CTRCipherVTable: array[0..24] of Pointer = (
+  CTRCipherVTable: array[0..26] of Pointer = (
     @TForgeInstance.QueryIntf,
     @TForgeInstance.Addref,
     @TForgeInstance.SafeRelease,
@@ -127,14 +126,19 @@ const
     @TAESCipherInstance.ExpandKeyIV,
     @TBlockCipherInstance.ExpandKeyNonce,
     @TCipherInstance.GetBlockSize128,
-    @TStreamCipherInstance.Encrypt,
-    @TStreamCipherInstance.Encrypt,
+    @TBlockCipherInstance.EncryptUpdateCTR,
+    @TBlockCipherInstance.EncryptUpdateCTR,
+//    @TStreamCipherInstance.Encrypt,
+//    @TStreamCipherInstance.Encrypt,
     @TAESCipherInstance.EncryptBlock,
     @TAESCipherInstance.DecryptBlock,
     @TBlockCipherInstance.GetKeyBlockCTR,
-    @TStreamCipherInstance.GetKeyStream,
-    @TStreamCipherInstance.ApplyKeyStream,
-    @TCipherInstance.IsStreamCipher,
+//    @TStreamCipherInstance.GetKeyStream,
+    @TBlockCipherInstance.GetKeyStreamCTR,
+    @TBlockCipherInstance.EncryptCTR,
+    @TBlockCipherInstance.EncryptCTR,
+//    @TCipherInstance.IsStreamCipher,
+    @TCipherInstance.IsBlockCipher,
     @TBlockCipherInstance.IncBlockNoCTR,
     @TBlockCipherInstance.DecBlockNoCTR,
     @TBlockCipherInstance.SkipCTR,
@@ -142,7 +146,8 @@ const
     @TBlockCipherInstance.SetNonce,
     @TBlockCipherInstance.GetIV,
     @TBlockCipherInstance.GetNonce,
-    @TBlockCipherInstance.GetIVPointer
+    @TBlockCipherInstance.GetIVPointer,
+    @TCipherInstance.SetKeyDir
   );
 
 function GetVTable(AlgID: TAlgID): Pointer;
@@ -155,6 +160,7 @@ begin
     Result:= nil;
   end;
 end;
+
 
 function GetAESInstance(var A: PAESCipherInstance; AlgID: TAlgID): TF_RESULT;
 var
@@ -170,8 +176,9 @@ begin
   try
     Tmp:= AllocMem(SizeOf(TAESCipherInstance));
     Tmp.FVTable:= LVTable;
-    Tmp^.FRefCount:= 1;
-    Tmp^.FAlgID:= AlgID;
+    Tmp.FRefCount:= 1;
+    Tmp.FAlgID:= AlgID;
+
 //    if A <> nil then TForgeHelper.Release(A);
     TForgeHelper.Free(A);
     A:= Tmp;
@@ -220,6 +227,17 @@ end;
 class function TAESCipherInstance.ExpandKeyIV(Inst: PAESCipherInstance;
                  Key: PByte; KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
 begin
+// direction (encryption/decryption) must be set
+//   for all modes of operation except OFB and CTR
+  if Inst.FAlgID and TF_KEYDIR_ENABLED = 0 then begin
+    case Inst.FAlgID and TF_KEYMODE_MASK of
+      TF_KEYMODE_OFB, TF_KEYMODE_CTR: ;
+    else
+      Result:= TF_E_UNEXPECTED;
+      Exit;
+    end;
+  end;
+
   Result:= Inst.FState.ExpandKey(Key, KeySize);
   if Result = TF_S_OK then
     Result:= TBlockCipherInstance.SetIV(Inst, IV, IVSize);

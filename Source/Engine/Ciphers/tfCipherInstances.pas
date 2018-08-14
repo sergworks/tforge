@@ -32,6 +32,9 @@ type
 (*    class function GetAlgID(Inst: PCipherInstance): TAlgID;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 *)
+    class function SetKeyDir(Inst: PCipherInstance; KeyDir: TAlgID): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+
     class function ExpandKey(Inst: Pointer; Key: PByte; KeySize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ExpandKeyNonce(Inst: Pointer; Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
@@ -164,6 +167,18 @@ end;
 class function TCipherInstance.SetIVStub(Inst, IV: Pointer; IVLen: Cardinal): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
+end;
+
+// SetKeyDir call must be followed by ExpandKey... call
+class function TCipherInstance.SetKeyDir(Inst: PCipherInstance; KeyDir: TAlgID): TF_RESULT;
+begin
+  if KeyDir and not TF_KEYDIR_MASK <> 0 then
+    Result:= TF_E_INVALIDARG
+  else begin
+    Inst.FAlgID:= Inst.FAlgID and not TF_KEYDIR_MASK;
+    Inst.FAlgID:= Inst.FAlgID or KeyDir;
+    Result:= TF_S_OK;
+  end;
 end;
 
 class function TCipherInstance.SetNonceStub(Inst: Pointer; Nonce: TNonce): TF_RESULT;
