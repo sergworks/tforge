@@ -5,25 +5,25 @@ package TForge;
 {$ALIGN 8}
 {$ASSERTIONS ON}
 {$BOOLEVAL OFF}
-{$DEBUGINFO ON}
+{$DEBUGINFO OFF}
 {$EXTENDEDSYNTAX ON}
 {$IMPORTEDDATA ON}
 {$IOCHECKS ON}
-{$LOCALSYMBOLS ON}
+{$LOCALSYMBOLS OFF}
 {$LONGSTRINGS ON}
 {$OPENSTRINGS ON}
-{$OPTIMIZATION OFF}
+{$OPTIMIZATION ON}
 {$OVERFLOWCHECKS OFF}
 {$RANGECHECKS OFF}
-{$REFERENCEINFO ON}
+{$REFERENCEINFO OFF}
 {$SAFEDIVIDE OFF}
-{$STACKFRAMES ON}
+{$STACKFRAMES OFF}
 {$TYPEDADDRESS OFF}
 {$VARSTRINGCHECKS ON}
 {$WRITEABLECONST OFF}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
-{$DEFINE DEBUG}
+{$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
 {$RUNONLY}
 {$IMPLICITBUILD ON}
@@ -57,7 +57,7 @@ contains
   tfLimbs in '..\..\Source\Shared\tfLimbs.pas',
   tfTypes in '..\..\Source\Shared\tfTypes.pas',
   tfUtils in '..\..\Source\Shared\tfUtils.pas',
-  tfBytes in '..\..\Source\User\tfBytes.pas',
+  tfArrays in '..\..\Source\User\tfArrays.pas',
   tfCiphers in '..\..\Source\User\tfCiphers.pas',
   tfConsts in '..\..\Source\User\tfConsts.pas',
   tfCRCs in '..\..\Source\User\tfCRCs.pas',

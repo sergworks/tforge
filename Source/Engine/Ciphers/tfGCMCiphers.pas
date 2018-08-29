@@ -12,7 +12,7 @@ unit tfGCMCiphers;
 interface
 
 uses
-  tfTypes, tfGHash, SysUtils;
+  tfTypes, tfGHash, tfCipherInstances, SysUtils;
 
 type
   PGCMCipherInstance = ^TGCMCipherInstance;
@@ -32,7 +32,10 @@ type
     FDataSize: UInt64;
     FGHash:    TGHash;
   public
-    procedure SetIV(IV: PByte; IVSize: Cardinal);
+//    procedure SetIV(IV: PByte; IVSize: Cardinal);
+
+    class function SetIV(Inst: PGcmCipherInstance; IV: Pointer; IVLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function AddAuthData(Inst: PGCMCipherInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Encrypt(Inst: PGCMCipherInstance; InData, OutData: PByte;
@@ -214,6 +217,55 @@ begin
   Result:= TF_S_OK;
 end;
 
+
+class function TGCMCipherInstance.SetIV(Inst: PGcmCipherInstance;
+                 IV: Pointer; IVLen: Cardinal): TF_RESULT;
+var
+  Sizes: array[0..1] of UInt64;
+
+begin
+  if (IVLen = 12) then begin
+    Move(IV^, Inst.FCounter, 12);
+    Inst.FCounter[12]:= 0;
+    Inst.FCounter[13]:= 0;
+    Inst.FCounter[14]:= 0;
+    Inst.FCounter[15]:= 1;
+  end
+  else begin
+    FillChar(Inst.FH, SizeOf(Inst.FH), 0);
+    TCipherHelper.EncryptBlock(Inst, @Inst.FH);
+    Inst.FGHash.Init(@Inst.FH);
+    Inst.FGHash.Update(IV, IVLen);
+    Inst.FGHash.Pad;
+    Sizes[0]:= 0;                            // auth data bit length
+    Sizes[1]:= Swap64(UInt64(IVLen * 8));    // IV bit length
+    Inst.FGHash.Update(@Sizes, SizeOf(Sizes));
+    FillChar(Sizes, SizeOf(Sizes), 0);
+    Inst.FGHash.Done(@Inst.FCounter, SizeOf(Inst.FCounter));
+  end;
+
+  Inst.FAuthSize:= 0;
+  Inst.FDataSize:= 0;
+
+// force counter increment at first encrypt or decrypt invocation
+  Inst.FPos:= 16;
+
+// prepare GHash for hashing auth data
+  FillChar(Inst.FH, SizeOf(Inst.FH), 0);
+  TCipherHelper.EncryptBlock(Inst, @Inst.FH);
+  Inst.FGHash.Init(@Inst.FH);
+
+// save encrypted initial counter for final tag computation
+  Move(Inst.FCounter, Inst.FH, SizeOf(Inst.FH));
+  TCipherHelper.EncryptBlock(Inst, @Inst.FH);
+
+// allow auth data processing
+  Inst.FKeyFlags:= Inst.FKeyFlags and not TF_KEYFLAG_STARTED;
+//  FKeyFlags:= FKeyFlags and not TF_KEYFLAG_EXT;
+  Result:= TF_S_OK;
+end;
+
+(*
 procedure TGCMCipherInstance.SetIV(IV: PByte; IVSize: Cardinal);
 var
   Sizes: array[0..1] of UInt64;
@@ -258,5 +310,6 @@ begin
   FKeyFlags:= FKeyFlags and not TF_KEYFLAG_STARTED;
 //  FKeyFlags:= FKeyFlags and not TF_KEYFLAG_EXT;
 end;
+*)
 
 end.

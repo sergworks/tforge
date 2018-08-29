@@ -27,8 +27,12 @@ type
     FKeyFlags: TKeyFlags;
 //    FPos:      Integer;
 {$HINTS ON}
+   public
+     class function ValidKey(Inst: Pointer): Boolean; static; inline;
+     class function ValidEncryptionKey(Inst: Pointer): Boolean; static; inline;
+     class function ValidDecryptionKey(Inst: Pointer): Boolean; static; inline;
 
-  public
+
 (*    class function GetAlgID(Inst: PCipherInstance): TAlgID;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 *)
@@ -51,22 +55,23 @@ type
 // not implemented stubs
     class function CloneStub(Inst: Pointer; var NewInst: Pointer): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyBlockStub(Inst: Pointer; Data: PByte): TF_RESULT;
+    class function BlockMethodStub(Inst: Pointer; Data: PByte): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetKeyStreamStub(Inst: Pointer; Data: PByte; DataSize: Cardinal): TF_RESULT;
+//    class function EncryptBlockStub(Inst: Pointer; Data: PByte): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function DataMethodStub(Inst: Pointer; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function ApplyKeyStreamStub(Inst: Pointer; Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+    class function EncryptStub(Inst: Pointer; Data, OutData: PByte;
+                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function IncBlockNoStub(Inst: Pointer; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function EncryptBlockStub(Inst: Pointer; Data: PByte): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function SetIVStub(Inst: Pointer; IV: Pointer; IVLen: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function SetIVStub(Inst: Pointer; IV: Pointer; IVLen: Cardinal): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SetNonceStub(Inst: Pointer; Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
-    class function GetIVStub(Inst: Pointer; Data: Pointer; DataLen: Cardinal): TF_RESULT;
-      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+//    class function GetIVStub(Inst: Pointer; Data: Pointer; DataLen: Cardinal): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetNonceStub(Inst: Pointer; var Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetIVPointerStub(Inst: Pointer): Pointer;
@@ -104,11 +109,12 @@ begin
     Result:= TCipherHelper.SetNonce(Inst, Nonce);
 end;
 
+{
 class function TCipherInstance.GetIVStub(Inst, Data: Pointer; DataLen: Cardinal): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;
-
+}
 class function TCipherInstance.GetBlockSize128(Inst: Pointer): Integer;
 begin
   Result:= 16;
@@ -124,13 +130,13 @@ begin
   Result:= nil;
 end;
 
-class function TCipherInstance.GetKeyBlockStub(Inst: Pointer;
+class function TCipherInstance.BlockMethodStub(Inst: Pointer;
                  Data: PByte): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;
 
-class function TCipherInstance.GetKeyStreamStub(Inst: Pointer;
+class function TCipherInstance.DataMethodStub(Inst: Pointer;
                  Data: PByte; DataSize: Cardinal): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
@@ -141,8 +147,8 @@ begin
   Result:= TF_E_NOTIMPL;
 end;
 
-class function TCipherInstance.ApplyKeyStreamStub(Inst: Pointer; Data,
-  OutData: PByte; DataSize: Cardinal): TF_RESULT;
+class function TCipherInstance.EncryptStub(Inst: Pointer; Data, OutData: PByte;
+                 DataSize: Cardinal; Last: Boolean): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;
@@ -164,11 +170,12 @@ begin
   Result:= False;
 end;
 
+{
 class function TCipherInstance.SetIVStub(Inst, IV: Pointer; IVLen: Cardinal): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;
-
+}
 // SetKeyDir call must be followed by ExpandKey... call
 class function TCipherInstance.SetKeyDir(Inst: PCipherInstance; KeyDir: TAlgID): TF_RESULT;
 begin
@@ -186,6 +193,25 @@ begin
   Result:= TF_E_NOTIMPL;
 end;
 
+class function TCipherInstance.ValidDecryptionKey(Inst: Pointer): Boolean;
+begin
+  Result:= (PCipherInstance(Inst).FKeyFlags and TF_KEYFLAG_KEY <> 0) and
+           ((PCipherInstance(Inst).FAlgID and TF_KEYDIR_ENABLED = 0) or
+            (PCipherInstance(Inst).FAlgID and TF_KEYDIR_ENC = 0));
+end;
+
+class function TCipherInstance.ValidEncryptionKey(Inst: Pointer): Boolean;
+begin
+  Result:= (PCipherInstance(Inst).FKeyFlags and TF_KEYFLAG_KEY <> 0) and
+           ((PCipherInstance(Inst).FAlgID and TF_KEYDIR_ENABLED = 0) or
+            (PCipherInstance(Inst).FAlgID and TF_KEYDIR_ENC <> 0));
+end;
+
+class function TCipherInstance.ValidKey(Inst: Pointer): Boolean;
+begin
+  Result:= (PCipherInstance(Inst).FKeyFlags and TF_KEYFLAG_KEY <> 0);
+end;
+
 class function TCipherInstance.CloneStub(Inst: Pointer;
   var NewInst: Pointer): TF_RESULT;
 begin
@@ -193,10 +219,11 @@ begin
 end;
 
 // EncryptBlock/DecryptBlock stub
+(*
 class function TCipherInstance.EncryptBlockStub(Inst: Pointer;
   Data: PByte): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;
-
+*)
 end.

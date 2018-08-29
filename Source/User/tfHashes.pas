@@ -9,7 +9,7 @@ interface
 
 {$I TFL.inc}
 
-uses SysUtils, Classes, tfTypes, tfBytes, tfConsts, tfExceptions,
+uses SysUtils, Classes, tfTypes, tfArrays, tfConsts, tfExceptions,
      {$IFDEF TFL_DLL} tfImport {$ELSE} tfHashServ, tfHMAC {$ENDIF};
 
 type

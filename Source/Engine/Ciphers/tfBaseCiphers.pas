@@ -301,8 +301,7 @@ begin
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
       TF_PADDING_ANSI,
       TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
+      TF_PADDING_ISO: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
     else
       Result:= TF_E_UNEXPECTED;
       Exit;
@@ -354,8 +353,7 @@ begin
         EncryptBlock(@Self, OutData);
       end;
                                             // XX 04 04 04 04
-      TF_PADDING_PKCS,
-      TF_PADDING_ISO10126: begin
+      TF_PADDING_PKCS: begin
         if OutData <> Data then
           Move(Data^, OutData^, LBlockSize);
         Inc(OutData, LDataSize);
@@ -364,7 +362,7 @@ begin
         EncryptBlock(@Self, OutData);
       end;
                                             // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
+      TF_PADDING_ISO: begin
         if OutData <> Data then
           Move(Data^, OutData^, LBlockSize);
         Inc(OutData, LDataSize);
@@ -413,8 +411,7 @@ begin
       TF_PADDING_ZERO: RequiredSize:= (LDataSize + LBlockSize - 1) and not (LBlockSize - 1);
       TF_PADDING_ANSI,
       TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
+      TF_PADDING_ISO: RequiredSize:= (LDataSize + LBlockSize) and not (LBlockSize - 1);
     else
       Result:= TF_E_UNEXPECTED;
       Exit;
@@ -470,8 +467,7 @@ begin
         EncryptBlock(@Self, OutData);
       end;
                                             // XX 04 04 04 04
-      TF_PADDING_PKCS,
-      TF_PADDING_ISO10126: begin
+      TF_PADDING_PKCS: begin
         if OutData <> Data then
           Move(Data^, OutData^, LBlockSize);
         Inc(OutData, LDataSize);
@@ -481,7 +477,7 @@ begin
         EncryptBlock(@Self, OutData);
       end;
                                             // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
+      TF_PADDING_ISO: begin
         if OutData <> Data then
           Move(Data^, OutData^, LBlockSize);
         Inc(OutData, LDataSize);
@@ -1218,8 +1214,7 @@ begin
     case LPadding of
       TF_PADDING_ANSI,
       TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: begin
+      TF_PADDING_ISO: begin
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1239,7 +1234,17 @@ begin
   if Last then begin
     case LPadding of
                                             // XX 00 00 00 04
+                                            // XX ?? ?? ?? 04
       TF_PADDING_ANSI: begin
+        Cnt:= (OutData - 1)^;
+        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+          DataSize:= DataSize - Cnt;
+        end
+        else begin
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+{  implementation with zero bytes check, outdated
         Dec(OutData);
         Cnt:= OutData^;
         if (Cnt > 0) and (Cnt <= LBlockSize) then begin
@@ -1258,6 +1263,7 @@ begin
           Result:= TF_E_INVALIDARG;
           Exit;
         end;
+}
       end;
                                             // XX 04 04 04 04
       TF_PADDING_PKCS: begin
@@ -1280,19 +1286,8 @@ begin
           Exit;
         end;
       end;
-                                            // XX ?? ?? ?? 04
-      TF_PADDING_ISO10126: begin
-        Cnt:= (OutData - 1)^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
                                             // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
+      TF_PADDING_ISO: begin
         Cnt:= LBlockSize;
         repeat
           Dec(OutData);
@@ -1343,8 +1338,7 @@ begin
     case LPadding of
       TF_PADDING_ANSI,
       TF_PADDING_PKCS,
-      TF_PADDING_ISO10126,
-      TF_PADDING_ISOIEC: begin
+      TF_PADDING_ISO: begin
         Result:= TF_E_INVALIDARG;
         Exit;
       end;
@@ -1365,7 +1359,17 @@ begin
   if Last then begin
     case LPadding of
                                             // XX 00 00 00 04
+                                            // XX ?? ?? ?? 04
       TF_PADDING_ANSI: begin
+        Cnt:= (OutData - 1)^;
+        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
+          DataSize:= DataSize - Cnt;
+        end
+        else begin
+          Result:= TF_E_INVALIDARG;
+          Exit;
+        end;
+{
         Dec(OutData);
         Cnt:= OutData^;
         if (Cnt > 0) and (Cnt <= LBlockSize) then begin
@@ -1384,6 +1388,7 @@ begin
           Result:= TF_E_INVALIDARG;
           Exit;
         end;
+}
       end;
                                               // XX 04 04 04 04
       TF_PADDING_PKCS: begin
@@ -1406,19 +1411,8 @@ begin
           Exit;
         end;
       end;
-                                              // XX ?? ?? ?? 04
-      TF_PADDING_ISO10126: begin
-        Cnt:= (OutData - 1)^;
-        if (Cnt > 0) and (Cnt <= LBlockSize) then begin
-          DataSize:= DataSize - Cnt;
-        end
-        else begin
-          Result:= TF_E_INVALIDARG;
-          Exit;
-        end;
-      end;
                                               // XX 80 00 00 00
-      TF_PADDING_ISOIEC: begin
+      TF_PADDING_ISO: begin
         Cnt:= LBlockSize;
         repeat
           Dec(OutData);

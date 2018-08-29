@@ -3,7 +3,7 @@
 { *       Copyright (c) Sergey Kasandrov 1997, 2016         * }
 { *********************************************************** }
 
-unit tfBytes;
+unit tfArrays;
 
 {$I TFL.inc}
 
@@ -37,7 +37,7 @@ type
     procedure ReAllocate(ASize: Cardinal);
     class function FromBytes(const A: array of Byte): ByteArray; static;
     class function FromText(const S: string): ByteArray; static;
-    class function FromAnsi(const S: RawByteString): ByteArray; static;
+    class function FromAnsiText(const S: RawByteString): ByteArray; static;
     class function FromMem(P: Pointer; Count: Cardinal): ByteArray; static;
     class function Parse(const S: string; Delimiter: Char = #0): ByteArray; static;
     class function TryParse(const S: string; var R: ByteArray): Boolean; overload; static;
@@ -133,6 +133,7 @@ type
 
     property InstanceLen: Integer read GetLen write SetInstanceLen;
     property Len: Integer read GetLen write SetLen;
+    property Raw: PByte read GetRawData;
     property RawData: PByte read GetRawData;
 
     property Bytes[Index: Integer]: Byte read GetByte write SetByte; default;
@@ -322,7 +323,7 @@ begin
   end;
 end;
 
-class function ByteArray.FromAnsi(const S: RawByteString): ByteArray;
+class function ByteArray.FromAnsiText(const S: RawByteString): ByteArray;
 begin
 {$IFDEF TFL_INTFCALL}
   HResCheck(ByteVectorFromPByte(Result.FBytes, Pointer(S), Length(S)));

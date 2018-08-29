@@ -439,9 +439,9 @@ type
     function GetKeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetKeyStream(Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+    function Encrypt(Data, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
+    function Decrypt(Data, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function IncBlockNo(Count: UInt64): TF_RESULT;
@@ -461,6 +461,12 @@ type
     function GetIVPointer: Pointer;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function SetKeyDir(KeyDir: TAlgID): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function AddAuthData(Data: Pointer; DataSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function GetAuthTag(Data: Pointer; TagSize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
+    function CheckAuthTag(Data: Pointer; TagSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
   end;
 
@@ -605,13 +611,14 @@ const
   TF_PADDING_ANSI     = 3 shl TF_PADDING_SHIFT;
                                               // XX 04 04 04 04
   TF_PADDING_PKCS     = 4 shl TF_PADDING_SHIFT;
-                                              // XX ?? ?? ?? 04
-  TF_PADDING_ISO10126 = 5 shl TF_PADDING_SHIFT;
+//                                              // XX ?? ?? ?? 04
+//  TF_PADDING_ISO10126 = 5 shl TF_PADDING_SHIFT;
                                               // XX 80 00 00 00
-  TF_PADDING_ISOIEC   = 6 shl TF_PADDING_SHIFT;
+  TF_PADDING_ISO      = 5 shl TF_PADDING_SHIFT;
 
+// todo: remove
   TF_PADDING_MIN = TF_PADDING_NONE;
-  TF_PADDING_MAX = TF_PADDING_ISOIEC;
+  TF_PADDING_MAX = TF_PADDING_ISO;
 
   TF_ENGINE_SHIFT   = 28;
   TF_ENGINE_STD     = 0;

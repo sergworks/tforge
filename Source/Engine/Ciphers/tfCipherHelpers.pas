@@ -19,7 +19,7 @@ uses
 type
   TCipherHelper = record
   private type
-    TVTable = array[0..24] of Pointer;
+    TVTable = array[0..29] of Pointer;
     PVTable = ^TVTable;
     PPVTable = ^PVTable;
 

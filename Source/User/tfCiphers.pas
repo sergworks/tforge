@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses
-  SysUtils, Classes, tfTypes, tfBytes, tfConsts, tfExceptions,
+  SysUtils, Classes, tfTypes, tfArrays, tfConsts, tfExceptions,
   {$IFDEF TFL_DLL}
     tfImport
   {$ELSE}
@@ -37,8 +37,7 @@ const
   PADDING_ZERO     = TF_PADDING_ZERO;
   PADDING_ANSI     = TF_PADDING_ANSI;
   PADDING_PKCS     = TF_PADDING_PKCS;
-  PADDING_ISO10126 = TF_PADDING_ISO10126;
-  PADDING_ISOIEC   = TF_PADDING_ISOIEC;
+  PADDING_ISO      = TF_PADDING_ISO;
 
   ECB_ENCRYPT  = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB;
   ECB_DECRYPT  = TF_KEYDIR_DECRYPT or TF_KEYMODE_ECB;
@@ -164,8 +163,8 @@ type
                 OutBufSize: Cardinal; Last: Boolean);
     procedure DecryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
                 OutBufSize: Cardinal; Last: Boolean);
-    procedure Encrypt(Data, OutData: Pointer; DataSize: Cardinal);
-    procedure Decrypt(Data, OutData: Pointer; DataSize: Cardinal);
+    procedure Encrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean = False);
+    procedure Decrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean = False);
 
     procedure GetKeyStream(var Data; DataSize: Cardinal; Last: Boolean = False);
     function KeyStream(DataSize: Cardinal; Last: Boolean = False): ByteArray;
@@ -187,16 +186,16 @@ type
 
     class function GetInstance(AlgID: TAlgID): TCipher; static;
 
-    class function AES(AFlags: UInt32): TCipher; static;
-    class function DES(AFlags: UInt32): TCipher; static;
-    class function TripleDES(AFlags: UInt32): TCipher; static;
-    class function RC5(AFlags: UInt32): TCipher; overload; static;
-    class function RC5(AFlags: UInt32; BlockSize, Rounds: Cardinal): TCipher; overload; static;
-    class function RC4: TCipher; static;
-    class function Salsa20: TCipher; overload; static;
-    class function Salsa20(Rounds: Cardinal): TCipher; overload; static;
-    class function ChaCha20: TCipher; overload; static;
-    class function ChaCha20(Rounds: Cardinal): TCipher; overload; static;
+//    class function AES(AFlags: UInt32): TCipher; static;
+//    class function DES(AFlags: UInt32): TCipher; static;
+//    class function TripleDES(AFlags: UInt32): TCipher; static;
+//    class function RC5(AFlags: UInt32): TCipher; overload; static;
+    class function GetRC5(AAlgID: TAlgID; BlockSize, Rounds: Cardinal): TCipher; static;
+//    class function RC4: TCipher; static;
+//    class function Salsa20: TCipher; overload; static;
+    class function GetSalsa(Rounds: Cardinal): TCipher; static;
+//    class function ChaCha20: TCipher; overload; static;
+    class function GetChaCha(Rounds: Cardinal): TCipher; static;
 
 //    class operator Explicit(const Name: string): TCipher;
 //    class operator Explicit(AlgID: Integer): TCipher;
@@ -410,6 +409,7 @@ begin
   HResCheck(GetCipherInstance(AlgID, Result.FInstance));
 end;
 
+(*
 class function TCipher.AES(AFlags: UInt32): TCipher;
 begin
   Result:= GetInstance(AFlags or TF_ALG_AES);
@@ -438,37 +438,39 @@ begin
 //  HResCheck(FServer.GetByAlgID(TF_ALG_RC5, Result.FInstance));
   HResCheck(GetRC5Instance(PRC5Instance(Result.FInstance), AFlags));
 end;
-
-class function TCipher.RC5(AFlags: UInt32; BlockSize, Rounds: Cardinal): TCipher;
+*)
+class function TCipher.GetRC5(AAlgID: TAlgID; BlockSize, Rounds: Cardinal): TCipher;
 begin
 //  HResCheck(FServer.GetRC5(BlockSize, Rounds, Result.FInstance));
-  HResCheck(GetRC5InstanceEx(PRC5Instance(Result.FInstance), AFlags, BlockSize, Rounds));
+  HResCheck(GetRC5InstanceEx(PRC5Instance(Result.FInstance), AAlgID, BlockSize, Rounds));
 end;
 
+(*
 class function TCipher.Salsa20: TCipher;
 begin
 //  HResCheck(FServer.GetByAlgID(TF_ALG_SALSA20, Result.FInstance));
   HResCheck(GetSalsa20Instance(PSalsa20Instance(Result.FInstance)));
 end;
-
-class function TCipher.Salsa20(Rounds: Cardinal): TCipher;
+*)
+class function TCipher.GetSalsa(Rounds: Cardinal): TCipher;
 begin
 //  HResCheck(FServer.GetSalsa20(Rounds, Result.FInstance));
   HResCheck(GetSalsa20InstanceEx(PSalsa20Instance(Result.FInstance), Rounds));
 end;
 
+(*
 class function TCipher.ChaCha20: TCipher;
 begin
 //  HResCheck(FServer.GetByAlgID(TF_ALG_CHACHA20, Result.FInstance));
   HResCheck(GetChaCha20Instance(PSalsa20Instance(Result.FInstance)));
 end;
+*)
 
-class function TCipher.ChaCha20(Rounds: Cardinal): TCipher;
+class function TCipher.GetChaCha(Rounds: Cardinal): TCipher;
 begin
 //  HResCheck(FServer.GetChaCha20(Rounds, Result.FInstance));
   HResCheck(GetChaCha20InstanceEx(PSalsa20Instance(Result.FInstance), Rounds));
 end;
-
 {
 function TCipher.ExpandKey(AKey: PByte; AKeyLen: Cardinal): TCipher;
 begin
@@ -578,14 +580,14 @@ begin
   HResCheck(FInstance.DecryptUpdate(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
 end;
 
-procedure TCipher.Encrypt(Data, OutData: Pointer; DataSize: Cardinal);
+procedure TCipher.Encrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Encrypt(Data, OutData, DataSize));
+  HResCheck(FInstance.Encrypt(Data, OutData, DataSize, Last));
 end;
 
-procedure TCipher.Decrypt(Data, OutData: Pointer; DataSize: Cardinal);
+procedure TCipher.Decrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean);
 begin
-  HResCheck(FInstance.Decrypt(Data, OutData, DataSize));
+  HResCheck(FInstance.Decrypt(Data, OutData, DataSize, Last));
 end;
 
 class function TCipher.EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray;
@@ -1203,9 +1205,9 @@ const
   Modes: array[0..2] of TAlgID = (
     TF_KEYMODE_ECB, TF_KEYMODE_CBC, TF_KEYMODE_CTR
     );
-  Paddings: array[0..6] of TAlgID = (
-    TF_PADDING_DEFAULT, TF_PADDING_NONE, TF_PADDING_ZERO, TF_PADDING_ANSI,
-    TF_PADDING_PKCS, TF_PADDING_ISO10126, TF_PADDING_ISOIEC
+  Paddings: array[0..5] of TAlgID = (
+    TF_PADDING_DEFAULT, TF_PADDING_NONE, TF_PADDING_ZERO,
+    TF_PADDING_ANSI, TF_PADDING_PKCS, TF_PADDING_ISO
     );
 
 begin

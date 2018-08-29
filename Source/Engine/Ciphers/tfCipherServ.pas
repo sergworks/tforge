@@ -77,7 +77,7 @@ function GetStdInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 begin
   case AlgID and TF_ALGID_MASK of
 // block ciphers
-    TF_ALG_AES: Result:= GetAESInstance(PAESCipherInstance(Alg), AlgID);
+    TF_ALG_AES: Result:= GetAESInstance(Pointer(Alg), AlgID);
     TF_ALG_DES: Result:= GetDESInstance(PDESInstance(Alg), AlgID);
     TF_ALG_RC5: Result:= GetRC5Instance(PRC5Instance(Alg), AlgID);
     TF_ALG_3DES: Result:= Get3DESInstance(P3DESInstance(Alg), AlgID);

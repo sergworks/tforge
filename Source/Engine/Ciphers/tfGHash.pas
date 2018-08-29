@@ -54,11 +54,11 @@ begin
   Z[1]:= 0;
   Z[2]:= 0;
   Z[3]:= 0;
-  V:= H;
-//  V[0]:= H[0];     // V = H
-//  V[1]:= H[1];
-//  V[2]:= H[2];
-//  V[3]:= H[3];
+//  V:= H;
+  V[0]:= H[0];     // V = H
+  V[1]:= H[1];
+  V[2]:= H[2];
+  V[3]:= H[3];
 
 // Multiply Z by V for the set bits in Y, starting at the top.
 // This is a very simple bit by bit version that may not be very
@@ -66,7 +66,6 @@ begin
   for I:= 0 to 15 do begin
     Value:= Y[I];
     for Bit:= 0 to 7 do begin
-      Value:= Value shl 1;
 // Extract the high bit of "value" and turn it into a mask.
       Mask:= not UInt32(Value shr 7) + 1;
 
@@ -82,13 +81,15 @@ begin
       V[2]:= (V[2] shr 1) or (V[1] shl 31);
       V[1]:= (V[1] shr 1) or (V[0] shl 31);
       V[0]:= (V[0] shr 1) xor Mask;
+
+      Value:= Value shl 1;
     end;
   end;
 // We have finished the block so copy Z into Y and byte-swap.
-  Y[0]:= Swap32(Z[0]);
-  Y[1]:= Swap32(Z[1]);
-  Y[2]:= Swap32(Z[2]);
-  Y[3]:= Swap32(Z[3]);
+  PUInt32(Y)[0]:= Swap32(Z[0]);
+  PUInt32(Y)[1]:= Swap32(Z[1]);
+  PUInt32(Y)[2]:= Swap32(Z[2]);
+  PUInt32(Y)[3]:= Swap32(Z[3]);
 end;
 
 procedure TGHash.Init(HashKey: Pointer);

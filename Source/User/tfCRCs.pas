@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses
-  tfTypes, tfBytes, tfExceptions;
+  tfTypes, tfArrays, tfExceptions;
 
 type
   TCRC = record
