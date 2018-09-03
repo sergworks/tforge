@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>TCipher - TForge</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/school-book.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/delphi.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../index.html">TForge</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../index.html">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Classes <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li class="active">
+    <a href="tcipher.html">TCipher</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../index.html">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="disabled">
+                                <a rel="prev" >
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#tcipher">TCipher</a></li>
+            <li><a href="#class-methods">Class Methods</a></li>
+            <li><a href="#instance-methods">Instance Methods</a></li>
+            <li><a href="#backend-engines">Backend engines</a></li>
+            <li><a href="#coding-paradigms">Coding paradigms</a></li>
+            <li><a href="#modes-of-operation">Modes of operation</a></li>
+            <li><a href="#nonces">Nonces</a></li>
+            <li><a href="#paddings">Paddings</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h2 id="tcipher">TCipher</h2>
+<p>Implements secret-key encryption and decryption; declared in <em>tfCiphers</em> unit.</p>
+<hr />
+<h3 id="class-methods">Class Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="tcipher/getinstance.html">GetInstance</a></td>
+<td>Creates <em>TCipher</em> instance implementing a given algorithm</td>
+</tr>
+<tr>
+<td><a href="tcipher/getrc5.html">GetRC5</a></td>
+<td>Creates <em>TCipher</em> instance implementing customized <em>RC5</em> algorithm</td>
+</tr>
+<tr>
+<td><a href="tcipher/getsalsa.md">GetSalsa</a></td>
+<td>Creates <em>TCipher</em> instance implementing customized <em>Salsa</em> algorithm</td>
+</tr>
+<tr>
+<td><a href="tcipher/getchacha.md">GetChaCha</a></td>
+<td>Creates <em>TCipher</em> instance implementing customized <em>ChaCha</em> algorithm</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="instance-methods">Instance Methods</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="tcipher/addauthdata.md">AddAuthData</a></td>
+<td>Adds additional authentication data before encryption or decryption</td>
+</tr>
+<tr>
+<td><a href="tcipher/burn.html">Burn</a></td>
+<td>Clears sensitive data stored in <em>TCipher</em> instance</td>
+</tr>
+<tr>
+<td><a href="tcipher/clone.md">Clone</a></td>
+<td>Clones <em>TCipher</em> instance</td>
+</tr>
+<tr>
+<td><a href="tcipher/decrypt.md">Decrypt</a></td>
+<td>Decrypts memory data</td>
+</tr>
+<tr>
+<td><a href="tcipher/decryptblock.md">DecryptBlock</a></td>
+<td>Decrypts block of data</td>
+</tr>
+<tr>
+<td><a href="DecryptByteArray">DecryptByteArray</a></td>
+<td>Decrypts data stored in <em>ByteArray</em></td>
+</tr>
+<tr>
+<td><a href="DecryptStream">DecryptStream</a></td>
+<td>Decrypts a stream of data</td>
+</tr>
+<tr>
+<td><a href="DecryptFile">DecryptFile</a></td>
+<td>Decrypts a file</td>
+</tr>
+<tr>
+<td><a href="tcipher/free.html">Free</a></td>
+<td>Uninstantiates <em>TCipher</em> variable</td>
+</tr>
+<tr>
+<td><a href="Encrypt">Encrypt</a></td>
+<td>Encrypts arbitrary memory data</td>
+</tr>
+<tr>
+<td><a href="EncryptBlock">EncryptBlock</a></td>
+<td>Encrypts a block of data</td>
+</tr>
+<tr>
+<td><a href="EncryptByteArray">EncryptByteArray</a></td>
+<td>Encrypts a <em>ByteArray</em></td>
+</tr>
+<tr>
+<td><a href="EncryptStream">EncryptStream</a></td>
+<td>Encrypts a stream of data</td>
+</tr>
+<tr>
+<td><a href="EncryptFile">EncryptFile</a></td>
+<td>Encrypts a file</td>
+</tr>
+<tr>
+<td><a href="ExpandKey">ExpandKey</a></td>
+<td>Expands a secret key into a form used by an algorithm</td>
+</tr>
+<tr>
+<td><a href="IsAssigned">IsAssigned</a></td>
+<td>Checks if a <em>TCipher</em> variable is instantiated</td>
+</tr>
+<tr>
+<td><a href="Apply">Apply</a></td>
+<td>Encrypts/decrypts arbitrary memory data by a keystream</td>
+</tr>
+<tr>
+<td><a href="KeyStream">KeyStream</a></td>
+<td>Generates a given number of keystream bytes</td>
+</tr>
+<tr>
+<td><a href="SetIV">SetIV</a></td>
+<td>Sets an IV value in a <em>TCipher</em> instance state</td>
+</tr>
+<tr>
+<td><a href="SetNonce">SetNonce</a></td>
+<td>Sets a nonce value in a <em>TCipher</em> instance state</td>
+</tr>
+<tr>
+<td><a href="Skip">Skip</a></td>
+<td>Discards a given number of keystream blocks</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="backend-engines">Backend engines</h3>
+<p><em>TCipher</em> is frontend class supported by two backend engines:</p>
+<ul>
+<li>Built-in engine implemented by <em>TForge</em> itself;</li>
+<li>External OpenSSL engine implemented by <em>libcrypto</em> (OpenSSL 1.1.0+) or <em>libeay32</em> (OpenSSL 1.0.2) library.</li>
+</ul>
+<p>Using external backend has its limitations: some <em>TCipher</em> methods requiring access to the internal cipher instance structures can't be implemented by an external backend, and some algorithms are not supported by OpenSSL; <em>TCipher</em> throws exception if you try to use them, but many methods and algorithms are supported by OpenSSL and in most cases it is enough.</p>
+<p>To use OpenSSL backend you should:</p>
+<ul>
+<li>Load <em>libcrypto (libeay32)</em> library by calling <a href="../functions/loadlibcrypto.md">LoadLibCrypto</a> function;</li>
+<li>Set <em>ENGINE_OSSL</em> flag in <em>AAlgID</em> parameter of <a href="tcipher/getinstance.html">TCipher.GetInstance</a> method's call.</li>
+</ul>
+<p>For example to use built-in backend, <em>AES</em> algorithm and <em>CTR</em> mode of operation:</p>
+<pre><code class="nohighlight">    var
+      Cipher: TCipher;
+
+    begin
+      Cipher:= TCipher.GetInstance(AES_CTR);
+      ...
+</code></pre>
+
+<p>Using OpenSSL backend:</p>
+<pre><code class="nohighlight">    var
+      Cipher: TCipher;
+
+    begin
+      Cipher:= TCipher.GetInstance(ENGINE_OSSL or AES_CTR);
+      ...
+</code></pre>
+
+<p>That is all; now <em>Cipher</em> methods are implemented by OpenSSL backend.</p>
+<hr />
+<h3 id="coding-paradigms">Coding paradigms</h3>
+<p><em>TCipher</em> supports two coding paradigms:</p>
+<ul>
+<li>fluent coding;</li>
+<li>traditional coding.</li>
+</ul>
+<p>Lets consider an example: encrypt file using <em>AES</em> algorithm in <em>GCM</em> mode of operation and obtain authentication tag:</p>
+<ul>
+<li>fluent coding:</li>
+</ul>
+<pre><code class="nohighlight">    uses
+      tfArrays, tfCiphers;
+
+    function EncryptGCM(const FileName: string; const Key, IV: ByteArray): ByteArray;
+    begin
+      Result:= TCipher.GetInstance(AES_GCM_ENCRYPT)
+                      .Init(Key, IV)
+                      .AddAuthData(ByteArray.FromText('Encrypted in GCM mode'))
+                      .EncryptFile(FileName, FileName + '.aes_gcm')
+                      .GetAuthTag(16);
+    end;
+</code></pre>
+
+<ul>
+<li>traditional coding:</li>
+</ul>
+<pre><code class="nohighlight">    uses
+      tfArrays, tfCiphers;
+
+    function EncryptGCM(const FileName: string; const Key, IV: ByteArray): ByteArray;
+    var
+      Cipher: TCipher;
+
+    begin
+      Cipher:= TCipher.GetInstance(AES_GCM_ENCRYPT);
+      try
+        Cipher.Init(Key, IV);
+        Cipher.AddAuthData(ByteArray.FromText('Encrypted in GCM mode'));
+        Cipher.EncryptFile(FileName, FileName + '.aes_gcm');
+        Result:= Cipher.GetAuthTag(16);
+      finally
+        Cipher.Burn;
+//        Cipher.Free;
+      end;
+    end;
+</code></pre>
+
+<p>The fluent coding is outright gorgeous. <em>TCipher</em> implements automatic memory management and there is no need to call <a href="tcipher/free.html">TCipher.Free</a> method to deallocate memory used by <em>TCipher</em> instance; fluent coding leverages automatic memory management.</p>
+<p><a href="tcipher/free.html">TCipher.Free</a> method does not guaranty that the memory is freed: it decrements the instance's reference count and frees memory (having cleared the sensitive information first) if the reference count reaches zero; there is little or no reason to call <a href="tcipher/free.html">TCipher.Free</a> manually.</p>
+<p>The traditional coding has its pros too: the <a href="tcipher/burn.html">TCipher.Burn</a> method called in <code>finally</code> section clears sensitive information stored in <em>Cipher</em> instance.</p>
+<p>You can take the best from both worlds, and the recommended code is:</p>
+<pre><code class="nohighlight">    uses
+      tfArrays, tfCiphers;
+
+    function EncryptGCM(const FileName: string; const Key, IV: ByteArray): ByteArray;
+    var
+      Cipher: TCipher;
+
+    begin
+      Cipher:= TCipher.GetInstance(AES_GCM_ENCRYPT);
+      try
+        Result:= Cipher.Init(Key, IV)
+                       .AddAuthData(ByteArray.FromText('Encrypted in GCM mode'))
+                       .EncryptFile(FileName, FileName + '.aes_gcm')
+                       .GetAuthTag(16);
+      finally
+        Cipher.Burn;
+      end;
+    end;
+</code></pre>
+
+<hr />
+<h3 id="modes-of-operation">Modes of operation</h3>
+<p>Mode of operation is an algorithm that uses block cipher algorithm to encrypt and decrypt data of arbitrary length; a block cipher algorithm encrypts and decrypts blocks of fixed length (called cipher block size) only.</p>
+<p><em>TCipher</em> supports the following modes of operation:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ECB</td>
+<td>Electronic Code Book</td>
+</tr>
+<tr>
+<td>CBC</td>
+<td>Cipher Block Chaining</td>
+</tr>
+<tr>
+<td>CFB</td>
+<td>Cipher Feedback</td>
+</tr>
+<tr>
+<td>OFB</td>
+<td>Output Feedback</td>
+</tr>
+<tr>
+<td>CTR</td>
+<td>Counter</td>
+</tr>
+<tr>
+<td>GCM</td>
+<td>Galois Counter Mode</td>
+</tr>
+</tbody>
+</table>
+<p><em>ECB</em> mode of operation is deterministic (encryption with the same key always produces the same ciphertext from the same plaintext) and not recommended to use, other modes of operation are indeterministic (provided the initialization vectors are generated correctly).</p>
+<p><em>ECB</em> and <em>CBC</em> modes of operation encrypt plaintext by blocks (of cipher block size length) and require padding to encrypt plaintext of arbitrary length; other modes of operation encrypt plaintext by bytes and don't need padding.</p>
+<p><em>GCM</em> is authenticated mode of operation and supported for 128-bit block ciphers only.</p>
+<p>For detailed description of block cipher modes of operation see <a href="https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation">Wikipedia</a>.</p>
+<hr />
+<h3 id="nonces">Nonces</h3>
+<p>Nonce is "number used once". Nonce can be considered as non-secret part of a key. If you encrypt multiple messages, each message must be encrypted with a unique key, but not necessarily unique secret key. In many cases it is allowed to reuse secret key provided each message is encrypted with unique nonce, and nonce need not be kept secret. Nonces can be deterministic (generated by a counter or a LFSR) or random; deterministic nonces never repeat by design, for random nonces the probability of generating two identical nonces during the lifetime of a secret key must be negligible.</p>
+<p><em>TForge</em> defines</p>
+<pre><code class="nohighlight">    type TNonce = UInt64;
+</code></pre>
+
+<p>and <em>TCipher</em> supports 64-bit nonces for 128-bit block cipher algorithms and <em>Salsa</em> and <em>ChaCha</em> stream cipher algorithms in <a href="tcipher/init">Init</a>, <a href="tcipher/encryptinit">EncryptInit</a> and <a href="tcipher/decryptinit">DecryptInit</a> methods' overloads. <em>Salsa</em> and <em>ChaCha</em> support 64-bit nonces by design, for 128-bit block ciphers in <em>CBC</em>, <em>CFB</em>, <em>OFB</em> and <em>CTR</em> modes of operation nonce is implemented as the left half of 128-bit <em>IV</em>, and for 128-bit block ciphers in <em>GCM</em> mode of operation nonce is bits [<em>32..95</em>] of 96-bit <em>IV</em>.</p>
+<p>In many cases it is more convenient to use nonces than to use initialization vectors. Consider encryption of multiple messages with <em>AES</em> block cipher algorithm in <em>CTR</em> mode of operation with the same secret key. Let the first message is encrypted with zero initialization vector, and the message size is <em>10000</em> bytes; <em>10000</em> bytes are contained in <em>625=0x271</em> 16-byte <em>AES</em> blocks, and it is user responsibility not to reuse initialization vectors in the range from (hexadecimal)</p>
+<pre><code class="nohighlight">    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+</code></pre>
+
+<p>to</p>
+<pre><code class="nohighlight">    00 00 00 00 00 00 00 00 00 00 00 00 00 00 02 70
+</code></pre>
+
+<p>otherwise you end up with double-time pad and encryption is completely broken. Using nonces you can simply generate deterministic nonces by a counter or a LFSR, and there is no such problem; the only limitation here is that a message size should not exceed 2<sup>64</sup> blocks and the number of messages should not exceed 2<sup>64</sup>, but you should not encrypt more than 2<sup>64</sup> blocks with an ideal 128-bit block cipher using the same secret key by security considerations anyway. For <em>AES</em> it is reasonable to change secret key after encrypting about 2<sup>40</sup> blocks or less.</p>
+<hr />
+<h3 id="paddings">Paddings</h3>
+<p><em>ECB</em> and <em>CBC</em> modes of operation require that the size of input data to be encrypted is multiple of the cipher block size. <em>Padding</em> extends plaintext so that the total size of the data to be encrypted is multiple of the cipher block size; when the ciphertext is decrypted, the padded block is decoded and the original plaintext size is restored.</p>
+<p><em>TCipher</em> supports padding for <em>ECB</em> and <em>CBC</em> modes of operation only; the other modes of operation supported by <em>TCipher</em> do not need padding and you should not specify padding for them.</p>
+<p>The default padding is <em>PKCS</em>; if padding is not specified for <em>ECB</em> or <em>CBC</em> modes of operation, the <em>PKCS</em> padding applies. </p>
+<p><em>PKCS</em> and <em>ISO</em> are the only types of padding defined in acting official standards; they must be implemented identically in all cryptography libraries. The <em>NONE</em> padding is also implemented identically because it can't be implemented otherwise. The other paddings are implementation dependent.</p>
+<p>OpenSSL backend supports <em>NONE</em> and <em>PKCS</em> paddings only.</p>
+<p>Padding is specified in <a href="tcipher/getinstance.html">TCipher.GetInstance</a> method's call, for example</p>
+<pre><code class="nohighlight">    var
+      Cipher: TCipher;
+
+    begin
+      Cipher:= TCipher.GetInstance(AES_CBC_ENCRYPT or PADDING_ISO);
+      ...
+</code></pre>
+
+<p>The following types of padding are supported:</p>
+<ul>
+<li>
+<p><em>NONE</em> : No padding applies. The plaintext size must be multiple of the cipher block size, otherwise encryption fails.<br />
+<em>NONE</em> padding can be used to implement other types of padding manually.<br />
+<em>NONE</em> padding is exact equivalent of the Java Bouncycastle <em>NoPadding</em>.</p>
+</li>
+<li>
+<p><em>ZERO</em> : The plaintext is extended, if needed, with zero bytes <em>0x00</em> until the size is multiple of the cipher block size. This is not recommended type of padding because the plaintext size can't be recovered during decryption.<br />
+The decryption with <em>ZERO</em> padding specified is equivalent to decryption with <em>NONE</em> padding specified. The ciphertext size is greater than the plaintext size by <em>0</em> to <em>cipher block size - 1</em> bytes.<br />
+<em>ZERO</em> padding is non-standard.<br />
+Example (block size is 8 bytes, 4 padded bytes, hexadecimal):</p>
+</li>
+</ul>
+<pre><code class="nohighlight">    ... | DD DD DD DD DD DD DD DD | DD DD DD DD 00 00 00 00 |
+</code></pre>
+
+<ul>
+<li><em>ANSI</em> : The plaintext is extended, if needed, with zero bytes <em>0x00</em> until the size is one byte less the multiple of the cipher block size, and then mandatory byte containing the number of padded bytes is added.<br />
+If the plaintext size is already multiple of the cipher block size, a new block is added (containing zero bytes and cipher block size byte). The ciphertext size is greater than the plaintext size by <em>1</em> to <em>cipher block size</em> bytes.<br />
+The decryption with <em>ANSI</em> padding specified does not check the zero padded bytes; it only checks the last byte to recover the plaintext size. <em>ANSI</em> padding can be used to decrypt legacy types of padding that store the number of padded bytes as the last byte of the padded block.<br />
+<em>ANSI</em> padding is non-standard.<br />
+Example (block size is 8 bytes, 4 padded bytes, hexadecimal):</li>
+</ul>
+<pre><code class="nohighlight">    ... | DD DD DD DD DD DD DD DD | DD DD DD DD 00 00 00 04 |
+</code></pre>
+
+<ul>
+<li><em>PKCS</em> : The plaintext is extended with bytes containing the number of padded bytes.<br />
+If the plaintext size is already multiple of the cipher block size, a new block is added (all bytes are equal to block size). The ciphertext size is greater than the plaintext size by <em>1</em> to <em>cipher block size</em> bytes.<br />
+The decryption with <em>PKCS</em> padding specified checks that all padded bytes are equal, otherwise decryption fails.<br />
+<em>PKCS</em> padding is defined in <a href="https://tools.ietf.org/html/rfc5652#section-6.3">RFC 5652</a>.<br />
+<em>PKCS</em> padding is exact equivalent of the Java Bouncycastle <em>PKCS7Padding</em>.<br />
+Example (block size is 8 bytes, 4 padded bytes, hexadecimal):</li>
+</ul>
+<pre><code class="nohighlight">    ... | DD DD DD DD DD DD DD DD | DD DD DD DD 04 04 04 04 |
+</code></pre>
+
+<ul>
+<li><em>ISO</em> : The plaintext is extended with one mandatory byte <em>0x80</em> and, if needed, zero bytes <em>0x00</em> until the size is multiple of the cipher block size.<br />
+If the plaintext size is already multiple of the cipher block size, a new block is added (containing byte <em>0x80</em> and zero bytes). The ciphertext size is greater than the plaintext size by <em>1</em> to <em>cipher block size</em> bytes.<br />
+<em>ISO</em> padding is defined in <em>ISO/IEC 7816-4</em> standard (6.2.3.1).<br />
+<em>ISO</em> padding is exact equivalent of the Java Bouncycastle <em>ISO7816-4Padding</em>.<br />
+Example (block size is 8 bytes, 4 padded bytes, hexadecimal):</li>
+</ul>
+<pre><code class="nohighlight">    ... | DD DD DD DD DD DD DD DD | DD DD DD DD 80 00 00 00 |
+</code></pre>
+
+<hr /></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
