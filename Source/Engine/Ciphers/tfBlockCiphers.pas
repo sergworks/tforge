@@ -41,33 +41,40 @@ type
     function DecodePad(PadBlock: PByte; BlockSize: Cardinal;
                          Padding: UInt32; out PayLoad: Cardinal): TF_RESULT;
   public
+    class function InitInstance(Inst: Pointer; ABlockSize: Cardinal): Boolean; static;
+
     class function IncBlockNoCTR(Inst: PBlockCipherInstance; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function DecBlockNoCTR(Inst: PBlockCipherInstance; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function SkipCTR(Inst: PBlockCipherInstance; Dist: Int64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+(*
     class function ExpandKey(Inst: Pointer; Key: PByte; KeySize: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyIV(Inst: Pointer; Key: PByte; KeySize: Cardinal;
+                     IV: PByte; IVSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ExpandKeyNonce(Inst: Pointer; Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+*)
     class function EncryptECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptCBC(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptCTR(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function GetKeyStreamCTR(Inst: PBlockCipherInstance; Data: PByte;
                      DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptCFB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptOFB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptUpdateECB(Inst: PBlockCipherInstance; InBuffer, OutBuffer: PByte;
                      var DataSize: Cardinal; OutBufSize: Cardinal; Last: Boolean): TF_RESULT;
@@ -166,7 +173,7 @@ end;
 { TBlockCipherInstance }
 
 class function TBlockCipherInstance.EncryptCBC(Inst: PBlockCipherInstance;
-  InBuffer, OutBuffer: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
   IVector: PByte;
@@ -214,14 +221,14 @@ begin
   end;
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
 
 class function TBlockCipherInstance.EncryptCFB(Inst: PBlockCipherInstance;
-  InBuffer, OutBuffer: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
   IVector, IV: PByte;
@@ -283,14 +290,14 @@ begin
 }
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
 
 class function TBlockCipherInstance.EncryptCTR(Inst: PBlockCipherInstance;
-  InBuffer, OutBuffer: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
   IVector, PCache: PByte;
@@ -347,8 +354,8 @@ begin
   end;
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
@@ -416,7 +423,7 @@ begin
 end;
 
 class function TBlockCipherInstance.EncryptECB(Inst: PBlockCipherInstance;
-  InBuffer, OutBuffer: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
   LBlockSize: Integer;
@@ -458,14 +465,14 @@ begin
   end;
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
 
 class function TBlockCipherInstance.EncryptOFB(Inst: PBlockCipherInstance;
-  InBuffer, OutBuffer: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+  InBuffer, OutBuffer: PByte; DataSize: Cardinal): TF_RESULT;
 var
   EncryptBlock: TCipherHelper.TBlockFunc;
   IVector, IV: PByte;
@@ -526,8 +533,8 @@ begin
 }
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
@@ -691,7 +698,7 @@ begin
 //    Inst.FPos:= 0;
 
 // Burn clears FKeyFlags field and invalidates Key
-    TForgeHelper.Burn(Inst);
+//    TForgeHelper.Burn(Inst);
   end;
 
   DataSize:= OutCount;
@@ -706,7 +713,7 @@ begin
     Exit;
   end
   else
-    Result:= EncryptCFB(Inst, InBuffer, OutBuffer, DataSize, Last);
+    Result:= EncryptCFB(Inst, InBuffer, OutBuffer, DataSize);
 end;
 
 class function TBlockCipherInstance.EncryptUpdateCTR(Inst: PBlockCipherInstance;
@@ -718,7 +725,7 @@ begin
     Exit;
   end
   else
-    Result:= EncryptCTR(Inst, InBuffer, OutBuffer, DataSize, Last);
+    Result:= EncryptCTR(Inst, InBuffer, OutBuffer, DataSize);
 end;
 
 class function TBlockCipherInstance.EncryptUpdateECB(Inst: PBlockCipherInstance;
@@ -864,7 +871,7 @@ begin
 //    Inst.FPos:= 0;
 
 // Burn clears FKeyFlags field and invalidates Key
-    TForgeHelper.Burn(Inst);
+//    TForgeHelper.Burn(Inst);
   end;
 
   DataSize:= OutCount;
@@ -879,26 +886,36 @@ begin
     Exit;
   end
   else
-    Result:= EncryptOFB(Inst, InBuffer, OutBuffer, DataSize, Last);
+    Result:= EncryptOFB(Inst, InBuffer, OutBuffer, DataSize);
 end;
 
+// todo: it is changed
 // I assume here that derived class implements ExpandKeyIV
 //   and inherits ExpandKey and ExpandKeyNonce implementations
 //   from TBlockCipherInstance
+{
 class function TBlockCipherInstance.ExpandKey(Inst: Pointer;
                  Key: PByte; KeySize: Cardinal): TF_RESULT;
 begin
   Result:= TCipherHelper.ExpandKeyIV(Inst, Key, KeySize, nil, 0);
 end;
 
+class function TBlockCipherInstance.ExpandKeyIV(Inst: Pointer; Key: PByte;
+  KeySize: Cardinal; IV: PByte; IVSize: Cardinal): TF_RESULT;
+begin
+  Result:= TCipherHelper.ExpandKey(Inst, Key, KeySize);
+  if Result = TF_S_OK then
+    Result:= SetIV(Inst, IV, IVSize);
+end;
+
 class function TBlockCipherInstance.ExpandKeyNonce(Inst: Pointer;
                  Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
 begin
-//  Result:= TCipherHelper.ExpandKeyIV(Inst, Key, KeySize, nil, 0);
   Result:= TCipherHelper.ExpandKey(Inst, Key, KeySize);
   if Result = TF_S_OK then
     Result:= SetNonce(Inst, Nonce);
 end;
+}
 
 function TBlockCipherInstance.DecodePad(PadBlock: PByte; BlockSize: Cardinal;
            Padding: UInt32; out PayLoad: Cardinal): TF_RESULT;
@@ -1021,8 +1038,8 @@ begin
   end;
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
@@ -1077,10 +1094,10 @@ begin
     while Cnt > 0 do begin
       Tmp:= InBuffer^;
       OutBuffer^:= IV^ xor Tmp;
+      IV^:= Tmp;
       Inc(OutBuffer);
       Inc(InBuffer);
       Inc(IV);
-      IV^:= Tmp;
       Dec(Cnt);
     end;
 //    Tmp:= 0;
@@ -1092,8 +1109,8 @@ begin
   end;
 }
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
@@ -1141,8 +1158,8 @@ begin
   end;
 
 // Burn clears FKeyFlags field and invalidates Key
-  if Last then
-    TForgeHelper.Burn(Inst);
+//  if Last then
+//    TForgeHelper.Burn(Inst);
 
   Result:= TF_S_OK;
 end;
@@ -1262,7 +1279,7 @@ begin
     end; { outer case }
 
 // Burn clears FKeyFlags field and invalidates Key
-    TForgeHelper.Burn(Inst);
+//    TForgeHelper.Burn(Inst);
   end;
   DataSize:= OutCount;
 
@@ -1385,7 +1402,7 @@ begin
     end; { outer case }
 
 // Burn clears FKeyFlags field and invalidates Key
-    TForgeHelper.Burn(Inst);
+//    TForgeHelper.Burn(Inst);
 
   end;
 
@@ -1528,6 +1545,34 @@ begin
   Result:= TF_S_OK;
 end;
 
+class function TBlockCipherInstance.InitInstance(Inst: Pointer; ABlockSize: Cardinal): Boolean;
+var
+  LMode: TAlgID;
+
+begin
+  LMode:= PBlockCipherInstance(Inst).FAlgID and TF_KEYMODE_MASK;
+
+  case LMode of
+    TF_KEYMODE_ECB,
+    TF_KEYMODE_CBC: PBlockCipherInstance(Inst).FPos:= 0;
+  else
+    PBlockCipherInstance(Inst).FPos:= ABlockSize;
+  end;
+
+// task (encryption/decryption) must be set
+//   for all modes of operation except OFB and CTR
+  if PBlockCipherInstance(Inst).FAlgID and TF_KEYDIR_ENABLED = 0 then begin
+    case LMode of
+      TF_KEYMODE_OFB, TF_KEYMODE_CTR: ;
+    else
+      Result:= False;
+      Exit;
+    end;
+  end;
+
+  Result:= True;
+end;
+
 class function TBlockCipherInstance.DecBlockNoCTR(Inst: PBlockCipherInstance;
   Count: UInt64): TF_RESULT;
 var
@@ -1615,7 +1660,6 @@ class function TBlockCipherInstance.SetIV(Inst: Pointer;
 var
   LBlockSize: Cardinal;
   PIV: PByte;
-  LMode: TAlgID;
 
 begin
   LBlockSize:= TCipherHelper.GetBlockSize(Inst);
@@ -1632,6 +1676,8 @@ begin
   if (IV = nil) then begin
     if (IVLen = 0) or (IVLen = LBlockSize) then begin
       FillChar(PIV^, LBlockSize, 0);
+      PBlockCipherInstance(Inst).FKeyFlags:=
+        PBlockCipherInstance(Inst).FKeyFlags or TF_KEYFLAG_IV;
       Result:= TF_S_OK;
     end
     else begin
@@ -1640,16 +1686,10 @@ begin
     Exit;
   end;
 
-  LMode:= PBlockCipherInstance(Inst).FAlgID and TF_KEYMODE_MASK;
-  case LMode of
-    TF_KEYMODE_ECB,
-    TF_KEYMODE_CBC: PBlockCipherInstance(Inst).FPos:= 0;
-  else
-    PBlockCipherInstance(Inst).FPos:= LBlockSize;
-  end;
-
   if (IVLen = LBlockSize) then begin
     Move(IV^, PIV^, IVLen);
+    PBlockCipherInstance(Inst).FKeyFlags:=
+      PBlockCipherInstance(Inst).FKeyFlags or TF_KEYFLAG_IV;
     Result:= TF_S_OK;
   end
   else
@@ -1661,6 +1701,7 @@ class function TBlockCipherInstance.SetNonce(Inst: PBlockCipherInstance;
   Nonce: TNonce): TF_RESULT;
 var
   LBlockSize: Cardinal;
+  LMode: TAlgID;
   IVector: PByte;
 
 begin
@@ -1675,17 +1716,25 @@ begin
 
   IVector:= PByte(@Inst.FCache) + LBlockSize;
 
-// IV consists of 2 parts: Nonce and BlockNo;
+// IV consists of 3 fields: Fixed, Nonce and BlockNo;
+//   Fixed field exists if BlockSize > 16
+//   Nonce field exists if BlockSize >= 16
 //   if BlockSize >= 16 (128 bits),
 //     then both Nonce and BlockNo are of 8 bytes (64 bits);
-//     nonce is the leftmost 8 bytes, blockno is the rightmost 6 bytes.
+//     Fixed field is the leftmost part of length BlockSize - 16,
+//     followed by Nonce and BlockNo;
 //   if BlockSize < 16 (128 bits),
 //     then whole IV is BlockNo, and the only valid nonce value is zero.
-//   if BlockSize > 16 (128 bits),
-//     then (BlockSize - 16) bytes of IV between Nonce and BlockNo are zeroed.
-//   BlockNo bytes of IV are zeroed.
 
   FillChar(IVector^, LBlockSize, 0);
+
+  LMode:= PBlockCipherInstance(Inst).FAlgID and TF_KEYMODE_MASK;
+  case LMode of
+    TF_KEYMODE_ECB,
+    TF_KEYMODE_CBC: PBlockCipherInstance(Inst).FPos:= 0;
+  else
+    PBlockCipherInstance(Inst).FPos:= LBlockSize;
+  end;
 
   if (LBlockSize < 16) then begin
     if (Nonce <> 0) then
@@ -1695,7 +1744,10 @@ begin
     Exit;
   end;
 
+  Inc(IVector, LBlockSize - 16);
   Move(Nonce, IVector^, SizeOf(Nonce));
+  PBlockCipherInstance(Inst).FKeyFlags:=
+    PBlockCipherInstance(Inst).FKeyFlags or TF_KEYFLAG_IV;
   Result:= TF_S_OK;
 end;
 

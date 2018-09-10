@@ -1,6 +1,6 @@
 { *********************************************************** }
 { *                     TForge Library                      * }
-{ *       Copyright (c) Sergey Kasandrov 1997, 2017         * }
+{ *       Copyright (c) Sergey Kasandrov 1997, 2018         * }
 { *********************************************************** }
 
 unit tfCipherServ;
@@ -10,7 +10,7 @@ interface
 {$I TFL.inc}
 
 uses tfRecords, tfTypes, tfByteVectors, tfAlgServ,
-     tfAESCiphers, tfDES, tfRC5, tfRC4, tfSalsa20, //tfKeyStreams,
+     tfAesGetter, tfDesGetter, tf3DesGetter, tfRC5, tfRC4, tfSalsa20,
      tfEvpAES;
 
 function GetCipherServerInstance(var A: ICipherServer): TF_RESULT;
@@ -23,6 +23,96 @@ function GetCipherInstance(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
 //          {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
 
 implementation
+
+type
+  TGetInstanceFunc = function(AlgID: TF_AlgID; var Alg: ICipher): TF_RESULT;
+
+function GetGetStdGcmInstanceFunc(AlgID: TF_AlgID; GetInstanceFunc: Pointer): Pointer;
+begin
+  case AlgID and TF_KEYMODE_MASK of
+    TF_KEYMODE_ECB,
+    TF_KEYMODE_CBC:
+      case AlgID and TF_PADDING_MASK of
+        TF_PADDING_DEFAULT,
+        TF_PADDING_NONE,
+        TF_PADDING_ZERO,
+        TF_PADDING_ANSI,
+        TF_PADDING_PKCS,
+        TF_PADDING_ISO: Result:= GetInstanceFunc;
+      else
+        Result:= nil;
+      end;
+    TF_KEYMODE_CFB,
+    TF_KEYMODE_OFB,
+    TF_KEYMODE_CTR,
+    TF_KEYMODE_GCM:
+      case AlgID and TF_PADDING_MASK of
+        TF_PADDING_DEFAULT,
+        TF_PADDING_NONE: Result:= GetInstanceFunc;
+      else
+        Result:= nil;
+      end;
+  else
+    Result:= nil;
+  end;
+end;
+
+function GetGetStdBlockInstanceFunc(AlgID: TF_AlgID; GetInstanceFunc: Pointer): Pointer;
+begin
+  case AlgID and TF_KEYMODE_MASK of
+    TF_KEYMODE_ECB,
+    TF_KEYMODE_CBC:
+      case AlgID and TF_PADDING_MASK of
+        TF_PADDING_DEFAULT,
+        TF_PADDING_NONE,
+        TF_PADDING_ZERO,
+        TF_PADDING_ANSI,
+        TF_PADDING_PKCS,
+        TF_PADDING_ISO: Result:= GetInstanceFunc;
+      else
+        Result:= nil;
+      end;
+    TF_KEYMODE_CFB,
+    TF_KEYMODE_OFB,
+    TF_KEYMODE_CTR:
+      case AlgID and TF_PADDING_MASK of
+        TF_PADDING_DEFAULT,
+        TF_PADDING_NONE: Result:= GetInstanceFunc;
+      else
+        Result:= nil;
+      end;
+  else
+    Result:= nil;
+  end;
+end;
+
+function GetGetStdInstanceFunc(AlgID: TF_AlgID): Pointer;
+begin
+  Result:= nil;
+  case UInt16(AlgID) of
+    TF_ALG_AES: if ValidAesAlgID(AlgID) then Result:= @GetAesInstance;
+    TF_ALG_DES: if ValidDesAlgID(AlgID) then Result:= @GetDesInstance;
+    TF_ALG_3DES: if Valid3DesAlgID(AlgID) then Result:= @Get3DesInstance;
+    TF_ALG_RC5: Result:= GetGetStdBlockInstanceFunc(AlgID, @GetRC5Instance);
+// todo:   TF_ALG_RC4: Result:= GetGetStdRC4InstanceFunc(AlgID);
+//    TF_ALG_SALSA: Result:= GetGetStdSalsaInstanceFunc(AlgID);
+//    TF_ALG_CHACHA: Result:= GetGetStdChaChaInstanceFunc(AlgID);
+  end;
+end;
+
+function GetGetOSSLInstanceFunc(AlgID: TF_AlgID): Pointer;
+begin
+end;
+
+function GetGetInstanceFunc(AlgID: TF_AlgID): Pointer;
+begin
+  case AlgID and TF_ENGINE_MASK of
+    TF_ENGINE_STD: Result:= GetGetStdInstanceFunc(AlgID);
+    TF_ENGINE_OSSL: Result:= GetGetOSSLInstanceFunc(AlgID);
+  else
+    Result:= nil;
+  end;
+end;
 
 type
   PCipherServer = ^TCipherServer;
@@ -78,9 +168,9 @@ begin
   case AlgID and TF_ALGID_MASK of
 // block ciphers
     TF_ALG_AES: Result:= GetAESInstance(Pointer(Alg), AlgID);
-    TF_ALG_DES: Result:= GetDESInstance(PDESInstance(Alg), AlgID);
+    TF_ALG_DES: Result:= GetDESInstance(Pointer(Alg), AlgID);
     TF_ALG_RC5: Result:= GetRC5Instance(PRC5Instance(Alg), AlgID);
-    TF_ALG_3DES: Result:= Get3DESInstance(P3DESInstance(Alg), AlgID);
+    TF_ALG_3DES: Result:= Get3DESInstance(Pointer(Alg), AlgID);
 
 // stream ciphers; AlgID ignored
     TF_ALG_RC4: Result:= GetRC4Instance(PRC4Instance(Alg));

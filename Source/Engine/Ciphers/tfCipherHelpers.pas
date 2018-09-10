@@ -18,12 +18,14 @@ uses
 
 type
   TCipherHelper = record
-  private type
-    TVTable = array[0..29] of Pointer;
+  public const
+    VTableSize = 30;
+
+  public type
+    TVTable = array[0..VTableSize - 1] of Pointer;
     PVTable = ^TVTable;
     PPVTable = ^PVTable;
 
-  public type
     TBlock = array[0..TF_MAX_CIPHER_BLOCK_SIZE - 1] of Byte;
 
     TGetBlockSizeFunc = function(Inst: Pointer): Integer;
@@ -55,6 +57,7 @@ type
     class function GetBlockSize(Inst: Pointer): Integer; static; inline;
     class function IncBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT; static; inline;
     class function DecBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT; static; inline;
+    class function SetIV(Inst: Pointer; IV: Pointer; IVSize: Cardinal): TF_RESULT; static; inline;
     class function SetNonce(Inst: Pointer; Nonce: TNonce): TF_RESULT; static; inline;
 
     class function EncryptBlock(Inst: Pointer; Data: Pointer): TF_RESULT; static; inline;
@@ -103,6 +106,11 @@ end;
 class function TCipherHelper.IncBlockNo(Inst: Pointer; Count: UInt64): TF_RESULT;
 begin
   Result:= TIncBlockNoFunc(PPVTable(Inst)^^[INDEX_INCBLOCKNO])(Inst, Count);
+end;
+
+class function TCipherHelper.SetIV(Inst: Pointer; IV: Pointer; IVSize: Cardinal): TF_RESULT;
+begin
+  Result:= TExpandKeyFunc(PPVTable(Inst)^^[INDEX_SETIV])(Inst, IV, IVSize);
 end;
 
 class function TCipherHelper.SetNonce(Inst: Pointer; Nonce: TNonce): TF_RESULT;

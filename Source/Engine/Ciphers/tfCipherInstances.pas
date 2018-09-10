@@ -19,7 +19,6 @@ uses
 type
   PCipherInstance = ^TCipherInstance;
   TCipherInstance = record
-  private
 {$HINTS OFF}
     FVTable:   Pointer;
     FRefCount: Integer;
@@ -27,10 +26,9 @@ type
     FKeyFlags: TKeyFlags;
 //    FPos:      Integer;
 {$HINTS ON}
-   public
-     class function ValidKey(Inst: Pointer): Boolean; static; inline;
-     class function ValidEncryptionKey(Inst: Pointer): Boolean; static; inline;
-     class function ValidDecryptionKey(Inst: Pointer): Boolean; static; inline;
+    class function ValidKey(Inst: Pointer): Boolean; static; inline;
+    class function ValidEncryptionKey(Inst: Pointer): Boolean; static; inline;
+    class function ValidDecryptionKey(Inst: Pointer): Boolean; static; inline;
 
 
 (*    class function GetAlgID(Inst: PCipherInstance): TAlgID;
@@ -39,7 +37,10 @@ type
     class function SetKeyDir(Inst: PCipherInstance; KeyDir: TAlgID): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
 
-    class function ExpandKey(Inst: Pointer; Key: PByte; KeySize: Cardinal): TF_RESULT;
+//    class function ExpandKey(Inst: Pointer; Key: PByte; KeySize: Cardinal): TF_RESULT;
+//      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function ExpandKeyIV(Inst: Pointer; Key: PByte; KeySize: Cardinal;
+                     IV: PByte; IVSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ExpandKeyNonce(Inst: Pointer; Key: PByte; KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -62,7 +63,7 @@ type
     class function DataMethodStub(Inst: Pointer; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function EncryptStub(Inst: Pointer; Data, OutData: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function IncBlockNoStub(Inst: Pointer; Count: UInt64): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
@@ -91,19 +92,17 @@ begin
 end;
 *)
 
-// I assume here that derived class implements ExpandKeyIV
-//   and inherits ExpandKey and ExpandKeyNonce implementations
-//   from TCipherInstance
-class function TCipherInstance.ExpandKey(Inst: Pointer; Key: PByte;
-  KeySize: Cardinal): TF_RESULT;
+class function TCipherInstance.ExpandKeyIV(Inst: Pointer; Key: PByte; KeySize: Cardinal; IV: PByte;
+  IVSize: Cardinal): TF_RESULT;
 begin
-  Result:= TCipherHelper.ExpandKeyIV(Inst, Key, KeySize, nil, 0);
+  Result:= TCipherHelper.ExpandKey(Inst, Key, KeySize);
+  if Result = TF_S_OK then
+    Result:= TCipherHelper.SetIV(Inst, IV, IVSize);
 end;
 
 class function TCipherInstance.ExpandKeyNonce(Inst: Pointer; Key: PByte;
   KeySize: Cardinal; Nonce: TNonce): TF_RESULT;
 begin
-//  Result:= TCipherHelper.ExpandKeyIV(Inst, Key, KeySize, nil, 0);
   Result:= TCipherHelper.ExpandKey(Inst, Key, KeySize);
   if Result = TF_S_OK then
     Result:= TCipherHelper.SetNonce(Inst, Nonce);
@@ -148,7 +147,7 @@ begin
 end;
 
 class function TCipherInstance.EncryptStub(Inst: Pointer; Data, OutData: PByte;
-                 DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                 DataSize: Cardinal): TF_RESULT;
 begin
   Result:= TF_E_NOTIMPL;
 end;

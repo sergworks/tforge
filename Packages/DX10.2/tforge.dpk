@@ -80,6 +80,10 @@ contains
   tfGNumerics in '..\..\Source\User\tfGNumerics.pas',
   tfHashes in '..\..\Source\User\tfHashes.pas',
   tfNumerics in '..\..\Source\User\tfNumerics.pas',
-  tfRandoms in '..\..\Source\User\tfRandoms.pas';
+  tfRandoms in '..\..\Source\User\tfRandoms.pas',
+  tfDesCiphers in '..\..\Source\Engine\Ciphers\tfDesCiphers.pas',
+  tfAesGetter in '..\..\Source\Engine\Ciphers\tfAesGetter.pas',
+  tfDesGetter in '..\..\Source\Engine\Ciphers\tfDesGetter.pas',
+  tf3DesGetter in '..\..\Source\Engine\Ciphers\tf3DesGetter.pas';
 
 end.

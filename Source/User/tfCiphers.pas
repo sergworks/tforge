@@ -30,7 +30,10 @@ const
 
   MODE_ECB     = TF_KEYMODE_ECB;
   MODE_CBC     = TF_KEYMODE_CBC;
+  MODE_CFB     = TF_KEYMODE_CFB;
+  MODE_OFB     = TF_KEYMODE_OFB;
   MODE_CTR     = TF_KEYMODE_CTR;
+  MODE_GCM     = TF_KEYMODE_GCM;
 
   PADDING_DEFAULT  = TF_PADDING_DEFAULT;
   PADDING_NONE     = TF_PADDING_NONE;
@@ -163,8 +166,8 @@ type
                 OutBufSize: Cardinal; Last: Boolean);
     procedure DecryptUpdate(InBuffer, OutBuffer: PByte; var DataSize: Cardinal;
                 OutBufSize: Cardinal; Last: Boolean);
-    procedure Encrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean = False);
-    procedure Decrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean = False);
+    procedure Encrypt(Data, OutData: Pointer; DataSize: Cardinal);
+    procedure Decrypt(Data, OutData: Pointer; DataSize: Cardinal);
 
     procedure GetKeyStream(var Data; DataSize: Cardinal; Last: Boolean = False);
     function KeyStream(DataSize: Cardinal; Last: Boolean = False): ByteArray;
@@ -580,14 +583,14 @@ begin
   HResCheck(FInstance.DecryptUpdate(InBuffer, OutBuffer, DataSize, OutBufSize, Last));
 end;
 
-procedure TCipher.Encrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Encrypt(Data, OutData: Pointer; DataSize: Cardinal);
 begin
-  HResCheck(FInstance.Encrypt(Data, OutData, DataSize, Last));
+  HResCheck(FInstance.Encrypt(Data, OutData, DataSize));
 end;
 
-procedure TCipher.Decrypt(Data, OutData: Pointer; DataSize: Cardinal; Last: Boolean);
+procedure TCipher.Decrypt(Data, OutData: Pointer; DataSize: Cardinal);
 begin
-  HResCheck(FInstance.Decrypt(Data, OutData, DataSize, Last));
+  HResCheck(FInstance.Decrypt(Data, OutData, DataSize));
 end;
 
 class function TCipher.EncryptBlock(AlgID: TAlgID; const Data, Key: ByteArray): ByteArray;

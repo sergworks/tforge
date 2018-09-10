@@ -311,8 +311,8 @@ const
                             // Block ciphers
   TF_ALG_AES      = $2001;
   TF_ALG_DES      = $2002;
-  TF_ALG_RC5      = $2003;
-  TF_ALG_3DES     = $2004;
+  TF_ALG_3DES     = $2003;
+  TF_ALG_RC5      = $2004;
                             // Stream ciphers
   TF_ALG_RC4      = $2801;
   TF_ALG_SALSA20  = $2802;
@@ -439,9 +439,9 @@ type
     function GetKeyBlock(Data: PByte): TF_RESULT;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetKeyStream(Data: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Encrypt(Data, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+    function Encrypt(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
-    function Decrypt(Data, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+    function Decrypt(Data, OutData: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function GetIsBlockCipher: Boolean;{$IFDEF TFL_STDCALL}stdcall;{$ENDIF}
     function IncBlockNo(Count: UInt64): TF_RESULT;
@@ -629,8 +629,8 @@ const
   TF_KEYFLAG_IV       = 2;      // IV is set
   TF_KEYFLAG_STARTED  = 3;      // encryption or decryption started;
                                 //   used in GCM mode implementation
-  TF_KEYFLAG_EXT      = 4;      // nonce extention is set
-                                //   used in GCM mode implementation
+//  TF_KEYFLAG_EXT      = 4;      // nonce extention is set
+                                  //   used in GCM mode implementation
 
 (*
   TF_ECB_ENCRYPT = TF_KEYDIR_ENCRYPT or TF_KEYMODE_ECB or TF_PADDING_DEFAULT;

@@ -32,17 +32,17 @@ type
     FDataSize: UInt64;
     FGHash:    TGHash;
   public
-//    procedure SetIV(IV: PByte; IVSize: Cardinal);
-
     class function SetIV(Inst: PGcmCipherInstance; IV: Pointer; IVLen: Cardinal): TF_RESULT;
+      {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
+    class function SetNonce(Inst: PGcmCipherInstance; Nonce: TNonce): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function AddAuthData(Inst: PGCMCipherInstance; Data: PByte; DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Encrypt(Inst: PGCMCipherInstance; InData, OutData: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function Decrypt(Inst: PGCMCipherInstance; InData, OutData: PByte;
-                     DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                     DataSize: Cardinal): TF_RESULT;
       {$IFDEF TFL_STDCALL}stdcall;{$ENDIF} static;
     class function ComputeTag(Inst: PGCMCipherInstance; Tag: PByte;
                      TagSize: Cardinal): TF_RESULT;
@@ -123,12 +123,14 @@ begin
 end;
 
 class function TGCMCipherInstance.Decrypt(Inst: PGCMCipherInstance; InData,
-  OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+  OutData: PByte; DataSize: Cardinal): TF_RESULT;
 var
   PCache: PByte;
   Size: Cardinal;
 
 begin
+// todo: Check TF_KEYFLAG_KEY and TF_KEYFLAG_IV
+
   if Inst.FKeyFlags and TF_KEYFLAG_STARTED = 0 then begin
 // finalize auth data processing
     Inst.FGHash.Pad();
@@ -162,21 +164,25 @@ begin
       Dec(Size);
     end;
   end;
+{
   if Last then begin
     FillChar(Inst.FCache, SizeOf(Inst.FCache), 0);
     Inst.FPos:= 16;
   end;
+}
   Result:= TF_S_OK;
 end;
 
 class function TGCMCipherInstance.Encrypt(Inst: PGCMCipherInstance;
-                 InData, OutData: PByte; DataSize: Cardinal; Last: Boolean): TF_RESULT;
+                 InData, OutData: PByte; DataSize: Cardinal): TF_RESULT;
 var
   POutData, PCache: PByte;
   LDataSize: Cardinal;
   Size: Cardinal;
 
 begin
+// todo: Check TF_KEYFLAG_KEY and TF_KEYFLAG_IV
+
   if Inst.FKeyFlags and TF_KEYFLAG_STARTED = 0 then begin
 // finalize auth data processing
     Inst.FGHash.Pad();
@@ -210,10 +216,12 @@ begin
   end;
   Inst.FGHash.Update(OutData, DataSize);
   Inst.FDataSize:= Inst.FDataSize + DataSize;
+{
   if Last then begin
     FillChar(Inst.FCache, SizeOf(Inst.FCache), 0);
     Inst.FPos:= 16;
   end;
+}
   Result:= TF_S_OK;
 end;
 
@@ -259,10 +267,26 @@ begin
   Move(Inst.FCounter, Inst.FH, SizeOf(Inst.FH));
   TCipherHelper.EncryptBlock(Inst, @Inst.FH);
 
-// allow auth data processing
-  Inst.FKeyFlags:= Inst.FKeyFlags and not TF_KEYFLAG_STARTED;
-//  FKeyFlags:= FKeyFlags and not TF_KEYFLAG_EXT;
+// not needed - allow auth data processing
+//  Inst.FKeyFlags:= Inst.FKeyFlags and not TF_KEYFLAG_STARTED;
+  Inst.FKeyFlags:= Inst.FKeyFlags and TF_KEYFLAG_IV;
   Result:= TF_S_OK;
+end;
+
+class function TGCMCipherInstance.SetNonce(Inst: PGcmCipherInstance; Nonce: TNonce): TF_RESULT;
+type
+  UInt64Rec = record
+    Lo, Hi: UInt32;
+  end;
+
+var
+  IV: array[0..2] of UInt32;
+
+begin
+  IV[0]:= 0;
+  IV[1]:= UInt64Rec(Nonce).Lo;
+  IV[2]:= UInt64Rec(Nonce).Hi;
+  Result:= SetIV(Inst, @IV, SizeOf(IV));
 end;
 
 (*

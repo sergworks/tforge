@@ -112,15 +112,15 @@ const
 
 const
   DESCipherVTable: array[0..18] of Pointer = (
-   @TForgeInstance.QueryIntf,
-   @TForgeInstance.Addref,
-   @TDESInstance.Release,
+    @TForgeInstance.QueryIntf,
+    @TForgeInstance.Addref,
+    @TDESInstance.Release,
 
-   @TDESInstance.DestroyKey,
-   @TDESInstance.DuplicateKey,
-   @TDESInstance.ExpandKey,
-   @TBaseBlockCipher.SetKeyParam,
-   @TBaseBlockCipher.GetKeyParam,
+    @TDESInstance.DestroyKey,
+    @TDESInstance.DuplicateKey,
+    @TDESInstance.ExpandKey,
+    @TBaseBlockCipher.SetKeyParam,
+    @TBaseBlockCipher.GetKeyParam,
    @TDESInstance.GetBlockSize,
    @TBaseBlockCipher.Encrypt,
    @TBaseBlockCipher.Decrypt,

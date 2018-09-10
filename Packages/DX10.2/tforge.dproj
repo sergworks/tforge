@@ -50,7 +50,6 @@
         <GenDll>true</GenDll>
         <GenPackage>true</GenPackage>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-        <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
         <SanitizedProjectName>tforge</SanitizedProjectName>
         <DCC_UnitSearchPath>..\..\Source\Include;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -143,6 +142,10 @@
         <DCCReference Include="..\..\Source\User\tfHashes.pas"/>
         <DCCReference Include="..\..\Source\User\tfNumerics.pas"/>
         <DCCReference Include="..\..\Source\User\tfRandoms.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfDesCiphers.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfAesGetter.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tfDesGetter.pas"/>
+        <DCCReference Include="..\..\Source\Engine\Ciphers\tf3DesGetter.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
