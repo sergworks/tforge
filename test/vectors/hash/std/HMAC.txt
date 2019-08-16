@@ -1,0 +1,17 @@
+# HMAC Test Vectors
+
+Alg     = "MD5"
+Key     = 0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b
+Message = "Hi There"
+Digest  = 9294727a3638bb1c13f48ef8158bfc9d
+
+Alg     = "MD5"
+Key     = "Jefe"
+Message = "what do ya want for nothing?"
+Digest  = 750c783e6ab0b503eaa86e310a5db738
+
+Alg     = "MD5"
+Key     = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Message = DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD // 50 bytes
+Digest =  56be34521d144c88dbb8c733f0e8b3f6
+

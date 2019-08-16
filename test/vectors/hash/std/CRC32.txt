@@ -1,0 +1,14 @@
+#
+# CRC32 test vectors
+#
+
+message = "" (empty string)
+digest = 00000000
+
+message = "The quick brown fox jumps over the lazy dog"
+digest = 414fa339
+#digest = 39a34f41
+
+message = "123456789"
+digest = cbf43926
+#digest = 2639f4cb

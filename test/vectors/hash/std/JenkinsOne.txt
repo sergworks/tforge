@@ -1,0 +1,7 @@
+#
+# "Jenkinse one at a time" test vectors
+#
+
+message = "Hello World!"
+digest = 2476CEDB
+#digest = DBCE7624

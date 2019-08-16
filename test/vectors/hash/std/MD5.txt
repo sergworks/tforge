@@ -1,0 +1,27 @@
+#
+# MD5 test vectors
+#
+
+message = "" (empty string)
+digest = D41D8CD98F00B204E9800998ECF8427E
+
+message = "a"
+digest = 0CC175B9C0F1B6A831C399E269772661
+
+message = "abc"
+digest = 900150983CD24FB0D6963F7D28E17F72
+
+message = "message digest"
+digest = F96B697D7CB7938D525A2F31AAF161D0
+
+message = "abcdefghijklmnopqrstuvwxyz"
+digest = C3FCD3D76192E4007DFB496CCA67E13B
+
+message = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+digest = 8215EF0796A20BCAAAE116D3876C664A
+
+message = 8"1234567890"
+digest = 57EDF4A22BE3C955AC49DA2E2107B67A
+
+message = 1000000"a"
+digest = 7707D6AE4E027C70EEA2A935C2296F21

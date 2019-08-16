@@ -1,0 +1,18 @@
+#
+# SHA224 test vectors
+#
+
+message = "" (empty string)
+digest = d14a028c 2a3a2bc9 476102bb 288234c4 15a2b01f 828ea62a c5b3e42f
+
+message = "abc"
+digest = 23097d22 3405d822 8642a477 bda255b3 2aadbce4 bda0b3f7 e36c9da7
+
+message = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+digest = 75388b16 512776cc 5dba5da1 fd890150 b0c6455c b4f58b19 52522525
+
+message = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
+digest = c97ca9a5 59850ce9 7a04a96d ef6d99a9 e0e0e2ab 14e6b8df 265fc0b3
+
+message = 1000000"a"
+digest = 20794655 980c91d8 bbb4c1ea 97618a4b f03f4258 1948b2ee 4ee7ad67

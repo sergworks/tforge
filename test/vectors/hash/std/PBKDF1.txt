@@ -1,0 +1,51 @@
+# PBKDF1
+
+Alg      = "SHA1"
+Password = "password" // (0x)70617373776F7264
+Salt     = 78578E5A5D63CB06
+Rounds   = 1000
+kLen     = 16
+Key      = DC19847E05C64D2FAF10EBFB4A3D2A20
+
+# P || S = 70617373776F726478578E5A5D63CB06
+# T_1=     D1F94C4D447039B034494400F2E7DF9DCB67C308
+# T_2=     2BB479C1D369EA74BB976BBA2629744E8259C6F5
+# ...
+# T_999=   6663F4611D61571068B5DA168974C6FF2C9775AC
+# T_1000=  DC19847E05C64D2FAF10EBFB4A3D2A20B4E35EFE
+# Key=     DC19847E05C64D2FAF10EBFB4A3D2A20
+
+Alg      = "MD5"
+Password = "password"
+Salt     = "salt"
+Rounds   = 1000
+kLen     = 0
+Key      = 8475c6a8531a5d27e386cd496457812c
+
+Alg      = "MD5"
+Password = "password"
+Salt     = "salt"
+Rounds   = 1000
+kLen     = 1
+Key      = 84
+
+Alg      = "MD5"
+Password = "password"
+Salt     = "salt"
+Rounds   = 1000
+kLen     = 8
+Key      = 8475c6a8531a5d27
+
+Alg      = "MD5"
+Password = "password"
+Salt     = "salt"
+Rounds   = 1000
+kLen     = 16
+Key      = 8475c6a8531a5d27e386cd496457812c
+
+Alg      = "SHA1"
+Password = "password"
+Salt     = "salt"
+Rounds   = 1000
+kLen     = 0
+Key      = 4a8fd48e426ed081b535be5769892fa396293efb
