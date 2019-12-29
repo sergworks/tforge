@@ -1,0 +1,89 @@
+package tforge;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$RUNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  tfLimbs in '..\..\Source\Shared\tfLimbs.pas',
+  tfTypes in '..\..\Source\Shared\tfTypes.pas',
+  tfUtils in '..\..\Source\Shared\tfUtils.pas',
+  arrProcs in '..\..\Source\Engine\Forge\arrProcs.pas',
+  tfAlgServ in '..\..\Source\Engine\Forge\tfAlgServ.pas',
+  tfByteVectors in '..\..\Source\Engine\Forge\tfByteVectors.pas',
+  tfHelpers in '..\..\Source\Engine\Forge\tfHelpers.pas',
+  tfMontMath in '..\..\Source\Engine\Forge\tfMontMath.pas',
+  tfNumbers in '..\..\Source\Engine\Forge\tfNumbers.pas',
+  tfOpenSSL in '..\..\Source\Engine\Forge\tfOpenSSL.pas',
+  tfRandEngines in '..\..\Source\Engine\Forge\tfRandEngines.pas',
+  tfRecords in '..\..\Source\Engine\Forge\tfRecords.pas',
+  tfStubOS in '..\..\Source\Engine\OSes\tfStubOS.pas',
+  tfWindows in '..\..\Source\Engine\OSes\tfWindows.pas',
+  tfCRC32 in '..\..\Source\Engine\Hashes\tfCRC32.pas',
+  tfHashServ in '..\..\Source\Engine\Hashes\tfHashServ.pas',
+  tfHMAC in '..\..\Source\Engine\Hashes\tfHMAC.pas',
+  tfJenkinsOne in '..\..\Source\Engine\Hashes\tfJenkinsOne.pas',
+  tfMD5 in '..\..\Source\Engine\Hashes\tfMD5.pas',
+  tfSHA1 in '..\..\Source\Engine\Hashes\tfSHA1.pas',
+  tfSHA256 in '..\..\Source\Engine\Hashes\tfSHA256.pas',
+  tfSHA512 in '..\..\Source\Engine\Hashes\tfSHA512.pas',
+  tfAESCiphers in '..\..\Source\Engine\Ciphers\tfAESCiphers.pas',
+  tfAlgAES in '..\..\Source\Engine\Ciphers\tfAlgAES.pas',
+  tfAlgDES in '..\..\Source\Engine\Ciphers\tfAlgDES.pas',
+  tfBaseCiphers in '..\..\Source\Engine\Ciphers\tfBaseCiphers.pas',
+  tfBlockCiphers in '..\..\Source\Engine\Ciphers\tfBlockCiphers.pas',
+  tfCipherHelpers in '..\..\Source\Engine\Ciphers\tfCipherHelpers.pas',
+  tfCipherInstances in '..\..\Source\Engine\Ciphers\tfCipherInstances.pas',
+  tfCipherServ in '..\..\Source\Engine\Ciphers\tfCipherServ.pas',
+  tfDES in '..\..\Source\Engine\Ciphers\tfDES.pas',
+  tfEvpAES in '..\..\Source\Engine\Ciphers\tfEvpAES.pas',
+  tfEVPCiphers in '..\..\Source\Engine\Ciphers\tfEVPCiphers.pas',
+  tfGCMCiphers in '..\..\Source\Engine\Ciphers\tfGCMCiphers.pas',
+  tfGHash in '..\..\Source\Engine\Ciphers\tfGHash.pas',
+  tfRC4 in '..\..\Source\Engine\Ciphers\tfRC4.pas',
+  tfRC5 in '..\..\Source\Engine\Ciphers\tfRC5.pas',
+  tfSalsa20 in '..\..\Source\Engine\Ciphers\tfSalsa20.pas',
+  tfStreamCiphers in '..\..\Source\Engine\Ciphers\tfStreamCiphers.pas',
+  tfArrays in '..\..\Source\User\tfArrays.pas',
+  tfCiphers in '..\..\Source\User\tfCiphers.pas',
+  tfConsts in '..\..\Source\User\tfConsts.pas',
+  tfCRCs in '..\..\Source\User\tfCRCs.pas',
+  tfEngines in '..\..\Source\User\tfEngines.pas',
+  tfExceptions in '..\..\Source\User\tfExceptions.pas',
+  tfGNumerics in '..\..\Source\User\tfGNumerics.pas',
+  tfHashes in '..\..\Source\User\tfHashes.pas',
+  tfNumerics in '..\..\Source\User\tfNumerics.pas',
+  tfRandoms in '..\..\Source\User\tfRandoms.pas',
+  tfDesCiphers in '..\..\Source\Engine\Ciphers\tfDesCiphers.pas',
+  tfAesGetter in '..\..\Source\Engine\Ciphers\tfAesGetter.pas',
+  tfDesGetter in '..\..\Source\Engine\Ciphers\tfDesGetter.pas',
+  tf3DesGetter in '..\..\Source\Engine\Ciphers\tf3DesGetter.pas';
+
+end.

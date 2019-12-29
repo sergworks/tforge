@@ -1,0 +1,155 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{E1AD636A-32C5-482E-9AA5-CBE157326AA6}</ProjectGuid>
+			<MainSource>TForge.dpk</MainSource>
+			<ProjectVersion>12.3</ProjectVersion>
+			<Base>True</Base>
+			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Platform>Win32</Platform>
+			<AppType>Package</AppType>
+			<FrameworkType>None</FrameworkType>
+			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_ImageBase>00400000</DCC_ImageBase>
+			<GenPackage>true</GenPackage>
+			<DCC_DcuOutput>$(BDSCOMMONDIR)\TForge\$(Platform)-$(Config)</DCC_DcuOutput>
+			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
+			<DCC_CBuilderOutput>All</DCC_CBuilderOutput>
+			<DCC_UnitSearchPath>E:\TForge\tforge\Source\Include;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_E>false</DCC_E>
+			<DCC_S>false</DCC_S>
+			<DCC_DcpOutput>$(BDSCOMMONDIR)\TForge\$(Platform)-$(Config)</DCC_DcpOutput>
+			<GenDll>true</GenDll>
+			<DCC_F>false</DCC_F>
+			<DCC_K>false</DCC_K>
+			<DCC_N>false</DCC_N>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+			<DCC_Optimize>false</DCC_Optimize>
+			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+			<DCC_DebugInformation>false</DCC_DebugInformation>
+		</PropertyGroup>
+		<ItemGroup>
+			<DelphiCompile Include="TForge.dpk">
+				<MainSource>MainSource</MainSource>
+			</DelphiCompile>
+			<DCCReference Include="rtl.dcp"/>
+			<DCCReference Include="..\..\Source\Shared\tfLimbs.pas"/>
+			<DCCReference Include="..\..\Source\Shared\tfTypes.pas"/>
+			<DCCReference Include="..\..\Source\Shared\tfUtils.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\arrProcs.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfAlgServ.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfByteVectors.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfMontMath.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfNumbers.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfOpenSSL.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfRandEngines.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Forge\tfRecords.pas"/>
+			<DCCReference Include="..\..\Source\Engine\OSes\tfStubOS.pas"/>
+			<DCCReference Include="..\..\Source\Engine\OSes\tfWindows.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfCRC32.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfHashServ.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfHMAC.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfJenkinsOne.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfMD5.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfSHA1.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfSHA256.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Hashes\tfSHA512.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfAES.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfBaseCiphers.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfCipherServ.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfDES.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfEvpAES.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfEVPCiphers.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfKeyStreams.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfRC4.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfRC5.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfSalsa20.pas"/>
+			<DCCReference Include="..\..\Source\User\tfBytes.pas"/>
+			<DCCReference Include="..\..\Source\User\tfCiphers.pas"/>
+			<DCCReference Include="..\..\Source\User\tfConsts.pas"/>
+			<DCCReference Include="..\..\Source\User\tfCRCs.pas"/>
+			<DCCReference Include="..\..\Source\User\tfEngines.pas"/>
+			<DCCReference Include="..\..\Source\User\tfExceptions.pas"/>
+			<DCCReference Include="..\..\Source\User\tfGNumerics.pas"/>
+			<DCCReference Include="..\..\Source\User\tfHashes.pas"/>
+			<DCCReference Include="..\..\Source\User\tfNumerics.pas"/>
+			<DCCReference Include="..\..\Source\User\tfRandoms.pas"/>
+			<DCCReference Include="..\..\Source\Engine\Ciphers\tfCipherHelpers.pas"/>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+		<ProjectExtensions>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
+			<Borland.ProjectType>Package</Borland.ProjectType>
+			<BorlandProject>
+				<Delphi.Personality>
+					<Source>
+						<Source Name="MainSource">TForge.dpk</Source>
+					</Source>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
+						<VersionInfo Name="MajorVer">1</VersionInfo>
+						<VersionInfo Name="MinorVer">0</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">1033</VersionInfo>
+						<VersionInfo Name="CodePage">1252</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName"/>
+						<VersionInfoKeys Name="FileDescription"/>
+						<VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName"/>
+						<VersionInfoKeys Name="LegalCopyright"/>
+						<VersionInfoKeys Name="LegalTrademarks"/>
+						<VersionInfoKeys Name="OriginalFilename"/>
+						<VersionInfoKeys Name="ProductName"/>
+						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments"/>
+					</VersionInfoKeys>
+				</Delphi.Personality>
+				<Platforms>
+					<Platform value="Win32">True</Platform>
+				</Platforms>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+	</Project>
